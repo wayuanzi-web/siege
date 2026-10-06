@@ -24,7 +24,8 @@ const DIFFS = [
   { name: '標準', aiErr: 1.0, aiThink: 1.0, foeHp: 1.0, foeDmg: 1.0, foeRate: 1.0 },
   { name: '硬仗', aiErr: 0.7, aiThink: 0.8, foeHp: 1.18, foeDmg: 1.12, foeRate: 1.12 }
 ];
-const BAR_TH = 0.42;      // 城防條歸零時，磚的總耐久還剩這個比例（剩下的一次垮光）
+const BAR_TH = 0.55;      // 城防條歸零時，磚的總耐久還剩這個比例（剩下的一次垮光）
+const SPLIT_P = 0.45;      // 砲彈穿過倍增符後，每一發的威力打幾折（0 = 不打折）
 const GATE_BLOCK = true; // 對方的倍增符會不會擋住砲彈
 function ev(t, a, b, c, d, e, f) { if (S.on) S.on(t, a, b, c, d, e, f); }
 
@@ -47,7 +48,7 @@ function mkStruct(side, def, x0, y0, hpMul, mirror) {
   const st = {
     side, skin: def.skin, x0, y0, cols, rows, n, w: cols * CS, h: rows * CS, x1: x0 + cols * CS, y1: y0 + rows * CS, cx: x0 + cols * CS / 2,
     m: new Uint8Array(n), hp: new Float32Array(n), hm: new Float32Array(n), burn: new Float32Array(n), brit: new Float32Array(n),
-    deco: new Uint8Array(n), vr: new Uint8Array(n), m0: new Uint8Array(n),
+    deco: new Uint8Array(n), deco0: new Uint8Array(n), vr: new Uint8Array(n), m0: new Uint8Array(n),
     mark: new Uint8Array(n), q: new Int32Array(n), gid: new Int16Array(n), sup: new Uint8Array(n),
     groups: [], units: [], slots: [], hpMul, hp0: 0, hpNow: 0, need: false, nburn: 0, burnT: 0, ver: 0, dead: false, fin: null, shake: 0, hitT: 0
   };
@@ -63,7 +64,7 @@ function mkStruct(side, def, x0, y0, hpMul, mirror) {
         default: if (ch >= '1' && ch <= '9') { m = M_PANEL; st.slots.push({ slot: +ch, cx, cy }); }
       }
       if (!m) continue;
-      st.m[i] = st.m0[i] = m; st.deco[i] = deco; st.vr[i] = (cx * 7 + cy * 13 + ((cx * cy) % 5)) & 255;
+      st.m[i] = st.m0[i] = m; st.deco[i] = st.deco0[i] = deco; st.vr[i] = (cx * 7 + cy * 13 + ((cx * cy) % 5)) & 255;
       const hp = MAT[m].hp * (m === M_KEG || m === M_PANEL ? 1 : hpMul); st.hp[i] = st.hm[i] = hp;
       if (isSolid(m)) st.hp0 += hp;
     }
@@ -74,7 +75,7 @@ function mkStruct(side, def, x0, y0, hpMul, mirror) {
 function structHp(st) {
   let s = 0; const m = st.m, hp = st.hp;
   for (let i = 0; i < st.n; i++) if (m[i] !== 0 && m[i] !== M_PANEL && hp[i] > 0) s += hp[i];
-  for (const g of st.groups) for (const c of g.cells) if (c.m !== M_PANEL && c.hp > 0) s += c.hp;
+  for (const g of st.groups) if (!g.done) for (const c of g.cells) if (c.m !== M_PANEL && c.hp > 0) s += c.hp;
   st.hpNow = s; return s;
 }
 function teamBar(side) { const st = S.st[side]; return clamp((st.hpNow / st.hp0 - BAR_TH) / (1 - BAR_TH), 0, 1); }
@@ -95,15 +96,15 @@ function destroyCell(st, i, side, kind) {
   st.m[i] = 0; st.hp[i] = 0; st.burn[i] = 0; st.brit[i] = 0; st.ver++;
   const x = cellX(st, i), y = cellY(st, i);
   ev('cell', x, y, m, st.side, kind, st.skin);
-  if (m === M_PANEL) return;
   st.need = true;
+  if (m === M_PANEL) return;
   if (st.side === 1 && side === 0) S.stat.cells++;
   if (m === M_KEG) S.pend.push({ t: S.time + 0.1 + rnd() * 0.08, x, y, w: WPN.keg, side: st.side < 2 ? 1 - st.side : 2 });
 }
 function ignite(st, i, dur) {
   const m = st.m[i]; if (!m || !MAT[m].burn) return;
   if (m === M_KEG) { st.hp[i] = 0; destroyCell(st, i, 2, K_FIRE); return; }
-  if (st.burn[i] <= 0) { st.nburn++; ev('ignite', cellX(st, i), cellY(st, i)); }
+  if (st.burn[i] <= 0) { st.nburn = Math.max(0, st.nburn) + 1; ev('ignite', cellX(st, i), cellY(st, i)); }
   if (dur > st.burn[i]) st.burn[i] = dur;
 }
 function burnStep(st, dt) {
@@ -114,7 +115,6 @@ function burnStep(st, dt) {
   for (let i = 0; i < st.n; i++) {
     if (burn[i] <= 0) continue;
     burn[i] -= dt; if (burn[i] <= 0 || !m[i]) { burn[i] = 0; continue; }
-    nb++;
     hitCell(st, i, 3.4 * dt, K_FIRE, foe);
     if (tick && m[i]) {
       const cx = i % cols, cy = (i / cols) | 0;
@@ -122,10 +122,11 @@ function burnStep(st, dt) {
         const nx = cx + (k === 0 ? -1 : k === 1 ? 1 : 0), ny = cy + (k === 2 ? -1 : k === 3 ? 1 : 0);
         if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
         const j = ny * cols + nx, mj = m[j];
-        if (mj && MAT[mj].burn && burn[j] <= 0 && rnd() < (k === 3 ? 0.3 : 0.17)) ignite(st, j, 3 + rnd() * 2.2);
+        if (mj && MAT[mj].burn && burn[j] <= 0 && rnd() < (k === 3 ? 0.11 : 0.05)) ignite(st, j, 3 + rnd() * 2.2);
       }
     }
   }
+  for (let i = 0; i < st.n; i++) if (burn[i] > 0) nb++;
   st.nburn = nb;
   // 站在火旁邊的兵會被燒
   for (const u of st.units) {
@@ -167,7 +168,7 @@ function structCollapse(st) {
   }
   // 房間的壁板：腳下、左右或頭上有站得住的東西才留著
   const sup = st.sup; sup.fill(0);
-  for (let pass = 0; pass < 3; pass++) {
+  for (let pass = 0; pass < 6; pass++) {
     for (let i = 0; i < n; i++) {
       if (m[i] !== M_PANEL || sup[i]) continue;
       const cx = i % cols, cy = (i / cols) | 0;
@@ -182,6 +183,7 @@ function structCollapse(st) {
     else if (cx < cols - 1 && gid[i + 1] >= 0) gi = gid[i + 1]; else if (cy < rows - 1 && gid[i + cols] >= 0) gi = gid[i + cols];
     if (gi >= 0) gid[i] = gi; else destroyCell(st, i, 2, K_CRUSH);
   }
+  st.need = false;        // 上面清掉的壁板不用再重算一次
   if (st.groups.length === g0) {
     // 沒有新的落石，只檢查兵腳下還有沒有地板
     for (const u of st.units) if (u.alive && !u.grp && !u.fall && u.cy > 0 && !isSolid(m[(u.cy - 1) * cols + u.cx])) { u.fall = true; u.vy = 0; u.cy0 = u.cy; }
@@ -198,7 +200,6 @@ function structCollapse(st) {
     const gi = gid[i]; if (gi < 0) continue;
     const g = st.groups[gi];
     g.cells.push({ cx: i % cols, cy: (i / cols) | 0, m: m[i], hp: st.hp[i], hm: st.hm[i], burn: st.burn[i], deco: st.deco[i], vr: st.vr[i] });
-    if (st.burn[i] > 0) st.nburn--;
     m[i] = 0; st.hp[i] = 0; st.burn[i] = 0; st.brit[i] = 0;
   }
   st.ver++;
@@ -243,7 +244,7 @@ function groupLand(st, g) {
     if (ns) ev('thud', st.x0 + (sx / ns + 0.5) * CS, st.y0 + (sy / ns) * CS, ns, k, st.side);
   }
   for (const u of g.units) {
-    if (!u.alive) continue;
+    if (!u.alive || u.grp !== g) continue;
     u.grp = null; u.cy -= k; u.y = st.y0 + u.cy * CS;
     if (k > 0) hurtUnit(u, 5 + 7 * k, foe, K_CRUSH);
   }
@@ -276,7 +277,7 @@ function repairStruct(st, maxCells, heal) {
     if (cy > 0 && !isSolid(m[i - cols])) continue;
     let busy = false; for (const u of st.units) if (u.alive && u.cx === cx && u.cy === cy) { busy = true; break; }
     if (busy) continue;
-    m[i] = m0[i]; st.hm[i] = MAT[m0[i]].hp * st.hpMul; st.hp[i] = st.hm[i] * 0.7; made++;
+    m[i] = m0[i]; st.deco[i] = st.deco0[i]; st.hm[i] = MAT[m0[i]].hp * st.hpMul; st.hp[i] = st.hm[i] * 0.7; made++;
     ev('build', cellX(st, i), cellY(st, i), m0[i]);
   }
   st.ver++; return made;
@@ -400,7 +401,7 @@ function killShot(i) {
 }
 function lightning(x, y, mul, side) {
   let st = null;
-  for (const s of S.structs) if (x >= s.x0 && x < s.x1 && !s.dead) { st = s; break; }
+  for (const s of S.structs) if (x >= s.x0 && x < s.x1 && !s.dead && s.side !== side) { st = s; break; }
   if (!st) { ev('zap', x, groundY(x), 70, 0); return; }
   const { cols, rows, m } = st, cx = clamp(((x - st.x0) / CS) | 0, 0, cols - 1); let n = 0, top = -1, bot = 0;
   for (let cy = rows - 1; cy >= 0 && n < 3; cy--) {
@@ -617,7 +618,11 @@ function shotsStep(dt) {
     }
     if (ny < S.gmax) {
       const gy = groundY(nx);
-      if (ny <= gy) { explode(nx, gy, WL[SH.w[i]], side, SH.mass[i], SH.flag[i], null, -1, null); ev('dirt', nx, gy); killShot(i); i--; continue; }
+      if (ny <= gy) {
+        if (y < gy - 1.5) explode(nx, ny, WL[SH.w[i]], side, SH.mass[i], SH.flag[i], null, -1, null);       // 從無地面區的下方撞上崖壁
+        else { explode(nx, gy, WL[SH.w[i]], side, SH.mass[i], SH.flag[i], null, -1, null); ev('dirt', nx, gy); }
+        killShot(i); i--; continue;
+      }
     }
     SH.x[i] = nx; SH.y[i] = ny; SH.vx[i] = vx; SH.vy[i] = vy;
   }
@@ -632,8 +637,10 @@ function inBubble(st, x, y) {
 function gateMultiply(i, g, hx, hy, vx, vy) {
   const n = g.mult, side = SH.side[i];
   const A = Math.min(0.17, 0.028 * (n - 1) + 0.022);       // 扇形半角
-  const step = (2 * A) / (n - 1), self = (n - 1) >> 1;      // 原本這一發佔扇形中間的位置
-  const lin = SH.lin[i], mask = SH.mask[i], flag = SH.flag[i], wi = SH.w[i], age = SH.age[i], mass = SH.mass[i];
+  const step = n > 1 ? (2 * A) / (n - 1) : 0, self = (n - 1) >> 1;      // 原本這一發佔扇形中間的位置
+  // 分裂後每一發的威力打折：數量 ×n，總威力大約 ×n^(1-SPLIT_P)
+  const lin = SH.lin[i], mask = SH.mask[i], flag = SH.flag[i], wi = SH.w[i], age = SH.age[i], mass = SH.mass[i] * Math.pow(n, -SPLIT_P);
+  SH.mass[i] = mass;
   const want = Math.min(n - 1, Math.max(0, SHOT_CAP - SH.cnt[side]));
   let made = 1, slot = 0;
   for (let k = 0; k < n && slot < want; k++) {
@@ -643,7 +650,7 @@ function gateMultiply(i, g, hx, hy, vx, vy) {
     const j = spawnShot(side, wi, hx, hy, (vx * c - vy * s) * sp, (vy * c + vx * s) * sp, mass, flag, mask, lin);
     if (j >= 0) { SH.age[j] = age; made++; }
   }
-  if (made < n) SH.mass[i] = mass * n / made;               // 天上已經滿了：沒生出來的份量加在原本這一發上
+  if (made < n) SH.mass[i] = mass * (n - made + 1);               // 天上已經滿了：沒生出來的份量加在原本這一發上
   if (side < 2) { const c = S.lin[lin] = Math.min(30000, S.lin[lin] + n - 1); if (side === 0 && c > S.stat.swarm) S.stat.swarm = c; }
   g.used++; g.flash = 1; if (g.uses > 0) g.left--;
   ev('gate', hx, hy, n, g.owner, side);
@@ -666,7 +673,7 @@ function gateSpawn(sp) {
 }
 function gatesStep(dt) {
   for (const sp of S.gsp) {
-    if (sp.g) continue;
+    if (sp.g || S.state !== 'play') continue;
     if (sp.def.phase && (!S.boss || S.boss.phase < sp.def.phase)) continue;
     if (sp.def.until && S.boss && S.boss.phase > sp.def.until) continue;
     sp.t -= dt; if (sp.t <= 0) gateSpawn(sp);
@@ -822,7 +829,7 @@ function simSkill(side, name) {
   }
   return false;
 }
-function simAim(side, vx, vy) { const a = clampAim(vx, vy, S.team[side].dir); S.team[side].aim[0] = a[0]; S.team[side].aim[1] = a[1]; }
+function simAim(side, vx, vy) { if (!(vx === vx) || !(vy === vy)) return; const a = clampAim(vx, vy, S.team[side].dir); S.team[side].aim[0] = a[0]; S.team[side].aim[1] = a[1]; }
 
 /* ---------- 開局 ---------- */
 function mkTeam(side) {
@@ -837,7 +844,7 @@ function simInit(idx, up, seed, diff, opts) {
   S.structs = []; S.units = []; S.gates = []; S.gsp = []; S.objs = []; S.marks = []; S.pend = []; S.bitUse.fill(0);
   S.wind = 0; S.windTo = 0; S.windAI = 0; S.windT = lv.wind ? (lv.wind.at || 6) : 1e9; S.rage = 1; S.sudden = false;
   S.gpts = lv.ground || null; S.voids = lv.voids || null; S.gmax = 1; if (S.gpts) for (const p of S.gpts) if (p[1] + 1 > S.gmax) S.gmax = p[1] + 1; S.lin.fill(0); S.linNext = 1;
-  S.stat = { fired: 0, peak: 0, swarm: 0, cells: 0, kills: 0, gates: 0, lost: 0 };
+  S.stat = { fired: 0, peak: 0, swarm: 1, cells: 0, kills: 0, gates: 0, lost: 0 };
   const A = S.team[0] = mkTeam(0), B = S.team[1] = mkTeam(1);
   A.rate = 1 + 0.07 * (up.rate || 0); A.dmg = 1 + 0.08 * (up.dmg || 0); A.hpMul = 1 + 0.09 * (up.hp || 0);
   A.shield.dur = 2.6 + 0.3 * (up.shield || 0); A.shield.cdMax = 14 - 1.1 * (up.shield || 0);
@@ -853,7 +860,7 @@ function simInit(idx, up, seed, diff, opts) {
   sB.slots.forEach((sl, k) => { const t = lv.foe.crew[k]; if (t) { const u = mkUnit(1, t, sB, sl, B.hpMul); u.cool = (lv.foe.delay || 2.5) + k * 0.45; if (u.def.spawn || u.def.flak) u.t2 += (lv.foe.delay || 2.5) * 0.5; } });
   A.alive = A.units.length; B.alive = B.units.length;
   const dist = sB.cx - sA.cx, v0 = Math.sqrt(dist * GRAV / Math.sin(2 * 0.8));
-  A.aim = clampAim(Math.cos(0.92) * 40, Math.sin(0.92) * 40, 1);      // 我方一開始故意打不到，要自己調
+  A.aim = clampAim(Math.cos(1.16) * 36, Math.sin(1.16) * 36, 1);      // 我方一開始故意打不到，要自己調
   B.aim = clampAim(-Math.cos(0.85) * v0, Math.sin(0.85) * v0, -1);
   for (const d of (lv.gates || [])) S.gsp.push({ def: d, t: d.at || 0, idx: 0, g: null });
   for (const d of (lv.objs || [])) {
@@ -943,11 +950,11 @@ function bossStep(dt) {
     ev('phase', 2);
   } else if (B.phase === 2 && bar < lb.p3) {
     B.phase = 3; B.metT = 2.5;
-    for (const u of S.team[1].units) if (u.type === 'boss') u.rateMul = 1.7;
+    for (const u of S.team[1].units) if (u.type === 'boss') u.rateMul = 1.5;
     ev('phase', 3);
   }
   if (B.phase >= 2) { B.orbT -= dt; if (B.orbT <= 0) { B.orbT = (lb.orbEvery || 11) * (B.phase === 3 ? 0.8 : 1); spawnOrb(); } }
-  if (B.phase >= 3) { B.metT -= dt; if (B.metT <= 0) { B.metT = lb.metEvery || 8; runEvent({ do: 'rocks', n: 4 }); } }
+  if (B.phase >= 3) { B.metT -= dt; if (B.metT <= 0) { B.metT = lb.metEvery || 8; runEvent({ do: 'rocks', n: 3 }); } }
 }
 function endCheck() {
   let lose0 = false, lose1 = false;
@@ -969,7 +976,8 @@ function endCheck() {
   st.groups.length = 0;
   st.fin = { t: 0, order: order.sort((a, b) => a.t - b.t), k: 0 };
   ev('end', st.cx, st.y0 + st.h * 0.4, loser, S.team[loser].alive <= 0 ? 1 : 0);
-  S.team[0].ult.T = 0; S.team[1].ult.T = 0;
+  S.team[0].ult.T = 0; S.team[1].ult.T = 0; S.team[0].shield.T = 0; S.team[1].shield.T = 0;
+  for (const u of st.units) u.grp = null;
 }
 function finStep(st, dt) {
   const f = st.fin; f.t += dt;

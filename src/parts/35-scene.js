@@ -62,7 +62,7 @@ function cloudSprite(w, h, R, top, bot, alpha) {
   c.fillRect(w * 0.14, h * 0.6, w * 0.72, h * 0.22);
   c.globalCompositeOperation = 'source-atop';
   c.fillStyle = lg(c, 0, 0, 0, h, [0, top, 0.55, top, 1, bot]); c.fillRect(0, 0, w, h);
-  c.globalCompositeOperation = 'destination-in'; c.fillStyle = lg(c, 0, h * 0.62, 0, h * 0.86, [0, 'rgba(0,0,0,1)', 1, 'rgba(0,0,0,0)']); c.fillRect(0, h * 0.62, w, h); c.fillStyle = '#000'; c.fillRect(0, 0, w, h * 0.62);
+  c.globalCompositeOperation = 'destination-in'; c.fillStyle = lg(c, 0, 0, 0, h, [0, '#000', 0.62, '#000', 0.86, 'rgba(0,0,0,0)', 1, 'rgba(0,0,0,0)']); c.fillRect(0, 0, w, h);
   c.globalCompositeOperation = 'source-over';
   cv._a = alpha === undefined ? 1 : alpha;
   return cv;

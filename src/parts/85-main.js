@@ -24,7 +24,7 @@ function layout() {
   stage.style.transform = rot === 1 ? 'translate(' + (w - oy) + 'px,' + ox + 'px) rotate(90deg)' : rot === -1 ? 'translate(' + oy + 'px,' + (h - ox) + 'px) rotate(-90deg)' : 'translate(' + ox + 'px,' + oy + 'px)';
   const padL = rot || ox > 0 ? 0 : safeInset('l'), padR = rot || ox > 0 ? 0 : safeInset('r');
   const u = clamp(sh / 100, 2.9, 6.4);
-  stage.style.setProperty('--u', u.toFixed(3) + 'px'); stage.style.setProperty('--pl', padL + 'px'); stage.style.setProperty('--pr', padR + 'px');
+  stage.style.setProperty('--u', u.toFixed(3) + 'px'); stage.style.setProperty('--w', (sw / 100).toFixed(3) + 'px'); stage.style.setProperty('--pl', padL + 'px'); stage.style.setProperty('--pr', padR + 'px');
   $('btnFlip').hidden = !rot;
   const changedRot = rot !== G.rot; G.rot = rot; G.sw = sw; G.sh = sh; G.ox = ox; G.oy = oy; G.vw = w; G.vh = h;
   if (rot && (changedRot || !G.turned)) { G.turned = true; const t = $('turn'); t.hidden = false; replay(t, 'x'); clearTimeout(G._turnT); G._turnT = setTimeout(() => { t.hidden = true; }, 3400); } else if (!rot) $('turn').hidden = true;
@@ -172,7 +172,7 @@ function bindInput() {
     if (G.mode !== 'play' || S.state !== 'play' || !G.drag || G.drag.id !== e.pointerId) return;
     if (G.drag.mouse) { mouseAim(e); return; }
     const d = stageDelta(e.clientX - G.drag.x, e.clientY - G.drag.y); G.drag.x = e.clientX; G.drag.y = e.clientY; G.drag.at = performance.now();
-    const k = (V.dpr / V.s) * 1.5, T = S.team[0];
+    const k = (V.dpr / V.s) * 1.7, T = S.team[0];
     simAim(0, T.aim[0] + d[0] * k, T.aim[1] - d[1] * k); G.moved += Math.abs(d[0]) + Math.abs(d[1]);
   });
   const up = (e) => { if (G.drag && G.drag.id === e.pointerId) G.drag = null; };

@@ -29,32 +29,32 @@ const DM = [
 /* 砲彈：dmg 打磚、r 爆炸半徑（0 = 只打中的那一塊）、ud 打兵、kind 傷害種類、
    reload 裝填秒數、burst/gap 連發、fan 一次幾發扇形、hpS 被防空弩或攔截時算幾發 */
 const WL = [
-  { id: 'rocket', dmg: 6.2, r: 2.6, ud: 5.4, kind: K_BLAST, reload: 1.3 },
-  { id: 'bolt', dmg: 2.1, r: 0, ud: 2.6, kind: K_PIERCE, reload: 1.7, burst: 5, gap: 0.085 },
-  { id: 'bomb', dmg: 19, r: 5.4, ud: 10, kind: K_HEAVY, reload: 3.6 },
-  { id: 'fire', dmg: 4.2, r: 3.6, ud: 3.8, kind: K_FIRE, reload: 2.1 },
-  { id: 'ice', dmg: 4.2, r: 3.4, ud: 3.2, kind: K_ICE, reload: 2.5 },
-  { id: 'zap', dmg: 3.2, r: 2.0, ud: 3.8, kind: K_ZAP, reload: 2.8 },
-  { id: 'dark', dmg: 7, r: 3.2, ud: 5.6, kind: K_DARK, reload: 2.6, fan: 3 },
+  { id: 'rocket', dmg: 8.1, r: 2.6, ud: 7.0, kind: K_BLAST, reload: 1.3 },
+  { id: 'bolt', dmg: 2.7, r: 0, ud: 3.4, kind: K_PIERCE, reload: 1.7, burst: 5, gap: 0.085 },
+  { id: 'bomb', dmg: 24.7, r: 5.4, ud: 13.0, kind: K_HEAVY, reload: 3.6 },
+  { id: 'fire', dmg: 5.5, r: 3.6, ud: 4.9, kind: K_FIRE, reload: 2.1 },
+  { id: 'ice', dmg: 5.5, r: 3.4, ud: 4.2, kind: K_ICE, reload: 2.5 },
+  { id: 'zap', dmg: 4.2, r: 2.0, ud: 4.9, kind: K_ZAP, reload: 2.8 },
+  { id: 'dark', dmg: 8.5, r: 3.2, ud: 6.5, kind: K_DARK, reload: 3.0, fan: 3 },
   // 以下不是兵射的：氣球炸彈、火山岩、火藥桶、毀滅光球
-  { id: 'drop', dmg: 14, r: 4.4, ud: 8, kind: K_HEAVY },
-  { id: 'lava', dmg: 18, r: 5.0, ud: 9, kind: K_FIRE },
-  { id: 'keg', dmg: 30, r: 8.6, ud: 16, kind: K_HEAVY },
-  { id: 'doom', dmg: 46, r: 9.5, ud: 20, kind: K_DARK }
+  { id: 'drop', dmg: 18.2, r: 4.4, ud: 10.4, kind: K_HEAVY },
+  { id: 'lava', dmg: 23.4, r: 5.0, ud: 11.7, kind: K_FIRE },
+  { id: 'keg', dmg: 28.6, r: 6.8, ud: 15.6, kind: K_HEAVY },
+  { id: 'doom', dmg: 49.4, r: 8.5, ud: 20.8, kind: K_DARK }
 ];
 const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; });
 
 /* 兵種。w 用哪種砲彈；flak 防空（不打城，專打飛過來的砲彈）；spawn 放氣球 */
 const UNIT = {
-  rocket: { name: '火箭兵', w: 'rocket', hp: 170, blurb: '一發火箭，基本火力' },
-  bolt: { name: '連弩手', w: 'bolt', hp: 150, blurb: '一次連射五箭，打木頭、打兵、打倍增符都快' },
-  bomb: { name: '轟天砲', w: 'bomb', hp: 220, blurb: '裝填慢，一炸一大片，石牆也扛不住' },
-  fire: { name: '火油兵', w: 'fire', hp: 160, blurb: '木頭和屋瓦一點就著，還會延燒；冰一烤就化' },
-  ice: { name: '冰術士', w: 'ice', hp: 145, blurb: '炸到的敵兵凍住不能開火，磚也變脆' },
-  zap: { name: '雷法師', w: 'zap', hp: 145, blurb: '落點引一道雷從天上劈下來，專打屋頂和鐵甲' },
-  flak: { name: '防空弩', w: null, hp: 180, flak: { rate: 1.0, range: 34 }, blurb: '把飛過來的砲彈一發一發射下來' },
-  bal: { name: '氣球兵', w: null, hp: 170, spawn: { every: 9.5, first: 7 }, blurb: '放轟炸氣球飄到你頭上丟炸彈' },
-  boss: { name: '魔王', w: 'dark', hp: 1200, big: 1, blurb: '' }
+  rocket: { name: '火箭兵', w: 'rocket', hp: 240, blurb: '一發火箭，基本火力' },
+  bolt: { name: '連弩手', w: 'bolt', hp: 210, blurb: '一次連射五箭，打木頭、打兵、打倍增符都快' },
+  bomb: { name: '轟天砲', w: 'bomb', hp: 300, blurb: '裝填慢，一炸一大片，石牆也扛不住' },
+  fire: { name: '火油兵', w: 'fire', hp: 225, blurb: '木頭和屋瓦一點就著，還會延燒；冰一烤就化' },
+  ice: { name: '冰術士', w: 'ice', hp: 205, blurb: '炸到的敵兵凍住不能開火，磚也變脆' },
+  zap: { name: '雷法師', w: 'zap', hp: 205, blurb: '落點引一道雷從天上劈下來，專打屋頂和鐵甲' },
+  flak: { name: '防空弩', w: null, hp: 250, flak: { rate: 1.0, range: 34 }, blurb: '把飛過來的砲彈一發一發射下來' },
+  bal: { name: '氣球兵', w: null, hp: 240, spawn: { every: 9.5, first: 7 }, blurb: '放轟炸氣球飄到你頭上丟炸彈' },
+  boss: { name: '魔王', w: 'dark', hp: 1500, big: 1, blurb: '' }
 };
 Object.keys(UNIT).forEach((k) => { UNIT[k].id = k; });
 
