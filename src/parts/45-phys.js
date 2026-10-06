@@ -189,7 +189,7 @@ function blockHurt(b, dmg, kind, side) {
   let d = dmg * DM[kind][b.mat]; if (b.brit > 0) d *= 1.6;
   if (d <= 0) return;
   const before = b.hp; b.hp -= d; b.flash = 1;
-  if (side < 2 && b.side < 2 && b.side !== side && !b.frag) { const T = S.team[side]; T.dealt += Math.min(d, before); T.ult.c = Math.min(T.ult.need, T.ult.c + Math.min(d, before) * T.ult.gain); }
+  if (side < 2 && b.side < 2 && b.side !== side && !b.frag) { const T = S.team[side]; T.dealt += Math.min(d, before); T.ult.c = Math.min(T.ult.need, T.ult.c + Math.min(d, before) * T.ult.gain * (b.base ? 0.25 : 1)); }      // 打城基集得慢（城基很厚，不然光打牆腳就能一直放連珠）
   if (b.hp <= 0) blockKill(b, side, kind, -b.hp > b.hm * 0.9);          // 傷害遠遠超過它撐得住的：直接炸成粉
   else if (((before / b.hm) * 3 | 0) !== ((b.hp / b.hm) * 3 | 0)) ev('crack', b.body.getPosition().x, b.body.getPosition().y, b.mat);
 }

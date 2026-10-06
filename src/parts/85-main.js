@@ -68,7 +68,6 @@ function startLevel(idx) {
   $('banner').className = ''; sayClear(); $('mile').className = '';
   hudBuild(); hudUpdate();
   setTimeout(() => { if (G.mode === 'play' && G.run === run) banner(LEVELS[idx].name, 'blue', '第' + NUM_ZH[idx] + '關'); }, 60);
-  setTimeout(() => { if (G.mode === 'play' && G.run === run && S.round <= 1 && !G.tut) say(LEVELS[idx].tip); }, 2100);
   musStart(LEVELS[idx].theme);
 }
 function goHome() {
@@ -104,6 +103,8 @@ function uiEvent(t, a, b, c, d, e) {
         else if (G.tut === 2) { G.tut = 3; if (!G.said.gt) say('這次讓虛線穿過藍色的倍增符：一發變三發'); }
         else if (G.tut === 3) { G.tut = 4; say('打斷望樓的細柱子，上面整座會自己倒下來'); }
         else if (G.tut === 4) { G.tut = 5; if (!G.said.kill) say('把守軍全部打倒就破城；上面的頭像是雙方還站著的兵'); }
+        // 每一關開頭幾回合各講一句這一關的訣竅（第一次玩第一關的時候讓教學先講）
+        const hs = S.lv.hints; if (!G.tut && hs && hs[b - 1]) say(hs[b - 1]);
         const T = S.team[0];
         if (!SV.seenUlt && T.ult.c >= T.ult.need && !T.ult.armed) once('ult', '「連珠」集滿了！按右下角金色按鈕上膛，這一輪每個兵連打三次');
       } else {
@@ -122,7 +123,7 @@ function uiEvent(t, a, b, c, d, e) {
     case 'gspawn': if (c === 1) once('rg', '敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它', 1); else if (c === 2) once('gg', '黃金符：倍數很高，兩邊都能用，而且只出現一回合'); else if (c === 3) once('hz', '紫色的折損符會吃掉一半砲彈，別穿過去'); break;
     case 'launch': if (c === 1) once('bal', '轟炸氣球升空了！它先停在半路，下一輪才飛過來，趁現在打下來', 1); break;
     case 'orb': once('orb', '毀滅光球！它先停在半路，下一輪砸過來：打掉它，或是開護罩', 1); break;
-    case 'lantern': once('lan', '天燈升起來了：打中它有補給，兩回合後就飄走'); break;
+    case 'lantern': once('lan', '天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走'); break;
     case 'rockwarn': once('rock', '紅圈是這一回合結束時落石的位置，會砸到你就開護罩', 1); break;
     case 'erupt': once('gey', '地火噴發：砲彈穿過火柱會著火，威力多五成'); break;
     case 'freeze': if (c === 0) once('frz', '兵被凍住了，下一輪不能開火；開護罩可以立刻解凍', 1); break;
@@ -288,6 +289,10 @@ function bindInput() {
     save(); UI.sel = 0; homeRender(); demoStart(0); $('opt').hidden = true; sfx('click');
   });
   document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => { sfx('click'); b.closest('.modal').hidden = true; if (G.mode === 'home') homeRender(); }));
+  // 有視窗開著的時候，後面的東西不收鍵盤焦點（Tab 不會跑到視窗後面的按鈕去）
+  const layers = ['result', 'opt', 'shop'];       // 由下到上
+  const scope = () => { let top = -1; layers.forEach((id, i) => { if (!$(id).hidden) top = i; }); $('home').inert = top >= 0; $('hud').inert = top >= 0; layers.forEach((id, i) => { $(id).inert = i < top; }); };
+  if (window.MutationObserver) { const mo = new MutationObserver(scope); for (const id of layers) mo.observe($(id), { attributes: true, attributeFilter: ['hidden'] }); }
 }
 
 function boot() {

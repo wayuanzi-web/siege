@@ -73,7 +73,10 @@ function homeRender() {
     const nm = document.createElement('strong'); nm.textContent = lv.name;
     const st = document.createElement('span'); st.className = 'stars'; st.innerHTML = starsHtml(SV.stars[i]);
     b.appendChild(n); b.appendChild(nm); b.appendChild(st);
-    b.addEventListener('click', () => { auInit(); sfx('click'); if (UI.sel === i) return; UI.sel = i; homeRender(); if (typeof demoStart === 'function') demoStart(i); });
+    b.addEventListener('click', () => {
+      auInit(); sfx('click'); if (UI.sel === i) return; UI.sel = i; homeRender(); if (typeof demoStart === 'function') demoStart(i);
+      const nb = $('lvls').children[i]; if (nb) nb.focus({ preventScroll: true });      // 清單重畫過了，把焦點放回同一關（用鍵盤選關才不會跳掉）
+    });
     box.appendChild(b);
   });
   const lv = LEVELS[UI.sel], locked = UI.sel >= SV.open;
@@ -114,10 +117,11 @@ function openOpt(paused) {
 }
 const LOSE_TIPS = [
   '讓瞄準的虛線穿過藍色倍增符再落到敵城，一發變好幾發。',
-  '別只打屋頂：打斷下層的柱子和牆，上面整層會自己塌下來。',
+  '別只打屋頂：打斷柱子和牆，上面整層會自己塌下來。最底下的城基特別厚，打它沒什麼用。',
   '輪到敵軍的時候按「護罩」，他們那一整輪都打不進來；護罩撐到你下一次瞄準為止。',
   '「連珠」集滿就按下去上膛，這一輪每個兵連打三次；先把彈道對準倍增符再放手。',
   '兵全倒就輸了：紅色的短虛線是敵軍在瞄的方向，瞄到你的兵就開護罩。',
+  '穿過倍增符之後每一發會變小顆，可是加起來更痛；一大片小砲彈最適合掀屋頂、打沒有遮蔽的兵。',
   '戰利品可以在「強化」換成火力、準星和城防。'
 ];
 const TIP_RED = '敵軍的赤符會擋住你的砲彈，也讓他們的砲彈變多：把它打掉，或是換個角度繞過去。';
@@ -179,14 +183,16 @@ function hudUpdate() {
   if (b !== HUD.b) { if (HUD.b >= 0 && b < HUD.b) replayFlash($('hpB')); HUD.b = b; $('pctB').textContent = b + '%'; $('barB').style.transform = 'scaleX(' + (b / 100) + ')'; }
   // 輪到誰
   const play = S.state === 'play', mine = play && S.phase === 'aim' && S.turn === 0;
-  const tk = !play || S.phase === 'intro' || (S.phase === 'hazard' && !S.hz) ? '' : S.phase === 'hazard' ? 'hz' : S.phase + S.turn + (S.team[S.turn].ult.armed ? 'u' : '');
+  // 敵軍瞄準的彈道會穿過倍增符：先講，讓玩家來得及開護罩
+  const eA = S.team[1].ai, em = play && S.phase === 'aim' && S.turn === 1 && eA && eA.st === 2 && eA.mult >= 3 ? Math.round(eA.mult) : 0;
+  const tk = !play || S.phase === 'intro' || (S.phase === 'hazard' && !S.hz) ? '' : S.phase === 'hazard' ? 'hz' : S.phase + S.turn + (S.team[S.turn].ult.armed ? 'u' : '') + (em ? 'm' + em : '');
   if (tk !== HUD.turn) {
     HUD.turn = tk; const el = $('turnChip');
     if (!tk) el.hidden = true;
     else {
       el.hidden = false;
-      el.className = 'chamfer ' + (tk === 'hz' ? 'hz' : S.turn === 0 ? 'me' : 'foe') + (mine ? ' go' : '');
-      el.textContent = tk === 'hz' ? '落石！' : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : S.team[1].ult.armed ? '敵軍連珠砲上膛！' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
+      el.className = 'chamfer ' + (tk === 'hz' ? 'hz' : S.turn === 0 ? 'me' : 'foe') + (mine ? ' go' : '') + (S.turn === 1 && S.phase === 'aim' && (em || S.team[1].ult.armed) ? ' warn' : '');
+      el.textContent = tk === 'hz' ? '落石！' : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : S.team[1].ult.armed ? '敵軍連珠砲上膛！' : em ? '敵軍瞄準了 ×' + em + ' 倍增符！' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
     }
   }
   const fk = mine ? 1 : 0; if (fk !== HUD.fire) { HUD.fire = fk; $('btnFire').classList.toggle('ready', !!mine); $('btnFire').classList.toggle('btn-gold', !!mine); }

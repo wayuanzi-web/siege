@@ -72,6 +72,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 #turnChip.me { color: #d6e8ff; box-shadow: inset 0 0 0 2px var(--blue); }
 #turnChip.me.go { color: #0c2466; background: linear-gradient(180deg, #d9ecff, #7fb4ff); box-shadow: none; animation: chip .8s ease-in-out infinite alternate; }
 #turnChip.foe { color: #ffc4b8; box-shadow: inset 0 0 0 2px var(--red); }
+#turnChip.foe.warn { color: #fff; background: rgba(170, 20, 20, .92); box-shadow: inset 0 0 0 2px #ffb0a0; }
 #turnChip.hz { color: #ffe0a0; box-shadow: inset 0 0 0 2px var(--gold); }
 @keyframes chip { from { transform: translateY(0); } to { transform: translateY(calc(var(--u) * -.8)); } }
 #aimInfo { display: flex; gap: calc(var(--u) * 2.4); padding: calc(var(--u) * .8) calc(var(--u) * 2); font-size: calc(var(--u) * 2.9); letter-spacing: .1em; color: var(--mute); background: rgba(14, 10, 26, .6); --cut: calc(var(--u) * 1.4); }
@@ -252,7 +253,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
         </div>
       </div>
       <div id="hint" class="chamfer" hidden><i></i><span id="hintTxt">按住畫面任何地方拖曳：往上打得高、往右打得遠，放開就發射</span></div>
-      <div id="say" class="chamfer" role="status"></div>
+      <div id="say" class="chamfer" role="status" aria-live="polite"></div>
       <div id="mile"></div>
       <div id="banner"></div>
       <div class="hud-bot">
@@ -291,16 +292,16 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
       </div>
     </section>
 
-    <div id="shop" class="modal" hidden>
+    <div id="shop" class="modal" role="dialog" aria-modal="true" aria-labelledby="shopTitle" hidden>
       <div class="plaque chamfer">
-        <h2>強化</h2>
+        <h2 id="shopTitle">強化</h2>
         <p class="sub">持有 <em class="coin" id="shopCoins">0</em></p>
         <ul class="ups" id="upList"></ul>
         <button class="btn" data-close><span>返回</span></button>
       </div>
     </div>
 
-    <div id="opt" class="modal" hidden>
+    <div id="opt" class="modal" role="dialog" aria-modal="true" aria-labelledby="optTitle" hidden>
       <div class="plaque narrow chamfer">
         <h2 id="optTitle">設定</h2>
         <div class="stack three" id="pauseBtns" hidden>
@@ -328,7 +329,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
       </div>
     </div>
 
-    <div id="result" class="modal" hidden>
+    <div id="result" class="modal" role="dialog" aria-modal="true" aria-labelledby="resTitle" hidden>
       <div class="plaque chamfer">
         <h2 id="resTitle">敵城攻破</h2>
         <p class="sub" id="resSub"></p>

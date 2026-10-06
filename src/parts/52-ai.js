@@ -9,6 +9,7 @@ function aiInit(T, p, D) {
     sh: p.sh || 0,                                           // 對方開火時會開護罩的機率（只有自動玩家有；敵軍不會開罩）
     guard: p.guard === undefined ? 1 : p.guard,              // 會不會打氣球、光球、天燈
     lob: p.lob || 0,                                         // 偏好吊高砲的程度
+    sap: p.sap === undefined ? 1 : p.sap,                    // 這一輪會考慮「打牆腳、打柱子」的機率（不然就只瞄兵和火藥桶）
     st: 0, t: 0, fireAt: 0, cand: [], ci: 0, best: null, bs: 0, px: T.aim[0], py: T.aim[1], lead: null, useGate: true, mult: 1
   };
 }
@@ -98,10 +99,14 @@ function aiBegin(T) {
     else if ((o.t === 'balloon' || o.t === 'orb') && o.side !== side && o.hp > 0 && o.st === 'hover') tg.push({ x: o.x, y: o.y, w: o.t === 'orb' ? 3 : 1.9, obj: o });
   }
   {
-    // 城身：火藥桶，再隨便挑幾塊還在原位的磚（越底下越值得打）
+    // 城身：火藥桶，再隨便挑幾塊還在原位的磚。兵腳下、身邊那一層的牆和柱子最值得打（打掉了人會跟著掉下去）；城基太厚，不打
     const cand = [];
-    for (const b of fst.blocks) { if (b.dead) continue; if (b.mat === M_KEG) tg.push({ x: b.body.getPosition().x, y: b.body.getPosition().y, w: 1.35 }); else if (b.inPlace && !b.prop) cand.push(b); }
-    for (let k = 0; k < 5 && cand.length; k++) { const b = cand[ri(cand.length)]; tg.push({ x: b.x0, y: b.y0, w: 0.5 + 0.25 * (1 - (b.y0 - fst.y0) / fst.h) }); }
+    for (const b of fst.blocks) { if (b.dead) continue; if (b.mat === M_KEG) tg.push({ x: b.body.getPosition().x, y: b.body.getPosition().y, w: 1.35 }); else if (b.inPlace && !b.prop && !b.base) cand.push(b); }
+    if (rnd() < A.sap) for (let k = 0; k < 5 && cand.length; k++) {
+      const b = cand[ri(cand.length)]; let w = 0.5;
+      for (const u of foeT.units) if (u.alive && Math.abs(u.x - b.x0) < CS * 2.2 && u.y - b.y0 > -CS * 0.5 && u.y - b.y0 < CS * 2.6) { w = 0.8; break; }
+      tg.push({ x: b.x0, y: b.y0, w });
+    }
   }
   if (A.hate > 0 && rnd() < A.hate) for (const g of S.gates) if (!g.dead && g.owner === 1 - side) tg.push({ x: g.x, y: g.y, w: 0.45 + 0.12 * g.mult, hg: g });
   for (const t of tg) for (let tau = 0.7; tau <= 3.41; tau += 0.1) {

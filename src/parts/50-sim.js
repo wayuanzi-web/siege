@@ -205,11 +205,12 @@ function unitsStep(dt) {
     if ((u.x < st.x0 - OUT_M || u.x > st.x1 + OUT_M) && !u.air) { u.outT += dt; if (u.outT > 0.6) { if (u.def.big) bossReturn(u); else killUnit(u, 1 - u.side, 5); } } else u.outT = 0;
   }
 }
-// 被壓住：一輪打完，頭上還壓著磚的兵會受傷（壓得越重傷得越重），壓久了就撐不住
+// 被壓住：對方一輪打完，被埋在瓦礫裡的兵會受傷（壓得越重傷得越重），壓久了就撐不住。
+// 只算挨打的那一邊，一回合一次。還站在自己位置上、頭上只頂著一點東西的不算（那是屋樑歪了，不是被埋）
 function burialCheck() {
   const credit = S.turn;
   for (const u of S.units) {
-    if (!u.alive || u.def.big) continue;
+    if (!u.alive || u.def.big || u.side === credit) continue;
     const p = u.body.getPosition(); let load = 0;
     for (let ce = u.body.getContactList(); ce; ce = ce.next) {
       if (!ce.contact.isTouching()) continue;
@@ -217,7 +218,8 @@ function burialCheck() {
       const q = ce.other.getPosition();
       if (q.y > p.y + u.bh * 0.3 && Math.abs(q.x - p.x) < o.w / 2 + u.bw * 0.4) load += o.mass;
     }
-    if (load > 3) { ev('pinned', u.x, u.y + 4.6, u.side); hurtUnit(u, 14 + load * 0.7, u.side === credit ? 2 : credit, K_CRUSH); }
+    const moved = Math.abs(u.x - u.hx) > CS * 0.8 || Math.abs(u.y - u.hy) > CS * 0.6;
+    if (load > (moved ? 3 : 30)) { ev('pinned', u.x, u.y + 4.6, u.side); hurtUnit(u, 14 + Math.min(load, 80) * 0.7, credit, K_CRUSH); }
   }
 }
 
@@ -698,8 +700,8 @@ function roundStart() {
   if (lv.rocks && S.round >= lv.rocks.at && (S.round - lv.rocks.at) % (lv.rocks.every || 1) === 0) rockMarks(lv.rocks.n || 2, false);
   if (S.boss && S.boss.phase >= 3) rockMarks(lv.boss.meteors || 2, true);
   // 拖太久：雙方的砲火越來越猛
-  const sd = lv.sudden || 16;
-  if (S.round > sd) { if (!S.sudden) { S.sudden = true; ev('sudden'); } S.rage = 1 + Math.min(2, (S.round - sd) * 0.25); }
+  const sd = lv.sudden || 10;
+  if (S.round > sd) { if (!S.sudden) { S.sudden = true; ev('sudden'); } S.rage = 1 + Math.min(2, (S.round - sd) * 0.4); }
   ev('round', S.round);
   startTurn(0);
 }
