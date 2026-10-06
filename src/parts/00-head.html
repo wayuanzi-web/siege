@@ -39,6 +39,7 @@ button:focus-visible { outline: 3px solid var(--gold-lt); outline-offset: 2px; }
 .foe .cu { box-shadow: 0 0 0 calc(var(--u) * .45) var(--red); }
 .cu canvas { position: absolute; left: -32%; top: -18%; width: 164%; height: 164%; }
 .cu.frozen { box-shadow: 0 0 0 calc(var(--u) * .6) #a8e8ff; } .cu.frozen::after { content: ""; position: absolute; inset: 0; background: rgba(150, 220, 255, .5); }
+.cu.stun { box-shadow: 0 0 0 calc(var(--u) * .6) #ffe14a; } .cu.stun::after { content: ""; position: absolute; inset: 0; background: rgba(255, 225, 74, .35); }
 .cu.dead { box-shadow: 0 0 0 calc(var(--u) * .45) #4a4560; } .cu.dead canvas { filter: grayscale(1) brightness(.5); }
 .cu.dead::before, .cu.dead::after { content: ""; position: absolute; left: 12%; right: 12%; top: 44%; height: 12%; background: #ff5a48; transform: rotate(45deg); z-index: 1; border-radius: 2px; }
 .cu.dead::after { transform: rotate(-45deg); }
@@ -52,15 +53,26 @@ button:focus-visible { outline: 3px solid var(--gold-lt); outline-offset: 2px; }
 .hpbar .tick { position: absolute; top: 0; bottom: 0; width: calc(var(--u) * .5); background: rgba(255, 240, 176, .85); }
 .hpbar.hit i { filter: brightness(1.8); }
 .vs { display: grid; justify-items: center; gap: calc(var(--u) * .3); min-width: calc(var(--u) * 20); text-align: center; }
-.vs b { font-family: var(--f-display); font-weight: 900; font-size: calc(var(--u) * 4.1); letter-spacing: .1em; line-height: 1.1; white-space: nowrap; text-shadow: 0 2px 3px rgba(0, 0, 0, .7); }
-#windBox { display: flex; align-items: center; gap: calc(var(--u) * 1); font-size: calc(var(--u) * 2.9); letter-spacing: .1em; color: var(--gold-lt); white-space: nowrap; }
-#windBox i { display: block; width: calc(var(--u) * 7); height: calc(var(--u) * 2.2); background: var(--gold); clip-path: polygon(0 32%, 62% 32%, 62% 0, 100% 50%, 62% 100%, 62% 68%, 0 68%); transition: transform .5s ease; }
+.vs b { font-family: var(--f-display); font-weight: 900; font-size: calc(var(--u) * 3.9); letter-spacing: .1em; line-height: 1.1; white-space: nowrap; text-shadow: 0 2px 3px rgba(0, 0, 0, .7); }
+.vs .sub { display: flex; align-items: center; gap: calc(var(--u) * 2); font-size: calc(var(--u) * 2.9); letter-spacing: .08em; color: var(--mute); white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, .8); }
+#roundTxt { color: var(--bone); font-variant-numeric: tabular-nums; }
+#windBox { display: flex; align-items: center; gap: calc(var(--u) * 1); font-size: calc(var(--u) * 2.9); letter-spacing: .06em; color: var(--gold-lt); white-space: nowrap; font-variant-numeric: tabular-nums; }
+#windBox i { display: block; width: calc(var(--u) * 6); height: calc(var(--u) * 2.2); background: var(--gold); clip-path: polygon(0 32%, 62% 32%, 62% 0, 100% 50%, 62% 100%, 62% 68%, 0 68%); transition: transform .5s ease; }
 #windBox.calm i { opacity: .25; }
-.hud-bot { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: flex-end; justify-content: space-between; gap: calc(var(--u) * 2);
+.hud-bot { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: calc(var(--u) * 2);
   padding: calc(var(--u) * 2) calc(var(--u) * 1.5 + var(--pr)) calc(var(--u) * 2) calc(var(--u) * 2 + var(--pl)); }
+.aimbox { grid-column: 1; display: flex; align-items: flex-end; gap: calc(var(--u) * 1.6); justify-self: start; }
+#btnFire { pointer-events: auto; min-height: calc(var(--u) * 9.6); padding: calc(var(--u) * 1) calc(var(--u) * 3.4); font-family: var(--f-display); font-weight: 900; font-size: calc(var(--u) * 4.4); letter-spacing: .2em; text-indent: .2em; --cut: calc(var(--u) * 1.8); opacity: .5; }
+#btnFire.ready { opacity: 1; }
+#turnChip { grid-column: 2; justify-self: center; align-self: end; margin-bottom: calc(var(--u) * .6); padding: calc(var(--u) * .9) calc(var(--u) * 3); font-weight: 700; font-size: calc(var(--u) * 3.3); letter-spacing: .1em; white-space: nowrap; background: rgba(14, 10, 26, .78); color: var(--bone); --cut: calc(var(--u) * 1.4); }
+#turnChip.me { color: #d6e8ff; box-shadow: inset 0 0 0 2px var(--blue); }
+#turnChip.me.go { color: #0c2466; background: linear-gradient(180deg, #d9ecff, #7fb4ff); box-shadow: none; animation: chip .8s ease-in-out infinite alternate; }
+#turnChip.foe { color: #ffc4b8; box-shadow: inset 0 0 0 2px var(--red); }
+#turnChip.hz { color: #ffe0a0; box-shadow: inset 0 0 0 2px var(--gold); }
+@keyframes chip { from { transform: translateY(0); } to { transform: translateY(calc(var(--u) * -.8)); } }
 #aimInfo { display: flex; gap: calc(var(--u) * 2.4); padding: calc(var(--u) * .8) calc(var(--u) * 2); font-size: calc(var(--u) * 2.9); letter-spacing: .1em; color: var(--mute); background: rgba(14, 10, 26, .6); --cut: calc(var(--u) * 1.4); }
 #aimInfo b { font-family: var(--f-num); font-weight: 400; font-size: calc(var(--u) * 3.8); color: var(--bone); font-variant-numeric: tabular-nums; letter-spacing: 0; }
-.skills { display: flex; flex-direction: column; gap: calc(var(--u) * 2.2); }
+.skills { grid-column: 3; display: flex; flex-direction: column; gap: calc(var(--u) * 2.2); justify-self: end; }
 .skill { pointer-events: auto; position: relative; width: calc(var(--u) * 15.5); height: calc(var(--u) * 15.5); border-radius: 50%; display: grid; place-items: center;
   background: conic-gradient(var(--blue-lt) calc(var(--p, 0) * 1turn), rgba(255, 255, 255, .16) 0); filter: drop-shadow(0 calc(var(--u) * .8) 0 rgba(0, 0, 0, .5)); }
 .skill::before { content: ""; position: absolute; inset: calc(var(--u) * 1.25); border-radius: 50%; background: radial-gradient(circle at 50% 35%, #3b3260, #191428); }
@@ -94,10 +106,11 @@ button:focus-visible { outline: 3px solid var(--gold-lt); outline-offset: 2px; }
   text-shadow: 0 2px 0 #3a2203, 0 0 14px rgba(255, 190, 40, .8); opacity: 0; transform: translateX(-50%); }
 #mile.show { animation: mile 1.5s ease both; }
 @keyframes mile { 0% { opacity: 0; transform: translateX(-50%) scale(2.2) rotate(-4deg); } 14%, 80% { opacity: 1; transform: translateX(-50%) scale(1) rotate(-4deg); } 100% { opacity: 0; transform: translateX(-50%) scale(.9) rotate(-4deg); } }
-#hint { position: absolute; left: 50%; bottom: calc(var(--u) * 24); transform: translateX(-50%); display: flex; align-items: center; gap: calc(var(--u) * 2.4); padding: calc(var(--u) * 1.8) calc(var(--u) * 4); font-weight: 700; font-size: calc(var(--u) * 3.8); letter-spacing: .08em; white-space: nowrap;
-  background: rgba(18, 12, 30, .86); --cut: calc(var(--u) * 1.8); }
-#hint i { display: block; width: calc(var(--u) * 5); height: calc(var(--u) * 5); border-radius: 50%; background: radial-gradient(circle at 40% 35%, #fff, #cfe4ff 60%, #7fb0ff); box-shadow: 0 0 0 calc(var(--u) * .7) rgba(255, 255, 255, .28); animation: finger 1.6s ease-in-out infinite; }
-@keyframes finger { 0%, 100% { transform: translate(calc(var(--u) * -2), calc(var(--u) * 1.4)); } 50% { transform: translate(calc(var(--u) * 2), calc(var(--u) * -1.4)); } }
+/* 第一次玩的手勢提示：一個光點示範「按住 → 往右上拖 → 放開」，放在兩座城中間的下方，不擋到城樓 */
+#hint { position: absolute; left: 50%; bottom: calc(var(--u) * 15); transform: translateX(-50%); display: flex; align-items: center; gap: calc(var(--u) * 5); padding: calc(var(--u) * 1.4) calc(var(--u) * 3.6) calc(var(--u) * 1.4) calc(var(--u) * 6); font-weight: 700; font-size: calc(var(--u) * 3.5); letter-spacing: .08em; white-space: nowrap;
+  background: rgba(18, 12, 30, .82); --cut: calc(var(--u) * 1.8); }
+#hint i { display: block; width: calc(var(--u) * 4.4); height: calc(var(--u) * 4.4); border-radius: 50%; background: radial-gradient(circle at 40% 35%, #fff, #cfe4ff 60%, #7fb0ff); box-shadow: 0 0 0 calc(var(--u) * .7) rgba(255, 255, 255, .28); animation: finger 1.9s ease-in-out infinite; }
+@keyframes finger { 0% { transform: translate(calc(var(--u) * -3), calc(var(--u) * 2)) scale(1.25); opacity: 0; } 12% { transform: translate(calc(var(--u) * -3), calc(var(--u) * 2)) scale(1); opacity: 1; } 62% { transform: translate(calc(var(--u) * 3), calc(var(--u) * -2)) scale(1); opacity: 1; } 78%, 100% { transform: translate(calc(var(--u) * 3), calc(var(--u) * -2)) scale(1.5); opacity: 0; } }
 
 /* ---------- 主畫面 ---------- */
 .screen { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 37fr) minmax(0, 30fr) minmax(0, 33fr); gap: calc(var(--u) * 3);
@@ -202,7 +215,7 @@ button:focus-visible { outline: 3px solid var(--gold-lt); outline-offset: 2px; }
 #turn i { display: block; width: 30px; height: 50px; border: 3px solid var(--gold-lt); border-radius: 7px; animation: tilt 1.5s ease-in-out infinite; }
 @keyframes tilt { 0%, 25% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
 @keyframes turn { 0% { opacity: 0; } 10%, 80% { opacity: 1; } 100% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .skill.ready, #hint i, #turn i { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .skill.ready, #hint i, #turn i, #turnChip.me.go { animation: none; } }
 </style>
 
 <div id="app">
@@ -216,7 +229,7 @@ button:focus-visible { outline: 3px solid var(--gold-lt); outline-offset: 2px; }
           <div class="crew" id="crewA"></div>
           <div class="hpbar chamfer" id="hpA"><i id="barA"></i><b id="pctA">100%</b><small>我方</small></div>
         </div>
-        <div class="vs"><b id="hudName">青丘試砲</b><span id="windBox" hidden><span id="windTxt">無風</span><i id="windArr"></i></span></div>
+        <div class="vs"><b id="hudName">青丘試砲</b><span class="sub"><span id="roundTxt"></span><span id="windBox" hidden><span id="windTxt">無風</span><i id="windArr"></i></span></span></div>
         <div class="side foe">
           <div class="hpbar chamfer" id="hpB"><i id="barB"></i><b id="pctB">100%</b><small id="foeLbl">敵城</small></div>
           <div class="crew" id="crewB"></div>
@@ -225,9 +238,13 @@ button:focus-visible { outline: 3px solid var(--gold-lt); outline-offset: 2px; }
       <div id="say" class="chamfer"></div>
       <div id="mile"></div>
       <div id="banner"></div>
-      <div id="hint" class="chamfer" hidden><i></i><span id="hintTxt">按住畫面拖曳：往上拖打得高，往右拖打得遠</span></div>
+      <div id="hint" class="chamfer" hidden><i></i><span id="hintTxt">按住畫面任何地方拖曳：往上打得高、往右打得遠，放開就發射</span></div>
       <div class="hud-bot">
-        <div id="aimInfo" class="chamfer"><span>仰角 <b id="aimDeg">45</b>°</span><span>力道 <b id="aimPow">50</b></span></div>
+        <div class="aimbox">
+          <button id="btnFire" class="btn" aria-label="發射"><span>發射</span></button>
+          <div id="aimInfo" class="chamfer"><span>仰角 <b id="aimDeg">45</b>°</span><span>力道 <b id="aimPow">50</b></span></div>
+        </div>
+        <div id="turnChip" class="chamfer" hidden></div>
         <div class="skills">
           <button id="btnShield" class="skill" aria-label="護城罩"><span>護罩<small id="shNum"></small></span></button>
           <button id="btnUlt" class="skill gold" aria-label="連珠砲"><span>連珠<small id="ultNum">0%</small></span></button>
@@ -307,8 +324,8 @@ button:focus-visible { outline: 3px solid var(--gold-lt); outline-offset: 2px; }
           <div>
             <dl class="stats">
               <div><dt>城防剩餘</dt><dd id="rsBar">0%</dd></div>
-              <div><dt>用時</dt><dd id="rsTime">0:00</dd></div>
-              <div><dt>最多同時在天上</dt><dd id="rsPeak">0</dd></div>
+              <div><dt>用了幾回合</dt><dd id="rsRounds">0</dd></div>
+              <div><dt>一輪最多垮了</dt><dd id="rsChain">0</dd></div>
               <div><dt>一發最多變成</dt><dd id="rsSwarm">0</dd></div>
             </dl>
           </div>

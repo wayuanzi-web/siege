@@ -1,14 +1,14 @@
 /* ===== 80-ui: 存檔、主畫面、強化、設定、結算、戰鬥中的資訊列 ===== */
 const $ = (id) => document.getElementById(id);
 const SAVE_KEY = 'qianpao-pocheng-1';
-const SV = { coins: 0, stars: LEVELS.map(() => 0), open: 1, up: { dmg: 0, rate: 0, hp: 0, shield: 0, ult: 0 }, sfx: true, mus: true, vib: true, seen: false, seenUlt: false, seenSh: false, diff: 1, flip: false };
+const SV = { coins: 0, stars: LEVELS.map(() => 0), open: 1, up: { dmg: 0, aim: 0, hp: 0, shield: 0, ult: 0 }, sfx: true, mus: true, vib: true, seen: false, seenUlt: false, seenSh: false, diff: 1, flip: false };
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
     if (s && typeof s === 'object') {
       SV.coins = Math.max(0, +s.coins || 0); SV.open = clamp(+s.open || 1, 1, LEVELS.length);
       if (Array.isArray(s.stars)) for (let i = 0; i < LEVELS.length; i++) SV.stars[i] = clamp(+s.stars[i] || 0, 0, 3);
-      if (s.up) for (const k in SV.up) SV.up[k] = clamp(+s.up[k] || 0, 0, 5);
+      if (s.up) { for (const k in SV.up) SV.up[k] = clamp(+s.up[k] || 0, 0, 5); if (s.up.aim === undefined && s.up.rate) SV.up.aim = clamp(+s.up.rate || 0, 0, 5); }      // 舊版的「裝填」改成「準星」
       SV.sfx = s.sfx !== false; SV.mus = s.mus !== false; SV.vib = s.vib !== false; SV.seen = !!s.seen; SV.seenUlt = !!s.seenUlt; SV.seenSh = !!s.seenSh; SV.flip = !!s.flip;
       SV.diff = s.diff === 0 || s.diff === 2 ? s.diff : 1;
       let top = 0; for (let i = 0; i < LEVELS.length; i++) if (SV.stars[i] > 0) top = i + 1;
@@ -20,14 +20,15 @@ function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(SV)); } ca
 
 const UPS = [
   { k: 'dmg', name: '火力', desc: '每一發砲彈的威力 +8%' },
-  { k: 'rate', name: '裝填', desc: '所有兵的射速 +7%' },
+  { k: 'aim', name: '準星', desc: '瞄準的虛線畫得更遠' },
   { k: 'hp', name: '城防', desc: '城磚和兵的耐久 +9%' },
-  { k: 'shield', name: '護罩', desc: '護城罩多撐 0.3 秒，冷卻快 1.1 秒' },
-  { k: 'ult', name: '連珠', desc: '連珠砲集氣快 14%，多射 0.4 秒' }
+  { k: 'shield', name: '護罩', desc: '護城罩集氣更快，開場多帶一些' },
+  { k: 'ult', name: '連珠', desc: '連珠砲集氣快 14%' }
 ];
 const UP_COST = [80, 150, 240, 360, 520];
 const NUM_ZH = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
 const UI = { sel: 0, wipeArm: 0, resRun: 0 };
+function numZh(n) { return n <= 10 ? NUM_ZH[n - 1] : n < 20 ? '十' + NUM_ZH[n - 11] : n % 10 === 0 ? NUM_ZH[n / 10 - 1] + '十' : NUM_ZH[((n / 10) | 0) - 1] + '十' + NUM_ZH[n % 10 - 1]; }
 
 function replay(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 function banner(txt, kind, small) {
@@ -89,20 +90,21 @@ function openOpt(paused) {
   UI.wipeArm = 0; $('btnWipe').textContent = '清除進度';
 }
 const LOSE_TIPS = [
-  '讓瞄準的虛線穿過藍色倍增符再落到敵城，火力直接翻好幾倍。',
+  '讓瞄準的虛線穿過藍色倍增符再落到敵城，一發變好幾發。',
+  '別只打屋頂：打斷下層的柱子和牆，上面整層會自己塌下來。',
   '敵軍的赤符會擋住你的砲彈，也會讓他們的砲彈變多：先把它打掉，或是換個角度繞過去。',
-  '看到一大片紅色砲彈飛過來，就按「護罩」；它擋得住整波攻擊。',
-  '「連珠」集滿就放，放之前先把彈道對準倍增符。',
-  '打掉下層的磚，上面整層會塌下來，連兵一起摔傷。',
-  '戰利品可以在「強化」換成火力和城防。'
+  '敵軍一開火就按「護罩」，整輪都擋得住；護罩會撐到你下一次瞄準。',
+  '「連珠」集滿就先按下去上膛，下一輪每個兵連打三次；先把彈道對準倍增符再放。',
+  '兵全倒就輸了：看到敵軍在瞄你的兵，就開護罩。',
+  '戰利品可以在「強化」換成火力、準星和城防。'
 ];
 const LOSE_TIPS_LV = [
-  [],
-  ['風會把砲彈吹偏，看上方的風向箭頭；虛線已經把風算進去了。', '倍增符下面那道紫色的折損符會吃掉一半砲彈，瞄高一點。'],
-  ['兵被凍住就開護城罩，會立刻解凍。', '火油兵的火對冰牆是三倍傷害；也可以直接吊高越過去。'],
-  ['地火噴發時讓砲彈從火柱裡穿過去，傷害多五成。', '落石會先在落點畫紅圈，來得及就開護城罩。'],
-  ['氣球飄到你城上才會丟炸彈，飄過來的路上先打掉。', '把砲彈射進藍色傳送門，會從敵城頭頂往下灌，繞過正面的鐵甲。'],
-  ['結界有三個缺口在轉，對準缺口打；也可以集中火力把一片結界打碎。', '毀滅光球很慢：瞄準它打掉，或是等它快到了開護城罩。']
+  ['上一輪的彈道會留一條淡淡的虛線，照著它微調就好。'],
+  ['每回合風向都會變，虛線已經把風算進去了，照著虛線打。', '倍增符下面那道紫色的折損符會吃掉一半砲彈，瞄高一點。'],
+  ['兵被凍住就開護罩，會立刻解凍。', '冰很滑：打掉冰塔底下的一塊，整座就溜下來。火油兵的火對冰是三倍傷害。'],
+  ['敵城每一層都有火藥桶，打中一個就連環爆。', '讓砲彈從正在噴的地火裡穿過去，傷害多五成。', '紅圈是這一回合結束時的落石，砸得到你就開護罩。'],
+  ['氣球先停在半路，下一輪才飛過來：趁它停著的時候打下來。', '把砲彈射進藍色傳送門，會從敵城頭頂往下灌，繞過正面的金甲。'],
+  ['結界有缺口在轉，對準缺口打；也可以集中火力把一片結界打碎。', '毀滅光球先停在半路，下一輪才砸過來：打掉它，或是開護罩。']
 ];
 function showResult(won, st) {
   $('resTitle').textContent = won ? (st.idx === LEVELS.length - 1 ? '魔王伏誅' : '敵城攻破') : '城樓失守';
@@ -111,10 +113,12 @@ function showResult(won, st) {
   const stars = $('resStars'); stars.hidden = !won;
   const run = ++UI.resRun;
   [...stars.children].forEach((s, i) => { s.className = ''; if (won && i < st.stars) setTimeout(() => { if (UI.resRun === run && !$('result').hidden) { s.className = 'on'; sfx('star', i); } }, 350 + i * 320); });
-  $('rsBar').textContent = Math.round(st.bar * 100) + '%'; $('rsPeak').textContent = fmt(st.peak); $('rsSwarm').textContent = fmt(st.swarm);
-  $('rsTime').textContent = Math.floor(st.time / 60) + ':' + String(Math.floor(st.time % 60)).padStart(2, '0');
+  $('rsBar').textContent = Math.round(st.bar * 100) + '%'; $('rsRounds').textContent = String(st.rounds);
+  $('rsChain').textContent = st.chain ? st.chain + ' 塊' : '—'; $('rsSwarm').textContent = fmt(st.swarm) + ' 發';
   $('rsCoins').textContent = '+' + fmt(st.coins);
-  const tip = $('resTip'), tips = LOSE_TIPS.concat(LOSE_TIPS_LV[st.idx] || [], LOSE_TIPS_LV[st.idx] || []); tip.hidden = won; if (!won) tip.textContent = tips[(Math.random() * tips.length) | 0];
+  const tip = $('resTip'), tips = LOSE_TIPS.concat(LOSE_TIPS_LV[st.idx] || [], LOSE_TIPS_LV[st.idx] || []);
+  if (won) { tip.hidden = st.stars >= 3; if (st.stars < 3) tip.textContent = st.lost ? '三顆星：一個兵都不能倒，城防還要剩六成以上。' : '三顆星：城防要剩六成以上。'; }
+  else { tip.hidden = false; tip.textContent = tips[(Math.random() * tips.length) | 0]; }
   $('btnNext').hidden = !(won && st.idx < LEVELS.length - 1);
   $('btnAgain').firstChild.textContent = won ? '再玩一次' : '再戰';
   $('btnAgain').className = 'btn' + (won ? '' : ' btn-gold');
@@ -122,8 +126,8 @@ function showResult(won, st) {
 }
 
 /* ---------- 戰鬥中的資訊列 ---------- */
-const HUD = { a: -1, b: -1, crew: [[], []], ult: -1, sh: -1, wind: 99, deg: -1, pow: -1, mile: 0, n: 0 };
-const MILES = [[40, '彈如雨下'], [90, '百砲齊發'], [180, '遮天蔽日'], [320, '千砲破城']];
+const HUD = { a: -1, b: -1, crew: [[], []], ult: -1, sh: -1, wind: 99, deg: -1, pow: -1, mile: 0, n: 0, turn: '', round: -1, fire: -1 };
+const MILES = [[30, '彈如雨下'], [70, '百砲齊發'], [150, '遮天蔽日'], [300, '千砲破城']];
 function hudBuild() {
   for (let sd = 0; sd < 2; sd++) {
     const box = $(sd ? 'crewB' : 'crewA'); box.textContent = ''; HUD.crew[sd] = [];
@@ -138,25 +142,40 @@ function hudBuild() {
   // 魔王城：城防條上標出換階段的位置
   const hb = $('hpB'); hb.querySelectorAll('.tick').forEach((e) => e.remove());
   if (S.lv.boss) for (const p of [S.lv.boss.p2, S.lv.boss.p3]) { const t = document.createElement('span'); t.className = 'tick'; t.style.right = (p * 100) + '%'; hb.appendChild(t); }
-  $('foeLbl').textContent = S.lv.boss ? '魔王城' : '敵城';
+  $('foeLbl').textContent = S.lv.boss ? '魔王' : '敵城';
   $('windBox').hidden = !S.lv.wind;
-  HUD.a = HUD.b = -1; HUD.ult = HUD.sh = -1; HUD.wind = 99; HUD.deg = HUD.pow = -1; HUD.mile = 0;
+  HUD.a = HUD.b = -1; HUD.ult = HUD.sh = -1; HUD.wind = 99; HUD.deg = HUD.pow = -1; HUD.mile = 0; HUD.turn = ''; HUD.round = -1; HUD.fire = -1;
 }
+function foeBar() { return teamBar(1); }
 function hudUpdate() {
   HUD.n++;
-  const a = Math.round(teamBar(0) * 100), b = Math.round(teamBar(1) * 100);
+  const a = Math.round(teamBar(0) * 100), b = Math.round(foeBar() * 100);
   if (a !== HUD.a) { if (HUD.a >= 0 && a < HUD.a) replayFlash($('hpA')); HUD.a = a; $('pctA').textContent = a + '%'; $('barA').style.transform = 'scaleX(' + (a / 100) + ')'; }
   if (b !== HUD.b) { if (HUD.b >= 0 && b < HUD.b) replayFlash($('hpB')); HUD.b = b; $('pctB').textContent = b + '%'; $('barB').style.transform = 'scaleX(' + (b / 100) + ')'; }
+  // 輪到誰
+  const play = S.state === 'play', mine = play && S.phase === 'aim' && S.turn === 0;
+  const tk = !play || S.phase === 'intro' ? '' : S.phase === 'hazard' ? 'hz' : S.phase + S.turn;
+  if (tk !== HUD.turn) {
+    HUD.turn = tk; const el = $('turnChip');
+    if (!tk) el.hidden = true;
+    else {
+      el.hidden = false;
+      el.className = 'chamfer ' + (tk === 'hz' ? 'hz' : S.turn === 0 ? 'me' : 'foe') + (mine ? ' go' : '');
+      el.textContent = tk === 'hz' ? '落石！' : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
+    }
+  }
+  const fk = mine ? 1 : 0; if (fk !== HUD.fire) { HUD.fire = fk; $('btnFire').classList.toggle('ready', !!mine); $('btnFire').classList.toggle('btn-gold', !!mine); }
+  if (S.round !== HUD.round) { HUD.round = S.round; $('roundTxt').textContent = S.round > 0 ? '第 ' + S.round + ' 回合' : ''; }
   if ((HUD.n & 3) !== 0) return;
-  for (let sd = 0; sd < 2; sd++) for (const k of HUD.crew[sd]) { const st = !k.u.alive ? 'dead' : k.u.frozen > 0 ? 'frozen' : ''; if (st !== k.st) { k.st = st; k.el.className = 'cu' + (st ? ' ' + st : ''); } }
+  for (let sd = 0; sd < 2; sd++) for (const k of HUD.crew[sd]) { const st = !k.u.alive ? 'dead' : k.u.frozen > 0 ? 'frozen' : k.u.stun > 0 ? 'stun' : ''; if (st !== k.st) { k.st = st; k.el.className = 'cu' + (st ? ' ' + st : ''); } }
   const T = S.team[0], bu = $('btnUlt'), bs = $('btnShield');
-  const up = T.ult.T > 0 ? 1 : clamp(T.ult.c / T.ult.need, 0, 1), uk = Math.round(up * 100) + (T.ult.T > 0 ? 1000 : 0);
-  if (uk !== HUD.ult) { HUD.ult = uk; bu.style.setProperty('--p', up.toFixed(3)); bu.classList.toggle('ready', up >= 1 && T.ult.T <= 0); bu.classList.toggle('on', T.ult.T > 0); $('ultNum').textContent = T.ult.T > 0 ? '發射中' : up >= 1 ? '發射' : Math.floor(up * 100) + '%'; }
-  const sp = T.shield.T > 0 ? 1 : 1 - clamp(T.shield.cd / T.shield.cdMax, 0, 1), sk = Math.round(sp * 100) + (T.shield.T > 0 ? 1000 : 0) + Math.ceil(T.shield.cd) * 2000;
-  if (sk !== HUD.sh) { HUD.sh = sk; bs.style.setProperty('--p', sp.toFixed(3)); bs.classList.toggle('ready', sp >= 1 && T.shield.T <= 0); bs.classList.toggle('on', T.shield.T > 0); $('shNum').textContent = T.shield.T > 0 ? '展開' : sp >= 1 ? '可用' : Math.ceil(T.shield.cd) + '秒'; }
+  const up = clamp(T.ult.c / T.ult.need, 0, 1), armed = T.ult.armed, uk = Math.round(up * 100) + (armed ? 1000 : 0);
+  if (uk !== HUD.ult) { HUD.ult = uk; bu.style.setProperty('--p', armed ? '1' : up.toFixed(3)); bu.classList.toggle('ready', up >= 1 && !armed); bu.classList.toggle('on', armed); $('ultNum').textContent = armed ? '已上膛' : up >= 1 ? '可用' : Math.floor(up * 100) + '%'; }
+  const sp = clamp(T.shield.c / T.shield.need, 0, 1), son = T.shield.on, sk = Math.round(sp * 100) + (son ? 1000 : 0);
+  if (sk !== HUD.sh) { HUD.sh = sk; bs.style.setProperty('--p', son ? '1' : sp.toFixed(3)); bs.classList.toggle('ready', sp >= 1 && !son); bs.classList.toggle('on', son); $('shNum').textContent = son ? '展開中' : sp >= 1 ? '可用' : Math.floor(sp * 100) + '%'; }
   if (S.lv.wind) {
-    const w = Math.round(S.windTo);
-    if (w !== HUD.wind) { HUD.wind = w; const box = $('windBox'), m = Math.abs(w); box.classList.toggle('calm', m < 2); $('windTxt').textContent = m < 2 ? '無風' : (m > 10 ? '強風' : m > 5 ? '風' : '微風'); $('windArr').style.transform = 'scaleX(' + (w < 0 ? -1 : 1) * (0.55 + Math.min(1, m / 15) * 0.6) + ')'; }
+    const w = S.wind;
+    if (w !== HUD.wind) { HUD.wind = w; const box = $('windBox'), m = Math.abs(w); box.classList.toggle('calm', m < 1); $('windTxt').textContent = m < 1 ? '無風' : '風 ' + m; $('windArr').style.transform = 'scaleX(' + (w < 0 ? -1 : 1) * (0.55 + Math.min(1, m / 12) * 0.6) + ')'; }
   }
   const ang = Math.round(Math.atan2(T.aim[1], T.aim[0]) * 180 / Math.PI), pw = Math.round((Math.hypot(T.aim[0], T.aim[1]) - VMIN) / (VMAX - VMIN) * 100);
   if (ang !== HUD.deg) { HUD.deg = ang; $('aimDeg').textContent = ang; }

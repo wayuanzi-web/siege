@@ -100,6 +100,11 @@ function sfx(name, arg) {
       case 'phase': tone(70, 1.2, 'sawtooth', 0.22, 40, 0, null, 0.06); noise(1.0, 0.2, 'bandpass', 380, 160, 1.5); for (let i = 0; i < 6; i++) tone(i & 1 ? 415 : 554, 0.24, 'sawtooth', 0.13, 0, 0.2 + i * 0.26, null, 0.03); break;
       case 'horn': tone(146, 1.0, 'sawtooth', 0.15, 0, 0, null, 0.12); tone(219, 1.0, 'sawtooth', 0.1, 0, 0.05, null, 0.12); noise(0.9, 0.05, 'lowpass', 500, 0, 1); break;
       case 'gust': noise(1.4, 0.14, 'bandpass', 300, 1100, 0.9); noise(1.2, 0.07, 'highpass', 2600, 0, 0.7, 0.2); break;
+      // 回合
+      case 'turn': tone(NOTE(79), 0.12, 'triangle', 0.08); tone(NOTE(86), 0.2, 'triangle', 0.07, 0, 0.09); break;
+      case 'arm': [72, 76, 79, 84].forEach((n, i) => tone(NOTE(n), 0.12, 'square', 0.05, 0, i * 0.045)); noise(0.3, 0.06, 'highpass', 5000, 0, 1); break;
+      case 'chain': [60, 64, 67, 72, 76, 79].slice(0, 3 + Math.min(3, arg || 0)).forEach((n, i) => { tone(NOTE(n + 12), 0.2, 'triangle', 0.1, 0, i * 0.07); tone(NOTE(n), 0.2, 'sawtooth', 0.04, 0, i * 0.07); }); break;
+      case 'fire0': tone(140, 0.12, 'sine', 0.2, 60); noise(0.08, 0.1, 'lowpass', 900, 200, 1); break;
       // 介面
       case 'click': tone(660, 0.05, 'triangle', 0.06, 880); break;
       case 'buy': [79, 84, 88].forEach((n, i) => tone(NOTE(n), 0.14, 'triangle', 0.08, 0, i * 0.06)); break;

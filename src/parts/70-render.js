@@ -1,7 +1,10 @@
 /* ===== 70-render: 每一幀把戰場畫出來 ===== */
 const F_NUM = '"Lilita One", "NumFB", "Arial Black", system-ui, sans-serif';
 const F_ZH = '900 1px "Noto Serif TC", "Songti TC", "Source Han Serif TC", "PMingLiU", serif';
-const RD = { cv: null, c: null, t: 0, xs: new Float32Array(20), ys: new Float32Array(24), showAim: true, aimT: 1.05, glow: {}, flame: null, flameKey: 0, frame: 0 };
+const RD = {
+  cv: null, c: null, t: 0, frame: 0, glow: {}, flame: null, flameKey: 0,
+  showAim: true, aimOn: false, aimT: 1.0, aimMask: 0, trail: null, sh: [0, 0], burn: []
+};
 const GATE_COL = [
   { e: 'rgba(60,140,255,.36)', m: 'rgba(160,214,255,.62)', line: '#cfe6ff', glow: 'rgba(60,140,255,.30)', ink: '#0f2a78' },
   { e: 'rgba(240,60,50,.36)', m: 'rgba(255,176,156,.62)', line: '#ffcabb', glow: 'rgba(255,70,40,.28)', ink: '#6a0b10' },
@@ -26,119 +29,118 @@ function flameSprite() {
 }
 
 /* ---------- 城樓 ---------- */
+// 城基：畫進靜態的佈景裡（不會動、打不壞）
 function drawFoundations(c) {
   for (const st of S.structs) {
     if (st.side > 1) continue;
     const P = SKINS[st.skin], x0 = X(st.x0 - CS * 0.45), x1 = X(st.x1 + CS * 0.45), y0 = Y(st.y0), h = V.s * 2.1, s = V.s;
-    c.fillStyle = lg(c, 0, y0, 0, y0 + h, [0, P.stone[1], 1, P.stone[2]]); rrect(c, x0, y0 - s * 0.25, x1 - x0, h, s * 0.5); c.fill();
-    c.fillStyle = P.stone[0]; c.fillRect(x0 + s * 0.3, y0 - s * 0.25, x1 - x0 - s * 0.6, Math.max(1, s * 0.3));
-    c.strokeStyle = P.ink; c.lineWidth = Math.max(1.5, s * 0.28); rrect(c, x0, y0 - s * 0.25, x1 - x0, h, s * 0.5); c.stroke();
-    c.fillStyle = rgba(P.stone[3], 0.6); for (let x = x0 + s * 2.4; x < x1 - s; x += s * 3.4) c.fillRect(x, y0 + s * 0.3, Math.max(1, s * 0.2), h - s * 0.8);
+    c.fillStyle = lg(c, 0, y0, 0, y0 + h, [0, P.stone[1], 1, P.stone[2]]); rrect(c, x0, y0 - s * 0.05, x1 - x0, h, s * 0.5); c.fill();
+    c.fillStyle = P.stone[0]; c.fillRect(x0 + s * 0.3, y0 - s * 0.05, x1 - x0 - s * 0.6, Math.max(1, s * 0.3));
+    c.strokeStyle = P.ink; c.lineWidth = Math.max(1.5, s * 0.28); rrect(c, x0, y0 - s * 0.05, x1 - x0, h, s * 0.5); c.stroke();
+    c.fillStyle = rgba(P.stone[3], 0.6); for (let x = x0 + s * 2.4; x < x1 - s; x += s * 3.4) c.fillRect(x, y0 + s * 0.5, Math.max(1, s * 0.2), h - s * 1.0);
   }
 }
-function tileAt(c, tl, m, v, d, x, y, w, h) { c.drawImage(tl.cv, (v * TILE_DMG + d) * tl.px, m * tl.px, tl.px, tl.px, x, y, w, h); }
-function drawDeco(c, st, i, x, y, w, h, P) {
-  const d = st.deco[i], cols = st.cols;
-  if (d === 1) {
-    // 城門：左右兩扇、上面一道拱
-    const top = !(i + cols < st.n && st.deco[i + cols] === 1 && st.m[i + cols]), left = (i % cols) > 0 && st.deco[i - 1] === 1;
-    c.fillStyle = lg(c, x, 0, x + w, 0, left ? [0, '#6a4424', 1, '#4a2e16'] : [0, '#4a2e16', 1, '#6a4424']);
-    if (top) { c.beginPath(); c.moveTo(x, y + h); c.lineTo(x, y + h * 0.5); if (left) c.quadraticCurveTo(x + w * 0.02, y + h * 0.16, x + w, y + h * 0.5); else c.quadraticCurveTo(x + w * 0.98, y + h * 0.16, x + w, y + h * 0.16); if (left) c.lineTo(x + w, y + h); else { c.lineTo(x + w, y + h); } c.closePath(); c.fill(); }
-    else c.fillRect(x, y, w, h);
-    c.fillStyle = '#ffc93c'; const r = Math.max(1, w * 0.07);
-    for (let k = 0; k < 2; k++) { c.beginPath(); c.arc(x + w * (left ? 0.3 : 0.7), y + h * (0.35 + k * 0.4) + (top ? h * 0.18 : 0), r, 0, TAU); c.fill(); }
-    c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(left ? x : x + w - Math.max(1, w * 0.06), y + (top ? h * 0.3 : 0), Math.max(1, w * 0.06), h);
-  } else if (d === 2) {
-    rrect(c, x + w * 0.3, y + h * 0.2, w * 0.4, h * 0.6, w * 0.2); c.fillStyle = P.ink; c.fill();
-    c.fillStyle = 'rgba(255,220,140,.5)'; c.fillRect(x + w * 0.38, y + h * 0.5, w * 0.24, h * 0.24);
+// 屋內的暗色背景：整座城畫成一張圖，之後每一幀只貼還看得到的那幾格
+function backSprite(st) {
+  const T = V.T; if (st._bk && st._bkT === T) return st._bk;
+  const { cols, rows, cellK } = st, cv = mkCanvas(cols * T, rows * T), c = cv.getContext('2d'), P = SKINS[st.skin] || SKINS.blue, lw = Math.max(1, T * 0.04);
+  for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
+    const k = cellK[cy * cols + cx]; if (!k) continue;
+    const x = cx * T, y = (rows - 1 - cy) * T;
+    c.fillStyle = lg(c, 0, y, 0, y + T, [0, P.panel[0], 1, P.panel[1]]); c.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
+    // 內牆的磚縫
+    c.fillStyle = 'rgba(0,0,0,.2)'; c.fillRect(x, y + T * 0.5, T, lw);
+    c.fillRect(x + ((cx + cy) & 1 ? T * 0.5 : T * 0.02), y, lw, T * 0.5); c.fillRect(x + ((cx + cy) & 1 ? T * 0.02 : T * 0.5), y + T * 0.5, lw, T * 0.5);
+    c.fillStyle = 'rgba(255,255,255,.05)'; c.fillRect(x, y, T, lw);
   }
+  // 站著兵的房間：牆上一盞燈
+  for (const sl of st.slots) {
+    const x = (sl.cx + 0.5) * T, y = (rows - 1 - sl.cy + 0.34) * T;
+    c.globalCompositeOperation = 'lighter'; c.fillStyle = rg(c, x, y, 0, T * 1.5, [0, 'rgba(255,214,140,.30)', 0.5, 'rgba(255,190,110,.10)', 1, 'rgba(255,180,90,0)']); c.fillRect(x - T * 1.5, y - T * 1.5, T * 3, T * 3);
+    c.globalCompositeOperation = 'source-over';
+  }
+  st._bk = cv; st._bkT = T; return cv;
 }
-function drawStruct(c, st, t) {
-  if (st.dead) return;
-  const { cols, rows, m, hp, hm } = st, P = SKINS[st.skin], tl = tilesFor(st.skin, Math.max(4, Math.ceil(V.T))), xs = RD.xs, ys = RD.ys, s = V.s;
-  const jx = st.hitT > 0 ? (Math.random() - 0.5) * s * 0.3 : 0;
-  for (let i = 0; i <= cols; i++) xs[i] = Math.round(X(st.x0 + i * CS) + jx);
-  for (let j = 0; j <= rows; j++) ys[j] = Math.round(Y(st.y0 + j * CS));
-  for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
-    const i = cy * cols + cx, mm = m[i]; if (!mm) continue;
-    const f = hp[i] / hm[i], d = mm === M_PANEL || mm === M_KEG ? 0 : f > 0.66 ? 0 : f > 0.33 ? 1 : 2;
-    tileAt(c, tl, mm, st.vr[i] & 1, d, xs[cx], ys[cy + 1], xs[cx + 1] - xs[cx], ys[cy] - ys[cy + 1]);
-    if (st.deco[i]) drawDeco(c, st, i, xs[cx], ys[cy + 1], xs[cx + 1] - xs[cx], ys[cy] - ys[cy + 1], P);
-  }
-  // 屋簷的翹角
-  for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
-    const i = cy * cols + cx; if (m[i] !== M_ROOF) continue;
-    const yb = ys[cy], yt = ys[cy + 1], T = yb - yt;
-    for (let sd = -1; sd <= 1; sd += 2) {
-      const nb = cx + sd; if (nb >= 0 && nb < cols && isSolid(m[cy * cols + nb])) continue;
-      const xe = sd < 0 ? xs[cx] : xs[cx + 1];
-      c.beginPath(); c.moveTo(xe, yb); c.lineTo(xe + sd * T * 0.5, yb - T * 0.02); c.quadraticCurveTo(xe + sd * T * 0.86, yb - T * 0.1, xe + sd * T * 0.98, yb - T * 0.56); c.quadraticCurveTo(xe + sd * T * 0.5, yb - T * 0.42, xe, yt + T * 0.12); c.closePath();
-      c.fillStyle = P.roof[1]; c.fill(); c.strokeStyle = P.ink; c.lineWidth = Math.max(1.2, s * 0.24); c.stroke();
+function drawBackdrop(c, st, rdt) {
+  const { cols, rows, back, backTo, n } = st; if (!n) return;
+  let any = false; const k = Math.min(1, rdt * 7);
+  for (let i = 0; i < n; i++) { let v = back[i]; const to = backTo[i]; if (v !== to) { v += (to - v) * k; if (Math.abs(v - to) < 0.03) v = to; back[i] = v; } if (v > 0) any = true; }
+  if (!any) return;
+  const sp = backSprite(st), T = V.T, bx = X(st.x0), by = Y(st.y1);
+  for (let cy = 0; cy < rows; cy++) {
+    const sy = (rows - 1 - cy) * T; let cx = 0;
+    while (cx < cols) {
+      const v = back[cy * cols + cx]; if (v <= 0) { cx++; continue; }
+      let e = cx + 1; while (e < cols && Math.abs(back[cy * cols + e] - v) < 0.01) e++;
+      c.globalAlpha = v; c.drawImage(sp, cx * T, sy, (e - cx) * T, T, bx + cx * T, by + sy, (e - cx) * T, T);
+      cx = e;
     }
   }
-  // 外輪廓：實心磚旁邊是空的那幾邊描一條墨線
-  c.beginPath();
-  for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
-    const i = cy * cols + cx; if (!isSolid(m[i])) continue;
-    if (cx === 0 || !isSolid(m[i - 1])) { c.moveTo(xs[cx], ys[cy]); c.lineTo(xs[cx], ys[cy + 1]); }
-    if (cx === cols - 1 || !isSolid(m[i + 1])) { c.moveTo(xs[cx + 1], ys[cy]); c.lineTo(xs[cx + 1], ys[cy + 1]); }
-    if (cy === rows - 1 || !isSolid(m[i + cols])) { c.moveTo(xs[cx], ys[cy + 1]); c.lineTo(xs[cx + 1], ys[cy + 1]); }
-    if (cy > 0 && !isSolid(m[i - cols])) { c.moveTo(xs[cx], ys[cy]); c.lineTo(xs[cx + 1], ys[cy]); }
-  }
-  c.strokeStyle = P.ink; c.lineWidth = Math.max(1.5, s * 0.3); c.lineCap = 'square'; c.stroke();
-  // 掉落中的那幾群
-  for (const g of st.groups) {
-    if (g.done) continue; const dy = g.off * s;
-    for (const k of g.cells) {
-      const f = k.hp / k.hm, d = k.m === M_PANEL || k.m === M_KEG ? 0 : f > 0.66 ? 0 : f > 0.33 ? 1 : 2, x = xs[k.cx], y = ys[k.cy + 1] + dy, w = xs[k.cx + 1] - x, h = ys[k.cy] - ys[k.cy + 1];
-      tileAt(c, tl, k.m, k.vr & 1, d, x, y, w, h);
-      if (k.m !== M_PANEL) { c.strokeStyle = P.ink; c.lineWidth = Math.max(1, s * 0.2); c.strokeRect(x, y, w, h); }
-    }
-  }
-  // 結霜、著火
-  let anyBurn = st.nburn > 0;
-  for (let i = 0; i < st.n; i++) {
-    if (!m[i]) continue;
-    if (st.brit[i] > 0) { const cx = i % cols, cy = (i / cols) | 0; c.fillStyle = 'rgba(190,236,255,' + Math.min(0.34, st.brit[i] * 0.2) + ')'; c.fillRect(xs[cx], ys[cy + 1], xs[cx + 1] - xs[cx], ys[cy] - ys[cy + 1]); }
-  }
-  if (anyBurn) {
-    const fl = flameSprite(); c.globalCompositeOperation = 'lighter';
-    for (let i = 0; i < st.n; i++) {
-      if (st.burn[i] <= 0 || !m[i]) continue;
-      const cx = i % cols, cy = (i / cols) | 0, w = xs[cx + 1] - xs[cx], a = Math.min(1, st.burn[i]);
-      for (let k = 0; k < 2; k++) {
-        const ph = t * 9 + i * 1.7 + k * 2.1, sc = 0.75 + 0.3 * Math.sin(ph) + k * 0.1, fw = w * sc * 0.8, fh = fw * 1.5;
-        c.globalAlpha = a * (0.75 - k * 0.2); c.drawImage(fl, xs[cx] + w * (0.5 + (k ? 0.22 : -0.18) * Math.sin(ph * 0.7)) - fw / 2, ys[cy] - fh * 0.92 - w * 0.1, fw, fh);
-      }
-      if (!FX.low && ((RD.frame + i) & 15) === 0) part(P_SMOKE, st.x0 + (cx + 0.5) * CS, st.y0 + (cy + 1) * CS, rndS() * 2, 6, 0.9, 1.3, C_DARK);
-    }
-    c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
-  }
-  // 旗子
-  if (st.side < 2) {
-    if (st._flag === undefined) { let best = -1; for (let cy = rows - 1; cy >= 0 && best < 0; cy--) for (let cx = 0; cx < cols; cx++) if (isSolid(m[cy * cols + cx])) { let a = cx, b = cx; while (b + 1 < cols && isSolid(m[cy * cols + b + 1])) b++; best = cy * cols + ((a + b) >> 1); break; } st._flag = best; }
-    const fi = st._flag;
-    if (fi >= 0 && isSolid(m[fi])) {
-      const cx = fi % cols, cy = (fi / cols) | 0, px = (xs[cx] + xs[cx + 1]) / 2, py = ys[cy + 1], ph = s * 6.2, dir = S.wind > 1 ? 1 : S.wind < -1 ? -1 : (st.side === 0 ? 1 : -1), amp = 0.18 + Math.min(0.5, Math.abs(S.wind) * 0.03);
-      c.strokeStyle = '#3a2a1c'; c.lineWidth = Math.max(1.5, s * 0.36); c.beginPath(); c.moveTo(px, py); c.lineTo(px, py - ph); c.stroke();
-      c.fillStyle = P.trim; c.beginPath(); c.arc(px, py - ph, s * 0.45, 0, TAU); c.fill();
-      const fw = s * 4.6, fh = s * 2.6; c.beginPath(); c.moveTo(px, py - ph + s * 0.3);
-      for (let k = 1; k <= 6; k++) { const u = k / 6; c.lineTo(px + dir * fw * u, py - ph + s * 0.3 + Math.sin(t * (5 + Math.abs(S.wind) * 0.3) - u * 5) * fh * amp * u); }
-      for (let k = 6; k >= 0; k--) { const u = k / 6; c.lineTo(px + dir * fw * u * (k === 6 ? 0.82 : 1), py - ph + s * 0.3 + fh * (1 - u * 0.25) + Math.sin(t * (5 + Math.abs(S.wind) * 0.3) - u * 5) * fh * amp * u); }
-      c.closePath(); c.fillStyle = lg(c, px, 0, px + dir * fw, 0, [0, P.flag, 1, P.flagDk]); c.fill(); c.strokeStyle = P.ink; c.lineWidth = Math.max(1, s * 0.2); c.stroke();
-    }
-  }
+  c.globalAlpha = 1;
 }
-function drawUnits(c, st, t) {
-  const s = V.s, T = st.side < 2 ? S.team[st.side] : null;
-  for (const u of st.units) {
+// 旗子插在最高的那片屋瓦上，屋瓦歪了、掉了，旗子跟著走
+function flagBlock(st) {
+  if (st._flagB !== undefined) return st._flagB;
+  let best = null;
+  for (const b of st.blocks) if (b.kind === 'roof' && (!best || b.y0 > best.y0 + 0.1 || (Math.abs(b.y0 - best.y0) <= 0.1 && Math.abs(b.x0 - st.cx) < Math.abs(best.x0 - st.cx)))) best = b;
+  st._flagB = best; return best;
+}
+function drawFlag(c, st, b, t) {
+  // 在這塊屋瓦自己的座標裡畫（原點是屋瓦中心，y 往下）
+  const s = V.s, P = SKINS[st.skin] || SKINS.blue, py = -b.h * s / 2, ph = s * 5.6, wind = S.wind;
+  const dir = wind > 1 ? 1 : wind < -1 ? -1 : (st.side === 0 ? 1 : -1), amp = 0.18 + Math.min(0.5, Math.abs(wind) * 0.03), sp = 5 + Math.abs(wind) * 0.3;
+  c.strokeStyle = '#3a2a1c'; c.lineWidth = Math.max(1.5, s * 0.36); c.lineCap = 'round'; c.beginPath(); c.moveTo(0, py); c.lineTo(0, py - ph); c.stroke();
+  c.fillStyle = P.trim; c.beginPath(); c.arc(0, py - ph, s * 0.45, 0, TAU); c.fill();
+  const fw = s * 4.4, fh = s * 2.5, y0 = py - ph + s * 0.3; c.beginPath(); c.moveTo(0, y0);
+  for (let k = 1; k <= 6; k++) { const u = k / 6; c.lineTo(dir * fw * u, y0 + Math.sin(t * sp - u * 5) * fh * amp * u); }
+  for (let k = 6; k >= 0; k--) { const u = k / 6; c.lineTo(dir * fw * u * (k === 6 ? 0.82 : 1), y0 + fh * (1 - u * 0.25) + Math.sin(t * sp - u * 5) * fh * amp * u); }
+  c.closePath(); c.fillStyle = lg(c, 0, 0, dir * fw, 0, [0, P.flag, 1, P.flagDk]); c.fill(); c.strokeStyle = P.ink; c.lineWidth = Math.max(1, s * 0.2); c.stroke();
+}
+// 每一塊磚：照它現在的位置和角度貼上去
+function drawBlocks(c, t, rdt) {
+  const s = V.s, sx = FX.shx, sy = FX.shy, burn = RD.burn; burn.length = 0;
+  const f0 = flagBlock(S.st[0]), f1 = flagBlock(S.st[1]);
+  for (const b of S.blocks) {
+    if (b.dead) continue;
+    const p = b.body.getPosition(), a = b.body.getAngle(), f = b.hp / b.hm;
+    if (b.hot > 0) { b.hot -= rdt * 0.22; if (b.hot < 0) b.hot = 0; }
+    const ds = b.mat === M_KEG || b.mat === M_ROCK ? 0 : f > 0.66 ? 0 : f > 0.33 ? 1 : 2, sp = b.frag ? fragSprite(b) : blockSprite(b, ds);
+    if (a === 0) c.setTransform(1, 0, 0, 1, X(p.x) + sx, Y(p.y) + sy);
+    else { const cs = Math.cos(a), sn = Math.sin(a); c.setTransform(cs, -sn, sn, cs, X(p.x) + sx, Y(p.y) + sy); }
+    if (b === f0 || b === f1) drawFlag(c, b.st, b, t);
+    c.drawImage(sp.cv, -sp.ax, -sp.ay);
+    if (b.soot > 0.05 && !FX.low) { c.globalCompositeOperation = 'multiply'; c.globalAlpha = Math.min(1, b.soot); c.drawImage(sp.cv, -sp.ax, -sp.ay); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
+    if (b.brit > 0) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.28; c.drawImage(sp.cv, -sp.ax, -sp.ay); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
+    if (b.flash > 0) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = Math.min(1, b.flash) * 0.55; c.drawImage(sp.cv, -sp.ax, -sp.ay); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; b.flash = Math.max(0, b.flash - rdt * 5); }
+    if (b.burn > 0) burn.push(b);
+  }
+  c.setTransform(1, 0, 0, 1, sx, sy);
+  if (!burn.length) return;
+  // 著火的磚：火苗永遠往上
+  const fl = flameSprite(); c.globalCompositeOperation = 'lighter';
+  for (const b of burn) {
+    const p = b.body.getPosition(), a = b.body.getAngle(), ca = Math.abs(Math.cos(a)), sa = Math.abs(Math.sin(a)), hw = (b.w * ca + b.h * sa) / 2, hh = (b.w * sa + b.h * ca) / 2;
+    const n = Math.max(1, Math.round(hw * 2 / CS)), al = Math.min(1, b.burn);
+    for (let k = 0; k < n; k++) {
+      const ph = t * 9 + b.id * 1.7 + k * 2.1, sc = 0.8 + 0.3 * Math.sin(ph), fw = V.T * sc * 0.85, fh = fw * 1.5;
+      const x = X(p.x + (n > 1 ? (k / (n - 1) - 0.5) * hw * 1.5 : 0) + Math.sin(ph * 0.7) * 0.3), y = Y(p.y + hh * 0.6);
+      c.globalAlpha = al * 0.8; c.drawImage(fl, x - fw / 2, y - fh * 0.95, fw, fh);
+    }
+    if (!FX.low && ((RD.frame + b.id) & 15) === 0) part(P_SMOKE, p.x + rndS() * hw, p.y + hh, rndS() * 2, 6, 0.9, 1.3, C_DARK);
+  }
+  c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+}
+function drawUnits(c, t) {
+  const s = V.s, sx = FX.shx, sy = FX.shy;
+  for (const u of S.units) {
     if (!u.alive) continue;
-    const sp = unitSprite(u.side, u.type), dir = u.side === 0 ? 1 : -1;
-    const x = X(u.x) - dir * u.recoil * s * 0.7, y = Y(u.y) + (u.frozen > 0 ? 0 : Math.sin(t * 3.2 + u.slot * 1.9) * s * 0.07);
-    if (T && (T.ult.T > 0 || T.rageT > 0)) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.5 + 0.2 * Math.sin(t * 14 + u.slot); const g = glowSprite(T.ult.T > 0 ? C_GOLD : C_ORANGE), r = sp.px * 0.75; c.drawImage(g, x - r, y - sp.px * 0.5 - r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
-    c.drawImage(sp.cv, x - sp.ax, y - sp.ay);
-    if (u.hurtT > 0) { c.globalAlpha = Math.min(0.85, u.hurtT * 5); c.drawImage(sp.wh, x - sp.ax, y - sp.ay); c.globalAlpha = 1; }
-    const big = u.def.big ? 1.9 : 1, hw = s * 1.5 * big, top = y - s * 3.5 * big;
+    const T = S.team[u.side], sp = unitSprite(u.side, u.type), dir = T.dir, big = u.def.big ? 1.9 : 1, held = u.frozen > 0 || u.stun > 0;
+    const x = X(u.x) - dir * u.recoil * s * 0.7, y = Y(u.y) + (u.air || held ? 0 : Math.sin(t * 3.2 + u.slot * 1.9) * s * 0.07);
+    if (T.ult.armed || T.rage > 0) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.5 + 0.2 * Math.sin(t * 14 + u.slot); const g = glowSprite(T.ult.armed ? C_GOLD : C_ORANGE), r = sp.px * 0.75; c.drawImage(g, x - r, y - sp.px * 0.5 - r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
+    const tilt = u.tilt;
+    if (Math.abs(tilt) > 0.02) { const cs = Math.cos(tilt), sn = Math.sin(tilt), oy = u.bh * s * 0.5; c.setTransform(cs, sn, -sn, cs, x + sx, y - oy + sy); c.drawImage(sp.cv, -sp.ax, -sp.ay + oy); if (u.hurtT > 0) { c.globalAlpha = Math.min(0.85, u.hurtT * 5); c.drawImage(sp.wh, -sp.ax, -sp.ay + oy); c.globalAlpha = 1; } c.setTransform(1, 0, 0, 1, sx, sy); }
+    else { c.drawImage(sp.cv, x - sp.ax, y - sp.ay); if (u.hurtT > 0) { c.globalAlpha = Math.min(0.85, u.hurtT * 5); c.drawImage(sp.wh, x - sp.ax, y - sp.ay); c.globalAlpha = 1; } }
+    const hw = s * 1.5 * big, top = y - s * 3.5 * big;
     if (u.frozen > 0) {
       c.fillStyle = 'rgba(170,228,255,.5)'; c.strokeStyle = 'rgba(235,250,255,.9)'; c.lineWidth = Math.max(1, s * 0.22);
       poly(c, [x - hw * 1.05, y, x - hw * 1.2, top + s, x - hw * 0.4, top - s * 0.4, x + hw * 0.7, top - s * 0.1, x + hw * 1.2, top + s * 1.4, x + hw * 1.05, y]); c.fill(); c.stroke();
@@ -158,16 +160,18 @@ function drawGates(c, t) {
   const s = V.s;
   for (const g of S.gates) {
     const col = GATE_COL[g.owner], x = X(g.x), y = Y(g.y), hh = g.h * s, w = s * 1.3, age = S.time - g.born;
-    const ap = Math.min(1, age / 0.22), pulse = 1 + g.flash * 0.14;
+    const aimed = (RD.aimMask & g.bit) !== 0, ap = Math.min(1, age / 0.22), pulse = 1 + g.flash * 0.14 + (aimed ? 0.05 + 0.04 * Math.sin(t * 10) : 0);
     c.save(); c.translate(x, y); c.rotate(Math.PI / 2 - g.ang); c.scale(ap * pulse, pulse);
-    c.globalCompositeOperation = 'lighter'; c.fillStyle = rg(c, 0, 0, 0, hh * 1.25, [0, col.glow, 1, 'rgba(0,0,0,0)']); c.fillRect(-hh * 1.25, -hh * 1.25, hh * 2.5, hh * 2.5); c.globalCompositeOperation = 'source-over';
+    c.globalCompositeOperation = 'lighter'; c.fillStyle = rg(c, 0, 0, 0, hh * 1.25, [0, col.glow, 1, 'rgba(0,0,0,0)']); c.fillRect(-hh * 1.25, -hh * 1.25, hh * 2.5, hh * 2.5);
+    if (aimed) c.fillRect(-hh * 1.25, -hh * 1.25, hh * 2.5, hh * 2.5);
+    c.globalCompositeOperation = 'source-over';
     // 符身：兩側隨風抖動
     const n = 8; c.beginPath();
     for (let k = 0; k <= n; k++) { const yy = -hh + 2 * hh * k / n, xx = -w + Math.sin(t * 4.2 + k * 0.9 + g.b) * w * 0.16; if (k === 0) c.moveTo(xx, yy); else c.lineTo(xx, yy); }
     for (let k = n; k >= 0; k--) { const yy = -hh + 2 * hh * k / n, xx = w + Math.sin(t * 4.2 + k * 0.9 + g.b + 1.4) * w * 0.16; c.lineTo(xx, yy); }
     c.closePath(); c.fillStyle = lg(c, -w, 0, w, 0, [0, col.e, 0.5, col.m, 1, col.e]); c.fill();
     if (g.flash > 0) { c.fillStyle = 'rgba(255,255,255,' + (g.flash * 0.6) + ')'; c.fill(); }
-    c.strokeStyle = col.line; c.lineWidth = Math.max(1, s * 0.2); c.stroke();
+    c.strokeStyle = aimed ? '#ffffff' : col.line; c.lineWidth = Math.max(1, s * (aimed ? 0.32 : 0.2)); c.stroke();
     // 上下兩根卷軸桿
     for (let k = -1; k <= 1; k += 2) {
       const ry = k * hh;
@@ -178,11 +182,10 @@ function drawGates(c, t) {
     const txt = g.owner === 3 ? '÷2' : '×' + g.mult, fz = s * (g.mult >= 5 ? 4.9 : 4.3);
     c.font = '400 ' + fz + 'px ' + F_NUM; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
     c.lineWidth = fz * 0.24; c.strokeStyle = col.ink; c.strokeText(txt, 0, 0); c.fillStyle = '#ffffff'; c.fillText(txt, 0, 0);
-    // 耐久（被打過才顯示）與剩餘時間
+    // 耐久（被打過才顯示）；限時的符：還剩幾回合
     const bw = w * 3, by = hh + s * 1.0;
     if (g.hp < g.hpMax && g.owner < 2) { c.fillStyle = 'rgba(10,8,20,.7)'; c.fillRect(-bw / 2, by, bw, s * 0.5); c.fillStyle = g.owner === 0 ? '#7fc0ff' : '#ff8a6a'; c.fillRect(-bw / 2, by, bw * clamp(g.hp / g.hpMax, 0, 1), s * 0.5); }
-    else if (g.life > 0) { c.fillStyle = 'rgba(10,8,20,.6)'; c.fillRect(-bw / 2, by, bw, s * 0.4); c.fillStyle = '#ffffff'; c.fillRect(-bw / 2, by, bw * clamp(1 - age / g.life, 0, 1), s * 0.4); }
-    else if (g.uses > 0) { c.fillStyle = 'rgba(10,8,20,.6)'; c.fillRect(-bw / 2, by, bw, s * 0.4); c.fillStyle = '#ffffff'; c.fillRect(-bw / 2, by, bw * clamp(g.left / g.uses, 0, 1), s * 0.4); }
+    else if (g.life > 0) { const left = g.life - (S.round - g.bornR); for (let k = 0; k < g.life; k++) { c.fillStyle = k < left ? '#ffffff' : 'rgba(255,255,255,.25)'; c.beginPath(); c.arc((k - (g.life - 1) / 2) * s * 1.1, by + s * 0.3, s * 0.34, 0, TAU); c.fill(); } }
     c.restore();
   }
 }
@@ -194,7 +197,8 @@ function drawObjs(c, t) {
     switch (o.t) {
       case 'geyser': {
         const x = X(o.x), yb = Y(o.base);
-        if (o.warn && !o.on) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.5 + 0.4 * Math.sin(t * 18); const g = glowSprite(C_ORANGE), r = s * 5; c.drawImage(g, x - r, yb - r * 0.7, r * 2, r * 1.4); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; if ((RD.frame & 3) === 0) part(P_EMBER, o.x + rndS() * 4, o.base, rndS() * 6, 10 + Math.random() * 10, 0.5, 0.6, C_ORANGE); }
+        // 下一回合輪到它噴：地面先冒火星
+        if (o.next && !o.on) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.35 + 0.25 * Math.sin(t * 6 + o.x); const g = glowSprite(C_ORANGE), r = s * 4.2; c.drawImage(g, x - r, yb - r * 0.7, r * 2, r * 1.4); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; if ((RD.frame & 7) === 0) part(P_EMBER, o.x + rndS() * 3, o.base, rndS() * 5, 8 + Math.random() * 8, 0.5, 0.5, C_ORANGE); }
         if (o.top > o.base + 0.5) {
           const yt = Y(o.top), w = o.w * s;
           c.globalCompositeOperation = 'lighter';
@@ -217,7 +221,7 @@ function drawObjs(c, t) {
           ell(c, x, y, rx, ry); c.fillStyle = e ? 'rgba(10,6,30,.5)' : 'rgba(10,6,30,.78)'; c.fill(); c.strokeStyle = col[0]; c.lineWidth = Math.max(1.5, s * 0.5); c.stroke();
           c.strokeStyle = col[1]; c.lineWidth = Math.max(1, s * 0.28);
           for (let k = 0; k < 3; k++) { const a = t * (e ? -2.4 : 3) + k * TAU / 3; c.beginPath(); c.ellipse(x, y, rx * 0.66, ry * 0.66, 0, a, a + 1.5); c.stroke(); }
-          if (e) { c.fillStyle = col[0]; for (let k = -1; k <= 1; k++) poly(c, [x + k * rx * 0.5 - s * 0.6, y + s * 2.2, x + k * rx * 0.5 + s * 0.6, y + s * 2.2, x + k * rx * 0.5, y + s * 3.4 + Math.sin(t * 6 + k) * s * 0.4]), c.fill(); }
+          if (e) { c.fillStyle = col[0]; for (let k = -1; k <= 1; k++) { poly(c, [x + k * rx * 0.5 - s * 0.6, y + s * 2.2, x + k * rx * 0.5 + s * 0.6, y + s * 2.2, x + k * rx * 0.5, y + s * 3.4 + Math.sin(t * 6 + k) * s * 0.4]); c.fill(); } }
         }
         break;
       }
@@ -234,22 +238,32 @@ function drawObjs(c, t) {
         const x = X(o.x), y = Y(o.y), R = o.R * s;
         c.lineCap = 'butt';
         for (const sg of o.segs) {
-          const a0 = -(o.rot + sg.a + sg.w), a1 = -(o.rot + sg.a - sg.w);
-          if (sg.dead > 0) { c.strokeStyle = 'rgba(255,90,160,.14)'; c.lineWidth = s * 0.5; c.setLineDash([s, s * 1.4]); c.beginPath(); c.arc(x, y, R, a0, a1); c.stroke(); c.setLineDash([]); continue; }
-          c.strokeStyle = 'rgba(255,60,150,' + (0.22 + sg.flash * 0.4) + ')'; c.lineWidth = s * 2.6; c.beginPath(); c.arc(x, y, R, a0, a1); c.stroke();
-          c.strokeStyle = sg.flash > 0 ? '#ffffff' : '#ff8ac6'; c.lineWidth = s * 0.7; c.beginPath(); c.arc(x, y, R, a0, a1); c.stroke();
-          const f = sg.hp / sg.hm; if (f < 0.99) { c.strokeStyle = '#ffe14a'; c.lineWidth = s * 0.3; c.beginPath(); c.arc(x, y, R + s * 1.2, a0, a0 + (a1 - a0) * f); c.stroke(); }
+          // 畫面的角度跟戰場的角度上下相反；兩段光牆之間留一點縫
+          const a0 = -sg.a1 + 0.02, a1 = -sg.a0 - 0.02, lv = sg.lvl;
+          if (lv < 0.05) { c.strokeStyle = 'rgba(255,120,190,.2)'; c.lineWidth = Math.max(1, s * 0.4); c.setLineDash([s, s * 1.6]); c.beginPath(); c.arc(x, y, R, a0, a1); c.stroke(); c.setLineDash([]); continue; }
+          c.globalAlpha = lv;
+          c.strokeStyle = 'rgba(255,60,150,' + (0.24 + sg.flash * 0.4 + 0.06 * Math.sin(t * 5 + sg.a0 * 3)) + ')'; c.lineWidth = s * 3; c.beginPath(); c.arc(x, y, R, a0, a1); c.stroke();
+          c.strokeStyle = sg.flash > 0 ? '#ffffff' : '#ff8ac6'; c.lineWidth = s * 0.8; c.beginPath(); c.arc(x, y, R, a0, a1); c.stroke();
+          const f = sg.hp / sg.hm; if (f < 0.99) { c.strokeStyle = '#ffe14a'; c.lineWidth = s * 0.34; c.beginPath(); c.arc(x, y, R - s * 1.6, a0, a0 + (a1 - a0) * f); c.stroke(); }
+          c.globalAlpha = 1;
         }
         break;
       }
     }
   }
 }
+// 從天上往下看，x 這個位置最上面的東西有多高（落石的預告用）
+let _sy = 0;
+const _syA = { x: 0, y: 92 }, _syB = { x: 0, y: -14 };
+function _syCb(f, p, n, fr) { _sy = p.y; return fr; }
+function surfaceY(x) { _sy = -999; _syA.x = x; _syB.x = x; PH.world.rayCast(_syA, _syB, _syCb); return _sy; }
 function drawFlyers(c, t) {
   const s = V.s;
   for (const o of S.objs) {
     if (o.t === 'balloon') {
       const x = X(o.x), y = Y(o.y) + Math.sin(t * 2 + o.x) * s * 0.3, r = o.r * s;
+      // 停在半路：下一輪才飛過來，畫一圈提醒
+      if (o.st === 'hover') { c.strokeStyle = 'rgba(255,225,74,' + (0.45 + 0.35 * Math.sin(t * 6)) + ')'; c.lineWidth = Math.max(1.2, s * 0.3); c.setLineDash([s * 1.2, s * 1.2]); c.lineDashOffset = -t * s * 6; ell(c, x, y + r * 0.5, r * 1.9, r * 2.2); c.stroke(); c.setLineDash([]); }
       c.strokeStyle = '#3a2a1c'; c.lineWidth = Math.max(1, s * 0.18); c.beginPath(); c.moveTo(x - r * 0.55, y + r * 0.6); c.lineTo(x - r * 0.32, y + r * 1.45); c.moveTo(x + r * 0.55, y + r * 0.6); c.lineTo(x + r * 0.32, y + r * 1.45); c.stroke();
       ell(c, x, y, r, r * 0.92); c.fillStyle = rg(c, x - r * 0.3, y - r * 0.35, r * 0.1, r * 1.1, o.side === 1 ? [0, '#ff9a80', 0.6, '#e03a2c', 1, '#8f1418'] : [0, '#a8d0ff', 0.6, '#2f6fe0', 1, '#1b46b8']); c.fill(); c.strokeStyle = INK; c.lineWidth = Math.max(1.2, s * 0.26); c.stroke();
       c.strokeStyle = 'rgba(255,225,74,.9)'; c.lineWidth = Math.max(1, s * 0.3); c.beginPath(); c.ellipse(x, y, r * 0.45, r * 0.9, 0, 0, TAU); c.stroke();
@@ -267,8 +281,11 @@ function drawFlyers(c, t) {
       else if (o.kind === 'rage') { poly(c, [x, y - r * 0.55, x + r * 0.36, y + r * 0.1, x + r * 0.1, y + r * 0.45, x - r * 0.3, y + r * 0.3, x - r * 0.38, y - r * 0.1]); c.fill(); }
       else if (o.kind === 'charge') { poly(c, [x + r * 0.12, y - r * 0.6, x - r * 0.36, y + r * 0.08, x - r * 0.04, y + r * 0.08, x - r * 0.14, y + r * 0.6, x + r * 0.36, y - r * 0.1, x + r * 0.05, y - r * 0.1]); c.fill(); }
       else { c.beginPath(); c.arc(x, y - r * 0.22, r * 0.24, 0, TAU); c.fill(); rrect(c, x - r * 0.3, y + r * 0.08, r * 0.6, r * 0.46, r * 0.14); c.fill(); }
+      // 快飄走了：最後一回合閃爍
+      if (S.round - o.bornR >= 1) { c.globalAlpha = 0.5 + 0.5 * Math.sin(t * 9); c.strokeStyle = '#ffffff'; c.lineWidth = Math.max(1, s * 0.22); ell(c, x, y, r * 1.5, r * 1.6); c.stroke(); c.globalAlpha = 1; }
     } else if (o.t === 'orb') {
       const x = X(o.x), y = Y(o.y), r = o.r * s * (1 + 0.06 * Math.sin(t * 12));
+      if (o.st === 'hover') { c.strokeStyle = 'rgba(255,225,74,' + (0.45 + 0.35 * Math.sin(t * 6)) + ')'; c.lineWidth = Math.max(1.2, s * 0.3); c.setLineDash([s * 1.2, s * 1.2]); c.lineDashOffset = -t * s * 6; ell(c, x, y, r * 1.9, r * 1.9); c.stroke(); c.setLineDash([]); }
       c.globalCompositeOperation = 'lighter'; const g = glowSprite(C_PINK); c.drawImage(g, x - r * 2.6, y - r * 2.6, r * 5.2, r * 5.2); c.globalCompositeOperation = 'source-over';
       ell(c, x, y, r, r); c.fillStyle = rg(c, x - r * 0.3, y - r * 0.3, r * 0.1, r, [0, '#ffb0e6', 0.35, '#a024cc', 1, '#16042a']); c.fill(); c.strokeStyle = '#0c0410'; c.lineWidth = Math.max(1.5, s * 0.3); c.stroke();
       c.strokeStyle = '#ffe14a'; c.lineWidth = Math.max(1.5, s * 0.45); c.beginPath(); c.arc(x, y, r * 1.35, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(o.hp / o.hm, 0, 1)); c.stroke();
@@ -276,14 +293,14 @@ function drawFlyers(c, t) {
       if ((RD.frame & 1) === 0) part(P_EMBER, o.x + rndS() * 3, o.y + rndS() * 3, rndS() * 6, rndS() * 6, 0.5, 0.9, C_PURPLE);
     }
   }
-  // 落石的預告：落點一圈紅、往上一條虛線
+  // 落石的預告：這一回合結束時會砸在這裡。落點一圈紅、往上一條虛線
   for (const mk of S.marks) {
-    const x = X(mk.x), f = clamp((S.time - mk.t0) / (mk.t1 - mk.t0), 0, 1); let gy = groundY(mk.x); if (gy < -50) gy = 0;
-    for (const st of S.structs) if (!st.dead && mk.x >= st.x0 && mk.x < st.x1) { const cx = ((mk.x - st.x0) / CS) | 0; for (let cy = st.rows - 1; cy >= 0; cy--) if (st.m[cy * st.cols + cx]) { gy = st.y0 + (cy + 1) * CS; break; } }
-    const y = Y(gy), r = s * (3.6 - f * 1.6);
-    c.strokeStyle = 'rgba(255,80,40,' + (0.5 + 0.4 * Math.sin(t * 22)) + ')'; c.lineWidth = Math.max(1.5, s * 0.4);
+    if (mk.sy === undefined || (RD.frame & 7) === 0) { const y = surfaceY(mk.x); mk.sy = y > -100 ? y : 0; }
+    const x = X(mk.x), y = Y(mk.sy), r = s * (mk.big ? 4.2 : 3.2) * (0.9 + 0.1 * Math.sin(t * 8));
+    c.strokeStyle = 'rgba(255,80,40,' + (0.55 + 0.35 * Math.sin(t * 12)) + ')'; c.lineWidth = Math.max(1.5, s * 0.4);
     c.beginPath(); c.ellipse(x, y, r, r * 0.4, 0, 0, TAU); c.stroke();
-    c.setLineDash([s * 1.2, s * 1.2]); c.beginPath(); c.moveTo(x, 0); c.lineTo(x, y); c.stroke(); c.setLineDash([]);
+    c.setLineDash([s * 1.2, s * 1.2]); c.lineDashOffset = -t * s * 10; c.beginPath(); c.moveTo(x, 0); c.lineTo(x, y); c.stroke(); c.setLineDash([]);
+    c.fillStyle = 'rgba(255,90,50,.9)'; poly(c, [x - s * 1.1, y - s * 3.6, x + s * 1.1, y - s * 3.6, x, y - s * 1.7]); c.fill();
   }
 }
 
@@ -304,13 +321,14 @@ function drawShots(c) {
   c.globalCompositeOperation = 'source-over';
   const sx = FX.shx, sy = FX.shy;
   for (let i = 0; i < n; i++) {
-    const sp = shotSprite(SH.w[i], SH.side[i]), a = Math.atan2(-SH.vy[i], SH.vx[i]), m = SH.mass[i] > 1 ? Math.min(2, Math.sqrt(SH.mass[i])) : 1, cs = Math.cos(a) * m, sn = Math.sin(a) * m;
+    // 分裂過的砲彈比較小顆（威力也比較小），合併的比較大顆
+    const sp = shotSprite(SH.w[i], SH.side[i]), a = Math.atan2(-SH.vy[i], SH.vx[i]), ms = SH.mass[i], m = ms > 1 ? Math.min(2, Math.sqrt(ms)) : Math.max(0.6, Math.pow(ms, 0.2)), cs = Math.cos(a) * m, sn = Math.sin(a) * m;
     c.setTransform(cs, sn, -sn, cs, X(SH.x[i]) + sx, Y(SH.y[i]) + sy);
     c.drawImage(sp.cv, -sp.w / 2, -sp.h / 2);
   }
   c.setTransform(1, 0, 0, 1, sx, sy);
   // 火箭和砲彈拖一點煙
-  if (!FX.low) for (let i = RD.frame % 5; i < n; i += 5) { const id = WL[SH.w[i]].id; if (id === 'rocket' || id === 'bomb' || id === 'lava' || id === 'drop') part(P_SMOKE, SH.x[i], SH.y[i], rndS() * 2, rndS() * 2, 0.45, id === 'rocket' ? 0.8 : 1.3, id === 'lava' ? C_SOOT : C_GRAY); else if (id === 'fire') part(P_EMBER, SH.x[i], SH.y[i], rndS() * 3, rndS() * 3, 0.35, 0.6, C_ORANGE); else if (id === 'ice') part(P_SPARK, SH.x[i], SH.y[i], rndS() * 4, rndS() * 4, 0.25, 0.3, C_ICE); }
+  if (!FX.low) for (let i = RD.frame % 5; i < n; i += 5) { const id = WL[SH.w[i]].id; if (id === 'rocket' || id === 'bomb' || id === 'drop') part(P_SMOKE, SH.x[i], SH.y[i], rndS() * 2, rndS() * 2, 0.45, id === 'rocket' ? 0.8 : 1.3, C_GRAY); else if (id === 'fire') part(P_EMBER, SH.x[i], SH.y[i], rndS() * 3, rndS() * 3, 0.35, 0.6, C_ORANGE); else if (id === 'ice') part(P_SPARK, SH.x[i], SH.y[i], rndS() * 4, rndS() * 4, 0.25, 0.3, C_ICE); else if (id === 'dark') part(P_EMBER, SH.x[i], SH.y[i], rndS() * 3, rndS() * 3, 0.3, 0.6, C_PURPLE); }
 }
 
 /* ---------- 特效 ---------- */
@@ -367,12 +385,13 @@ function fxDraw(c) {
   }
   c.globalAlpha = 1;
 }
-function drawShields(c, t) {
+function drawShields(c, t, rdt) {
   const s = V.s;
   for (let sd = 0; sd < 2; sd++) {
-    const T = S.team[sd], st = S.st[sd]; if (!T || T.shield.T <= 0 || st.dead) continue;
-    const a = Math.min(1, T.shield.T * 3) * Math.min(1, (T.shield.dur - T.shield.T) * 8 + 0.2);
-    const x = X(st.cx), y = Y(st.y0 + st.h * 0.42), rx = (st.w * 0.5 + 6) * s, ry = (st.h * 0.6 + 6) * s;
+    const T = S.team[sd], st = S.st[sd]; if (!T) continue;
+    RD.sh[sd] += ((T.shield.on && !st.dead ? 1 : 0) - RD.sh[sd]) * Math.min(1, rdt * 9);
+    const a = RD.sh[sd]; if (a < 0.02) continue;
+    const x = X(st.cx), y = Y(st.y0 + st.h * 0.42), rx = (st.w * 0.5 + 6) * s * (0.9 + 0.1 * a), ry = (st.h * 0.6 + 6) * s * (0.9 + 0.1 * a);
     c.save(); c.beginPath(); c.rect(0, 0, V.W, Y(st.y0) + s * 0.5); c.clip();
     ell(c, x, y, rx, ry); c.fillStyle = rg(c, x, y, ry * 0.5, Math.max(rx, ry), sd === 0 ? [0, 'rgba(90,170,255,0)', 0.75, 'rgba(90,170,255,' + 0.12 * a + ')', 1, 'rgba(170,220,255,' + 0.4 * a + ')'] : [0, 'rgba(255,90,70,0)', 0.75, 'rgba(255,90,70,' + 0.12 * a + ')', 1, 'rgba(255,170,150,' + 0.4 * a + ')']); c.fill();
     c.strokeStyle = sd === 0 ? 'rgba(210,236,255,' + 0.9 * a + ')' : 'rgba(255,200,190,' + 0.9 * a + ')'; c.lineWidth = Math.max(1.5, s * 0.5); c.stroke();
@@ -380,33 +399,58 @@ function drawShields(c, t) {
     c.restore();
   }
 }
-// 瞄準的虛線：每個兵各一條，照現在的角度、力道和風算出來的前一小段彈道
-function drawAim(c, t) {
-  if (!RD.showAim || S.state !== 'play') return;
-  const s = V.s, w = S.wind, foe = S.st[1], T = S.team[0], vx = T.aim[0], vy = T.aim[1], maxT = RD.aimT, flow = (t * 0.9) % 1 * 0.065;
-  let first = true;
-  for (const u of T.units) {
-    if (!u.alive || !u.w || u.fall || u.grp) continue;
-    const mx = u.x + 1.3, my = u.y + 2.3;
-    c.beginPath(); let lx = 0, ly = 0, n = 0;
-    for (let tt = 0.05 + flow; tt <= maxT; tt += 0.065) {
-      const x = mx + vx * tt + 0.5 * w * tt * tt, y = my + vy * tt - 0.5 * GRAV * tt * tt;
-      if (y < groundY(x) || (x >= foe.x0 && x < foe.x1 && y >= foe.y0 && y < foe.y1 && isSolid(foe.m[(((y - foe.y0) / CS) | 0) * foe.cols + (((x - foe.x0) / CS) | 0)]))) break;
-      const px = X(x), py = Y(y), r = Math.max(1.4, s * lerp(first ? 0.62 : 0.48, 0.22, tt / maxT)); c.moveTo(px + r, py); c.arc(px, py, r, 0, TAU); lx = px; ly = py; n++;
-    }
-    if (!n) continue;
-    c.fillStyle = first ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.6)'; c.strokeStyle = 'rgba(15,42,120,.8)'; c.lineWidth = Math.max(1, s * 0.16); c.fill(); c.stroke();
-    first = false;
+
+/* ---------- 瞄準 ---------- */
+// 一串圓點：照現在的角度、力道和風算出來的彈道（跟模擬用同一種算法，所以對得上）。
+// box：還在這座城樓的範圍裡的那一段不畫（自己的砲彈會穿過自己的城，畫出來反而亂）
+function aimDots(c, mx, my, vx, vy, t0, t1, tMax, r0, r1, box) {
+  const w = S.wind, s = V.s; let n = 0;
+  for (let tt = t0; tt <= t1; tt += 0.065) {
+    const x = mx + vx * tt + 0.5 * w * tt * (tt + STEP), y = my + vy * tt - 0.5 * GRAV * tt * (tt + STEP);
+    if (box && x > box.x0 - 1 && x < box.x1 + 1.2 && y < box.y1 + 2.5) continue;
+    const px = X(x), py = Y(y), r = Math.max(1.3, s * lerp(r0, r1, tt / tMax));
+    c.moveTo(px + r, py); c.arc(px, py, r, 0, TAU); n++;
   }
-  // 敵軍砲口的方向：一小段紅色虛線，讓你看得出他們在瞄哪
-  const E = S.team[1]; let lead = null; for (const u of E.units) if (u.alive && u.w && !u.fall && !u.grp) { lead = u; break; }
-  if (lead) {
-    const mx = lead.x - 1.3, my = lead.y + 2.3; c.beginPath();
-    for (let tt = 0.06 + flow; tt <= 0.5; tt += 0.065) { const x = mx + E.aim[0] * tt + 0.5 * w * tt * tt, y = my + E.aim[1] * tt - 0.5 * GRAV * tt * tt, px = X(x), py = Y(y), r = Math.max(1.2, s * lerp(0.42, 0.18, tt / 0.5)); c.moveTo(px + r, py); c.arc(px, py, r, 0, TAU); }
-    c.fillStyle = 'rgba(255,150,130,.7)'; c.fill();
+  return n;
+}
+function drawAim(c, t) {
+  RD.aimMask = 0;
+  if (!RD.showAim || S.state !== 'play') return;
+  const s = V.s, T = S.team[0], E = S.team[1], mine = S.phase === 'aim' && S.turn === 0;
+  // 上一輪實際飛過的路線：一串淡淡的小點，盡頭打一個叉，方便照著微調
+  const tr = RD.trail;
+  if (mine && tr && tr.n > 1) {
+    c.beginPath(); const r = Math.max(1, s * 0.2);
+    for (let k = 0; k < tr.n; k++) { const px = X(tr.x[k]), py = Y(tr.y[k]); c.moveTo(px + r, py); c.arc(px, py, r, 0, TAU); }
+    c.fillStyle = 'rgba(255,255,255,.34)'; c.fill();
+    const ex = X(tr.x[tr.n - 1]), ey = Y(tr.y[tr.n - 1]), q = s * 0.8;
+    c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = Math.max(1.5, s * 0.26); c.lineCap = 'round'; c.beginPath(); c.moveTo(ex - q, ey - q); c.lineTo(ex + q, ey + q); c.moveTo(ex + q, ey - q); c.lineTo(ex - q, ey + q); c.stroke();
+  }
+  if (mine || RD.aimOn) {
+    const vx = T.aim[0], vy = T.aim[1], maxT = RD.aimT, flow = mine ? (t * 0.9) % 1 * 0.065 : 0, kmax = Math.ceil(maxT * 30) + 1;
+    let first = true; const box = S.st[0];
+    for (const u of T.units) {
+      if (!u.alive || !u.w || u.frozen > 0 || u.stun > 0) continue;
+      const mx = u.x + 1.3, my = u.y + 2.3, inBox = u.x > box.x0 - 1 && u.x < box.x1 + 1 ? box : null;
+      let end = maxT;
+      if (mine) { const R = simTrace(0, mx, my, vx, vy, S.wind, S.time, kmax); RD.aimMask |= R.gm; if (R.hit && R.t < end) end = R.t; }
+      c.beginPath();
+      if (!aimDots(c, mx, my, vx, vy, 0.05 + flow, end, maxT, first ? 0.6 : 0.36, first ? 0.26 : 0.18, inBox)) { first = false; continue; }
+      c.fillStyle = mine ? (first ? 'rgba(255,255,255,.97)' : 'rgba(255,255,255,.55)') : 'rgba(255,255,255,.4)'; c.fill();
+      if (mine && first) { c.strokeStyle = 'rgba(15,42,120,.85)'; c.lineWidth = Math.max(1, s * 0.16); c.stroke(); }
+      first = false;
+    }
+  }
+  // 敵軍瞄準的時候：一小段紅色虛線，看得出他們在瞄哪
+  if (S.phase === 'aim' && S.turn === 1) {
+    let lead = E.ai && E.ai.lead; if (!lead || !lead.alive) { lead = null; for (const u of E.units) if (u.alive && u.w) { lead = u; break; } }
+    if (lead) {
+      const big = lead.def.big ? 1.5 : 1; c.beginPath();
+      aimDots(c, lead.x - 1.3 * big, lead.y + 2.3 * big, E.aim[0], E.aim[1], 0.06 + (t * 0.9) % 1 * 0.065, 0.62, 0.62, 0.46, 0.2);
+      c.fillStyle = 'rgba(255,150,130,.85)'; c.fill(); c.strokeStyle = 'rgba(106,11,16,.7)'; c.lineWidth = Math.max(1, s * 0.14); c.stroke();
+    }
   }
 }
-
 function renderFrame(dt, rdt) {
   const c = RD.c; if (!c || !S.lv || !SCENE.cv) return;
   RD.t += rdt; RD.frame++;
@@ -417,13 +461,14 @@ function renderFrame(dt, rdt) {
   c.setTransform(1, 0, 0, 1, FX.shx, FX.shy);
   sceneBack(c, t, dt);
   drawObjs(c, t);
+  for (const st of S.structs) drawBackdrop(c, st, rdt);
+  drawBlocks(c, t, rdt);
   drawGates(c, t);
-  for (const st of S.structs) drawStruct(c, st, t);
-  for (const st of S.structs) drawUnits(c, st, t);
+  drawUnits(c, t);
   drawFlyers(c, t);
   drawShots(c);
   fxDraw(c);
-  drawShields(c, t);
+  drawShields(c, t, rdt);
   drawAim(c, t);
   sceneFront(c, t, dt);
   c.setTransform(1, 0, 0, 1, 0, 0);

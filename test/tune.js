@@ -1,22 +1,23 @@
-// node test/tune.js [場數] [強化等級]：六關 × 三種自動玩家的勝率、用時、過關時我方城防、敵方有幾場是「守軍全滅」結束
+// 量每一關的三件事（各跑 N 場）：我方單獨打要幾回合、敵軍單獨打要幾回合、真的對打的勝率
+//   node test/tune.js <關卡> [場數=8] [bot=casual] [foe.hp] [foe.dmg] [ai.err] [強化等級=0]
 const G = require('./load')();
-const { S, simInit, simStep, LEVELS, BOTS, teamBar } = G;
-const N = +(process.argv[2] || 10), upL = +(process.argv[3] || 0), diff = process.env.DIFF === undefined ? 1 : +process.env.DIFF;
-const only = process.env.LV ? process.env.LV.split(',').map(Number) : null;
-const up = { dmg: upL, rate: upL, hp: upL, shield: upL, ult: upL };
-console.log(`diff ${diff} up ${upL} N ${N}        很會玩                   普通                     新手`);
-for (let li = 0; li < LEVELS.length; li++) {
-  if (only && !only.includes(li + 1)) continue;
-  let row = `L${li + 1} ${LEVELS[li].name}  `;
-  for (const bot of ['expert', 'casual', 'newbie']) {
-    let w = 0, ts = 0, bs = 0, bu = 0, lostU = 0, s3 = 0;
-    for (let k = 0; k < N; k++) {
-      simInit(li, up, 5000 + k * 7919 + li * 131, diff, { botA: BOTS[bot] });
-      while (S.state === 'play' && S.time < 400) simStep(1 / 60);
-      ts += S.time; lostU += S.team[0].units.length - S.team[0].alive;
-      if (S.state === 'won') { w++; bs += teamBar(0); if (S.team[1].alive <= 0) bu++; if (teamBar(0) >= 0.6) s3++; }
-    }
-    row += `${String(w).padStart(2)}/${N} ${(ts / N).toFixed(0).padStart(3)}s 城${w ? (bs / w * 100).toFixed(0).padStart(3) : '  -'}% ★3:${String(s3).padStart(2)} 滅${String(bu).padStart(2)} 損${(lostU / N).toFixed(1)} | `;
+const { S, simInit, simStep, LEVELS, BOTS, teamBar, structBar } = G;
+const a = process.argv.slice(2), li = +a[0] - 1, N = +(a[1] || 8), bot = a[2] || 'casual', upL = +(a[6] || 0);
+const lv = LEVELS[li];
+if (a[3]) lv.foe.hp = +a[3]; if (a[4]) lv.foe.dmg = +a[4]; if (a[5]) lv.foe.ai.err = +a[5];
+const up = { dmg: upL, aim: upL, hp: upL, shield: upL, ult: upL };
+function run(mute, maxR) {
+  let rs = 0, wins = 0, lost = 0, bar = 0, t = 0; const rl = [];
+  for (let sd = 0; sd < N; sd++) {
+    simInit(li, up, 500 + sd * 7919 + li * 131, 1, { botA: BOTS[bot], mute });
+    while (S.state === 'play' && S.round < maxR && S.time < 2400) simStep(1 / 60);
+    const won = S.state === 'won'; if (won) { wins++; bar += teamBar(0); }
+    rs += S.round; rl.push((S.state === 'won' ? 'W' : S.state === 'lost' ? 'L' : '?') + S.round); lost += S.team[0].units.length - S.team[0].alive; t += S.time;
   }
-  console.log(row);
+  return { rounds: rs / N, wins, lost: lost / N, bar: wins ? bar / wins : 0, t: t / N, rl };
 }
+const A = run(1, 40), B = run(0, 60), C = run(undefined, 40);
+console.log(`L${li + 1} ${lv.name} [${bot} up${upL}] hp=${lv.foe.hp} dmg=${lv.foe.dmg} err=${lv.foe.ai.err}`
+  + `\n   我方單打 ${A.rounds.toFixed(1)} 回合 (${A.rl.join(' ')})`
+  + `\n   敵軍單打 ${B.rounds.toFixed(1)} 回合 (${B.rl.join(' ')})`
+  + `\n   對打 勝 ${C.wins}/${N}  ${C.rounds.toFixed(1)} 回合  損兵 ${C.lost.toFixed(1)}  勝時城防 ${(C.bar * 100).toFixed(0)}%  每場 ${C.t.toFixed(0)}s (${C.rl.join(' ')})`);

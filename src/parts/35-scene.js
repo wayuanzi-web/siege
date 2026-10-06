@@ -35,14 +35,6 @@ function traceGround(c, xa, xb, dy, first) {
   c.lineTo(X(xb), Y(groundYRaw(xb) + dy));
 }
 function traceGroundBack(c, xa, xb, dy) { for (let x = xb; x > xa; x -= 0.5) c.lineTo(X(x), Y(groundYRaw(x) + dy)); c.lineTo(X(xa), Y(groundYRaw(xa) + dy)); }
-// 不管 voids 的地面高度（畫圖用）
-function groundYRaw(x) {
-  const p = S.gpts; if (!p) return 0;
-  if (x <= p[0][0]) return p[0][1];
-  const n = p.length; if (x >= p[n - 1][0]) return p[n - 1][1];
-  for (let i = 1; i < n; i++) if (x <= p[i][0]) { const a = p[i - 1], b = p[i]; return a[1] + (b[1] - a[1]) * ((x - a[0]) / (b[0] - a[0])); }
-  return 0;
-}
 // 一般的實心地面：填色到畫面底，上緣一條表土
 function solidGround(c, o) {
   for (const [xa, xb] of groundRuns()) {

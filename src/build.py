@@ -31,8 +31,14 @@ fonts = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          + urllib.parse.quote(''.join(cjk)) + '">')
 head = head.replace('<!--FONTS-->', fonts)
 
+# 物理引擎 planck.js（MIT 授權）：原封不動放進另一個 <script>，授權聲明跟著一起放
+vendor = root / 'vendor'
+planck_js = (vendor / 'planck.min.js').read_text(encoding='utf8').replace('</script', '<\\/script')
+planck_lic = ' '.join((vendor / 'planck-LICENSE.txt').read_text(encoding='utf8').split())
+lib = '<script>\n/*! planck.js v1.5.0 | ' + planck_lic.replace('*/', '* /') + ' */\n' + planck_js + '\n</script>\n'
+
 def script(code):
-    return '<script>\n(function () {\n\'use strict\';\n' + code + '\n})();\n</script>\n'
+    return lib + '<script>\n(function () {\n\'use strict\';\n' + code + '\n})();\n</script>\n'
 
 def full_page(extra_head, code):
     # 完整頁面：<title>、字型、樣式放進 <head>，其餘是 <body>
@@ -47,7 +53,7 @@ dist = root / 'dist'; dist.mkdir(exist_ok=True)
 frag = head + '\n' + script(js)
 (dist / 'qianpao.html').write_text(frag, encoding='utf8')
 (dist / 'index.html').write_text(full_page('', js), encoding='utf8')
-print('built', len(frag) // 1024, 'KB;', len(js_files), 'js parts;', len(cjk), 'cjk glyphs')
+print('built', len(frag) // 1024, 'KB (planck', len(planck_js) // 1024, 'KB);', len(js_files), 'js parts;', len(cjk), 'cjk glyphs')
 
 if len(sys.argv) > 1:
     url = sys.argv[1].rstrip('/') + '/'

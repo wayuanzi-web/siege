@@ -12,116 +12,184 @@ const SKINS = {
 const PAL_ICE = ['#e6f8ff', '#a8e0f8', '#62b6e4', '#3c8cc0'];
 const PAL_ROCK = ['#8e8794', '#665f70', '#403a49', '#2a2532'];
 
-/* ---------- 磚 ---------- */
-const TILE_VAR = 2, TILE_DMG = 3;
-const TILES = {};          // skin → { px, cv }
-function tilesFor(skin, px) {
-  const key = skin; let t = TILES[key];
-  if (t && t.px === px) return t;
-  const cv = mkCanvas(px * TILE_VAR * TILE_DMG, px * 9), c = cv.getContext('2d'), P = SKINS[skin];
-  for (let m = 1; m <= 8; m++) for (let v = 0; v < TILE_VAR; v++) for (let d = 0; d < TILE_DMG; d++) {
-    c.save(); c.translate((v * TILE_DMG + d) * px, m * px); c.beginPath(); c.rect(0, 0, px, px); c.clip();
-    paintTile(c, m, P, v, d, px);
-    c.restore();
-  }
-  t = TILES[key] = { px, cv };
-  return t;
+/* ---------- 磚塊：每一塊一張貼圖（依外觀、材質、形狀、大小、破損程度），第一次用到時才畫 ---------- */
+const BSPR = {};
+function blockSprite(b, ds) {
+  const key = b.skin + ':' + b.mat + ':' + b.kind + ':' + Math.round(b.w * 10) + ':' + Math.round(b.h * 10) + ':' + Math.round(b.il * 10) + ':' + Math.round(b.ir * 10) + ':' + b.deco + ':' + ds + ':' + (b.vr & 1) + (b.hot ? 'h' : '') + (b.prop ? 'p' : '');
+  let s = BSPR[key]; if (s) return s;
+  const sc = V.s, w = b.w * sc, h = b.h * sc, roof = b.kind === 'roof';
+  const padX = Math.ceil((roof ? 0.62 : 0.14) * CS * sc), padY = Math.ceil((roof ? 0.5 : 0.14) * CS * sc);
+  const cv = mkCanvas(w + padX * 2, h + padY * 2), c = cv.getContext('2d');
+  c.translate(padX, padY); c.lineJoin = 'round'; c.lineCap = 'round';
+  paintBlock(c, b, ds, w, h, sc);
+  s = BSPR[key] = { cv, ax: padX + w / 2, ay: padY + h / 2 };
+  return s;
 }
-function paintTile(c, m, P, v, d, n) {
-  const R = mkRand(m * 97 + v * 31 + d * 7 + 5), g = Math.max(1, n * 0.07), lw = Math.max(1, n * 0.05);
-  c.lineJoin = 'round'; c.lineCap = 'round';
-  switch (m) {
+// 碎塊：從原本那塊磚的圖上，照碎塊的形狀剪一塊下來，再描一圈邊
+function fragSprite(b) {
+  const sc = V.s; if (b._sp && b._spS === sc) return b._sp;
+  const P = SKINS[b.skin] || SKINS.blue, pts = b.pts, pad = Math.ceil(Math.max(2, sc * 0.3));
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  for (let i = 0; i < pts.length; i += 2) { if (pts[i] < x0) x0 = pts[i]; if (pts[i] > x1) x1 = pts[i]; if (pts[i + 1] < y0) y0 = pts[i + 1]; if (pts[i + 1] > y1) y1 = pts[i + 1]; }
+  const cv = mkCanvas((x1 - x0) * sc + pad * 2, (y1 - y0) * sc + pad * 2), c = cv.getContext('2d');
+  const px = (x) => (x - x0) * sc + pad, py = (y) => (y1 - y) * sc + pad;
+  const path = () => { c.beginPath(); for (let i = 0; i < pts.length; i += 2) { if (i) c.lineTo(px(pts[i]), py(pts[i + 1])); else c.moveTo(px(pts[i]), py(pts[i + 1])); } c.closePath(); };
+  c.save(); path(); c.clip();
+  const ps = blockSprite(b.par, 2);
+  c.drawImage(ps.cv, px(-b.pcx) - ps.ax, py(-b.pcy) - ps.ay);       // 原本那塊磚的中心，在碎塊自己的座標裡是 (-pcx, -pcy)
+  c.restore();
+  c.lineJoin = 'round'; path(); c.strokeStyle = P.ink; c.lineWidth = Math.max(1.5, sc * 0.28); c.stroke();
+  b._sp = { cv, ax: px(0), ay: py(0) }; b._spS = sc;
+  return b._sp;
+}
+function paintBlock(c, b, ds, w, h, sc) {
+  const P = SKINS[b.skin] || SKINS.blue, u = CS * sc, lw = Math.max(1.5, sc * 0.3);
+  const R = mkRand(b.mat * 131 + Math.round(b.w * 7) + Math.round(b.h * 13) + (b.vr & 1) * 17 + 3);
+  const roof = b.kind === 'roof', ball = b.kind === 'ball', il = b.il * sc, ir = b.ir * sc;
+  const path = () => {
+    if (roof) { c.beginPath(); c.moveTo(0, h); c.lineTo(w, h); c.lineTo(w - ir, 0); c.lineTo(il, 0); c.closePath(); }
+    else if (ball) { c.beginPath(); c.arc(w / 2, h / 2, w / 2, 0, TAU); }
+    else if (b.mat === M_CLAY) {
+      // 陶甕：窄口、鼓肚子、小底
+      c.beginPath(); c.moveTo(w * 0.26, 0); c.lineTo(w * 0.74, 0); c.lineTo(w * 0.7, h * 0.1); c.quadraticCurveTo(w * 0.62, h * 0.2, w * 0.86, h * 0.34);
+      c.quadraticCurveTo(w * 1.06, h * 0.62, w * 0.72, h); c.lineTo(w * 0.28, h); c.quadraticCurveTo(w * -0.06, h * 0.62, w * 0.14, h * 0.34); c.quadraticCurveTo(w * 0.38, h * 0.2, w * 0.3, h * 0.1); c.closePath();
+    }
+    else rrect(c, 0, 0, w, h, Math.min(w, h) * 0.09);
+  };
+  c.save(); path(); c.clip();
+  switch (b.mat) {
     case M_STONE: {
-      const p = P.stone, h = n / 2;
-      c.fillStyle = p[3]; c.fillRect(0, 0, n, n);
-      const brick = (x, y, w, hh, k) => {
-        const col = k === 0 ? p[1] : k === 1 ? mix(p[1], p[0], 0.45) : mix(p[1], p[2], 0.35);
-        c.fillStyle = col; c.fillRect(x + g / 2, y + g / 2, w - g, hh - g);
-        c.fillStyle = rgba(p[0], 0.75); c.fillRect(x + g / 2, y + g / 2, w - g, Math.max(1, n * 0.05));
-        c.fillStyle = rgba(p[2], 0.55); c.fillRect(x + g / 2, y + hh - g / 2 - Math.max(1, n * 0.06), w - g, Math.max(1, n * 0.06));
-      };
-      brick(0, 0, n, h, v ? 1 : 0);
-      brick(-n / 2, h, n, h, v ? 0 : 2); brick(n / 2, h, n, h, v ? 2 : 1);
-      c.fillStyle = rgba(p[2], 0.5); for (let k = 0; k < 4; k++) c.fillRect(R() * n, R() * n, Math.max(1, n * 0.05), Math.max(1, n * 0.05));
+      const p = P.stone;
+      c.fillStyle = lg(c, 0, 0, 0, h, [0, mix(p[1], p[0], 0.55), 0.6, p[1], 1, mix(p[1], p[2], 0.45)]); c.fillRect(0, 0, w, h);
+      if (w > u * 2.6) {
+        // 石板：一條有齒飾的飾帶
+        c.fillStyle = rgba(p[2], 0.55); c.fillRect(0, h * 0.62, w, h * 0.38);
+        c.fillStyle = mix(p[1], p[0], 0.3); for (let x = u * 0.2; x < w - u * 0.3; x += u * 0.5) c.fillRect(x, h * 0.66, u * 0.26, h * 0.22);
+        c.fillStyle = rgba(p[3], 0.5); c.fillRect(0, h * 0.54, w, Math.max(1, h * 0.07));
+      } else if (h > u * 1.6) {
+        c.fillStyle = rgba(p[2], 0.45); c.fillRect(w * 0.3, 0, Math.max(1, w * 0.07), h); c.fillRect(w * 0.64, 0, Math.max(1, w * 0.07), h);
+      } else {
+        c.fillStyle = rgba(p[2], 0.5); for (let k = 0; k < 4 + (w > u * 1.5 ? 4 : 0); k++) c.fillRect(R() * w, h * (0.2 + R() * 0.65), Math.max(1, u * 0.06), Math.max(1, u * 0.05));
+        c.fillStyle = rgba(p[0], 0.5); for (let k = 0; k < 2; k++) c.fillRect(R() * w * 0.8, h * (0.25 + R() * 0.5), u * (0.12 + R() * 0.2), Math.max(1, u * 0.04));
+      }
+      c.fillStyle = rgba(p[0], 0.85); c.fillRect(0, 0, w, Math.max(1, u * 0.085));
+      c.fillStyle = rgba(p[3], 0.45); c.fillRect(0, h - Math.max(1, u * 0.1), w, Math.max(1, u * 0.1));
       break;
     }
     case M_WOOD: {
-      const p = P.wood, h = n / 3;
-      for (let r = 0; r < 3; r++) {
-        const y = r * h, k = (r + v) % 3;
-        c.fillStyle = k === 0 ? p[1] : k === 1 ? mix(p[1], p[0], 0.35) : mix(p[1], p[2], 0.25); c.fillRect(0, y, n, h);
-        c.fillStyle = rgba(p[0], 0.7); c.fillRect(0, y, n, Math.max(1, n * 0.045));
-        c.fillStyle = p[2]; c.fillRect(0, y + h - Math.max(1, n * 0.06), n, Math.max(1, n * 0.06));
-        c.strokeStyle = rgba(p[2], 0.45); c.lineWidth = Math.max(1, n * 0.03);
-        c.beginPath(); const yy = y + h * (0.35 + R() * 0.3), x0 = R() * n * 0.5; c.moveTo(x0, yy); c.lineTo(x0 + n * (0.25 + R() * 0.3), yy + (R() - 0.5) * 1.5); c.stroke();
+      if (ball) {
+        // 木桶（看到的是桶底）：一圈鐵箍、幾片桶板、中間一個塞子
+        const p = P.wood, r = w / 2;
+        c.fillStyle = rg(c, r * 0.8, r * 0.7, r * 0.1, r * 1.2, [0, mix(p[1], p[0], 0.6), 0.7, p[1], 1, p[2]]); c.fillRect(0, 0, w, h);
+        c.strokeStyle = rgba(p[2], 0.75); c.lineWidth = Math.max(1, u * 0.04);
+        for (let k = -2; k <= 2; k++) { const x = r + k * r * 0.36, dy = Math.sqrt(Math.max(0, r * r - (x - r) * (x - r))); c.beginPath(); c.moveTo(x, r - dy); c.lineTo(x, r + dy); c.stroke(); }
+        c.strokeStyle = '#3a3340'; c.lineWidth = Math.max(1.5, u * 0.1); c.beginPath(); c.arc(r, r, r * 0.8, 0, TAU); c.stroke();
+        c.fillStyle = p[2]; c.beginPath(); c.arc(r, r, Math.max(1.2, r * 0.14), 0, TAU); c.fill();
+        break;
       }
-      c.fillStyle = p[2]; c.beginPath(); c.arc(n * 0.14, n * 0.17, Math.max(0.8, n * 0.035), 0, TAU); c.arc(n * 0.86, n * 0.83, Math.max(0.8, n * 0.035), 0, TAU); c.fill();
-      break;
-    }
-    case M_IRON: {
-      const p = P.iron, b = n * 0.11;
-      c.fillStyle = p[1]; c.fillRect(0, 0, n, n);
-      c.fillStyle = p[0]; c.fillRect(0, 0, n, b); c.fillRect(0, 0, b, n);
-      c.fillStyle = p[2]; c.fillRect(0, n - b, n, b); c.fillRect(n - b, 0, b, n);
-      c.fillStyle = lg(c, 0, b, 0, n - b, [0, mix(p[1], p[0], 0.35), 1, mix(p[1], p[2], 0.3)]); c.fillRect(b, b, n - 2 * b, n - 2 * b);
-      if (v) { c.strokeStyle = rgba(p[2], 0.7); c.lineWidth = lw; c.beginPath(); c.moveTo(b, b); c.lineTo(n - b, n - b); c.moveTo(n - b, b); c.lineTo(b, n - b); c.stroke(); }
-      for (const [x, y] of [[0.2, 0.2], [0.8, 0.2], [0.2, 0.8], [0.8, 0.8]]) { c.fillStyle = p[2]; c.beginPath(); c.arc(x * n, y * n, n * 0.065, 0, TAU); c.fill(); c.fillStyle = p[0]; c.beginPath(); c.arc(x * n - n * 0.015, y * n - n * 0.015, n * 0.035, 0, TAU); c.fill(); }
+      const p = P.wood, vert = h > w * 1.2;
+      c.fillStyle = vert ? lg(c, 0, 0, w, 0, [0, mix(p[1], p[0], 0.45), 0.55, p[1], 1, mix(p[1], p[2], 0.5)]) : lg(c, 0, 0, 0, h, [0, mix(p[1], p[0], 0.45), 0.55, p[1], 1, mix(p[1], p[2], 0.5)]);
+      c.fillRect(0, 0, w, h);
+      c.strokeStyle = rgba(p[2], 0.5); c.lineWidth = Math.max(1, u * 0.035);
+      const L = vert ? h : w, T = vert ? w : h;
+      for (let k = 0; k < 3; k++) {
+        const t0 = T * (0.24 + 0.26 * k); c.beginPath();
+        for (let x = 0; x <= L; x += u * 0.45) { const tt = t0 + Math.sin(x / u * 2.1 + k * 2 + (b.vr & 7)) * T * 0.045; if (vert) (x ? c.lineTo(tt, x) : c.moveTo(tt, x)); else (x ? c.lineTo(x, tt) : c.moveTo(x, tt)); }
+        c.stroke();
+      }
+      if (b.deco === 1) {
+        // 城門：兩扇門板、鐵條、門釘
+        c.fillStyle = rgba(p[2], 0.75); c.fillRect(w / 2 - Math.max(1, u * 0.05), 0, Math.max(2, u * 0.1), h);
+        c.fillStyle = '#3a3340'; c.fillRect(0, h * 0.22, w, u * 0.16); c.fillRect(0, h * 0.7, w, u * 0.16);
+        c.fillStyle = '#ffc93c'; for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) { c.beginPath(); c.arc(w * (0.14 + 0.24 * i), h * (0.22 + 0.48 * j) + u * 0.08, Math.max(1, u * 0.07), 0, TAU); c.fill(); }
+      } else if (!vert && w < u * 1.5) {
+        // 單塊木頭：木箱的斜撐
+        c.strokeStyle = rgba(p[2], 0.7); c.lineWidth = Math.max(1.5, u * 0.11); c.beginPath(); c.moveTo(u * 0.1, h - u * 0.1); c.lineTo(w - u * 0.1, u * 0.1); c.stroke();
+        c.strokeRect(u * 0.09, u * 0.09, w - u * 0.18, h - u * 0.18);
+      } else {
+        // 兩端的鐵釘
+        c.fillStyle = rgba(p[2], 0.9);
+        for (const f of [0.5 * u / L, 1 - 0.5 * u / L]) for (const g of [0.3, 0.7]) { c.beginPath(); if (vert) c.arc(T * g, L * f, Math.max(1, u * 0.055), 0, TAU); else c.arc(L * f, T * g, Math.max(1, u * 0.055), 0, TAU); c.fill(); }
+      }
+      c.fillStyle = rgba(p[0], 0.6); if (vert) c.fillRect(0, 0, Math.max(1, u * 0.07), h); else c.fillRect(0, 0, w, Math.max(1, u * 0.07));
       break;
     }
     case M_ROOF: {
-      // 筒瓦：一條一條直的瓦壟，下緣一排圓瓦當
-      const p = P.roof, k = 3, w = n / k;
-      c.fillStyle = p[2]; c.fillRect(0, 0, n, n);
-      for (let i = 0; i < k; i++) {
-        const x = i * w;
-        c.fillStyle = lg(c, x, 0, x + w, 0, [0, p[2], 0.25, p[1], 0.5, p[0], 0.78, p[1], 1, p[2]]); c.fillRect(x + w * 0.06, 0, w * 0.88, n);
-        c.fillStyle = rgba(p[2], 0.6); const off = ((i + v) & 1) * n * 0.22;
-        for (let y = off + n * 0.18; y < n; y += n * 0.44) c.fillRect(x + w * 0.08, y, w * 0.84, Math.max(1, n * 0.045));
+      // 筒瓦：一條一條直的瓦壟，上緣一道屋脊，下緣一排瓦當
+      const p = P.roof, tw = u / 3;
+      c.fillStyle = p[2]; c.fillRect(0, 0, w, h);
+      for (let x = -tw * 0.5; x < w; x += tw) { c.fillStyle = lg(c, x, 0, x + tw, 0, [0, p[2], 0.3, p[1], 0.52, p[0], 0.8, p[1], 1, p[2]]); c.fillRect(x + tw * 0.05, 0, tw * 0.9, h); }
+      c.fillStyle = rgba(p[2], 0.55); for (let y = h * 0.34; y < h * 0.9; y += h * 0.3) c.fillRect(0, y, w, Math.max(1, u * 0.045));
+      c.fillStyle = lg(c, 0, 0, 0, h, [0, 'rgba(255,255,255,.25)', 0.5, 'rgba(255,255,255,0)', 1, 'rgba(0,0,0,.25)']); c.fillRect(0, 0, w, h);
+      c.fillStyle = mix(p[0], '#ffffff', 0.25); c.fillRect(0, 0, w, Math.max(2, u * 0.13));
+      c.fillStyle = p[2]; c.fillRect(0, h - u * 0.2, w, u * 0.2);
+      c.fillStyle = p[0]; for (let x = tw * 0.5; x < w; x += tw) { c.beginPath(); c.arc(x, h - u * 0.1, Math.max(1, u * 0.085), 0, TAU); c.fill(); }
+      break;
+    }
+    case M_IRON: {
+      const p = P.iron, bz = u * 0.11;
+      c.fillStyle = lg(c, 0, 0, w, h, [0, mix(p[1], p[0], 0.5), 0.5, p[1], 1, mix(p[1], p[2], 0.5)]); c.fillRect(0, 0, w, h);
+      c.strokeStyle = rgba(p[2], 0.7); c.lineWidth = Math.max(1, u * 0.05);
+      const n = Math.max(1, Math.round(h / u)), m = Math.max(1, Math.round(w / u));
+      for (let j = 0; j < n; j++) for (let i = 0; i < m; i++) {
+        const x0 = w * i / m, y0 = h * j / n, cw = w / m, ch = h / n;
+        c.strokeRect(x0 + bz, y0 + bz, cw - bz * 2, ch - bz * 2);
+        if (((i + j + (b.vr & 1)) & 1) === 0) { c.beginPath(); c.moveTo(x0 + bz, y0 + bz); c.lineTo(x0 + cw - bz, y0 + ch - bz); c.moveTo(x0 + cw - bz, y0 + bz); c.lineTo(x0 + bz, y0 + ch - bz); c.stroke(); }
+        for (const [fx, fy] of [[0.17, 0.17], [0.83, 0.17], [0.17, 0.83], [0.83, 0.83]]) { c.fillStyle = p[2]; c.beginPath(); c.arc(x0 + cw * fx, y0 + ch * fy, u * 0.06, 0, TAU); c.fill(); c.fillStyle = p[0]; c.beginPath(); c.arc(x0 + cw * fx - u * 0.015, y0 + ch * fy - u * 0.015, u * 0.03, 0, TAU); c.fill(); }
       }
-      c.fillStyle = lg(c, 0, 0, 0, n, [0, 'rgba(255,255,255,.22)', 0.5, 'rgba(255,255,255,0)', 1, 'rgba(0,0,0,.22)']); c.fillRect(0, 0, n, n);
+      c.fillStyle = rgba(p[0], 0.8); c.fillRect(0, 0, w, Math.max(1, u * 0.07));
       break;
     }
     case M_ICE: {
       const p = PAL_ICE;
-      c.fillStyle = lg(c, 0, 0, n, n, [0, p[0], 0.55, p[1], 1, p[2]]); c.fillRect(0, 0, n, n);
-      c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = Math.max(1, n * 0.07);
-      c.beginPath(); c.moveTo(n * (0.12 + v * 0.2), n * 0.62); c.lineTo(n * (0.5 + v * 0.2), n * 0.14); c.stroke();
-      c.lineWidth = Math.max(1, n * 0.04); c.beginPath(); c.moveTo(n * 0.5, n * 0.86); c.lineTo(n * 0.84, n * 0.44); c.stroke();
-      c.strokeStyle = rgba(p[3], 0.7); c.lineWidth = Math.max(1, n * 0.06); c.strokeRect(lw / 2, lw / 2, n - lw, n - lw);
+      c.fillStyle = lg(c, 0, 0, w * 0.6, h, [0, p[0], 0.55, p[1], 1, p[2]]); c.fillRect(0, 0, w, h);
+      c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineCap = 'round';
+      for (let x = u * (0.15 + (b.vr & 1) * 0.2); x < w; x += u * 1.0) { c.lineWidth = Math.max(1, u * 0.075); c.beginPath(); c.moveTo(x, h * 0.66); c.lineTo(x + u * 0.36, h * 0.16); c.stroke(); c.lineWidth = Math.max(1, u * 0.04); c.beginPath(); c.moveTo(x + u * 0.36, h * 0.84); c.lineTo(x + u * 0.62, h * 0.46); c.stroke(); }
+      c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(0, 0, w, Math.max(1, u * 0.07));
+      c.fillStyle = rgba(p[3], 0.35); c.fillRect(0, h - Math.max(1, u * 0.09), w, Math.max(1, u * 0.09));
       break;
     }
     case M_ROCK: {
-      const p = PAL_ROCK; c.fillStyle = p[1]; c.fillRect(0, 0, n, n);
-      for (let k = 0; k < 5; k++) { c.fillStyle = k & 1 ? rgba(p[0], 0.55) : rgba(p[2], 0.6); const x = R() * n, y = R() * n, r = n * (0.14 + R() * 0.16); poly(c, [x - r, y, x - r * 0.3, y - r * 0.8, x + r * 0.9, y - r * 0.3, x + r * 0.6, y + r * 0.7, x - r * 0.4, y + r * 0.8]); c.fill(); }
+      const p = PAL_ROCK, r = w / 2;
+      c.fillStyle = rg(c, r * 0.75, r * 0.65, r * 0.1, r * 1.15, [0, p[0], 0.6, p[1], 1, p[2]]); c.fillRect(0, 0, w, h);
+      for (let k = 0; k < 7; k++) { const a = R() * TAU, d = R() * r * 0.75, x = r + Math.cos(a) * d, y = r + Math.sin(a) * d, q = r * (0.16 + R() * 0.2); c.fillStyle = k & 1 ? rgba(p[0], 0.5) : rgba(p[3], 0.6); poly(c, [x - q, y, x - q * 0.3, y - q * 0.8, x + q * 0.9, y - q * 0.3, x + q * 0.6, y + q * 0.7, x - q * 0.4, y + q * 0.8]); c.fill(); }
+      if (b.hot) { c.strokeStyle = '#ff8a2a'; c.lineWidth = Math.max(1, u * 0.07); for (let k = 0; k < 4; k++) { let a = R() * TAU, x = r + Math.cos(a) * r * 0.2, y = r + Math.sin(a) * r * 0.2; c.beginPath(); c.moveTo(x, y); for (let j = 0; j < 3; j++) { a += (R() - 0.5) * 1.4; x += Math.cos(a) * r * 0.32; y += Math.sin(a) * r * 0.32; c.lineTo(x, y); } c.stroke(); } }
+      break;
+    }
+    case M_CLAY: {
+      c.fillStyle = lg(c, 0, 0, w, 0, [0, '#8a4a22', 0.3, '#c8743c', 0.55, '#e39a5c', 0.8, '#c8743c', 1, '#8a4a22']); c.fillRect(0, 0, w, h);
+      c.fillStyle = '#5a2e14'; c.fillRect(0, h * 0.44, w, Math.max(1.5, h * 0.07));
+      c.fillStyle = '#f0d9a8'; for (let x = w * 0.14; x < w; x += w * 0.24) { poly(c, [x, h * 0.42, x + w * 0.08, h * 0.34, x + w * 0.16, h * 0.42]); c.fill(); }
+      c.fillStyle = '#5a2e14'; c.fillRect(w * 0.2, 0, w * 0.6, Math.max(1.5, h * 0.09));
       break;
     }
     case M_KEG: {
-      const pp = P.panel; c.fillStyle = pp[1]; c.fillRect(0, 0, n, n);
-      rrect(c, n * 0.14, n * 0.1, n * 0.72, n * 0.86, n * 0.2); fs(c, lg(c, n * 0.14, 0, n * 0.86, 0, [0, '#5a3418', 0.3, '#a8672e', 0.55, '#c98442', 1, '#5a3418']), '#2a1608', lw);
-      c.fillStyle = '#2b2b33'; c.fillRect(n * 0.13, n * 0.24, n * 0.74, n * 0.09); c.fillRect(n * 0.13, n * 0.72, n * 0.74, n * 0.09);
-      c.fillStyle = '#e23a2a'; poly(c, [n * 0.5, n * 0.36, n * 0.66, n * 0.53, n * 0.5, n * 0.7, n * 0.34, n * 0.53]); c.fill();
-      c.fillStyle = '#ffd34a'; c.beginPath(); c.arc(n * 0.5, n * 0.53, n * 0.07, 0, TAU); c.fill();
-      break;
-    }
-    case M_PANEL: {
-      const pp = P.panel;
-      c.fillStyle = lg(c, 0, 0, 0, n, [0, pp[0], 1, pp[1]]); c.fillRect(0, 0, n, n);
-      c.fillStyle = 'rgba(0,0,0,.16)'; for (let k = 0; k < 3; k++) c.fillRect((k + 0.5 + v * 0.5) * n / 3, 0, Math.max(1, n * 0.035), n);
-      c.fillStyle = 'rgba(255,255,255,.06)'; c.fillRect(0, n * 0.72, n, Math.max(1, n * 0.05));
+      c.fillStyle = lg(c, 0, 0, w, 0, [0, '#5a3418', 0.28, '#a8672e', 0.55, '#cf8a46', 0.8, '#a8672e', 1, '#5a3418']); c.fillRect(0, 0, w, h);
+      c.strokeStyle = 'rgba(60,30,10,.55)'; c.lineWidth = Math.max(1, u * 0.035); for (let k = 1; k < 5; k++) { c.beginPath(); c.moveTo(w * k / 5, 0); c.lineTo(w * k / 5, h); c.stroke(); }
+      c.fillStyle = '#2b2b33'; c.fillRect(0, h * 0.14, w, h * 0.1); c.fillRect(0, h * 0.76, w, h * 0.1);
+      c.fillStyle = '#e23a2a'; poly(c, [w * 0.5, h * 0.3, w * 0.7, h * 0.5, w * 0.5, h * 0.7, w * 0.3, h * 0.5]); c.fill();
+      c.fillStyle = '#ffd34a'; c.beginPath(); c.arc(w * 0.5, h * 0.5, Math.max(1, w * 0.08), 0, TAU); c.fill();
       break;
     }
   }
-  if (d > 0 && m !== M_PANEL && m !== M_KEG) {
-    // 裂痕；第二級再缺角、變暗
-    c.strokeStyle = m === M_ICE ? 'rgba(40,90,140,.8)' : 'rgba(10,6,14,.72)'; c.lineWidth = Math.max(1, n * 0.055);
-    const crack = (x, y, a, len) => { c.beginPath(); c.moveTo(x, y); for (let k = 0; k < 3; k++) { a += (R() - 0.5) * 1.3; x += Math.cos(a) * len; y += Math.sin(a) * len; c.lineTo(x, y); } c.stroke(); };
-    crack(n * (0.2 + R() * 0.2), 0, 1.2 + R() * 0.6, n * 0.26);
-    if (d > 1) {
-      crack(n, n * (0.3 + R() * 0.3), 3.0 + R() * 0.5, n * 0.24); crack(n * (0.5 + R() * 0.3), n, -1.8 + R() * 0.5, n * 0.22);
-      c.fillStyle = 'rgba(8,4,12,.2)'; c.fillRect(0, 0, n, n);
-      c.globalCompositeOperation = 'destination-out'; c.fillStyle = '#000';
-      poly(c, [0, 0, n * 0.3, 0, n * 0.12, n * 0.14, 0, n * 0.26]); c.fill(); poly(c, [n, n, n * 0.66, n, n * 0.84, n * 0.86, n, n * 0.7]); c.fill();
-      c.globalCompositeOperation = 'source-over';
+  if (ds > 0 && b.mat !== M_KEG) {
+    // 裂痕；第二級更多、整塊變暗
+    c.strokeStyle = b.mat === M_ICE ? 'rgba(40,90,140,.85)' : 'rgba(10,6,14,.75)'; c.lineWidth = Math.max(1, u * 0.06);
+    const crack = (x, y, a, len, n) => { c.beginPath(); c.moveTo(x, y); for (let k = 0; k < n; k++) { a += (R() - 0.5) * 1.3; x += Math.cos(a) * len; y += Math.sin(a) * len; c.lineTo(x, y); } c.stroke(); };
+    const nc = Math.max(1, Math.round(Math.max(w, h) / u * 0.7)) * ds;
+    for (let k = 0; k < nc; k++) crack(R() * w, R() < 0.5 ? 0 : h, R() < 0.5 ? 1.2 + R() * 0.7 : -1.2 - R() * 0.7, u * 0.24, 3);
+    if (ds > 1) { c.fillStyle = 'rgba(8,4,12,.2)'; c.fillRect(0, 0, w, h); }
+  }
+  c.restore();
+  path(); c.strokeStyle = b.mat === M_KEG ? '#2a1608' : b.mat === M_CLAY ? '#3a1c0a' : P.ink; c.lineWidth = b.prop ? lw * 0.8 : lw; c.stroke();
+  if (roof) {
+    // 屋簷兩端往上翹的角（只是畫的，不算在碰撞裡）
+    const p = P.roof, T = u;
+    for (let sd = -1; sd <= 1; sd += 2) {
+      const xe = sd < 0 ? 0 : w;
+      c.beginPath(); c.moveTo(xe - sd * T * 0.06, h); c.lineTo(xe + sd * T * 0.2, h - T * 0.02); c.quadraticCurveTo(xe + sd * T * 0.5, h - T * 0.1, xe + sd * T * 0.56, h - T * 0.46);
+      c.quadraticCurveTo(xe + sd * T * 0.26, h - T * 0.36, xe - sd * T * 0.04, h - T * 0.3); c.closePath();
+      c.fillStyle = p[1]; c.fill(); c.strokeStyle = P.ink; c.lineWidth = lw * 0.85; c.stroke();
     }
   }
 }
@@ -340,4 +408,4 @@ function shotSprite(wi, side) {
   s = SSPR[key] = { cv, w: pw, h: ph };
   return s;
 }
-function artReset() { for (const k in USPR) delete USPR[k]; for (const k in SSPR) delete SSPR[k]; for (const k in TILES) delete TILES[k]; }
+function artReset() { for (const k in USPR) delete USPR[k]; for (const k in SSPR) delete SSPR[k]; for (const k in BSPR) delete BSPR[k]; }

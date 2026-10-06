@@ -32,7 +32,6 @@ const VMIN = 32, VMAX = 86;            // 砲口初速範圍
 const ANG_MIN = 0.10, ANG_MAX = 1.50;  // 仰角範圍（弧度）
 const CASTLE_L = 3.4;                  // 我方城樓左緣
 const CASTLE_R = VIEW_W - 3.4;         // 敵城右緣
-const SHOT_CAP = 720;                  // 每一邊同時在天上的砲彈上限（超過就改成加重）
 const STEP = 1 / 60;
 
 // 三角波（-1..1）：移動的倍增符用，等速來回比較好預判
