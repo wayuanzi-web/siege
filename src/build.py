@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""建置《千砲破城》。把 src/parts/ 依檔名順序串成單一頁面。
+
+  python3 src/build.py
+      src/dist/qianpao.html  Claude Artifact 用的頁面片段
+      src/dist/index.html    可直接用瀏覽器開的完整頁面（測試用）
+
+  python3 src/build.py https://<帳號>.github.io/<repo>/
+      另外在 repo 根目錄產生公開網頁 App：index.html、sw.js、manifest.webmanifest
+      （圖示與預覽圖用 src/gen_icons.py 產生一次即可）
+"""
+import pathlib, re, sys, time, urllib.parse
+root = pathlib.Path(__file__).resolve().parent
+parts = root / 'parts'
+head = (parts / '00-head.html').read_text(encoding='utf8')
+js_files = sorted(p for p in parts.glob('*.js'))
+js = '\n'.join(p.read_text(encoding='utf8') for p in js_files)
+js = js.replace("'use strict';\n", '', 1)
+
+# 標題字型只載畫面上真的會出現的中文字：HTML 內文，加上程式裡的字串（註解不算）
+web_path = root / 'webparts' / '90-web.js'
+web_js = web_path.read_text(encoding='utf8') if web_path.exists() else ''
+body_html = re.sub(r'<style>.*?</style>', '', head, flags=re.S)
+code = re.sub(r'/\*.*?\*/', '', js + web_js, flags=re.S)
+code = re.sub(r'(?m)(^|\s)//.*$', '', code)
+cjk = sorted(set(ch for ch in body_html + code if '一' <= ch <= '鿿'))
+fonts = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
+         '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap">'
+         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@900&display=swap&text='
+         + urllib.parse.quote(''.join(cjk)) + '">')
+head = head.replace('<!--FONTS-->', fonts)
+
+def script(code):
+    return '<script>\n(function () {\n\'use strict\';\n' + code + '\n})();\n</script>\n'
+
+def full_page(extra_head, code):
+    # 完整頁面：<title>、字型、樣式放進 <head>，其餘是 <body>
+    cut = head.index('<div id="app">')
+    return ('<!doctype html>\n<html lang="zh-Hant"><head><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">'
+            + extra_head + head[:cut] +
+            '<style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}</style>'
+            '</head><body>\n' + head[cut:] + '\n' + script(code) + '</body></html>\n')
+
+dist = root / 'dist'; dist.mkdir(exist_ok=True)
+frag = head + '\n' + script(js)
+(dist / 'qianpao.html').write_text(frag, encoding='utf8')
+(dist / 'index.html').write_text(full_page('', js), encoding='utf8')
+print('built', len(frag) // 1024, 'KB;', len(js_files), 'js parts;', len(cjk), 'cjk glyphs')
+
+if len(sys.argv) > 1:
+    url = sys.argv[1].rstrip('/') + '/'
+    site = root.parent
+    desc = '兩座城樓隔空對轟：拖曳調角度和力道，砲彈穿過倍增符一發變多發，把對面的城一層一層轟垮。六個關卡，手機橫拿、點開就能玩。'
+    meta = ('<meta name="theme-color" content="#120f1c">'
+            f'<meta name="description" content="{desc}">'
+            '<link rel="manifest" href="manifest.webmanifest">'
+            '<link rel="icon" type="image/png" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">'
+            '<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">'
+            '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="千砲破城">'
+            '<meta property="og:type" content="website"><meta property="og:title" content="千砲破城">'
+            f'<meta property="og:description" content="{desc}"><meta property="og:image" content="{url}og.png"><meta property="og:url" content="{url}">'
+            '<meta name="twitter:card" content="summary_large_image">')
+    (site / 'index.html').write_text(full_page(meta, js + '\n' + web_js), encoding='utf8')
+    stamp = time.strftime('%Y%m%d%H%M%S')
+    sw = (root / 'webparts' / 'sw.js').read_text(encoding='utf8').replace('__CACHE__', 'qianpao-' + stamp)
+    (site / 'sw.js').write_text(sw, encoding='utf8')
+    (site / 'manifest.webmanifest').write_text((root / 'webparts' / 'manifest.json').read_text(encoding='utf8'), encoding='utf8')
+    (site / '.nojekyll').touch()
+    print('web app written to', site, 'for', url, 'cache', 'qianpao-' + stamp)
