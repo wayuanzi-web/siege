@@ -101,10 +101,10 @@ const LOSE_TIPS = [
 const LOSE_TIPS_LV = [
   ['上一輪的彈道會留一條淡淡的虛線，照著它微調就好。'],
   ['每回合風向都會變，虛線已經把風算進去了，照著虛線打。', '倍增符下面那道紫色的折損符會吃掉一半砲彈，瞄高一點。'],
-  ['兵被凍住就開護罩，會立刻解凍。', '冰很滑：打掉冰塔底下的一塊，整座就溜下來。火油兵的火對冰是三倍傷害。'],
-  ['敵城每一層都有火藥桶，打中一個就連環爆。', '讓砲彈從正在噴的地火裡穿過去，傷害多五成。', '紅圈是這一回合結束時的落石，砸得到你就開護罩。'],
-  ['氣球先停在半路，下一輪才飛過來：趁它停著的時候打下來。', '把砲彈射進藍色傳送門，會從敵城頭頂往下灌，繞過正面的金甲。'],
-  ['結界有缺口在轉，對準缺口打；也可以集中火力把一片結界打碎。', '毀滅光球先停在半路，下一輪才砸過來：打掉它，或是開護罩。']
+  ['兵被凍住就開護罩，會立刻解凍。', '冰很滑：打掉冰塔底下的一塊，整座就溜下來。火油兵的火對冰特別有效。'],
+  ['敵城正面是鐵甲：吊高從屋頂打進去，把二樓的火藥庫炸開，一桶爆就三桶連環爆。', '讓砲彈從正在噴的地火裡穿過去，傷害多五成。', '紅圈是這一回合結束時的落石，砸得到你就開護罩。'],
+  ['氣球先停在半路，下一輪才飛過來：趁它停著的時候打下來。', '把砲彈射進藍色傳送門，會從敵城頭頂往下灌，繞過正面的金甲。', '先打掉防空弩，不然每一輪都會被射下三發。'],
+  ['結界每回合只開一個缺口：看哪一段沒有光牆，就用那個角度打進去；光牆也打得破。', '毀滅光球先停在半路，下一輪才砸過來：打掉它，或是開護罩。', '先把魔王頭上的屋頂轟掉，再把砲彈吊高落進大殿。']
 ];
 function showResult(won, st) {
   $('resTitle').textContent = won ? (st.idx === LEVELS.length - 1 ? '魔王伏誅' : '敵城攻破') : '城樓失守';
@@ -154,14 +154,14 @@ function hudUpdate() {
   if (b !== HUD.b) { if (HUD.b >= 0 && b < HUD.b) replayFlash($('hpB')); HUD.b = b; $('pctB').textContent = b + '%'; $('barB').style.transform = 'scaleX(' + (b / 100) + ')'; }
   // 輪到誰
   const play = S.state === 'play', mine = play && S.phase === 'aim' && S.turn === 0;
-  const tk = !play || S.phase === 'intro' ? '' : S.phase === 'hazard' ? 'hz' : S.phase + S.turn;
+  const tk = !play || S.phase === 'intro' || (S.phase === 'hazard' && !S.hz) ? '' : S.phase === 'hazard' ? 'hz' : S.phase + S.turn + (S.team[S.turn].ult.armed ? 'u' : '');
   if (tk !== HUD.turn) {
     HUD.turn = tk; const el = $('turnChip');
     if (!tk) el.hidden = true;
     else {
       el.hidden = false;
       el.className = 'chamfer ' + (tk === 'hz' ? 'hz' : S.turn === 0 ? 'me' : 'foe') + (mine ? ' go' : '');
-      el.textContent = tk === 'hz' ? '落石！' : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
+      el.textContent = tk === 'hz' ? '落石！' : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : S.team[1].ult.armed ? '敵軍連珠砲上膛！' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
     }
   }
   const fk = mine ? 1 : 0; if (fk !== HUD.fire) { HUD.fire = fk; $('btnFire').classList.toggle('ready', !!mine); $('btnFire').classList.toggle('btn-gold', !!mine); }

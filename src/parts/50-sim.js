@@ -14,7 +14,7 @@ const S = {
   st: [null, null], structs: [], blocks: [], units: [], team: [null, null], rubble: null,
   gates: [], gsp: [], bitUse: new Float64Array(30),
   objs: [], marks: [], pend: [],
-  wind: 0, rage: 1, sudden: false, gpts: null, voids: null, boss: null, nburn: 0, burnT: 0, chain: 0, nfrag: 0, bid: 0, balls: [],
+  wind: 0, rage: 1, sudden: false, gpts: null, voids: null, boss: null, nburn: 0, burnT: 0, chain: 0, nfrag: 0, bid: 0, balls: [], hz: 0,
   stat: { fired: 0, peak: 0, swarm: 1, cells: 0, kills: 0, gates: 0, lost: 0, chain: 0 },
   on: null
 };
@@ -636,7 +636,8 @@ function endTurn() {
 function roundEnd() {
   let wait = false;
   if (S.nfrag > FRAG_KEEP) { for (const b of S.blocks) { if (S.nfrag <= FRAG_KEEP) break; if (b.frag && !b.dead) { blockKill(b, 2, K_CRUSH, true); wait = true; } } }
-  if (S.marks.length) { for (const m of S.marks) dropRock(m.x, m.big); S.marks.length = 0; wait = true; ev('rumble'); }
+  S.hz = 0;
+  if (S.marks.length) { for (const m of S.marks) dropRock(m.x, m.big); S.marks.length = 0; wait = true; S.hz = 1; ev('rumble'); }
   if (wait) { S.phase = 'hazard'; S.phaseT = 0; S.quietT = 0; S.chain = 0; } else roundStart();
 }
 function roundStart() {

@@ -1,7 +1,8 @@
 /* ===== 60-levels: 六個關卡 =====
    ground  地面起伏 [x, y]…（城腳一定在 y=0）；voids 沒有地面的區間（東西掉下去就沒了）
    me/foe  castle 用哪張藍圖、crew 依兵位 1、2、3… 放什麼兵
-   foe.ai  err 落點誤差、think 想多久才開火、gate 這一輪會去找倍增符的機率、hate 會打我方倍增符的機率、lob 偏好吊高
+   foe.ai  err 落點誤差、think 想多久才開火、gate 這一輪會去找倍增符的機率、hate 會打我方倍增符的機率、lob 偏好吊高、
+           skill 連珠砲集滿之後會拿來用的機率（0 = 不會用）
    foe.hp / dmg  敵軍的耐久、傷害倍率
    gates   倍增符：owner 0 我方（藍）、1 敵方（赤，會擋我方的砲，可以打掉）、2 黃金（兩邊都能用）、3 折損（÷2）
            mult 倍數、h 半高、spots 位置（hop: true 的每回合換下一個）、at 第幾回合開始出現、
@@ -14,7 +15,7 @@
 const LEVELS = [
   {
     name: '青丘試砲', tag: '基本玩法', theme: 0,
-    tip: '按住畫面拖曳瞄準，放開就發射。砲彈穿過藍色倍增符，一發變多發；打斷柱子，上面的整層會塌下來',
+    tip: '雙方輪流開火。按住畫面拖曳瞄準，放開就發射；砲彈穿過藍色倍增符，一發變多發。打斷望樓的柱子，整座會倒下來。守軍全倒就破城',
     ground: [[-40, 3], [0, 0], [36, 0], [44, -2.5], [56, -3.8], [68, -2.5], [76, 0], [112, 0], [152, 3]],
     me: { castle: 'P1', crew: ['rocket', 'bolt', 'rocket'] },
     foe: { castle: 'E1', crew: ['rocket', 'rocket'], hp: 1.1, dmg: 1.5, ai: { err: 6.5, think: 1.3, gate: 0 } },
@@ -25,8 +26,8 @@ const LEVELS = [
     lantern: { at: 3, every: 3, spots: [[56, 47], [53, 27], [59, 26]] }
   },
   {
-    name: '黃沙風口', tag: '風向・移動的符', theme: 1,
-    tip: '每回合風向都會變，虛線已經把風算進去。倍增符上下飄，抓準時機放手；紫色的折損符會吃掉一半砲彈',
+    name: '黃沙風口', tag: '風向・移動的符・滾石', theme: 1,
+    tip: '每回合風向都會變，虛線已經把風算進去。倍增符上下飄，抓準時機放手；紫色的折損符會吃掉一半砲彈。沙城的平台上堆著大石球，震下來會砸到底下的人',
     ground: [[-40, 4], [0, 0], [36, 0], [42, -2], [49, 2], [53, 10], [56, 13], [59, 10], [63, 2], [70, -2], [76, 0], [112, 0], [152, 4]],
     me: { castle: 'P1', crew: ['rocket', 'bolt', 'bomb'] },
     foe: { castle: 'E2', crew: ['bomb', 'rocket', 'rocket'], hp: 1.0, dmg: 1.1, ai: { err: 6.5, think: 1.2, gate: 0.5 } },
@@ -40,11 +41,11 @@ const LEVELS = [
     lantern: { at: 3, every: 3, spots: [[56, 47], [50, 28], [64, 26]] }
   },
   {
-    name: '霜河冰壁', tag: '冰牆・冰鏡・冰凍', theme: 2,
-    tip: '中間的冰牆擋住平射：把它轟倒，或是吊高越過去。打太遠的砲彈會被冰鏡彈回來；兵被凍住會少打一輪，開護城罩可以解凍',
+    name: '霜河冰壁', tag: '冰牆・滑溜的冰・冰凍', theme: 2,
+    tip: '中間的冰牆擋住平射：把它轟倒，或是吊高越過去。冰很滑，打掉冰塔底下的支撐，整座就溜下來。兵被凍住會少打一輪，開護罩可以解凍',
     ground: [[-40, 3], [0, 0], [36, 0], [41, -2], [71, -2], [76, 0], [112, 0], [152, 3]],
     me: { castle: 'P2', crew: ['bolt', 'bomb', 'fire'] },
-    foe: { castle: 'E3', crew: ['ice', 'bomb', 'ice'], hp: 1.6, dmg: 1.4, ai: { err: 5.5, think: 1.2, gate: 0.6, hate: 0.15, lob: 1 } },
+    foe: { castle: 'E3', crew: ['ice', 'bomb', 'ice'], hp: 1.6, dmg: 1.4, ai: { err: 5.5, think: 1.2, gate: 0.6, hate: 0.15, lob: 1, skill: 0.4 } },
     extra: [{ castle: 'WALL', x: 56, y: -2, hp: 1 }],
     objs: [
       { t: 'mirror', x: 104, y: 45.5, len: 5.5, ang: 0.62, swing: 0.5, sw: 0.2, ph: 0 },
@@ -58,11 +59,11 @@ const LEVELS = [
     lantern: { at: 3, every: 3, spots: [[47, 47], [65, 47]] }
   },
   {
-    name: '熔岩雙峰', tag: '地火・落石・火藥桶', theme: 3,
-    tip: '每回合有一道地火在噴，砲彈穿過火柱會著火、威力更大。敵城每一層都堆著火藥桶，打中一個就連環爆；紅圈是這一回合的落石',
+    name: '熔岩雙峰', tag: '火藥庫・地火・落石', theme: 3,
+    tip: '敵城正面是鐵甲，打不太動：吊高從屋頂打進去。二樓是火藥庫，炸到一桶就連環爆。砲彈穿過地火會著火、威力更大；紅圈是回合結束時的落石，開護罩擋得住',
     ground: [[-40, 5], [0, 0], [36, 0], [40, -3.5], [72, -3.5], [76, 0], [112, 0], [152, 5]],
     me: { castle: 'P2', crew: ['rocket', 'bomb', 'ice'] },
-    foe: { castle: 'E4', crew: ['fire', 'fire', 'bomb'], hp: 1.3, dmg: 1.1, ai: { err: 5.5, think: 1.1, gate: 0.65, hate: 0.2 } },
+    foe: { castle: 'E4', crew: ['fire', 'fire', 'bomb'], hp: 1.3, dmg: 1.1, ai: { err: 5.5, think: 1.1, gate: 0.65, hate: 0.2, skill: 0.5 } },
     objs: [
       { t: 'geyser', x: 46, w: 2.8, hgt: 45 },
       { t: 'geyser', x: 56, w: 2.8, hgt: 48 },
@@ -78,10 +79,10 @@ const LEVELS = [
   },
   {
     name: '雲海浮島', tag: '傳送門・氣球・防空弩', theme: 4,
-    tip: '兩座城各在一座浮島上，掉出去的東西就沒了。藍色傳送門會把砲彈送到敵城頭頂往下灌；轟炸氣球先停在半路，下一輪才飛過來，趁現在打下來',
+    tip: '兩座城都蓋在浮島的邊緣，掉出去的就回不來了。藍色傳送門會把砲彈送到敵城頭頂往下灌；轟炸氣球先停在半路，下一輪才飛過來，趁現在打下來。防空弩每輪會射下三發砲彈',
     voids: [[36, 76]],
     me: { castle: 'P3', crew: ['rocket', 'ice', 'zap', 'bomb'] },
-    foe: { castle: 'E5', crew: ['bal', 'bomb', 'flak', 'zap'], hp: 1.0, dmg: 1.2, ai: { err: 5, think: 1.1, gate: 0.75, hate: 0.25 } },
+    foe: { castle: 'E5', crew: ['bal', 'bomb', 'flak', 'zap'], hp: 1.0, dmg: 1.0, ai: { err: 5, think: 1.1, gate: 0.75, hate: 0.25, skill: 0.5 } },
     objs: [
       { t: 'portal', owner: 0, x: 46, y: 29, r: 3.4, ex: 93.3, ey: 48, ea: -Math.PI / 2, ej: 0.4, ew: 30, mv: { a: 3.5, per: 9 } },
       { t: 'portal', owner: 1, x: 66, y: 29, r: 3.4, ex: 18.7, ey: 48, ea: -Math.PI / 2, ej: 0.4, ew: 30, mv: { a: 3.5, per: 9, ph: 0.5 } }
@@ -96,10 +97,10 @@ const LEVELS = [
   },
   {
     name: '魔王城', tag: '魔王三階段', theme: 5,
-    tip: '打倒魔王就贏。魔王受傷到一定程度會張開結界，瞄缺口打；毀滅光球先停在半路，下一輪才砸過來：把它打掉，或是開護城罩',
+    tip: '打倒魔王就贏。先轟掉屋頂，再把砲彈吊進大殿。魔王受傷後會張開結界，每回合換缺口：從沒有光牆的地方打。毀滅光球先停在半路，下一輪才砸過來，把它打掉或是開護罩',
     voids: [[36, 69.5]],
     me: { castle: 'P3', crew: ['rocket', 'zap', 'bomb', 'fire'] },
-    foe: { castle: 'E6', crew: ['boss', 'rocket', 'bomb', 'flak'], hp: 1.0, dmg: 1.0, ai: { err: 5.5, think: 1.1, gate: 0.7, hate: 0.25 } },
+    foe: { castle: 'E6', crew: ['boss', 'rocket', 'bomb', 'flak'], hp: 0.95, dmg: 0.9, ai: { err: 5.5, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5 } },
     boss: { p2: 0.7, p3: 0.4, spin: 0.5, arc: 0.45, segHp: 60, regen: 2, orbHp: 60, meteors: 1 },
     gates: [
       { owner: 0, mult: 3, h: 6, spots: [[45, 37]] },

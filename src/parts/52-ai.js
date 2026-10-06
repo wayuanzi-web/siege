@@ -76,6 +76,8 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax) {
 function aiBegin(T) {
   const A = T.ai, side = T.side, dir = T.dir, foeT = S.team[1 - side], fst = S.st[1 - side], wind = S.wind;
   A.st = 1; A.t = A.think * (0.8 + rnd() * 0.4); A.fireAt = S.time + A.t + 0.25; A.cand.length = 0; A.ci = 0; A.best = null; A.bs = 0.004; A.useGate = rnd() < A.gate;
+  // 連珠集滿了：一輪到自己就先上膛（對方看得到，來得及開護罩），多想一下再打
+  if (A.skill > 0 && T.ult.c >= T.ult.need && !T.ult.armed && rnd() < A.skill) { simSkill(side, 'ult'); A.t += 0.7; A.fireAt += 0.7; A.useGate = true; }
   let lead = null, bv = -1;
   for (const u of T.units) { if (!u.alive || !u.w || u.frozen > 0 || u.stun > 0) continue; const v = u.w.dmg * (u.w.n || 1) * (u.w.fan || 1) + rnd() * 6; if (v > bv) { bv = v; lead = u; } }
   if (!lead) for (const u of T.units) if (u.alive) { lead = u; break; }
@@ -139,7 +141,6 @@ function aiStep(T, dt) {
     const k = Math.min(1, dt * 6); simAim(T.side, T.aim[0] + (A.px - T.aim[0]) * k, T.aim[1] + (A.py - T.aim[1]) * k);
     if (A.t <= 0 && Math.hypot(A.px - T.aim[0], A.py - T.aim[1]) < 1.5) {
       simAim(T.side, A.px, A.py);
-      if (A.skill > 0 && T.ult.c >= T.ult.need && !T.ult.armed && rnd() < A.skill * (A.mult > 1 ? 1 : 0.5)) simSkill(T.side, 'ult');
       A.st = 0; simFire(T.side);
     }
   }

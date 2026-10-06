@@ -107,7 +107,10 @@ function uiEvent(t, a, b, c, d, e) {
       }
       break;
     case 'wind': once('wind', '起風了！每回合風向都會變，虛線已經把風算進去'); break;
-    case 'phase': if (a === 2) { banner('魔王結界', 'boss', '第二階段'); later(1900, () => say('結界有缺口在轉，對準缺口打！毀滅光球要打掉', 1)); } else { banner('魔王暴怒', 'boss', '最終階段'); later(1900, () => say('黃金符出現了：穿過去，一發變二十發！')); } break;
+    case 'ultarm': if (c === 1) { const T = S.team[0]; say(T.shield.c >= T.shield.need && !T.shield.on ? '敵軍連珠砲上膛了，這一輪打三次：快開護罩！' : '敵軍連珠砲上膛了，這一輪打三次！', 1); } break;
+    case 'phase': if (a === 2) { banner('魔王結界', 'boss', '第二階段'); later(1900, () => say('結界分三段，每回合只開一個缺口：從沒有光牆的地方打進去', 1)); } else { banner('魔王暴怒', 'boss', '最終階段'); later(1900, () => say('黃金符出現了：穿過去，一發變二十發！')); } break;
+    case 'bossback': once('bback', '魔王摔下去又飛回來了，不過摔一次扣不少血'); break;
+    case 'rockstop': if (c === 0) once('rstop', '護罩把落石擋下來了'); break;
     case 'sudden': banner('決戰時刻', 'red'); later(1900, () => say('拖太久了，雙方的砲火越來越猛', 1)); break;
     case 'end': banner(c === 1 ? (S.lv.boss ? '魔王伏誅' : '敵城攻破') : '城樓失守', c === 1 ? 'gold' : 'red', d ? (c === 1 ? '守軍全滅' : '我軍全滅') : ''); $('hint').hidden = true; break;
     case 'gate': if (e === 0 && G.tut >= 2 && G.tut <= 3 && !G.said.gt) { G.said.gt = 1; say('就是這樣！穿過倍增符，砲彈變多了'); } break;
@@ -280,7 +283,7 @@ function boot() {
   // 字型晚一點才載到的話重新排一次
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { layout(); }).catch(() => { });
 }
-window.__qp = { S, SH, FX, G, V, SV, AU, RD, UI, PH, LEVELS, BOTS, simInit, simStep, simAim, simFire, simSkill, aiInit, teamBar, startLevel, goHome, layout, renderFrame, fxStep, hudUpdate, sfx, musStart, physExplode, blockKill, WPN,
+window.__qp = { S, SH, FX, G, V, SV, AU, RD, UI, PH, LEVELS, BOTS, simInit, simStep, simAim, simFire, simSkill, aiInit, teamBar, startLevel, goHome, layout, renderFrame, fxStep, hudUpdate, sfx, musStart, physExplode, blockKill, killUnit, WPN,
   // 測試用：凍結即時迴圈後，手動把戰局往前推 sec 秒
   advance(sec) { const n = Math.round(sec / STEP); let acc = 0; for (let i = 0; i < n; i++) { simStep(STEP); fxStep(STEP, STEP); acc += STEP; if (G.mode === 'play' && S.state !== 'play') G.endT += STEP; if (acc >= 0.05 && i < n - 1) { renderFrame(acc, acc); acc = 0; } } if (G.mode === 'play') hudUpdate(); renderFrame(acc || STEP, acc || STEP); }
 };

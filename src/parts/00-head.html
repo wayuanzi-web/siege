@@ -97,11 +97,11 @@ button:focus-visible { outline: 3px solid var(--gold-lt); outline-offset: 2px; }
 #banner.boss { color: #ff5a8a; text-shadow: 0 3px 0 #2a0206, 0 0 30px rgba(255, 30, 90, .9); background: linear-gradient(90deg, transparent, rgba(20, 0, 10, .78) 22%, rgba(20, 0, 10, .78) 78%, transparent); }
 #banner.boss small { color: var(--gold); }
 @keyframes banner { 0% { opacity: 0; transform: scale(1.7); } 12% { opacity: 1; transform: scale(1); } 78% { opacity: 1; transform: scale(1.03); } 100% { opacity: 0; transform: scale(1.1); } }
-#say { position: absolute; left: 50%; top: calc(var(--u) * 17); transform: translateX(-50%); padding: calc(var(--u) * 1.2) calc(var(--u) * 3.4); font-weight: 700; font-size: calc(var(--u) * 3.5); letter-spacing: .08em; line-height: 1.4; text-align: center; text-wrap: balance; opacity: 0;
+#say { position: absolute; left: 50%; bottom: calc(var(--u) * 12.5); transform: translateX(-50%); padding: calc(var(--u) * 1.2) calc(var(--u) * 3.4); font-weight: 700; font-size: calc(var(--u) * 3.5); letter-spacing: .08em; line-height: 1.4; text-align: center; text-wrap: balance; opacity: 0;
   background: rgba(18, 12, 30, .86); --cut: calc(var(--u) * 1.6); width: max-content; max-width: 76%; }
-#say.show { animation: say 3.4s ease both; }
+#say.show { animation: say 4.2s ease both; }
 #say.alert { color: #ffb0a2; box-shadow: inset 0 0 0 2px var(--red); background: rgba(60, 8, 10, .88); }
-@keyframes say { 0% { opacity: 0; transform: translate(-50%, -8px); } 8%, 86% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, 0); } }
+@keyframes say { 0% { opacity: 0; transform: translate(-50%, 8px); } 8%, 88% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, 0); } }
 #mile { position: absolute; left: 50%; top: calc(var(--u) * 27); font-family: var(--f-display); font-weight: 900; font-size: calc(var(--u) * 6.6); letter-spacing: .14em; color: var(--gold-lt); white-space: nowrap;
   text-shadow: 0 2px 0 #3a2203, 0 0 14px rgba(255, 190, 40, .8); opacity: 0; transform: translateX(-50%); }
 #mile.show { animation: mile 1.5s ease both; }
