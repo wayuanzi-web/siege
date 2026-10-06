@@ -1,11 +1,13 @@
 /* ===== 15-view: 戰場座標 ↔ 畫面像素。整個戰場固定入鏡，不捲動 ===== */
-const V = { W: 1, H: 1, s: 1, gy: 0, cx: 0, dpr: 1, padL: 0, padR: 0, T: 1, x0: 0, x1: VIEW_W, top: 70 };
-function setView(W, H, dpr, padL, padR) {
-  V.W = W; V.H = H; V.dpr = dpr; V.padL = padL || 0; V.padR = padR || 0;
+const V = { W: 1, H: 1, s: 1, gy: 0, cx: 0, dpr: 1, padL: 0, padR: 0, T: 1, x0: 0, x1: VIEW_W, top: 70, hud: 0, topVis: 60 };
+// hud：上方資訊列蓋住的高度（像素）。戰場要整個放在它下面，不然吊高的彈道和城頂上面的東西會被擋住
+function setView(W, H, dpr, padL, padR, hud) {
+  V.W = W; V.H = H; V.dpr = dpr; V.padL = padL || 0; V.padR = padR || 0; V.hud = hud || 0;
   const uw = W - V.padL - V.padR;
-  V.s = Math.min(uw / (VIEW_W + GUT * 2), H / VIEW_H);
+  V.s = Math.min(uw / (VIEW_W + GUT * 2), (H - V.hud) / VIEW_H);
   V.cx = V.padL + uw / 2; V.gy = Math.round(H - GROUND_D * V.s); V.T = CS * V.s;
   V.x0 = MID - V.cx / V.s; V.x1 = MID + (W - V.cx) / V.s; V.top = V.gy / V.s;      // 畫面上看得到的戰場範圍
+  V.topVis = (V.gy - V.hud) / V.s;                                                   // 資訊列下緣是戰場的多高
 }
 const X = (wx) => (wx - MID) * V.s + V.cx;
 const Y = (wy) => V.gy - wy * V.s;

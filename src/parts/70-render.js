@@ -62,7 +62,7 @@ function backSprite(st) {
   st._bk = cv; st._bkT = T; return cv;
 }
 function drawBackdrop(c, st, rdt) {
-  const { cols, rows, back, backTo, n } = st; if (!n) return;
+  const { cols, rows, back, backTo, n } = st; if (!n || st.side > 1) return;
   let any = false; const k = Math.min(1, rdt * 7);
   for (let i = 0; i < n; i++) { let v = back[i]; const to = backTo[i]; if (v !== to) { v += (to - v) * k; if (Math.abs(v - to) < 0.03) v = to; back[i] = v; } if (v > 0) any = true; }
   if (!any) return;
@@ -299,7 +299,7 @@ function drawFlyers(c, t) {
     const x = X(mk.x), y = Y(mk.sy), r = s * (mk.big ? 4.2 : 3.2) * (0.9 + 0.1 * Math.sin(t * 8));
     c.strokeStyle = 'rgba(255,80,40,' + (0.55 + 0.35 * Math.sin(t * 12)) + ')'; c.lineWidth = Math.max(1.5, s * 0.4);
     c.beginPath(); c.ellipse(x, y, r, r * 0.4, 0, 0, TAU); c.stroke();
-    c.setLineDash([s * 1.2, s * 1.2]); c.lineDashOffset = -t * s * 10; c.beginPath(); c.moveTo(x, 0); c.lineTo(x, y); c.stroke(); c.setLineDash([]);
+    c.setLineDash([s * 1.2, s * 1.2]); c.lineDashOffset = -t * s * 10; c.beginPath(); c.moveTo(x, V.hud); c.lineTo(x, y); c.stroke(); c.setLineDash([]);
     c.fillStyle = 'rgba(255,90,50,.9)'; poly(c, [x - s * 1.1, y - s * 3.6, x + s * 1.1, y - s * 3.6, x, y - s * 1.7]); c.fill();
   }
 }
@@ -371,7 +371,7 @@ function fxDraw(c) {
   // 被炸飛的兵
   for (const f of FX.flung) {
     const sp = unitSprite(f.side, f.type), cs = Math.cos(f.rot), sn = Math.sin(f.rot);
-    c.globalAlpha = Math.min(1, (2.2 - f.t) * 2); c.setTransform(cs, sn, -sn, cs, X(f.x) + sx, Y(f.y) + sy); c.drawImage(sp.cv, -sp.px / 2, -sp.px / 2);
+    c.globalAlpha = Math.min(1, (2.2 - f.t) * 2); c.setTransform(cs, sn, -sn, cs, X(f.x) + sx, Y(f.y) + sy); c.drawImage(sp.cv, -sp.ax, -sp.cy);
   }
   c.setTransform(1, 0, 0, 1, sx, sy); c.globalAlpha = 1;
   // 跳出來的字
@@ -380,7 +380,7 @@ function fxDraw(c) {
     const f = p.t / p.max, sc = f < 0.12 ? 0.6 + f / 0.12 * 0.5 : 1.1 - Math.min(0.1, (f - 0.12) * 0.5), fz = p.size * s * sc;
     c.globalAlpha = f > 0.7 ? (1 - f) / 0.3 : 1;
     c.font = /[^\x00-\xff]/.test(p.txt) && !/^×/.test(p.txt) ? F_ZH.replace('1px', fz + 'px') : '400 ' + fz * 1.15 + 'px ' + F_NUM;
-    const x = clamp(X(p.x), fz * 2, V.W - fz * 2), y = Y(p.y) - f * s * 3.5;
+    const x = clamp(X(p.x), fz * 2, V.W - fz * 2), y = Math.max(Y(p.y) - f * s * 3.5, V.hud + fz * 0.9);
     c.lineWidth = fz * 0.22; c.strokeStyle = 'rgba(16,10,26,.9)'; c.strokeText(p.txt, x, y); c.fillStyle = p.col; c.fillText(p.txt, x, y);
   }
   c.globalAlpha = 1;
@@ -445,7 +445,7 @@ function drawAim(c, t) {
   if (S.phase === 'aim' && S.turn === 1) {
     let lead = E.ai && E.ai.lead; if (!lead || !lead.alive) { lead = null; for (const u of E.units) if (u.alive && u.w) { lead = u; break; } }
     if (lead) {
-      const big = lead.def.big ? 1.5 : 1; c.beginPath();
+      const big = lead.def.big ? MUZ_BIG : 1; c.beginPath();
       aimDots(c, lead.x - 1.3 * big, lead.y + 2.3 * big, E.aim[0], E.aim[1], 0.06 + (t * 0.9) % 1 * 0.065, 0.62, 0.62, 0.46, 0.2);
       c.fillStyle = 'rgba(255,150,130,.85)'; c.fill(); c.strokeStyle = 'rgba(106,11,16,.7)'; c.lineWidth = Math.max(1, s * 0.14); c.stroke();
     }

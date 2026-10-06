@@ -33,6 +33,8 @@ const ANG_MIN = 0.10, ANG_MAX = 1.50;  // 仰角範圍（弧度）
 const CASTLE_L = 3.4;                  // 我方城樓左緣
 const CASTLE_R = VIEW_W - 3.4;         // 敵城右緣
 const STEP = 1 / 60;
+const OUT_M = 1.6;                     // 兵離開自己的城樓超過這麼遠、落地站定，就算被轟出城
+const MUZ_BIG = 1.85;                  // 魔王的個頭是一般兵的幾倍
 
 // 三角波（-1..1）：移動的倍增符用，等速來回比較好預判
 function tri(p) { p = p - Math.floor(p); return p < 0.5 ? p * 4 - 1 : 3 - p * 4; }

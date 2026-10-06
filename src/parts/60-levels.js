@@ -27,7 +27,7 @@ const LEVELS = [
   },
   {
     name: '黃沙風口', tag: '風向・移動的符・滾石', theme: 1,
-    tip: '每回合風向都會變，虛線已經把風算進去。倍增符上下飄，抓準時機放手；紫色的折損符會吃掉一半砲彈。沙城的平台上堆著大石球，震下來會砸到底下的人',
+    tip: '每回合風向都會變，虛線已經把風算進去。倍增符上下飄，抓準時機放手；紫色的折損符會吃掉一半砲彈。沙城的閣樓堆著大石球，打斷撐著它的木樑，石球就砸在底下的兵頭上',
     ground: [[-40, 4], [0, 0], [36, 0], [42, -2], [49, 2], [53, 10], [56, 13], [59, 10], [63, 2], [70, -2], [76, 0], [112, 0], [152, 4]],
     me: { castle: 'P1', crew: ['rocket', 'bolt', 'bomb'] },
     foe: { castle: 'E2', crew: ['bomb', 'rocket', 'rocket'], hp: 1.0, dmg: 1.1, ai: { err: 6.5, think: 1.2, gate: 0.5 } },
@@ -60,7 +60,7 @@ const LEVELS = [
   },
   {
     name: '熔岩雙峰', tag: '火藥庫・地火・落石', theme: 3,
-    tip: '敵城正面是鐵甲，打不太動：吊高從屋頂打進去。二樓是火藥庫，炸到一桶就連環爆。砲彈穿過地火會著火、威力更大；紅圈是回合結束時的落石，開護罩擋得住',
+    tip: '敵城正面是又厚又重的鐵甲：吊高從屋頂打進去。樓上是火藥庫，炸到一桶就三桶連環爆。砲彈穿過地火會著火、威力更大；紅圈是回合結束時的落石，開護罩擋得住',
     ground: [[-40, 5], [0, 0], [36, 0], [40, -3.5], [72, -3.5], [76, 0], [112, 0], [152, 5]],
     me: { castle: 'P2', crew: ['rocket', 'bomb', 'ice'] },
     foe: { castle: 'E4', crew: ['fire', 'fire', 'bomb'], hp: 1.3, dmg: 1.1, ai: { err: 5.5, think: 1.1, gate: 0.65, hate: 0.2, skill: 0.5 } },
@@ -74,7 +74,7 @@ const LEVELS = [
       { owner: 0, mult: 5, h: 5.5, spots: [[61, 43.5], [61, 33]], at: 2, hop: true },
       { owner: 1, mult: 2, h: 5.5, spots: [[71, 33], [71, 43.5]], at: 3, hop: true, regap: 2 }
     ],
-    rocks: { at: 2, every: 1, n: 1 },
+    rocks: { at: 2, every: 2, n: 1 },
     lantern: { at: 3, every: 3, spots: [[56, 26], [44, 46], [68, 46]] }
   },
   {
@@ -84,29 +84,29 @@ const LEVELS = [
     me: { castle: 'P3', crew: ['rocket', 'ice', 'zap', 'bomb'] },
     foe: { castle: 'E5', crew: ['bal', 'bomb', 'flak', 'zap'], hp: 1.0, dmg: 1.0, ai: { err: 5, think: 1.1, gate: 0.75, hate: 0.25, skill: 0.5 } },
     objs: [
-      { t: 'portal', owner: 0, x: 46, y: 29, r: 3.4, ex: 93.3, ey: 48, ea: -Math.PI / 2, ej: 0.4, ew: 30, mv: { a: 3.5, per: 9 } },
-      { t: 'portal', owner: 1, x: 66, y: 29, r: 3.4, ex: 18.7, ey: 48, ea: -Math.PI / 2, ej: 0.4, ew: 30, mv: { a: 3.5, per: 9, ph: 0.5 } }
+      // 藍色傳送門放在 ×3 符的後面：穿過符的砲彈順勢飛進去，從敵城正上方灌下來
+      { t: 'portal', owner: 0, x: 58, y: 40, r: 3.8, ex: 93.3, ey: 50, ea: -Math.PI / 2, ej: 0.22, ew: 14, mv: { a: 3, per: 9 } },
+      { t: 'portal', owner: 1, x: 54, y: 27, r: 3.8, ex: 18.7, ey: 50, ea: -Math.PI / 2, ej: 0.22, ew: 14, mv: { a: 3, per: 9, ph: 0.5 } }
     ],
     gates: [
-      { owner: 0, mult: 3, h: 5.5, spots: [[50, 41]], move: { t: 'orbit', rx: 3.5, ry: 4, per: 10 } },
-      { owner: 0, mult: 5, h: 5.5, spots: [[62, 37], [60, 43.5]], at: 2, hop: true },
-      { owner: 2, mult: 10, h: 5.5, spots: [[56, 43.5]], at: 4, life: 1, gap: 2 },
-      { owner: 1, mult: 2, h: 5.5, spots: [[70, 42], [70, 33]], at: 3, hop: true, regap: 2 }
+      { owner: 0, mult: 3, h: 5.5, spots: [[46, 38]], move: { t: 'bob', a: 3, per: 8 } },
+      { owner: 0, mult: 5, h: 5.5, spots: [[64, 45], [47, 27]], at: 2, hop: true },
+      { owner: 2, mult: 10, h: 5.5, spots: [[52, 46]], at: 4, life: 1, gap: 2 },
+      { owner: 1, mult: 2, h: 5.5, spots: [[69, 33], [66, 22]], at: 3, hop: true, regap: 2 }
     ],
     lantern: { at: 3, every: 3, spots: [[56, 24], [52, 47], [60, 30]] }
   },
   {
     name: '魔王城', tag: '魔王三階段', theme: 5,
-    tip: '打倒魔王就贏。先轟掉屋頂，再把砲彈吊進大殿。魔王受傷後會張開結界，每回合換缺口：從沒有光牆的地方打。毀滅光球先停在半路，下一輪才砸過來，把它打掉或是開護罩',
+    tip: '打倒魔王就贏。先轟掉屋頂，再把砲彈吊進大殿；把魔王轟出城，他會摔掉一截血再飛回來。魔王受傷後會張開結界，每回合換缺口：從沒有光牆的地方打。毀滅光球擋在城前面，順手打掉它，或是開護罩',
     voids: [[36, 69.5]],
     me: { castle: 'P3', crew: ['rocket', 'zap', 'bomb', 'fire'] },
     foe: { castle: 'E6', crew: ['boss', 'rocket', 'bomb', 'flak'], hp: 0.95, dmg: 0.9, ai: { err: 5.5, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5 } },
-    boss: { p2: 0.7, p3: 0.4, spin: 0.5, arc: 0.45, segHp: 60, regen: 2, orbHp: 60, meteors: 1 },
+    boss: { p2: 0.7, p3: 0.4, segHp: 60, regen: 2, orbHp: 30, meteors: 1 },
     gates: [
       { owner: 0, mult: 3, h: 6, spots: [[45, 37]] },
       { owner: 0, mult: 5, h: 5.5, spots: [[55, 43.5], [56, 33]], at: 2, hop: true },
       { owner: 1, mult: 2, h: 5.5, spots: [[63, 43.5]], at: 3, regap: 2 },
-      { owner: 1, mult: 3, h: 5.5, spots: [[65, 33]], phase: 2, regap: 3 },
       { owner: 2, mult: 20, h: 5.5, spots: [[51, 43.5]], phase: 3, life: 1, gap: 1 }
     ],
     lantern: { at: 3, every: 3, spots: [[53, 25], [47, 47], [58, 47]] },

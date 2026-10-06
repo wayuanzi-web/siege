@@ -5,7 +5,8 @@ function aiInit(T, p, D) {
     think: p.think || 1.1,                                   // 輪到自己之後想多久才開火
     gate: p.gate === undefined ? 0.6 : p.gate,               // 這一輪會去找倍增符的機率
     hate: p.hate || 0,                                       // 會去打對方倍增符的機率
-    skill: p.skill || 0,                                     // 用技能的本事（自動玩家才有）
+    skill: p.skill || 0,                                     // 連珠砲集滿之後拿來用的機率
+    sh: p.sh || 0,                                           // 對方開火時會開護罩的機率（只有自動玩家有；敵軍不會開罩）
     guard: p.guard === undefined ? 1 : p.guard,              // 會不會打氣球、光球、天燈
     lob: p.lob || 0,                                         // 偏好吊高砲的程度
     st: 0, t: 0, fireAt: 0, cand: [], ci: 0, best: null, bs: 0, px: T.aim[0], py: T.aim[1], lead: null, useGate: true, mult: 1
@@ -31,9 +32,9 @@ function gatePosAt(g, t, out) {
 }
 /* 試射一發（不影響戰局）：t0 是預計開火的時間（會動的符和結界要用那時候的位置）。
    R.hit: 0 沒中、1 地面、2 磚、3 兵、4 氣球／光球／天燈、5 被擋（對方的符、鏡子、結界、護城罩）；R.port 進了傳送門 */
-const _tr = { hit: 0, x: 0, y: 0, t: 0, mult: 1, gm: 0, o: null, obj: null, gate: null, port: false };
+const _tr = { hit: 0, x: 0, y: 0, t: 0, mult: 1, gm: 0, o: null, obj: null, lan: null, gate: null, port: false };
 function simTrace(side, mx, my, vx, vy, wind, t0, kmax) {
-  const R = _tr; R.hit = 0; R.mult = 1; R.gm = 0; R.o = null; R.obj = null; R.gate = null; R.port = false;
+  const R = _tr; R.hit = 0; R.mult = 1; R.gm = 0; R.o = null; R.obj = null; R.lan = null; R.gate = null; R.port = false;
   const dt = 1 / 30, own = S.st[side], foeT = S.team[1 - side], fst = S.st[1 - side], lag = t0 - S.time;
   // 這裡一步走 1/30 秒，戰局是 1/60 秒；補上兩者每一步差的那一點，落點才會跟真的打出去一樣
   const cy = GRAV * STEP * STEP, cx = -wind * STEP * STEP;
@@ -54,8 +55,15 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax) {
     }
     for (const o of S.objs) {
       if (o.t === 'mirror') { if (segHit(x, y, nx, ny, o.x - o.dx, o.y - o.dy, o.x + o.dx, o.y + o.dy) >= 0) { R.hit = 5; R.x = nx; R.y = ny; R.t = t; return R; } }
-      else if (o.t === 'portal') { if (o.owner === side) { const dx = nx - o.x, dy = ny - o.y; if (dx * dx + dy * dy < o.r * o.r) { R.hit = 2; R.port = true; R.x = o.ex; R.y = fst.y1; R.t = t; return R; } } }
-      else if (o.t === 'balloon' || o.t === 'orb' || o.t === 'lantern') {
+      else if (o.t === 'portal') {
+        if (o.owner !== side) continue;
+        // 傳送門會上下飄：用砲彈飛到那裡時門的位置
+        const py = o.mv ? o.by + o.mv.a * tri((t0 + t) / o.mv.per + (o.mv.ph || 0)) : o.y, dx = nx - o.x, dy = ny - py;
+        if (dx * dx + dy * dy < o.r * o.r) { R.hit = 2; R.port = true; R.x = o.ex; R.y = fst.y1; R.t = t; return R; }
+      } else if (o.t === 'lantern') {
+        // 天燈不擋砲彈：打中了照樣往前飛
+        if (o.hp > 0 && !R.lan) { const dx = nx - o.x, dy = ny - o.y; if (dx * dx + dy * dy < o.r * o.r) R.lan = o; }
+      } else if (o.t === 'balloon' || o.t === 'orb') {
         if (o.side === side || o.hp <= 0) continue;
         const dx = nx - o.x, dy = ny - o.y; if (dx * dx + dy * dy < o.r * o.r) { R.hit = 4; R.obj = o; R.x = nx; R.y = ny; R.t = t; return R; }
       } else if (o.t === 'barrier' && side === 0) {
@@ -64,9 +72,9 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax) {
       }
     }
     if (foeT.shield.on && inBubble(fst, nx, ny)) { R.hit = 5; R.x = nx; R.y = ny; R.t = t; return R; }
-    if (inOwn && t > 0.3 && (nx < own.x0 - 1 || nx > own.x1 + 1 || ny > own.y1 + 4)) inOwn = false;
     const h = rayShot(x, y, nx, ny, side, inOwn);
     if (h) { R.hit = h; R.o = RAY.o; R.x = RAY.x; R.y = RAY.y; R.t = t; return R; }
+    if (inOwn && t > 0.3 && (nx < own.x0 - 1 || nx > own.x1 + 1 || ny > own.y1 + 4)) inOwn = false;
     if (nx < -40 || nx > VIEW_W + 40 || ny < -30) { R.x = nx; R.y = ny; R.t = t; return R; }
     x = nx; y = ny;
   }
@@ -82,7 +90,7 @@ function aiBegin(T) {
   for (const u of T.units) { if (!u.alive || !u.w || u.frozen > 0 || u.stun > 0) continue; const v = u.w.dmg * (u.w.n || 1) * (u.w.fan || 1) + rnd() * 6; if (v > bv) { bv = v; lead = u; } }
   if (!lead) for (const u of T.units) if (u.alive) { lead = u; break; }
   A.lead = lead; if (!lead) return;
-  const big = lead.def.big ? 1.5 : 1, mx = lead.x + dir * 1.3 * big, my = lead.y + 2.3 * big;
+  const big = lead.def.big ? MUZ_BIG : 1, mx = lead.x + dir * 1.3 * big, my = lead.y + 2.3 * big;
   const tg = [];
   for (const u of foeT.units) if (u.alive) tg.push({ x: u.x, y: u.y + 1.6, w: 1.15 + (u.type === 'boss' ? 0.4 : 0) + (u.hp < u.hpMax * 0.4 ? 0.25 : 0) });
   if (A.guard > 0 && rnd() < A.guard) for (const o of S.objs) {
@@ -108,7 +116,7 @@ function aiEval(T, budget) {
   while (budget-- > 0 && A.ci < A.cand.length) {
     const c = A.cand[A.ci++], t = c.t, R = simTrace(side, A.mx, A.my, c.vx, c.vy, wind, A.fireAt);
     let sc = 0;
-    if (t.obj) sc = R.hit === 4 && R.obj === t.obj ? 1 : 0;
+    if (t.obj) sc = (R.hit === 4 && R.obj === t.obj) || R.lan === t.obj ? 1 : 0;
     else if (t.hg) sc = R.hit === 5 && R.gate === t.hg ? 1 : 0;
     else if (R.port) sc = 0.85;
     else if (R.hit === 3) sc = 1.3;
@@ -146,4 +154,4 @@ function aiStep(T, dt) {
   }
 }
 // 自動玩家：對方開火時，有護城罩就看本事決定開不開
-function aiReact(T) { const A = T.ai; if (A && A.skill > 0 && T.shield.c >= T.shield.need && !T.shield.on && rnd() < A.skill * 0.8) simSkill(T.side, 'shield'); }
+function aiReact(T) { const A = T.ai; if (A && A.sh > 0 && T.shield.c >= T.shield.need && !T.shield.on && rnd() < A.sh * 0.8) simSkill(T.side, 'shield'); }

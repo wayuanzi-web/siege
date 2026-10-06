@@ -341,17 +341,18 @@ const UNIT_ART = {
     ell(c, 55, 27, 6.5, 6.5); fs(c, rg(c, 53, 25, 0.5, 7.5, [0, '#ff9ad8', 0.45, '#8a1fb4', 1, '#1c0630']), '#0c0410', 1.4);
   }
 };
-const USPR = {};     // 'side:type' → { cv, wh (白色剪影，受擊閃白用), w, h, ax, ay }
+const USPR = {};     // 'side:type' → { cv, wh (白色剪影，受擊閃白用), px, w, h, ax, ay (腳底), cy (身體中心) }
+const UNIT_TOP = 16;  // 設計座標上面多留的高度：帽尖、角、舉高的火油罐都畫在 y < 0
 function unitSprite(side, type) {
-  const big = type === 'boss' ? 1.95 : 1, px = Math.max(16, Math.round(V.T * 1.5 * big)), key = side + ':' + type;
+  const big = type === 'boss' ? 1.95 : 1, px = Math.max(16, Math.round(V.T * 1.38 * big)), key = side + ':' + type;
   let s = USPR[key]; if (s && s.px === px) return s;
-  const cv = mkCanvas(px, px), c = cv.getContext('2d');
-  c.scale(px / 64, px / 64); c.lineJoin = 'round'; c.lineCap = 'round';
+  const k = px / 64, top = Math.ceil(UNIT_TOP * k), cv = mkCanvas(px, px + top), c = cv.getContext('2d');
+  c.translate(0, top); c.scale(k, k); c.lineJoin = 'round'; c.lineCap = 'round';
   if (side === 1) { c.translate(64, 0); c.scale(-1, 1); }
   (UNIT_ART[type] || UNIT_ART.rocket)(c, side, TEAM_PAL[side]);
-  const wh = mkCanvas(px, px), w = wh.getContext('2d');
-  w.drawImage(cv, 0, 0); w.globalCompositeOperation = 'source-in'; w.fillStyle = '#fff'; w.fillRect(0, 0, px, px);
-  s = USPR[key] = { cv, wh, px, w: px, h: px, ax: px / 2, ay: px * 58 / 64 };
+  const wh = mkCanvas(px, px + top), w = wh.getContext('2d');
+  w.drawImage(cv, 0, 0); w.globalCompositeOperation = 'source-in'; w.fillStyle = '#fff'; w.fillRect(0, 0, px, px + top);
+  s = USPR[key] = { cv, wh, px, w: px, h: px + top, ax: px / 2, ay: top + px * 58 / 64, cy: top + px * 36 / 64 };
   return s;
 }
 

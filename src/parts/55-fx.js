@@ -1,7 +1,7 @@
 /* ===== 55-fx: 特效。聽模擬丟出來的事件，變成火花、煙、碎磚、震動、聲音 ===== */
 const NP = 1100;
 const FX = {
-  n: 0, low: false, shake: 0, shx: 0, shy: 0, flash: 0, flashCol: '#fff', slow: 1, slowT: 0, slowK: 0.3, slowCd: 0, chainRef: 0, chainT: 0, stop: 0, heat: 0,
+  n: 0, low: false, calm: false, fl0: -1e9, fl1: -1e9, shake: 0, shx: 0, shy: 0, flash: 0, flashCol: '#fff', slow: 1, slowT: 0, slowK: 0.3, slowCd: 0, chainRef: 0, chainT: 0, stop: 0, heat: 0,
   x: new Float32Array(NP), y: new Float32Array(NP), vx: new Float32Array(NP), vy: new Float32Array(NP),
   life: new Float32Array(NP), max: new Float32Array(NP), size: new Float32Array(NP), rot: new Float32Array(NP), vr: new Float32Array(NP),
   type: new Uint8Array(NP), col: new Uint8Array(NP),
@@ -36,7 +36,14 @@ function burst(type, x, y, n, sp, life, size, col, up) {
 }
 function ring(x, y, r0, r1, life, col, lw) { if (FX.rings.length < 40) FX.rings.push({ x, y, r0, r1, t: 0, max: life, col, lw: lw || 0.5 }); }
 function pop(x, y, txt, col, size, life) { if (FX.pops.length > 14) FX.pops.shift(); FX.pops.push({ x, y, txt, col: col || '#fff', size: size || 3.4, t: 0, max: life || 1.0 }); }
-function shake(a) { if (a > FX.shake) FX.shake = Math.min(a, 2.2); }
+function shake(a) { if (FX.calm) return; if (a > FX.shake) FX.shake = Math.min(a, 2.2); }
+// 整個畫面閃一下。任一秒內最多兩次（閃太快對光敏感的人有危險）；系統設了「減少動態效果」就只留很淡的一層
+function flash(v, col) {
+  if (FX.calm) v = Math.min(v, 0.1);
+  if (v <= FX.flash) return;
+  const now = performance.now(); if (now - FX.fl0 < 1000) return;
+  FX.fl0 = FX.fl1; FX.fl1 = now; FX.flash = v; FX.flashCol = col;
+}
 
 function fxStep(dt, rdt) {
   // 震動（用真實時間衰減，慢動作時也照常）
@@ -140,12 +147,13 @@ function fxOn(t, a, b, c, d, e, f) {
       // a,b 位置；c 哪一邊；d 兵種；e 死法
       FX.flung.push({ side: c, type: d, x: a, y: b - 1.8, vx: (c === 0 ? -1 : 1) * (8 + Math.random() * 14), vy: 26 + Math.random() * 14, rot: 0, vr: (c === 0 ? 1 : -1) * (5 + Math.random() * 6), t: 0 });
       burst(P_SPARK, a, b, 8, 22, 0.5, 0.6, c === 0 ? C_SKY : C_SALMON); ring(a, b, 0.5, 5, 0.3, '#ffffff', 0.4);
-      pop(a, b + 3.5, c === 1 ? (e === 1 ? '砸扁！' : e === 4 ? '摔下去了！' : e === 3 ? '燒到了！' : '擊倒！') : '陣亡', c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.1);
+      pop(a, b + 3.5, c === 1 ? (e === 1 ? '砸扁！' : e === 4 ? '摔下去了！' : e === 5 ? '轟出城外！' : e === 3 ? '燒到了！' : '擊倒！') : (e === 5 ? '被轟出城' : e === 4 ? '摔下去了' : '陣亡'), c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.1);
       sfx(c === 1 ? 'kill' : 'lostunit'); if (c === 0) { shake(0.4); vibrate(60); }
       if (e === 1 && S.state === 'play') slowmo(0.5, 0.7);
       break;
     }
     case 'yelp': pop(a, b, c ? '哇啊！' : '哇！', '#ffffff', 2.5, 0.8); break;
+    case 'pinned': pop(a, b, '被壓住了', c === 1 ? '#ffe14a' : '#ff8a7a', 2.5, 1.0); break;
     case 'uland': burst(P_DUST, a, b, 3, 8, 0.4, 1.4, C_SAND); break;
     case 'zap': {
       // a 欄位中心 x；b 劈到的高度；c 從多高劈下來
@@ -153,7 +161,7 @@ function fxOn(t, a, b, c, d, e, f) {
       for (let k = 0; k <= n; k++) { pts.push(k === 0 || k === n ? a : a + rndS() * 5, lerp(c, b, k / n)); }
       FX.bolts.push({ pts, t: 0, max: 0.2, col: '#fff7c0' });
       part(P_FLASH, a, b, 0, 0, 0.16, 6, C_YELLOW); burst(P_SPARK, a, b, 10, 30, 0.4, 0.6, C_YELLOW); ring(a, b, 1, 6, 0.25, '#fff7c0', 0.4);
-      FX.flash = Math.max(FX.flash, 0.22); FX.flashCol = '#fff8d8'; shake(0.3); sfx('thunder');
+      flash(0.22, '#fff8d8'); shake(0.3); sfx('thunder');
       break;
     }
     case 'spark': burst(P_SPARK, a, b, 3, 16, 0.25, 0.4, C_YELLOW); break;
@@ -161,7 +169,7 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'lit': burst(P_EMBER, a, b, 3, 6, 0.4, 0.7, C_ORANGE, 3); sfx('lit'); break;
     case 'shield': ring(a, b, 4, 30, 0.4, '#bfe6ff', 0.6); sfx('shield'); break;
     case 'shieldhit': if (FX.rings.length < 30) ring(a, b, 0.4, 3.4, 0.22, c === 0 ? '#cfeaff' : '#ffc0b0', 0.4); part(P_FLASH, a, b, 0, 0, 0.1, 1.8, c === 0 ? C_SKY : C_SALMON); sfx('shieldhit'); break;
-    case 'ult': ring(a, b, 3, 40, 0.5, c === 0 ? '#ffe9a0' : '#ffb0a0', 0.8); burst(P_SPARK, a, b, 16, 40, 0.7, 0.8, C_GOLD); FX.flash = Math.max(FX.flash, 0.25); FX.flashCol = '#fff0b0'; sfx('ult'); vibrate(40); break;
+    case 'ult': ring(a, b, 3, 40, 0.5, c === 0 ? '#ffe9a0' : '#ffb0a0', 0.8); burst(P_SPARK, a, b, 16, 40, 0.7, 0.8, C_GOLD); flash(0.25, '#fff0b0'); sfx('ult'); vibrate(40); break;
     case 'ultarm': ring(a, b, 26, 4, 0.4, '#ffe9a0', 0.7); sfx('arm'); break;
     case 'ultoff': sfx('click'); break;
     case 'shieldoff': break;
@@ -205,13 +213,13 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'dirt': burst(P_DUST, a, b + 0.5, 3, 10, 0.5, 1.6, C_SAND, 4); break;
     case 'tick': burst(P_SPARK, a, b, 2, 12, 0.2, 0.4, C_WHITEHOT); sfx('tick'); break;
     case 'end': {
-      slowmo(0.28, 1.9, true); shake(2.2); FX.flash = 0.9; FX.flashCol = '#ffffff'; sfx('collapse'); vibrate(200);
-      for (let k = 0; k < 5; k++) ring(a + rndS() * 16, b + rndS() * 20, 2, 26, 0.7 + k * 0.1, '#fff0b0', 0.9);
+      slowmo(0.3, 2.3, true); shake(2.0); flash(0.45, '#fff6d8'); sfx('collapse'); vibrate(200);
+      ring(a, b, 2, 16, 0.6, '#fff0b0', 0.7);         // 只留一圈小的，別把整座城垮下來的樣子蓋住
       break;
     }
-    case 'bossback': ring(a, b, 14, 1.5, 0.5, '#ff7ad0', 0.8); burst(P_SPARK, a, b, 18, 30, 0.7, 0.8, C_PINK); burst(P_SMOKE, a, b, 6, 8, 0.8, 2.4, C_PURPLE); pop(a, b + 7, '魔王飛回來了', '#ff9ad8', 3.4, 1.4); FX.flash = Math.max(FX.flash, 0.3); FX.flashCol = '#ff5aa0'; sfx('dark'); break;
-    case 'phase': FX.flash = 0.7; FX.flashCol = '#ff5aa0'; shake(1.6); sfx('phase'); vibrate(120); break;
-    case 'sudden': FX.flash = 0.5; FX.flashCol = '#ff6a3a'; sfx('horn'); break;
+    case 'bossback': ring(a, b, 14, 1.5, 0.5, '#ff7ad0', 0.8); burst(P_SPARK, a, b, 18, 30, 0.7, 0.8, C_PINK); burst(P_SMOKE, a, b, 6, 8, 0.8, 2.4, C_PURPLE); pop(a, b + 7, '魔王飛回來了', '#ff9ad8', 3.4, 1.4); flash(0.3, '#ff5aa0'); sfx('dark'); break;
+    case 'phase': flash(0.7, '#ff5aa0'); shake(1.6); sfx('phase'); vibrate(120); break;
+    case 'sudden': flash(0.5, '#ff6a3a'); sfx('horn'); break;
     case 'wind': sfx('gust'); break;
   }
   if (typeof uiEvent === 'function') uiEvent(t, a, b, c, d, e, f);

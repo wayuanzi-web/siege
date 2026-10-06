@@ -13,7 +13,8 @@ function safeInset(side) {
 function layout() {
   const app = $('app'), stage = $('stage'), w = app.clientWidth, h = app.clientHeight;
   if (!w || !h) return;
-  const touch = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || navigator.maxTouchPoints > 0 || G.forceTouch;
+  // 主要的指標是手指才算手機／平板（有觸控螢幕的筆電還是用滑鼠為主，視窗比較高也不該轉向）
+  const touch = G.forceTouch || (window.matchMedia ? matchMedia('(pointer: coarse)').matches : navigator.maxTouchPoints > 0);
   // 手機直拿：整個舞台轉 90 度，等於請玩家把手機橫過來（不必解除螢幕方向鎖定）
   const rot = touch && h > w * 1.08 ? (SV.flip ? -1 : 1) : 0;
   let sw = rot ? h : w, sh = rot ? w : h;
@@ -23,7 +24,7 @@ function layout() {
   stage.style.width = sw + 'px'; stage.style.height = sh + 'px';
   stage.style.transform = rot === 1 ? 'translate(' + (w - oy) + 'px,' + ox + 'px) rotate(90deg)' : rot === -1 ? 'translate(' + oy + 'px,' + (h - ox) + 'px) rotate(-90deg)' : 'translate(' + ox + 'px,' + oy + 'px)';
   const padL = rot || ox > 0 ? 0 : safeInset('l'), padR = rot || ox > 0 ? 0 : safeInset('r');
-  const u = clamp(sh / 100, 2.9, 6.4);
+  const u = clamp(Math.min(sh / 100, sw / 185), 2.9, 6.4);       // 介面的單位：看高度，但太窄（接近 4:3）的時候也要縮，上面那一列才排得下
   stage.style.setProperty('--u', u.toFixed(3) + 'px'); stage.style.setProperty('--w', (sw / 100).toFixed(3) + 'px'); stage.style.setProperty('--pl', padL + 'px'); stage.style.setProperty('--pr', padR + 'px');
   $('btnFlip').hidden = !rot;
   const changedRot = rot !== G.rot; G.rot = rot; G.sw = sw; G.sh = sh; G.ox = ox; G.oy = oy; G.vw = w; G.vh = h;
@@ -32,9 +33,10 @@ function layout() {
   let W = Math.round(sw * dpr), H = Math.round(sh * dpr);
   if (W > 1840) { H = Math.round(H * 1840 / W); W = 1840; }
   const cv = $('cv');
-  if (W !== V.W || H !== V.H || padL !== G.padL || padR !== G.padR) {
+  const hud = Math.round(8 * u * W / sw);                          // 上方資訊列佔掉的高度：戰場排在它下面
+  if (W !== V.W || H !== V.H || padL !== G.padL || padR !== G.padR || hud !== V.hud) {
     G.padL = padL; G.padR = padR;
-    cv.width = W; cv.height = H; setView(W, H, W / sw, padL * W / sw, padR * W / sw); artReset(); RD.flame = null;
+    cv.width = W; cv.height = H; setView(W, H, W / sw, padL * W / sw, padR * W / sw, hud); artReset(); RD.flame = null;
     if (S.lv) sceneBuild(true);
   }
 }
@@ -63,7 +65,7 @@ function startLevel(idx) {
   $('home').hidden = true; $('result').hidden = true; $('opt').hidden = true; $('shop').hidden = true; $('hud').hidden = false;
   $('hudName').textContent = LEVELS[idx].name;
   $('hint').hidden = true;
-  $('banner').className = ''; $('say').className = 'chamfer'; $('mile').className = '';
+  $('banner').className = ''; sayClear(); $('mile').className = '';
   hudBuild(); hudUpdate();
   setTimeout(() => { if (G.mode === 'play' && G.run === run) banner(LEVELS[idx].name, 'blue', '第' + NUM_ZH[idx] + '關'); }, 60);
   setTimeout(() => { if (G.mode === 'play' && G.run === run && S.round <= 1 && !G.tut) say(LEVELS[idx].tip); }, 2100);
@@ -71,34 +73,37 @@ function startLevel(idx) {
 }
 function goHome() {
   G.run++;
-  G.mode = 'home'; $('hud').hidden = true; $('result').hidden = true; $('opt').hidden = true; $('shop').hidden = true; $('home').hidden = false;
+  G.mode = 'home'; sayClear(); $('hud').hidden = true; $('result').hidden = true; $('opt').hidden = true; $('shop').hidden = true; $('home').hidden = false;
   homeRender(); demoStart(UI.sel); musStart(6);
 }
 function pauseGame() { if (G.mode !== 'play' || S.state !== 'play') return; G.mode = 'pause'; G.drag = null; G.keys = {}; openOpt(true); }
 function resumeGame() { if (G.mode !== 'pause') return; G.mode = 'play'; $('opt').hidden = true; G.last = performance.now(); }
 function finishLevel() {
-  const won = S.state === 'won', idx = S.idx, bar = teamBar(0), lost = S.stat.lost;
+  // 用分出勝負那一刻的城防（之後整座垮掉的演出不算）
+  const won = S.state === 'won', idx = S.idx, bar = S.endBar[0], lost = S.stat.lost;
   const stars = !won ? 0 : bar >= 0.6 && !lost ? 3 : bar >= 0.3 ? 2 : 1;
-  let coins = won ? 50 + 25 * idx + Math.round(bar * 30) + Math.max(0, stars - SV.stars[idx]) * 20 : 10 + Math.round((1 - foeBar()) * 25);
+  let coins = won ? 50 + 25 * idx + Math.round(bar * 30) + Math.max(0, stars - SV.stars[idx]) * 20 : 10 + Math.round((1 - S.endBar[1]) * 25);
   if (SV.diff === 2) coins = Math.round(coins * 1.25);
   if (won) { SV.stars[idx] = Math.max(SV.stars[idx], stars); SV.open = Math.max(SV.open, Math.min(LEVELS.length, idx + 2)); }
   SV.coins += coins; SV.seen = true; save();
-  G.mode = 'result'; musStop(); sfx(won ? 'win' : 'lose');
+  G.mode = 'result'; sayClear(); musStop(); sfx(won ? 'win' : 'lose');
   showResult(won, { idx, stars, bar, lost, rounds: S.round, chain: S.stat.chain, swarm: S.stat.swarm, coins });
 }
 // 模擬事件裡跟介面有關的：橫幅、提示
 function uiEvent(t, a, b, c, d, e) {
   if (G.demo || G.mode === 'home') return;
-  const once = (k, txt, alert) => { if (G.said[k]) return; G.said[k] = 1; say(txt, alert); };
+  const once = (k, txt, alert) => { if (G.said[k]) return; G.said[k] = 1; say(txt, alert, k); };
   const later = (ms, fn) => { const run = G.run; setTimeout(() => { if (G.mode === 'play' && G.run === run && S.state === 'play') fn(); }, ms); };
   switch (t) {
     case 'say': say(a, b); break;
     case 'turn':
       // a 輪到誰；b 第幾回合
       if (a === 0) {
+        // 第一次玩：一回合教一件事
         if (G.tut === 1) { $('hint').hidden = false; }
-        else if (G.tut === 2) { G.tut = 3; say('這次讓虛線穿過藍色的倍增符：一發變三發'); }
-        else if (G.tut === 3 && b >= 3) { G.tut = 4; say('打斷柱子和下層的牆，上面的會自己塌下來'); }
+        else if (G.tut === 2) { G.tut = 3; if (!G.said.gt) say('這次讓虛線穿過藍色的倍增符：一發變三發'); }
+        else if (G.tut === 3) { G.tut = 4; say('打斷望樓的細柱子，上面整座會自己倒下來'); }
+        else if (G.tut === 4) { G.tut = 5; if (!G.said.kill) say('把守軍全部打倒就破城；上面的頭像是雙方還站著的兵'); }
         const T = S.team[0];
         if (!SV.seenUlt && T.ult.c >= T.ult.need && !T.ult.armed) once('ult', '「連珠」集滿了！按右下角金色按鈕上膛，這一輪每個兵連打三次');
       } else {
@@ -113,7 +118,7 @@ function uiEvent(t, a, b, c, d, e) {
     case 'rockstop': if (c === 0) once('rstop', '護罩把落石擋下來了'); break;
     case 'sudden': banner('決戰時刻', 'red'); later(1900, () => say('拖太久了，雙方的砲火越來越猛', 1)); break;
     case 'end': banner(c === 1 ? (S.lv.boss ? '魔王伏誅' : '敵城攻破') : '城樓失守', c === 1 ? 'gold' : 'red', d ? (c === 1 ? '守軍全滅' : '我軍全滅') : ''); $('hint').hidden = true; break;
-    case 'gate': if (e === 0 && G.tut >= 2 && G.tut <= 3 && !G.said.gt) { G.said.gt = 1; say('就是這樣！穿過倍增符，砲彈變多了'); } break;
+    case 'gate': if (e === 0 && G.tut >= 1 && G.tut <= 3 && !G.said.gt) { G.said.gt = 1; say('就是這樣！穿過倍增符，砲彈變多了'); } break;
     case 'gspawn': if (c === 1) once('rg', '敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它', 1); else if (c === 2) once('gg', '黃金符：倍數很高，兩邊都能用，而且只出現一回合'); else if (c === 3) once('hz', '紫色的折損符會吃掉一半砲彈，別穿過去'); break;
     case 'launch': if (c === 1) once('bal', '轟炸氣球升空了！它先停在半路，下一輪才飛過來，趁現在打下來', 1); break;
     case 'orb': once('orb', '毀滅光球！它先停在半路，下一輪砸過來：打掉它，或是開護罩', 1); break;
@@ -121,7 +126,7 @@ function uiEvent(t, a, b, c, d, e) {
     case 'rockwarn': once('rock', '紅圈是這一回合結束時落石的位置，會砸到你就開護罩', 1); break;
     case 'erupt': once('gey', '地火噴發：砲彈穿過火柱會著火，威力多五成'); break;
     case 'freeze': if (c === 0) once('frz', '兵被凍住了，下一輪不能開火；開護罩可以立刻解凍', 1); break;
-    case 'udie': if (c === 0) once('lost', '有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住', 1); break;
+    case 'udie': if (c === 0) once('lost', '有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住', 1); else if (S.idx === 0 && S.team[1].alive > 0) once('kill', '打倒一個守軍！守軍全倒，城就破了'); break;
     case 'chain': if (b === 0 && a >= 10) once('chain', '漂亮的坍塌！一次垮得越多，「連珠」集得越快'); break;
   }
 }
@@ -176,11 +181,9 @@ function keyAim(dt) {
   const k = G.keys; let da = 0, dp = 0;
   if (k.ArrowUp || k.KeyW) da += 1; if (k.ArrowDown || k.KeyS) da -= 1; if (k.ArrowRight || k.KeyD) dp += 1; if (k.ArrowLeft || k.KeyA) dp -= 1;
   if (!da && !dp) return;
-  const T = S.team[0], fine = k.AltLeft || k.AltRight ? 0.3 : 1; let a = Math.atan2(T.aim[1], T.aim[0]) + da * 0.6 * fine * dt, v = Math.hypot(T.aim[0], T.aim[1]) + dp * 26 * fine * dt;
+  const T = S.team[0], fine = k.ShiftLeft || k.ShiftRight ? 0.3 : 1; let a = Math.atan2(T.aim[1], T.aim[0]) + da * 0.6 * fine * dt, v = Math.hypot(T.aim[0], T.aim[1]) + dp * 26 * fine * dt;
   simAim(0, Math.cos(a) * v, Math.sin(a) * v);
 }
-// 砲口的位置：拿來算滑鼠瞄準用（帶頭的那個兵）
-function aimOrigin() { const T = S.team[0]; for (const u of T.units) if (u.alive && u.w && u.frozen <= 0 && u.stun <= 0) return [u.x + 1.3, u.y + 2.3]; for (const u of T.units) if (u.alive) return [u.x + 1.3, u.y + 2.3]; return [S.st[0].cx, S.st[0].y0 + S.st[0].h * 0.6]; }
 function useSkill(name) {
   if (G.mode !== 'play') return;
   if (simSkill(0, name)) { if (name === 'ult' && !SV.seenUlt) { SV.seenUlt = true; save(); } if (name === 'shield' && !SV.seenSh) { SV.seenSh = true; save(); } }
@@ -189,53 +192,59 @@ function useSkill(name) {
 
 function bindInput() {
   const stage = $('stage');
-  // 滑鼠：按住時虛線直接穿過游標；觸控：相對拖曳，手指不必蓋住城樓。兩種都是放開就發射
-  const mouseAim = (e) => {
-    const p = stagePoint(e.clientX, e.clientY), k = V.W / G.sw, o = aimOrigin(), tau = Math.min(0.9, RD.aimT * 0.85);
-    aimFor(o[0], o[1], WX(p[0] * k), WY(p[1] * k), tau, S.wind, _av); simAim(0, _av[0], _av[1]);
-  };
+  // 滑鼠和手指都一樣：按住畫面任何地方拖曳，照拖的方向和距離微調（不是指到哪打到哪），放開就發射。
+  // 這樣每一輪都是從上一輪的角度接著調，吊高、平射都拉得到，手指也不必蓋住城樓
   stage.addEventListener('pointerdown', (e) => {
     auInit(); if (!G.started) { G.started = true; if (G.mode === 'home') musStart(6); }
     if (G.mode !== 'play' || S.state !== 'play' || e.target.closest('button')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    if (G.drag && G.drag.id !== e.pointerId && e.pointerType !== 'mouse' && performance.now() - G.drag.at < 2000) return;   // 第二根手指不搶控制權
-    G.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, at: performance.now(), t0: performance.now(), mouse: e.pointerType === 'mouse', dist: 0, live: canFire() };
+    // 已經有一根手指在瞄準：其他手指不搶（同一支滑鼠、同一支筆不會同時按兩次，那是上一次沒收乾淨）
+    const d0 = G.drag; if (d0 && !(d0.type !== 'touch' && d0.type === e.pointerType)) return;
+    G.drag = { id: e.pointerId, type: e.pointerType, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, far: 0, live: canFire() };
     try { stage.setPointerCapture(e.pointerId); } catch (err) { /* 沒有指標捕捉也能玩 */ }
-    if (G.drag.mouse) mouseAim(e);
     e.preventDefault();
   });
   stage.addEventListener('pointermove', (e) => {
     const d = G.drag;
     if (G.mode !== 'play' || S.state !== 'play' || !d || d.id !== e.pointerId) return;
-    const dx = e.clientX - d.x, dy = e.clientY - d.y; d.x = e.clientX; d.y = e.clientY; d.at = performance.now(); d.dist += Math.abs(dx) + Math.abs(dy);
-    if (d.mouse) { mouseAim(e); return; }
+    const dx = e.clientX - d.x, dy = e.clientY - d.y;
+    // 還沒輪到我就先按住的（開場、敵軍砲擊中）：輪到我之後才開始算「有沒有拖過」
+    if (!d.live && canFire()) { d.live = true; d.x0 = d.x; d.y0 = d.y; d.far = 0; }
+    d.x = e.clientX; d.y = e.clientY; d.far = Math.max(d.far, Math.hypot(d.x - d.x0, d.y - d.y0));
     const m = stageDelta(dx, dy), k = (V.dpr / V.s) * 1.5, T = S.team[0];
     simAim(0, T.aim[0] + m[0] * k, T.aim[1] - m[1] * k);
   });
   const up = (e) => {
     const d = G.drag; if (!d || d.id !== e.pointerId) return;
     G.drag = null;
-    if (e.type !== 'pointerup' || !d.live || !canFire()) return;
-    // 有拖過才算（免得不小心碰一下就打出去）；滑鼠按住超過一下子也算
-    const held = performance.now() - d.t0;
-    if (d.dist > 12 || (d.mouse && held > 220)) fireNow();
-    else if (!G.said.tap) { G.said.tap = 1; say(d.mouse ? '按住拖曳瞄準，放開就發射；也可以按「發射」' : '按住拖曳瞄準，放開就發射'); }
+    if (e.type !== 'pointerup' || !canFire()) return;
+    // 真的拖過才發射（看離起點最遠拖了多遠，手指按著不動的抖動不算）
+    if (d.live && d.far > 14) fireNow();
+    else if (d.far <= 14 && !G.said.tap && $('hint').hidden) { G.said.tap = 1; say('按住拖曳瞄準，放開就發射；也可以按左下角的「發射」'); }
   };
   stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
-  stage.addEventListener('lostpointercapture', (e) => { if (G.drag && G.drag.id === e.pointerId && performance.now() - G.drag.at > 400) G.drag = null; });
+  // 萬一沒收到放開的事件（指標捕捉被搶走、系統手勢）：別讓瞄準卡住
+  stage.addEventListener('lostpointercapture', (e) => { const d = G.drag; if (d && d.id === e.pointerId) setTimeout(() => { if (G.drag === d) G.drag = null; }, 60); });
+  const noTouch = (e) => { const d = G.drag; if (d && d.type === 'touch' && e.touches && e.touches.length === 0) setTimeout(() => { if (G.drag === d) G.drag = null; }, 80); };
+  document.addEventListener('touchend', noTouch, { passive: true }); document.addEventListener('touchcancel', noTouch, { passive: true });
   stage.addEventListener('contextmenu', (e) => e.preventDefault());
   document.addEventListener('touchmove', (e) => { if (!e.target.closest || !e.target.closest('.modal')) e.preventDefault(); }, { passive: false });
+  const kbFocus = (el) => { try { return el.matches(':focus-visible'); } catch (err) { return false; } };
   window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;                 // 瀏覽器、系統自己的快速鍵（Ctrl+C、Alt+←…）不攔
+    const play = G.mode === 'play', ae = document.activeElement, onBtn = !!ae && ae.tagName === 'BUTTON', act = e.code === 'Space' || e.code === 'Enter';
+    if (act && onBtn && kbFocus(ae)) return;                        // 用 Tab 選到某顆按鈕再按 Enter／空白鍵：那是要按那顆按鈕
     G.keys[e.code] = true;
-    if (/^Arrow/.test(e.code) || e.code === 'Space') e.preventDefault();
+    if (play && (/^Arrow/.test(e.code) || act)) e.preventDefault();
     if (e.repeat) return;
     const pk = e.code === 'KeyP' || e.code === 'Escape';
-    if (G.mode === 'play') {
-      if (e.code === 'Space' || e.code === 'Enter') { if (!fireNow()) sfx('deny'); }
+    if (play) {
+      if (act) { if (onBtn) ae.blur(); if (!fireNow()) sfx('deny'); }
       else if (e.code === 'KeyX' || e.code === 'KeyC') useSkill('ult');
-      else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyZ') useSkill('shield');
+      else if (e.code === 'KeyZ') useSkill('shield');
       else if (pk) pauseGame();
     } else if (G.mode === 'pause' && pk) resumeGame();
+    else if (e.code === 'Escape') { for (const id of ['shop', 'opt']) if (!$(id).hidden) { $(id).hidden = true; sfx('click'); if (G.mode === 'home') homeRender(); break; } }
   });
   window.addEventListener('keyup', (e) => { G.keys[e.code] = false; });
   window.addEventListener('blur', () => { G.keys = {}; G.drag = null; });
@@ -244,10 +253,19 @@ function bindInput() {
   if (window.ResizeObserver) new ResizeObserver(layout).observe($('app'));
 
   const click = (id, fn) => $(id).addEventListener('click', (e) => { auInit(); fn(e); });
-  click('btnFire', () => { if (!fireNow()) sfx('deny'); });
-  click('btnUlt', () => useSkill('ult'));
-  click('btnShield', () => useSkill('shield'));
-  click('btnPause', () => { sfx('click'); pauseGame(); });
+  // 戰鬥中的按鈕按下去就算（不等 click）：另一根手指正在瞄準的時候，瀏覽器不會替第二根手指合成 click。
+  // 鍵盤（Tab 選到再按 Enter）還是走 click；按完把焦點還回去，免得之後按空白鍵又「按」到它
+  const press = (id, fn) => {
+    const el = $(id); if (!window.PointerEvent) { click(id, fn); return; }
+    let at = -1e9;
+    el.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse' && e.button !== 0) return; e.preventDefault(); e.stopPropagation(); auInit(); at = performance.now(); fn(e); el.blur(); });
+    // 滑鼠、手指的那一下已經在 pointerdown 處理過；這裡只收鍵盤按的（沒有指標種類、detail 是 0）
+    el.addEventListener('click', (e) => { if (e.pointerType || e.detail > 0 || performance.now() - at < 700) { el.blur(); return; } auInit(); fn(e); });
+  };
+  press('btnFire', () => { if (!fireNow()) sfx('deny'); });
+  press('btnUlt', () => useSkill('ult'));
+  press('btnShield', () => useSkill('shield'));
+  press('btnPause', () => { sfx('click'); pauseGame(); });
   click('btnGo', () => { sfx('click'); startLevel(UI.sel); });
   click('btnShop', () => { sfx('click'); shopRender(); $('shop').hidden = false; });
   click('btnOpt', () => { sfx('click'); openOpt(false); });
@@ -274,6 +292,10 @@ function bindInput() {
 
 function boot() {
   loadSave(); toggleSync();
+  // 系統設了「減少動態效果」：不晃畫面、閃光壓到很淡
+  const rm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)');
+  if (rm) { const f = () => { FX.calm = rm.matches; }; f(); if (rm.addEventListener) rm.addEventListener('change', f); else if (rm.addListener) rm.addListener(f); }
+  $('keyHelp').hidden = !(window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches);
   UI.sel = clamp(SV.open - 1, 0, LEVELS.length - 1);
   renderInit($('cv'));
   bindInput(); homeRender();

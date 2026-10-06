@@ -6,9 +6,11 @@ function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
     if (s && typeof s === 'object') {
-      SV.coins = Math.max(0, +s.coins || 0); SV.open = clamp(+s.open || 1, 1, LEVELS.length);
-      if (Array.isArray(s.stars)) for (let i = 0; i < LEVELS.length; i++) SV.stars[i] = clamp(+s.stars[i] || 0, 0, 3);
-      if (s.up) { for (const k in SV.up) SV.up[k] = clamp(+s.up[k] || 0, 0, 5); if (s.up.aim === undefined && s.up.rate) SV.up.aim = clamp(+s.up.rate || 0, 0, 5); }      // 舊版的「裝填」改成「準星」
+      // 存檔可能被改過或壞掉：每個數字都取整、夾在合理範圍裡
+      const int = (v, lo, hi) => { v = Math.floor(+v); return v >= lo ? Math.min(v, hi) : lo; };
+      SV.coins = int(s.coins, 0, 9999999); SV.open = int(s.open, 1, LEVELS.length);
+      if (Array.isArray(s.stars)) for (let i = 0; i < LEVELS.length; i++) SV.stars[i] = int(s.stars[i], 0, 3);
+      if (s.up && typeof s.up === 'object') { for (const k in SV.up) SV.up[k] = int(s.up[k], 0, 5); if (s.up.aim === undefined && s.up.rate) SV.up.aim = int(s.up.rate, 0, 5); }      // 舊版的「裝填」改成「準星」
       SV.sfx = s.sfx !== false; SV.mus = s.mus !== false; SV.vib = s.vib !== false; SV.seen = !!s.seen; SV.seenUlt = !!s.seenUlt; SV.seenSh = !!s.seenSh; SV.flip = !!s.flip;
       SV.diff = s.diff === 0 || s.diff === 2 ? s.diff : 1;
       let top = 0; for (let i = 0; i < LEVELS.length; i++) if (SV.stars[i] > 0) top = i + 1;
@@ -36,7 +38,28 @@ function banner(txt, kind, small) {
   if (small) { const s = document.createElement('small'); s.textContent = small; el.appendChild(s); }
   el.appendChild(document.createTextNode(txt)); replay(el, 'show');
 }
-function say(txt, alert) { const el = $('say'); el.textContent = txt; el.classList.toggle('alert', !!alert); replay(el, 'show'); }
+// 底部的提示一次只放得下一句：排隊輪流講，字多的講久一點。等太久、排太多而沒講到的，記號拿掉，下次遇到再講
+const SAY = { q: [], cur: null, t0: 0, dur: 0, tm: 0 };
+function sayDur(txt) { return clamp(1.3 + txt.length * 0.14, 2.6, 6.5) * 1000; }
+function sayDrop(m) { if (m.key && typeof G !== 'undefined') delete G.said[m.key]; }
+function say(txt, alert, key) {
+  if ((SAY.cur && SAY.cur.txt === txt) || SAY.q.some((m) => m.txt === txt)) return;
+  const m = { txt, alert: !!alert, key: key || '', at: performance.now() };
+  if (m.alert) { let i = 0; while (i < SAY.q.length && SAY.q[i].alert) i++; SAY.q.splice(i, 0, m); } else SAY.q.push(m);      // 警告插隊
+  while (SAY.q.length > 3) sayDrop(SAY.q.pop());
+  sayPump();
+}
+function sayPump() {
+  clearTimeout(SAY.tm);
+  const now = performance.now(), hold = () => (SAY.q.length ? Math.max(1800, SAY.dur * 0.6) : SAY.dur);      // 後面有人在等：這一句至少講六成
+  if (SAY.cur) { const left = hold() - (now - SAY.t0); if (left > 0) { SAY.tm = setTimeout(sayPump, left + 15); return; } SAY.cur = null; }
+  while (SAY.q.length && now - SAY.q[0].at > 9000) sayDrop(SAY.q.shift());
+  const m = SAY.q.shift(), el = $('say'); if (!m) return;
+  SAY.cur = m; SAY.t0 = now; SAY.dur = sayDur(m.txt);
+  el.textContent = m.txt; el.classList.toggle('alert', m.alert); el.style.setProperty('--say', (SAY.dur / 1000).toFixed(2) + 's'); replay(el, 'show');
+  SAY.tm = setTimeout(sayPump, hold() + 15);
+}
+function sayClear() { clearTimeout(SAY.tm); SAY.q.length = 0; SAY.cur = null; $('say').className = 'chamfer'; }
 function mile(txt) { const el = $('mile'); el.textContent = txt; replay(el, 'show'); }
 
 function starsHtml(n) { return '<em>' + '★'.repeat(n) + '</em>' + '★'.repeat(3 - n); }
@@ -92,19 +115,19 @@ function openOpt(paused) {
 const LOSE_TIPS = [
   '讓瞄準的虛線穿過藍色倍增符再落到敵城，一發變好幾發。',
   '別只打屋頂：打斷下層的柱子和牆，上面整層會自己塌下來。',
-  '敵軍的赤符會擋住你的砲彈，也會讓他們的砲彈變多：先把它打掉，或是換個角度繞過去。',
-  '敵軍一開火就按「護罩」，整輪都擋得住；護罩會撐到你下一次瞄準。',
-  '「連珠」集滿就先按下去上膛，下一輪每個兵連打三次；先把彈道對準倍增符再放。',
-  '兵全倒就輸了：看到敵軍在瞄你的兵，就開護罩。',
+  '輪到敵軍的時候按「護罩」，他們那一整輪都打不進來；護罩撐到你下一次瞄準為止。',
+  '「連珠」集滿就按下去上膛，這一輪每個兵連打三次；先把彈道對準倍增符再放手。',
+  '兵全倒就輸了：紅色的短虛線是敵軍在瞄的方向，瞄到你的兵就開護罩。',
   '戰利品可以在「強化」換成火力、準星和城防。'
 ];
+const TIP_RED = '敵軍的赤符會擋住你的砲彈，也讓他們的砲彈變多：把它打掉，或是換個角度繞過去。';
 const LOSE_TIPS_LV = [
-  ['上一輪的彈道會留一條淡淡的虛線，照著它微調就好。'],
-  ['每回合風向都會變，虛線已經把風算進去了，照著虛線打。', '倍增符下面那道紫色的折損符會吃掉一半砲彈，瞄高一點。'],
-  ['兵被凍住就開護罩，會立刻解凍。', '冰很滑：打掉冰塔底下的一塊，整座就溜下來。火油兵的火對冰特別有效。'],
-  ['敵城正面是鐵甲：吊高從屋頂打進去，把二樓的火藥庫炸開，一桶爆就三桶連環爆。', '讓砲彈從正在噴的地火裡穿過去，傷害多五成。', '紅圈是這一回合結束時的落石，砸得到你就開護罩。'],
-  ['氣球先停在半路，下一輪才飛過來：趁它停著的時候打下來。', '把砲彈射進藍色傳送門，會從敵城頭頂往下灌，繞過正面的金甲。', '先打掉防空弩，不然每一輪都會被射下三發。'],
-  ['結界每回合只開一個缺口：看哪一段沒有光牆，就用那個角度打進去；光牆也打得破。', '毀滅光球先停在半路，下一輪才砸過來：打掉它，或是開護罩。', '先把魔王頭上的屋頂轟掉，再把砲彈吊高落進大殿。']
+  ['上一輪的彈道會留一條淡淡的虛線，盡頭打一個叉：照著它微調就好。', '望樓只靠幾根細柱子撐著，打斷一根，整座連人一起倒。'],
+  ['每回合風向都會變，虛線已經把風算進去了，照著虛線打。', '倍增符下面那道紫色的折損符會吃掉一半砲彈，瞄高一點。', '沙城閣樓上的大石球：打斷撐著它的木樑，它就砸在底下的兵頭上。', TIP_RED],
+  ['兵被凍住就開護罩，會立刻解凍。', '冰很滑：打掉冰塔底下的一塊，整座就溜下來。火油兵的火對冰特別有效。', '中間的冰牆擋平射：吊高越過去，或是先把它轟倒。', TIP_RED],
+  ['敵城正面是鐵甲：吊高從屋頂打進去，把樓上的火藥庫炸開，一桶爆就三桶連環爆。', '讓砲彈從正在噴的地火裡穿過去，威力多五成。', '紅圈是這一回合結束時的落石，砸得到你就開護罩。', TIP_RED],
+  ['氣球先停在半路，下一輪才飛過來：趁它停著的時候打下來。', '把砲彈射進藍色傳送門，會從敵城頭頂往下灌，繞過正面的金甲。', '先打掉防空弩，不然每一輪都會被射下三發。', TIP_RED],
+  ['結界每回合只開一個缺口：看哪一段沒有光牆，就用那個角度打進去；光牆也打得破。', '毀滅光球先停在半路，下一輪才砸過來：打掉它，或是開護罩。', '先把魔王頭上的屋頂轟掉，再把砲彈吊高落進大殿。', TIP_RED]
 ];
 function showResult(won, st) {
   $('resTitle').textContent = won ? (st.idx === LEVELS.length - 1 ? '魔王伏誅' : '敵城攻破') : '城樓失守';
@@ -116,7 +139,7 @@ function showResult(won, st) {
   $('rsBar').textContent = Math.round(st.bar * 100) + '%'; $('rsRounds').textContent = String(st.rounds);
   $('rsChain').textContent = st.chain ? st.chain + ' 塊' : '—'; $('rsSwarm').textContent = fmt(st.swarm) + ' 發';
   $('rsCoins').textContent = '+' + fmt(st.coins);
-  const tip = $('resTip'), tips = LOSE_TIPS.concat(LOSE_TIPS_LV[st.idx] || [], LOSE_TIPS_LV[st.idx] || []);
+  const tip = $('resTip'), own = LOSE_TIPS_LV[st.idx] || [], tips = Math.random() < 0.7 && own.length ? own : LOSE_TIPS;      // 多半講這一關自己的訣竅
   if (won) { tip.hidden = st.stars >= 3; if (st.stars < 3) tip.textContent = st.lost ? '三顆星：一個兵都不能倒，城防還要剩六成以上。' : '三顆星：城防要剩六成以上。'; }
   else { tip.hidden = false; tip.textContent = tips[(Math.random() * tips.length) | 0]; }
   $('btnNext').hidden = !(won && st.idx < LEVELS.length - 1);
@@ -135,6 +158,7 @@ function hudBuild() {
       const el = document.createElement('span'); el.className = 'cu'; el.title = u.def.name;
       const cv = document.createElement('canvas'); cv.width = cv.height = 96; const c = cv.getContext('2d'); c.scale(96 / 64, 96 / 64); c.lineJoin = 'round'; c.lineCap = 'round';
       if (sd === 1) { c.translate(64, 0); c.scale(-1, 1); }
+      c.translate(0, u.def.big ? 12 : 7);                            // 帽子、角畫在格子上緣外面：往下挪才不會被切掉
       (UNIT_ART[u.type] || UNIT_ART.rocket)(c, sd, TEAM_PAL[sd]);
       el.appendChild(cv); box.appendChild(el); HUD.crew[sd].push({ el, u, st: '' });
     }
@@ -145,6 +169,7 @@ function hudBuild() {
   $('foeLbl').textContent = S.lv.boss ? '魔王' : '敵城';
   $('windBox').hidden = !S.lv.wind;
   HUD.a = HUD.b = -1; HUD.ult = HUD.sh = -1; HUD.wind = 99; HUD.deg = HUD.pow = -1; HUD.mile = 0; HUD.turn = ''; HUD.round = -1; HUD.fire = -1;
+  $('turnChip').hidden = true;                                       // 上一局留下來的「輪到你」不能帶進新的一局
 }
 function foeBar() { return teamBar(1); }
 function hudUpdate() {
