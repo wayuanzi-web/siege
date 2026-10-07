@@ -93,7 +93,7 @@ function finishLevel() {
 // 模擬事件裡跟介面有關的：橫幅、提示
 function uiEvent(t, a, b, c, d, e) {
   if (G.demo || G.mode === 'home') return;
-  const once = (k, txt, alert) => { if (G.said[k]) return; G.said[k] = 1; say(txt, alert, k); };
+  const once = (k, txt, alert, ok) => { if (G.said[k]) return; G.said[k] = 1; say(txt, alert, k, ok); };
   // 過一會兒再講：只算真的在玩的時間（暫停的時候不走，免得話在暫停選單後面講完就沒了）
   const later = (ms, fn) => {
     const run = G.run; let left = ms, last = performance.now();
@@ -106,39 +106,52 @@ function uiEvent(t, a, b, c, d, e) {
       // a 輪到誰；b 第幾回合
       if (a === 0) {
         // 第一次玩：一回合教一件事
+        const T = S.team[0], myAim = () => S.turn === 0 && S.phase === 'aim';
+        // 沒有一個兵開得了火（全被凍住、電暈）：護罩可以解凍；沒有護罩就自動跳過這一輪，不用玩家對著空氣拖一下。
+        // 這句最要緊，馬上講（別的話先放掉），這一輪也不講別的訣竅
+        if (!T.units.some((u) => u.alive && u.w && u.frozen <= 0 && u.stun <= 0)) {
+          sayFlush();
+          if (T.shield.c >= T.shield.need && !T.shield.on) say('兵都動不了：開護罩可以馬上解凍；不開就按「發射」跳過這一輪', 1);
+          else { say('兵都動不了，這一輪只能跳過', 1); later(1900, () => { if (canFire() && !S.team[0].units.some((u) => u.alive && u.w && u.frozen <= 0 && u.stun <= 0)) fireNow(); }); }
+          break;
+        }
+        // 第一次玩：一回合教一件事
         if (G.tut === 1) { $('hint').hidden = false; }
-        else if (G.tut === 2) { G.tut = 3; if (!G.said.gt) say('這次讓虛線穿過藍色的倍增符：一發變三發'); }
-        else if (G.tut === 3) { G.tut = 4; say('打斷望樓的細柱子，上面整座會自己倒下來'); }
+        else if (G.tut === 2) { G.tut = 3; if (!G.said.gt) say('這次讓虛線穿過藍色的倍增符：一發變三發', 0, '', myAim); }
+        else if (G.tut === 3) { G.tut = 4; if (foeHome(1)) say('打斷望樓的細柱子，上面整座會自己倒下來', 0, '', () => myAim() && foeHome(1)); }
         else if (G.tut === 4) { G.tut = 5; if (!G.said.kill) say('把守軍全部打倒就破城；上面的頭像是雙方還站著的兵'); }
         // 這一關的訣竅：一回合最多講一句，而且要還用得上才講（該打的東西已經不在了就跳過）。第一次玩第一關的時候讓教學先講
         const hs = S.lv.hints;
-        if (!G.tut && hs) for (let i = 0; i < hs.length; i++) { const h = hs[i]; if (G.hinted[i] || b < h.r || (h.ok && !h.ok())) continue; G.hinted[i] = 1; say(h.t, 0, 'hint' + i); break; }
-        const T = S.team[0];
-        if (!SV.seenUlt && T.ult.c >= T.ult.need && !T.ult.armed) once('ult', '「連珠」集滿了！按右下角金色按鈕上膛，這一輪每個兵連打三次');
-        // 沒有一個兵開得了火（全被凍住、電暈）：護罩可以解凍；沒有護罩就自動跳過這一輪，不用玩家對著空氣拖一下
-        if (!T.units.some((u) => u.alive && u.w && u.frozen <= 0 && u.stun <= 0)) {
-          if (T.shield.c >= T.shield.need && !T.shield.on) say('兵都動不了：開護罩可以馬上解凍；不開就按「發射」跳過這一輪', 1);
-          else { say('兵都動不了，這一輪只能跳過', 1); later(1600, () => { if (canFire() && !S.team[0].units.some((u) => u.alive && u.w && u.frozen <= 0 && u.stun <= 0)) fireNow(); }); }
-        }
+        if (!G.tut && hs) for (let i = 0; i < hs.length; i++) { const h = hs[i]; if (G.hinted[i] || b < h.r || (h.ok && !h.ok())) continue; G.hinted[i] = 1; say(h.t, 0, 'hint' + i, h.ok ? () => S.state === 'play' && h.ok() : null); break; }
+        if (!SV.seenUlt && T.ult.c >= T.ult.need && !T.ult.armed) once('ult', '「連珠」集滿了！按右下角金色按鈕上膛，這一輪每個兵連打三次', 0, () => { const U = S.team[0].ult; return U.c >= U.need && !U.armed; });
       } else {
-        const T = S.team[0];
-        if (!SV.seenSh && b >= 2 && T.shield.c >= T.shield.need && !T.shield.on) once('sh', '輪到敵軍了：按「護罩」可以擋下他們這一整輪');
+        // 護罩的教學：敵軍瞄準只有一秒多，排隊就來不及了——插隊馬上講；輪不到（前面有別的警告）就下一回合再講
+        const T = S.team[0], ready = () => S.turn === 1 && (S.phase === 'aim' || S.phase === 'volley') && T.shield.c >= T.shield.need && !T.shield.on;
+        if (!SV.seenSh && b >= 2 && ready()) once('sh', '輪到敵軍了：按「護罩」可以擋下他們這一整輪', 1, ready);
       }
       break;
     case 'wind': once('wind', '起風了！每回合的風都不一樣，虛線已經把風算進去'); break;
     case 'ultarm': if (c === 1) { const T = S.team[0]; say(T.shield.c >= T.shield.need && !T.shield.on ? '敵軍連珠砲上膛了，這一輪打三次：快開護罩！' : '敵軍連珠砲上膛了，這一輪打三次！', 1); } break;
-    case 'phase': if (a === 2) { banner('魔王結界', 'boss', '第二階段'); later(1900, () => say('魔王張開結界了！結界分三段，每回合換缺口：從沒有光牆的地方打進去', 1)); } else { banner('魔王暴怒', 'boss', '最終階段'); later(1900, () => say('×20 的倍增符出現了！只出現一回合：穿過去，一發變二十發')); } break;
+    case 'phase': if (a === 2) { banner('魔王結界', 'boss', '第二階段'); later(1900, () => say('魔王張開結界了！結界分三段，每回合換缺口：從沒有光牆的地方打進去', 1)); } else { banner('魔王暴怒', 'boss', '最終階段'); later(1900, () => say('魔王暴怒了：每回合多砸一顆隕石。下一回合會出現 ×20 的倍增符', 1)); } break;
     case 'bossback': once('bback', '魔王摔下去又飛回來了，不過摔一次扣不少血'); break;
     case 'rockstop': if (c === 0) once('rstop', '護罩把落石擋下來了'); break;
     case 'sudden': banner('決戰時刻', 'red'); later(1900, () => say('拖太久了，雙方的砲火越來越猛', 1)); break;
     case 'end': sayClear(); banner(c === 1 ? (S.lv.boss ? '魔王伏誅' : '敵城攻破') : '城樓失守', c === 1 ? 'gold' : 'red', d ? (c === 1 ? '守軍全滅' : '我軍全滅') : ''); $('hint').hidden = true; break;
     case 'gate': if (e === 0 && G.tut >= 1 && G.tut <= 3 && !G.said.gt) { G.said.gt = 1; say('就是這樣！穿過倍增符，砲彈變多了'); } break;
-    case 'gspawn': if (c === 1) once('rg', '敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它', 1); else if (c === 2) once('gg', '黃金符：倍數很高，兩邊都能用，而且只出現一回合'); else if (c === 3) once('hz', '紫色的折損符會吃掉一半砲彈，別穿過去'); break;
-    case 'launch': if (c === 1) once('bal', '轟炸氣球升空了！它先停在半路，下一輪才飛過來，趁現在打下來', 1); break;
-    case 'orb': once('orb', '毀滅光球！它先停在半空中，下一輪砸過來：現在打爆它，它會掉頭砸在魔王自己身上', 1); break;
+    case 'gspawn': {
+      // d 幾倍。高倍數的符只出現一回合：出現的那一刻才講（太早講，玩家找不到它在哪）
+      const there = () => S.gates.some((g) => !g.dead && g.owner === c && g.mult === d);
+      if (c === 1) once('rg', '敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它', 1, there);
+      else if (c === 2) once('gg', '黃金符：倍數很高，兩邊都能用，而且只出現一回合', 0, there);
+      else if (c === 3) once('hz', '紫色的折損符會吃掉一半砲彈，別穿過去', 0, there);
+      else if (c === 0 && d >= 10) say('×' + d + ' 的倍增符出現了！只出現這一回合：穿過去，一發變' + (d === 20 ? '二十' : d === 10 ? '十' : d) + '發', 0, 'big' + d, there);
+      break;
+    }
+    case 'launch': if (c === 1) once('bal', '轟炸氣球升空了！它先停在半路，下一輪才飛過來，趁現在打下來', 1, () => S.objs.some((o) => o.t === 'balloon' && o.side === 1 && o.hp > 0 && o.st === 'hover')); break;
+    case 'orb': once('orb', '毀滅光球！它先停在半空中，下一輪砸過來：現在打爆它，它會掉頭砸在魔王自己身上', 1, () => S.objs.some((o) => o.t === 'orb' && o.hp > 0 && o.st === 'hover')); break;
     case 'orbback': once('orbb', '漂亮！光球打爆了會掉頭砸回魔王身上，連結界都擋不住'); break;
-    case 'lantern': once('lan', '天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走'); break;
-    case 'rockwarn': once('rock', '紅圈是這一回合結束時落石的位置，會砸到你就開護罩', 1); break;
+    case 'lantern': once('lan', '天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走', 0, () => S.objs.some((o) => o.t === 'lantern' && o.hp > 0)); break;
+    case 'rockwarn': once('rock', '紅圈是這一回合結束時落石的位置，會砸到你就開護罩', 1, () => S.phase !== 'hazard'); break;
     case 'erupt': if (!G.said.gey) later(3200, () => once('gey', '地火噴發：砲彈穿過火柱會著火，威力多五成')); break;        // 晚一點講，先讓這一關的訣竅講完
     case 'freeze': if (c === 0) once('frz', '兵被凍住了，下一輪不能開火；開護罩可以立刻解凍', 1); break;
     case 'udie': if (c === 0) once('lost', '有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住', 1); else if (S.idx === 0 && S.team[1].alive > 0) once('kill', '打倒一個守軍！守軍全倒，城就破了'); break;
@@ -166,7 +179,7 @@ function frame(now) {
     fxStep(rdt * ts, rdt);
     if (G.mode === 'play') {
       hudUpdate();
-      if (S.state !== 'play') { G.endT += rdt; if (G.endT > (S.state === 'won' ? 4.2 : 3.6)) finishLevel(); }
+      if (S.state !== 'play') { G.endT += rdt; if (G.endT > (S.state === 'won' ? 4.9 : 4.3)) finishLevel(); }        // 城破：讓整座垮完再跳結算
     } else if (G.demo && S.state !== 'play') { G.demoWait += rdt; if (G.demoWait > 4.5) demoStart(G.demoIdx); }
   }
   RD.aimOn = !!G.drag;

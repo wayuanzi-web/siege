@@ -132,8 +132,9 @@ function castleScan(st) {
     // 離開原位之後，要回到很接近原位才算回來（不然被震得晃回來一下，城防條會自己往上跳）
     b.inPlace = !b.gone && (was ? dx < CS * 0.5 && dy < CS * 0.5 && a < 0.4 : dx < CS * 0.2 && dy < CS * 0.2 && a < 0.15);
     b.snug = b.inPlace && dx < CS * 0.25 && dy < CS * 0.25 && a < 0.1;          // 幾乎沒動：背後的屋內暗色才畫（滑開了、歪了就看得到天）
-    if (was && !b.inPlace) { chainCount(b); st.ver++; }
-    if (b.inPlace) hp += b.hp * b.wt;
+    if (was && !b.inPlace) { chainCount(b); st.ver++; b.lost = true; }
+    // 離開過原位的磚，就算被震回來，也不再算進城樓完整度（不然上方那一條會自己往回跳）
+    if (b.inPlace && !b.lost) hp += b.hp * b.wt;
   }
   st.hpNow = hp;
   // 屋內的暗色背景：頭頂上還有東西蓋著的格子才畫。地板破了一格不影響（還是在屋裡），天花板那一格沒了就透天
@@ -163,7 +164,8 @@ function mkUnit(side, type, st, slot, hpMul) {
   const u = {
     isUnit: true, side, type, def, st, slot: slot.slot, hx: 0, hy: 0, x: st.x0 + (slot.cx + 0.5) * CS, y: st.y0 + slot.cy * CS, vx: 0, vy: 0,
     hp: def.hp * hpMul, hpMax: def.hp * hpMul, frozen: 0, stun: 0, alive: true, air: false, airT: 0, recoil: 0, hurtT: 0, tilt: 0,
-    w: def.w ? WPN[def.w] : null, flakN: 0, flakT: 0, dieT: 0, body: null, mass: 1, bw: 0, bh: 0, stamp: 0, dazed: 0, outT: 0, held: false
+    w: def.w ? WPN[def.w] : null, flakN: 0, flakT: 0, dieT: 0, body: null, mass: 1, bw: 0, bh: 0, stamp: 0, dazed: 0, outT: 0, held: false,
+    loadJ: 0, loadT: 0, load: 0, sepT: 0, sepNow: false, edge: 0, edgeT: 0
   };
   u.hx = u.x; u.hy = u.y;
   mkUnitBody(u);
@@ -223,15 +225,49 @@ function unitsStep(dt) {
     u.tilt += ((u.air ? clamp(v.x * 0.035, -0.9, 0.9) : 0) - u.tilt) * Math.min(1, dt * 9);
     if (u.hurtT > 0) u.hurtT -= dt; if (u.recoil > 0) u.recoil = Math.max(0, u.recoil - dt * 5);
     if (u.flakT > 0) u.flakT -= dt;
-    // 被重的東西壓住（石球、整片樓板）：撐超過自己體重兩倍多、撐了一會，就一直扣血直到被壓扁
-    { const load = u.loadJ / (dt * u.mass * GRAV); u.loadJ = 0;
-      if (load > CRUSH_LOAD) { u.loadT += dt; if (u.loadT > 0.3) { hurtUnit(u, (u.def.big ? u.hpMax * 0.03 : 110) * dt, S.phase === 'hazard' ? 2 : 1 - u.side, K_CRUSH); if (!u.alive) continue; } } else if (u.loadT > 0) u.loadT = Math.max(0, u.loadT - dt * 2); }
+    /* 被重的東西壓住（卡在頭上的石球、整片樓板、一堆瓦礫）：頭上撐著超過自己體重兩倍多、撐了一會，就一直扣血直到被壓扁。
+       整堆東西靜止「睡著」之後物理引擎不再回報接觸的力道：那時用睡著前量到的（東西還壓在那裡，不會因為不動了就沒事）。
+       魔王撐得住，不算（他另外有「被屋頂、樓板砸到頭」的傷害） */
+    if (u.body.isAwake()) u.load += (u.loadJ / (dt * u.mass * GRAV) - u.load) * 0.3;
+    u.loadJ = 0;
+    if (!u.def.big && u.load > CRUSH_LOAD) { u.loadT += dt; if (u.loadT > 0.3) { hurtUnit(u, 120 * dt, S.phase === 'hazard' ? 2 : 1 - u.side, K_CRUSH); if (!u.alive) continue; } }
+    else if (u.loadT > 0) u.loadT = Math.max(0, u.loadT - dt * 2);
+    /* 站在邊緣、腳底正中間已經懸空：站不住，往懸空的那一邊滑下去（身體不會倒，所以沒有這一條的話，
+       只要鞋底還勾著一點邊，大半個人就會懸在半空中站得好好的）。兩腳各踩一塊、中間有縫的不算 */
+    if (!u.air && u.body.isAwake()) {
+      if (((S.frame + u.slot * 3) & 7) === 0) {
+        const fy = u.y, fx = u.bw * 0.27;
+        const under = (dx) => { let h = false; PH.world.rayCast({ x: u.x + dx, y: fy + 0.6 }, { x: u.x + dx, y: fy - 0.9 }, (f, pt, n, fr) => { const o = f.getUserData(); if (o && o.isUnit) return -1; h = true; return fr; }); return h; };
+        let e = 0; if (!under(0)) { const L = under(-fx), R = under(fx); e = L && !R ? 1 : R && !L ? -1 : 0; }
+        if (e !== u.edge) { u.edge = e; u.edgeT = 0; }
+      }
+      if (u.edge && u.edgeT < 1.5) { u.edgeT += dt; u.body.applyLinearImpulse({ x: u.edge * u.mass * GRAV * 1.35 * dt, y: 0 }, u.body.getWorldCenter(), true); }
+    } else u.edge = 0;
     // 掉下深淵、飛出戰場兩邊：出局
     if (u.y < -26 || u.x < -GUT + 1.5 || u.x > VIEW_W + GUT - 1.5) { if (u.def.big) bossReturn(u); else killUnit(u, 1 - u.side, u.y < -26 ? 4 : 6); continue; }
     // 被轟出自己的城、落地站定了：也算出局（守不了城了）。魔王會自己飛回去
     const st = u.st;
     if ((u.x < st.x0 - OUT_M || u.x > st.x1 + OUT_M) && !u.air) { u.outT += dt; if (u.outT > 0.6) { if (u.def.big) bossReturn(u); else killUnit(u, 1 - u.side, 5); } } else u.outT = 0;
   }
+  /* 兵跟兵不碰撞，所以掉到同一個地方會疊在一起：往兩邊慢慢推開（魔王不動，推小兵）。
+     推了兩秒多還分不開（兩個人擠在一格寬的小隔間裡）就不推了，不然永遠靜不下來、回合結束不了 */
+  const us = S.units;
+  for (let i = 0; i < us.length; i++) us[i].sepNow = false;
+  for (let i = 0; i < us.length; i++) {
+    const a = us[i]; if (!a.alive) continue;
+    for (let j = i + 1; j < us.length; j++) {
+      const b = us[j]; if (!b.alive) continue;
+      const dx = b.x - a.x, ox = (a.bw + b.bw) * 0.5 * 0.9 - Math.abs(dx), oy = (a.bh + b.bh) * 0.5 * 0.85 - Math.abs(b.y + b.bh * 0.5 - a.y - a.bh * 0.5);
+      if (ox <= 0 || oy <= 0) continue;
+      a.sepNow = b.sepNow = true;
+      if (a.sepT > 2.4 || b.sepT > 2.4) continue;
+      const dir = dx > 0.01 ? 1 : dx < -0.01 ? -1 : (a.slot + a.side * 9 < b.slot + b.side * 9 ? 1 : -1), acc = GRAV * 1.7 * Math.min(1, 0.35 + ox) * dt;
+      const ka = a.def.big ? 0 : b.def.big ? 2 : 1, kb = b.def.big ? 0 : a.def.big ? 2 : 1;
+      if (ka) a.body.applyLinearImpulse({ x: -dir * acc * ka * a.mass, y: 0 }, a.body.getWorldCenter(), true);
+      if (kb) b.body.applyLinearImpulse({ x: dir * acc * kb * b.mass, y: 0 }, b.body.getWorldCenter(), true);
+    }
+  }
+  for (let i = 0; i < us.length; i++) { const u = us[i]; if (u.sepNow) u.sepT += dt; else if (u.sepT > 0) u.sepT = Math.max(0, u.sepT - dt * 0.5); }
 }
 
 /* ---------- 砲彈 ---------- */
@@ -509,12 +545,21 @@ function grantBonus(side, kind, x, y) {
       // 腳下有沒有東西：從原位的腰部往下看一小段；身體那一格有沒有被磚佔住
       let floor = -999; PH.world.rayCast({ x: u.x, y: u.hy + 1.2 }, { x: u.x, y: u.hy - 1.2 }, (f, pt, n, fr) => { const o = f.getUserData(); if (o && !o.isBlock) return -1; floor = pt.y; return fr; });
       const q = physQuery(u.x, u.hy + 1.6, 2); let blocked = false; for (const o of q) if (o.isBlock && !o.dead && blockDist(o, u.x, u.hy + 1.6) < 1.25) blocked = true;
-      if (blocked || floor < u.hy - 0.7 || floor > u.hy + 0.5) {
-        const find = () => { let top = -999; PH.world.rayCast({ x: u.x, y: st.y1 + 30 }, { x: u.x, y: st.y0 - 2 }, (f, pt, n, fr) => { const o = f.getUserData(); if (o && !o.isBlock) return -1; top = pt.y; return fr; }); return top; };
-        let top = find();
-        // 原本站的地方底下什麼都沒有了（例如伸出去的露台斷了，下面是深淵）：改站回城基的範圍裡
-        if (top < -900) { u.x = clamp(u.x, st.fx0 + 1.7, st.fx1 - 1.7); top = find(); }
-        u.y = (top > -900 ? top : st.y0) + 0.25;
+      // 那個位置現在有沒有別的兵站著（掉下來的隊友、摔下來的魔王）：有的話也要另外找地方，不要復活在別人身體裡
+      const crowded = (x, y) => { for (const k of S.units) if (k !== u && k.alive && Math.abs(k.x - x) < (k.bw + UNIT_W) * 0.45 && Math.abs(k.y - y) < (k.bh + UNIT_H) * 0.45) return true; return false; };
+      if (blocked || floor < u.hy - 0.7 || floor > u.hy + 0.5 || crowded(u.x, floor + 0.1)) {
+        const find = (x) => { let top = -999; PH.world.rayCast({ x, y: st.y1 + 30 }, { x, y: st.y0 - 2 }, (f, pt, n, fr) => { const o = f.getUserData(); if (o && !o.isBlock) return -1; top = pt.y; return fr; }); return top; };
+        // 先看原本那一直線上最高的地方；那裡底下什麼都沒有（露台斷了，下面是深淵）或已經有人，就往兩邊一格一格找，只在城基的範圍裡找
+        let bx = u.x, top = find(u.x);
+        if (top < -900 || crowded(u.x, top + 0.25)) {
+          const lo = st.fx0 + 1.7, hi = st.fx1 - 1.7; let done = false;
+          for (let k = 0; k <= 8 && !done; k++) for (const sg of (k ? [1, -1] : [1])) {
+            const x = clamp(u.x + sg * k * CS, lo, hi), t = find(x);
+            if (t > -900 && !crowded(x, t + 0.25)) { bx = x; top = t; done = true; break; }
+          }
+          if (!done && top < -900) { bx = clamp(u.x, lo, hi); top = find(bx); }
+        }
+        u.x = bx; u.y = (top > -900 ? top : st.y0) + 0.25;
       } else u.y = floor + 0.1;
       mkUnitBody(u); u.body.setAwake(true);
       T.alive++; ev('revive', u.x, u.y, side, u.slot);
@@ -689,6 +734,8 @@ function simFire(side) {
 }
 // 場上的東西都停下來了嗎（畫面外的不管）。城樓的磚和兵要真的停了才算；碎塊、小擺設、落石慢慢滾的不等
 function worldQuiet() {
+  // 有兵正被壓著扣血（一兩秒內不是被壓扁就是東西滑開）：等出結果，不要輪到下一邊瞄準了他才倒下
+  for (const u of S.units) if (u.alive && !u.def.big && u.loadT > 0 && u.load > CRUSH_LOAD) return false;
   for (let b = PH.world.getBodyList(); b; b = b.getNext()) {
     if (!b.isDynamic() || !b.isAwake()) continue;
     const p = b.getPosition(); if (p.x < -GUT - 2 || p.x > VIEW_W + GUT + 2 || p.y < -10) continue;
@@ -913,6 +960,8 @@ function simStep(dt) {
 // 著火的木頭和屋瓦：一直掉血，會延燒到碰在一起的
 function burnStep(dt) {
   if (S.nburn <= 0) return;
+  // 瞄準的時候火不往下燒（火苗照樣畫著）：不然上一輪點的火會在別人瞄準時把樑燒斷、把兵燒倒。下一輪砲擊開始再接著燒
+  if (S.state === 'play' && (S.phase === 'aim' || S.phase === 'intro')) return;
   S.burnT -= dt; const tick = S.burnT <= 0; if (tick) S.burnT = 0.4;
   let nb = 0; const credit = S.phase === 'hazard' ? 2 : S.turn;
   for (const b of S.blocks) {
@@ -953,22 +1002,34 @@ function endCheck() {
   if (S.turn === 0 && S.phase !== 'hazard' && S.chain > S.stat.chain) S.stat.chain = S.chain;
   S.state = loser === 1 ? 'won' : 'lost'; S.loser = loser; S.endT = 0; S.phase = 'over';
   const st = S.st[loser];
-  // 整座垮掉：由下往上一塊一塊炸開，剩下的自己塌
-  const order = [];
-  for (const b of st.blocks) if (!b.dead) order.push({ b, t: 0.2 + Math.max(0, (b.body.getPosition().y - st.y0) / CS) * 0.17 + rnd() * 0.18 });
-  st.fin = { t: 0, order: order.sort((a, b) => a.t - b.t), k: 0 };
+  /* 城破：整座垮下來，而且是「自己垮」的——不是一塊一塊炸開。
+     守軍一倒，整座城的磚瞬間佈滿裂痕（耐久只剩三成，摔到就碎）；接著城腳從正面開始一塊一塊碎掉，
+     上面失去支撐，往戰場中間歪過去、塌下來，一路撞、一路碎。上面的磚只有少數會自己先裂開（讓它斷成幾截），其他都是摔下來才碎的 */
+  const dir = loser === 1 ? -1 : 1, front = loser === 1 ? st.x0 : st.x1, order = [];
+  for (const b of st.blocks) {
+    if (b.dead) continue;
+    if (b.seg) { let hp = 0; for (let k = 0; k < b.seg.length; k++) { b.seg[k] *= 0.3; hp += b.seg[k]; } b.hp = hp; b.low = Math.min(b.low === undefined ? 1 : b.low, 0.3); } else b.hp *= 0.3;
+    b.flash = 1; b.body.setAwake(true);
+    const p = b.body.getPosition(), row = Math.max(0, (p.y - st.y0) / CS), dist = Math.abs(p.x - front) / CS;
+    if (row < 2.2 || rnd() < 0.3) order.push({ b, t: 0.16 + (row < 2.2 ? dist * 0.055 + row * 0.07 : 0.3 + row * 0.085 + dist * 0.03) + rnd() * 0.1 });
+  }
+  st.fin = { t: 0, order: order.sort((a, b) => a.t - b.t), k: 0, dir, lean: 0 };
   ev('end', st.cx, st.y0 + st.h * 0.4, loser, S.team[loser].alive <= 0 ? 1 : 0);
   S.team[0].ult.armed = false; S.team[1].ult.armed = false; S.team[0].shield.on = false; S.team[1].shield.on = false;
 }
 function finStep(st, dt) {
   const f = st.fin; f.t += dt;
-  while (f.k < f.order.length && f.order[f.k].t <= f.t) {
-    const b = f.order[f.k++].b; if (b.dead) continue;
-    const p = b.body.getPosition();
-    if (f.k % 4 === 0) { physExplode(p.x, p.y, WPN.drop, 2, 0.7, 0, null, 0, 1); if (!b.dead) blockKill(b, 2, 99); }
-    else if (f.k % 4 === 2 && !b.frag) blockKill(b, 2, 99);
-    else { b.body.applyLinearImpulse({ x: (rnd() - 0.5) * b.mass * 16, y: b.mass * (5 + rnd() * 15) }, p, true); b.body.setAngularVelocity((rnd() - 0.5) * 7); }
+  // 城腳開始碎的那一刻，上面的往戰場中間推一把（越高推得越用力）：整座往前倒，不是原地往下坐
+  if (!f.lean && f.t > 0.2) {
+    f.lean = 1;
+    for (const b of st.blocks) {
+      if (b.dead) continue;
+      const p = b.body.getPosition(), row = (p.y - st.y0) / CS; if (row < 1.5) continue;
+      b.body.applyLinearImpulse({ x: f.dir * b.mass * (1.0 + row * 0.55), y: 0 }, p, true);
+      b.body.setAngularVelocity(b.body.getAngularVelocity() - f.dir * (0.15 + row * 0.04));
+    }
   }
+  while (f.k < f.order.length && f.order[f.k].t <= f.t) { const b = f.order[f.k++].b; if (!b.dead) blockKill(b, 2, 99); }
   if (f.t > 0.6) for (const u of st.units) if (u.alive) killUnit(u, 1 - st.side, 0);
   if (f.k >= f.order.length && f.t > 3.4) { st.dead = true; st.fin = null; }
 }

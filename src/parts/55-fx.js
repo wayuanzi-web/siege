@@ -5,7 +5,7 @@ const FX = {
   x: new Float32Array(NP), y: new Float32Array(NP), vx: new Float32Array(NP), vy: new Float32Array(NP),
   life: new Float32Array(NP), max: new Float32Array(NP), size: new Float32Array(NP), rot: new Float32Array(NP), vr: new Float32Array(NP),
   type: new Uint8Array(NP), col: new Uint8Array(NP),
-  rings: [], bolts: [], pops: [], flung: [], tracers: [], gpop: {}, boomN: 0
+  rings: [], bolts: [], pops: [], flung: [], tracers: [], gpop: {}, boomN: 0, glare: 0
 };
 // 粒子種類
 const P_SPARK = 0, P_SMOKE = 1, P_DEBRIS = 2, P_FLASH = 3, P_EMBER = 4, P_SHARD = 5, P_DUST = 6, P_CONF = 7;
@@ -20,7 +20,7 @@ function debrisCol(skin, m) {
   const hex = m === M_WOOD ? P.wood[1] : m === M_STONE ? P.stone[1] : m === M_IRON ? P.iron[1] : m === M_ROOF ? P.roof[1] : m === M_ICE ? PAL_ICE[1] : m === M_ROCK ? PAL_ROCK[1] : m === M_KEG ? '#a8672e' : m === M_CLAY ? '#c8743c' : P.panel[0];
   i = PCOL.length; PCOL.push(hex); DEBRIS_COL[key] = i; return i;
 }
-function fxReset() { FX.n = 0; FX.rings.length = 0; FX.bolts.length = 0; FX.pops.length = 0; FX.flung.length = 0; FX.tracers.length = 0; FX.shake = 0; FX.flash = 0; FX.slow = 1; FX.slowT = 0; FX.slowCd = 0; FX.chainRef = 0; FX.chainT = 0; FX.stop = 0; FX.gpop = {}; FX.heat = 0; }
+function fxReset() { FX.n = 0; FX.glare = 0; FX.rings.length = 0; FX.bolts.length = 0; FX.pops.length = 0; FX.flung.length = 0; FX.tracers.length = 0; FX.shake = 0; FX.flash = 0; FX.slow = 1; FX.slowT = 0; FX.slowCd = 0; FX.chainRef = 0; FX.chainT = 0; FX.stop = 0; FX.gpop = {}; FX.heat = 0; }
 // 慢動作：精彩的瞬間（連環爆、大坍塌）放慢一下才看得清楚。k 放慢到幾成速度、dur 持續幾秒（真實時間）；不會連續觸發
 function slowmo(k, dur, force) { if (FX.slowCd > 0 && !force) return; FX.slowT = dur; FX.slowK = k; FX.slow = k; FX.slowCd = dur + 2.5; }
 function part(type, x, y, vx, vy, life, size, col) {
@@ -81,7 +81,7 @@ function fxStep(dt, rdt) {
   for (let i = FX.pops.length - 1; i >= 0; i--) { const p = FX.pops[i]; p.t += rdt; if (p.t >= p.max) FX.pops.splice(i, 1); }
   for (let i = FX.tracers.length - 1; i >= 0; i--) { const p = FX.tracers[i]; p.t += dt; if (p.t >= 0.14) FX.tracers.splice(i, 1); }
   for (let i = FX.flung.length - 1; i >= 0; i--) { const f = FX.flung[i]; f.t += dt; f.vy -= g * 0.8 * dt; f.x += f.vx * dt; f.y += f.vy * dt; f.rot += f.vr * dt; if (f.t > 2.2 || f.y < -20) FX.flung.splice(i, 1); }
-  FX.boomN = 0;
+  FX.boomN = 0; FX.glare *= Math.pow(0.03, rdt);
 }
 
 /* 模擬事件 → 特效 */
@@ -99,7 +99,9 @@ function fxOn(t, a, b, c, d, e, f) {
       if (++FX.boomN > 26) break;             // 同一幀爆太多就不再加特效
       const k = w.kind; FX.heat = Math.min(1, FX.heat + 0.03 + r * 0.008);
       const col = lit || k === K_FIRE ? C_ORANGE : k === K_ICE ? C_ICE : k === K_ZAP ? C_YELLOW : k === K_DARK ? C_PURPLE : C_GOLD;
-      part(P_FLASH, a, b, 0, 0, 0.14 + r * 0.012, r * 1.5, k === K_ICE ? C_ICE : k === K_DARK ? C_PINK : C_WHITEHOT);
+      // 閃光：一顆一顆爆的時候夠亮；短時間內爆了一堆（倍增之後一輪幾十發、火藥桶連環爆）就一發比一發淡，
+      // 不然整片白掉三分之一秒，城樓怎麼斷、怎麼垮正好都被蓋住
+      { const gl = FX.glare, fi = FX.n; FX.glare += r; part(P_FLASH, a, b, 0, 0, 0.12 + r * 0.009, r * 1.2, k === K_ICE ? C_ICE : k === K_DARK ? C_PINK : C_WHITEHOT); if (FX.n > fi && gl > 3) FX.max[fi] = FX.life[fi] * (1 + (gl - 3) / 5); }
       if (k === K_PIERCE) { burst(P_SPARK, a, b, 2, 18, 0.2, 0.5, C_WHITEHOT); sfx('tick'); break; }
       ring(a, b, r * 0.3, r * 1.25, 0.26, k === K_ICE ? '#bfeeff' : k === K_DARK ? '#ff7ad0' : '#fff0b0', 0.42);
       burst(P_SPARK, a, b, FX.low ? 3 : 4 + Math.min(8, r * 1.2) | 0, 16 + r * 5, 0.38, 0.6, col);
@@ -116,11 +118,12 @@ function fxOn(t, a, b, c, d, e, f) {
       const n = Math.round(clamp(area * 3.5, 3, 12) * (FX.low ? 0.5 : 1) * (f.fragged ? 0.45 : 1));       // 已經裂成幾大塊的，小碎屑少一點
       for (let k = 0; k < n; k++) {
         const lx = rndS() * f.w * 0.9, ly = rndS() * f.h * 0.9;
-        part(c === M_ICE || c === M_CLAY ? P_SHARD : P_DEBRIS, a + lx * cs - ly * sn, b + lx * sn + ly * cs, rndS() * (fin ? 60 : 34), (fin ? 16 : 8) + Math.random() * (fin ? 46 : 26), 1.0 + Math.random() * 0.9, 0.7 + Math.random() * 0.7, col);
+        part(c === M_ICE || c === M_CLAY ? P_SHARD : P_DEBRIS, a + lx * cs - ly * sn, b + lx * sn + ly * cs, rndS() * 34, 8 + Math.random() * 26, 1.0 + Math.random() * 0.9, 0.7 + Math.random() * 0.7, col);
       }
-      for (let k = 0; k < Math.min(3, 1 + area | 0); k++) part(P_DUST, a + rndS() * f.w * 0.6, b + rndS() * f.h * 0.6, rndS() * 8, 2 + Math.random() * 4, 0.6, 2.4, c === M_ICE ? C_WHITE : C_SAND);
+      // 城破（整座自己垮下來）：不是炸開的，碎屑不往上噴；多的是往兩邊滾開的塵土
+      for (let k = 0; k < (fin ? 3 : Math.min(3, 1 + area | 0)); k++) part(P_DUST, a + rndS() * f.w * 0.6, b + rndS() * f.h * 0.6, rndS() * (fin ? 22 : 8), 2 + Math.random() * (fin ? 7 : 4), fin ? 1.1 : 0.6, fin ? 3.4 : 2.4, c === M_ICE ? C_WHITE : C_SAND);
       sfx(c === M_ICE || c === M_CLAY ? 'shatter' : c === M_WOOD || c === M_ROOF || c === M_KEG ? 'crack' : c === M_IRON ? 'clang' : 'crumble'); FX.heat = Math.min(1, FX.heat + 0.03);
-      if (fin) shake(0.5);
+      if (fin) shake(0.35);
       break;
     }
     case 'crack': if (Math.random() < 0.5) part(P_DEBRIS, a + rndS() * 2, b + rndS() * 2, rndS() * 16, 4 + Math.random() * 10, 0.7, 0.4, C_SAND); break;
@@ -221,7 +224,7 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'dirt': burst(P_DUST, a, b + 0.5, 3, 10, 0.5, 1.6, C_SAND, 4); break;
     case 'tick': burst(P_SPARK, a, b, 2, 12, 0.2, 0.4, C_WHITEHOT); sfx('tick'); break;
     case 'end': {
-      slowmo(0.3, 2.3, true); shake(2.0); flash(0.45, '#fff6d8'); sfx('collapse'); vibrate(200);
+      slowmo(0.3, 1.8, true); shake(2.0); flash(0.3, '#fff6d8'); sfx('collapse'); vibrate(200);
       ring(a, b, 2, 16, 0.6, '#fff0b0', 0.7);         // 只留一圈小的，別把整座城垮下來的樣子蓋住
       break;
     }

@@ -55,9 +55,10 @@ function banner(txt, kind, small) {
 const SAY = { q: [], cur: null, t0: 0, dur: 0, tm: 0, held: 0 };
 function sayDur(txt) { return clamp(1.3 + txt.length * 0.14, 2.6, 6.5) * 1000; }
 function sayDrop(m) { if (m.key && typeof G !== 'undefined') { delete G.said[m.key]; if (m.key.slice(0, 4) === 'hint' && G.hinted) G.hinted[+m.key.slice(4)] = 0; } }       // 沒講到的話：下次還可以再講
-function say(txt, alert, key) {
+// ok：還用得上嗎。排隊等了幾秒才輪到的話，講之前再問一次（要打的東西已經沒了、時機過了就不講，之後還有機會再講）
+function say(txt, alert, key, ok) {
   if ((SAY.cur && SAY.cur.txt === txt) || SAY.q.some((m) => m.txt === txt)) return;
-  const m = { txt, alert: !!alert, key: key || '', at: performance.now() };
+  const m = { txt, alert: !!alert, key: key || '', at: performance.now(), ok: ok || null };
   if (m.alert) { let i = 0; while (i < SAY.q.length && SAY.q[i].alert) i++; SAY.q.splice(i, 0, m); } else SAY.q.push(m);      // 警告插隊
   while (SAY.q.length > 3) sayDrop(SAY.q.pop());
   if (!SAY.held) sayPump();
@@ -66,12 +67,14 @@ function sayPump() {
   clearTimeout(SAY.tm); if (SAY.held) return;
   const now = performance.now(), hold = () => (SAY.q.length ? Math.max(2300, SAY.dur * 0.78) : SAY.dur);      // 後面有人在等：這一句至少講將近八成
   if (SAY.cur) { const left = hold() - (now - SAY.t0); if (left > 0) { SAY.tm = setTimeout(sayPump, left + 15); return; } SAY.cur = null; }
-  while (SAY.q.length && now - SAY.q[0].at > 9000) sayDrop(SAY.q.shift());
+  while (SAY.q.length && (now - SAY.q[0].at > 9000 || (SAY.q[0].ok && !SAY.q[0].ok()))) sayDrop(SAY.q.shift());
   const m = SAY.q.shift(), el = $('say'); if (!m) return;
   SAY.cur = m; SAY.t0 = now; SAY.dur = sayDur(m.txt);
   el.textContent = m.txt; el.classList.toggle('alert', m.alert); el.style.setProperty('--say', (SAY.dur / 1000).toFixed(2) + 's'); replay(el, 'show');
   SAY.tm = setTimeout(sayPump, hold() + 15);
 }
+// 有更要緊的話要馬上講：正在講的、排隊的都先放掉（沒講完的之後還可以再講）
+function sayFlush() { clearTimeout(SAY.tm); for (const m of SAY.q) sayDrop(m); SAY.q.length = 0; if (SAY.cur && performance.now() - SAY.t0 < 1200) sayDrop(SAY.cur); SAY.cur = null; }
 function sayClear() { clearTimeout(SAY.tm); SAY.q.length = 0; SAY.cur = null; SAY.held = 0; const el = $('say'); el.className = 'chamfer'; el.style.animationPlayState = ''; }
 // 暫停的時候提示也停住（計時和淡出動畫都停），繼續之後接著講
 function sayHold(on) {
@@ -100,7 +103,26 @@ function homeRender() {
   });
   const lv = LEVELS[UI.sel], locked = UI.sel >= SV.open;
   $('liName').textContent = lv.name; $('liTag').textContent = lv.tag;
-  $('liTip').textContent = locked ? '先打下第' + NUM_ZH[UI.sel - 1] + '關「' + LEVELS[UI.sel - 1].name + '」才能出戰。' : lv.tip + '。';
+  const tipTxt = locked ? '先打下第' + NUM_ZH[UI.sel - 1] + '關「' + LEVELS[UI.sel - 1].name + '」才能出戰。' : lv.tip + '。';
+  const tip = $('liTip'); tip.textContent = tipTxt; tip.classList.remove('blurb');
+  // 這一關雙方派誰上場：一排頭像，點一下看那個兵會什麼（再點一下回到關卡說明）
+  const cr = $('liCrew'); cr.textContent = ''; let picked = null;
+  [[0, lv.me.crew, '我方'], [1, lv.foe.crew, '敵軍']].forEach(([sd, crew, label]) => {
+    const row = document.createElement('div'); row.className = 'grp ' + (sd ? 'foe' : 'me');
+    const lb = document.createElement('small'); lb.textContent = label; row.appendChild(lb);
+    crew.forEach((type) => {
+      const def = UNIT[type], b = document.createElement('button'); b.className = 'cu'; b.setAttribute('aria-label', label + '：' + def.name + '。' + def.blurb); b.setAttribute('aria-pressed', 'false');
+      b.appendChild(unitPortrait(type, sd));
+      onTap(b, () => {
+        sfx('click');
+        if (picked) picked.setAttribute('aria-pressed', 'false');
+        if (picked === b) { picked = null; tip.textContent = tipTxt; tip.classList.remove('blurb'); return; }
+        picked = b; b.setAttribute('aria-pressed', 'true'); tip.textContent = def.name + '：' + def.blurb + '。'; tip.classList.add('blurb');
+      });
+      row.appendChild(b);
+    });
+    cr.appendChild(row);
+  });
   $('btnGo').disabled = locked;
   $('homeCoins').textContent = fmt(SV.coins);
 }
@@ -175,6 +197,14 @@ function showResult(won, st) {
   $('result').hidden = false;
 }
 
+// 兵的圓形頭像（資訊列、主畫面的關卡卡片共用）
+function unitPortrait(type, sd) {
+  const def = UNIT[type], cv = document.createElement('canvas'); cv.width = cv.height = 96; const c = cv.getContext('2d'); c.scale(96 / 64, 96 / 64); c.lineJoin = 'round'; c.lineCap = 'round';
+  if (sd === 1) { c.translate(64, 0); c.scale(-1, 1); }
+  c.translate(0, def.big ? 12 : 7);                            // 帽子、角畫在格子上緣外面：往下挪才不會被切掉
+  (UNIT_ART[type] || UNIT_ART.rocket)(c, sd, TEAM_PAL[sd]);
+  return cv;
+}
 /* ---------- 戰鬥中的資訊列 ---------- */
 const HUD = { a: -1, b: -1, crew: [[], []], ult: -1, sh: -1, wind: 99, deg: -1, pow: -1, mile: 0, n: 0, turn: '', round: -1, fire: -1 };
 const MILES = [[30, '彈如雨下'], [70, '百砲齊發'], [150, '遮天蔽日'], [300, '千砲破城']];
@@ -183,11 +213,7 @@ function hudBuild() {
     const box = $(sd ? 'crewB' : 'crewA'); box.textContent = ''; HUD.crew[sd] = [];
     for (const u of S.team[sd].units) {
       const el = document.createElement('span'); el.className = 'cu'; el.title = u.def.name;
-      const cv = document.createElement('canvas'); cv.width = cv.height = 96; const c = cv.getContext('2d'); c.scale(96 / 64, 96 / 64); c.lineJoin = 'round'; c.lineCap = 'round';
-      if (sd === 1) { c.translate(64, 0); c.scale(-1, 1); }
-      c.translate(0, u.def.big ? 12 : 7);                            // 帽子、角畫在格子上緣外面：往下挪才不會被切掉
-      (UNIT_ART[u.type] || UNIT_ART.rocket)(c, sd, TEAM_PAL[sd]);
-      el.appendChild(cv); box.appendChild(el); HUD.crew[sd].push({ el, u, st: '' });
+      el.appendChild(unitPortrait(u.type, sd)); box.appendChild(el); HUD.crew[sd].push({ el, u, st: '' });
     }
   }
   // 魔王城：城防條上標出換階段的位置
@@ -199,8 +225,18 @@ function hudBuild() {
   $('turnChip').hidden = true;                                       // 上一局留下來的「輪到你」不能帶進新的一局
 }
 function foeBar() { return teamBar(1); }
+// 角落的按鈕（發射、仰角力道、護罩、連珠）在畫布上佔哪裡。用版面座標算（舞台轉了 90 度也一樣）
+function hudAvoid() {
+  const stage = $('stage'), k = V.W / (stage.offsetWidth || 1), out = [];
+  for (const id of ['btnFire', 'aimInfo', 'btnShield', 'btnUlt']) {
+    const el = $(id); if (!el || !el.offsetWidth) continue;
+    let x = 0, y = 0; for (let e = el; e && e !== stage; e = e.offsetParent) { x += e.offsetLeft; y += e.offsetTop; }
+    out.push([x * k - 4, y * k - 4, (x + el.offsetWidth) * k + 4, (y + el.offsetHeight) * k + 4]);
+  }
+  RD.avoid = out;
+}
 function hudUpdate() {
-  HUD.n++;
+  if ((HUD.n++ & 63) === 0) hudAvoid();
   const a = Math.round(teamBar(0) * 100), b = Math.round(foeBar() * 100);
   if (a !== HUD.a) { if (HUD.a >= 0 && a < HUD.a) replayFlash($('hpA')); HUD.a = a; $('pctA').textContent = a + '%'; $('barA').style.transform = 'scaleX(' + (a / 100) + ')'; }
   if (b !== HUD.b) { if (HUD.b >= 0 && b < HUD.b) replayFlash($('hpB')); HUD.b = b; $('pctB').textContent = b + '%'; $('barB').style.transform = 'scaleX(' + (b / 100) + ')'; }

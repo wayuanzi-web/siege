@@ -3,8 +3,10 @@ const F_NUM = '"Lilita One", "NumFB", "Arial Black", system-ui, sans-serif';
 const F_ZH = '900 1px "Noto Serif TC", "Songti TC", "Source Han Serif TC", "PMingLiU", serif';
 const RD = {
   cv: null, c: null, t: 0, frame: 0, glow: {}, flame: null, flameKey: 0,
-  showAim: true, aimOn: false, aimT: 1.0, aimMask: 0, aimFar: 0, trail: null, sh: [0, 0], burn: []
+  showAim: true, aimOn: false, aimT: 1.0, aimMask: 0, aimFar: 0, trail: null, sh: [0, 0], burn: [],
+  avoid: []          // 畫面角落那幾顆按鈕佔的位置（畫布像素 [x0, y0, x1, y1]）：跳出來的字要避開，不然被按鈕蓋住看不到
 };
+const SOOT_MAX = 0.5;          // 被炸過的磚燻黑到什麼程度為止（疊太黑的話，深色的鐵甲和石磚整塊變成一團黑，看不出是什麼）
 const GATE_COL = [
   { e: 'rgba(60,140,255,.36)', m: 'rgba(160,214,255,.62)', line: '#cfe6ff', glow: 'rgba(60,140,255,.30)', ink: '#0f2a78' },
   { e: 'rgba(240,60,50,.36)', m: 'rgba(255,176,156,.62)', line: '#ffcabb', glow: 'rgba(255,70,40,.28)', ink: '#6a0b10' },
@@ -128,13 +130,13 @@ function drawBlocks(c, t, rdt) {
         const r = seg[k] / b.segM, so = soot && !FX.low ? soot[k] : 0, f1 = (fl >> k) & 1;
         if (r > 0.66 && so <= 0.05 && !f1) continue;
         const x0 = k === 0 ? 0 : Math.round(pad + k * cell), x1 = k === n - 1 ? sp.cv.width : Math.round(pad + (k + 1) * cell), w0 = x1 - x0;
-        if (so > 0.05) { c.globalCompositeOperation = 'multiply'; c.globalAlpha = Math.min(1, so); c.drawImage(sp.cv, x0, 0, w0, H, x0 - sp.ax, -sp.ay, w0, H); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
+        if (so > 0.05) { c.globalCompositeOperation = 'multiply'; c.globalAlpha = Math.min(SOOT_MAX, so * SOOT_MAX); c.drawImage(sp.cv, x0, 0, w0, H, x0 - sp.ax, -sp.ay, w0, H); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
         if (r <= 0.66) { if (!cr) cr = blockSprite(b, 3); c.drawImage(cr.cv, x0, 0, w0, H, x0 - sp.ax, -sp.ay, w0, H); if (r <= 0.33) c.drawImage(cr.cv, sp.cv.width - x1, 0, w0, H, x0 - sp.ax, -sp.ay, w0, H); }
         if (f1) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = Math.min(1, b.flash) * 0.55; c.drawImage(sp.cv, x0, 0, w0, H, x0 - sp.ax, -sp.ay, w0, H); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
       }
       if (b.flash > 0) { b.flash = Math.max(0, b.flash - rdt * 5); if (b.flash <= 0) b.flashM = 0; }
     } else {
-      if (b.soot > 0.05 && !FX.low) { c.globalCompositeOperation = 'multiply'; c.globalAlpha = Math.min(1, b.soot); c.drawImage(sp.cv, -sp.ax, -sp.ay); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
+      if (b.soot > 0.05 && !FX.low) { c.globalCompositeOperation = 'multiply'; c.globalAlpha = Math.min(SOOT_MAX, b.soot * SOOT_MAX); c.drawImage(sp.cv, -sp.ax, -sp.ay); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
       if (b.flash > 0) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = Math.min(1, b.flash) * 0.55; c.drawImage(sp.cv, -sp.ax, -sp.ay); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; b.flash = Math.max(0, b.flash - rdt * 5); }
     }
     // 被冰術士打到、變脆的磚：罩一層淡淡的冰藍（不是整塊變白）
@@ -365,12 +367,18 @@ function drawShots(c) {
 /* ---------- 特效 ---------- */
 function fxDraw(c) {
   const s = V.s, n = FX.n, sx = FX.shx, sy = FX.shy;
+  // 煙和塵先畫（用戰場的座標）；碎屑每一顆自己轉自己的角度，另外一趟畫。
+  // 兩種混在同一趟的話，碎屑設的旋轉會留給後面的煙塵用，煙就會畫到不相干的地方去
   for (let i = 0; i < n; i++) {
     const tp = FX.type[i];
     if (tp === P_SMOKE || tp === P_DUST) {
       const f = FX.life[i] / FX.max[i], r = FX.size[i] * s * (1.7 - f * 0.9);
       c.globalAlpha = f * (tp === P_DUST ? 0.42 : 0.5); c.fillStyle = PCOL[FX.col[i]]; c.beginPath(); c.arc(X(FX.x[i]), Y(FX.y[i]), r, 0, TAU); c.fill();
-    } else if (tp === P_DEBRIS || tp === P_CONF || tp === P_SHARD) {
+    }
+  }
+  for (let i = 0; i < n; i++) {
+    const tp = FX.type[i];
+    if (tp === P_DEBRIS || tp === P_CONF || tp === P_SHARD) {
       const r = FX.size[i] * s * 0.5, a = FX.rot[i], cs = Math.cos(a), sn = Math.sin(a);
       c.globalAlpha = Math.min(1, FX.life[i] * 3); c.setTransform(cs, sn, -sn, cs, X(FX.x[i]) + sx, Y(FX.y[i]) + sy);
       c.fillStyle = PCOL[FX.col[i]];
@@ -413,7 +421,10 @@ function fxDraw(c) {
     const f = p.t / p.max, sc = f < 0.12 ? 0.6 + f / 0.12 * 0.5 : 1.1 - Math.min(0.1, (f - 0.12) * 0.5), fz = p.size * s * sc;
     c.globalAlpha = f > 0.7 ? (1 - f) / 0.3 : 1;
     c.font = /[^\x00-\xff]/.test(p.txt) && !/^×/.test(p.txt) ? F_ZH.replace('1px', fz + 'px') : '400 ' + fz * 1.15 + 'px ' + F_NUM;
-    const x = clamp(X(p.x), fz * 2, V.W - fz * 2), y = Math.max(Y(p.y) - f * s * 3.5, V.hud + fz * 0.9);
+    // 整句都要看得到：不超出左右、不躲到上方資訊列後面、不掉到畫面底下（摔進深淵的兵在畫面外），也不要被角落的按鈕蓋住
+    const hw = c.measureText(p.txt).width / 2 + fz * 0.15, x = clamp(X(p.x), hw + 2, Math.max(hw + 2, V.W - hw - 2));
+    let y = clamp(Y(p.y) - f * s * 3.5, V.hud + fz * 0.9, V.H - fz * 0.8);
+    for (const r of RD.avoid) if (x + hw > r[0] && x - hw < r[2] && y + fz * 0.6 > r[1] && y - fz * 0.6 < r[3]) y = Math.max(V.hud + fz * 0.9, r[1] - fz * 0.7);
     c.lineWidth = fz * 0.22; c.strokeStyle = 'rgba(16,10,26,.9)'; c.strokeText(p.txt, x, y); c.fillStyle = p.col; c.fillText(p.txt, x, y);
   }
   c.globalAlpha = 1;

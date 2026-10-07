@@ -24,11 +24,14 @@ body_html = re.sub(r'<style>.*?</style>', '', head, flags=re.S)
 code = re.sub(r'/\*.*?\*/', '', js + web_js, flags=re.S)
 code = re.sub(r'(?m)(^|\s)//.*$', '', code)
 cjk = sorted(set(ch for ch in body_html + code if '一' <= ch <= '鿿'))
+# 字型的樣式表不能擋住頁面：訊號很差、連線卡住不回應的時候，一般的 <link rel=stylesheet> 會讓整頁停在那裡等（遊戲根本不會開始）。
+# 先用 media="print" 載（瀏覽器不會為了列印用的樣式表等），載到了再改成 all；載不到就用系統字型，照樣能玩
+def font_link(href):
+    return '<link rel="stylesheet" href="' + href + '" media="print" onload="this.media=\'all\'">'
 fonts = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap">'
-         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@900&display=swap&text='
-         + urllib.parse.quote(''.join(cjk)) + '">')
+         + font_link('https://fonts.googleapis.com/css2?family=Lilita+One&display=swap')
+         + font_link('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@900&display=swap&text=' + urllib.parse.quote(''.join(cjk))))
 head = head.replace('<!--FONTS-->', fonts)
 
 # 物理引擎 planck.js（MIT 授權）：原封不動放進另一個 <script>，授權聲明跟著一起放
@@ -58,7 +61,7 @@ print('built', len(frag) // 1024, 'KB (planck', len(planck_js) // 1024, 'KB);', 
 if len(sys.argv) > 1:
     url = sys.argv[1].rstrip('/') + '/'
     site = root.parent
-    desc = '兩座城樓隔空對轟：拖曳調角度和力道，砲彈穿過倍增符一發變多發，把對面的城一層一層轟垮。六個關卡，手機橫拿、點開就能玩。'
+    desc = '兩座城樓輪流開砲：拖曳調角度和力道，砲彈穿過倍增符一發變多發；打斷柱子、打穿樓板，看對面的城一層一層垮下來。六個關卡，手機橫拿、點開就能玩。'
     meta = ('<meta name="theme-color" content="#120f1c">'
             f'<meta name="description" content="{desc}">'
             '<link rel="manifest" href="manifest.webmanifest">'

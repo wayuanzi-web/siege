@@ -1,0 +1,15 @@
+2 --name=r4_L2_mute_k2 --mute=0 --bot=casual --side=1 --skip=2 --seed=703
+2 --name=r4_L2_mute_k4 --mute=0 --bot=casual --side=1 --skip=4 --seed=703
+2 --name=r4_L2_mute_k6 --mute=0 --bot=casual --side=1 --skip=6 --seed=703
+3 --name=r4_L3_mute_k2 --mute=0 --bot=casual --side=1 --skip=2 --seed=704
+3 --name=r4_L3_mute_k4 --mute=0 --bot=casual --side=1 --skip=4 --seed=704
+3 --name=r4_L3_mute_k6 --mute=0 --bot=casual --side=1 --skip=6 --seed=704
+4 --name=r4_L4_mute_k2 --mute=0 --bot=casual --side=1 --skip=2 --seed=705
+4 --name=r4_L4_mute_k4 --mute=0 --bot=casual --side=1 --skip=4 --seed=705
+4 --name=r4_L4_mute_k6 --mute=0 --bot=casual --side=1 --skip=6 --seed=705
+5 --name=r4_L5_mute_k2 --mute=0 --bot=casual --side=1 --skip=2 --seed=706
+5 --name=r4_L5_mute_k4 --mute=0 --bot=casual --side=1 --skip=4 --seed=706
+5 --name=r4_L5_mute_k6 --mute=0 --bot=casual --side=1 --skip=6 --seed=706
+6 --name=r4_L6_mute_k2 --mute=0 --bot=casual --side=1 --skip=2 --seed=707
+6 --name=r4_L6_mute_k4 --mute=0 --bot=casual --side=1 --skip=4 --seed=707
+6 --name=r4_L6_mute_k6 --mute=0 --bot=casual --side=1 --skip=6 --seed=707

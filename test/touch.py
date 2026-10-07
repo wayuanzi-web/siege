@@ -35,7 +35,9 @@ async def run(p, W, H, name):
     ok_aim = a1[1] > a0[1] and a2[0] > a1[0]
     ok_fire = 'fired=0' in s1 and 'fired=0' in s2 and 'fired=0' not in s3
     # 4. 輪到敵軍時拖曳：可以先調，放開不會發射
-    f3 = await pg.evaluate("window.__qp.S.stat.fired"); await drag(right, n=8); f4 = await pg.evaluate("window.__qp.S.stat.fired")
+    # （看「第幾輪齊射」有沒有變，不看打出去幾發：上一輪的連射可能還沒射完，發數本來就還在增加）
+    await pg.wait_for_timeout(900)
+    f3 = await pg.evaluate("window.__qp.S.vol + ':' + window.__qp.S.turn + ':' + window.__qp.S.phase"); await drag(right, n=8); f4 = await pg.evaluate("window.__qp.S.vol + ':' + window.__qp.S.turn + ':' + window.__qp.S.phase")
     # 5. 按鈕點得到嗎（轉向後用畫面座標點）
     await pg.evaluate("window.__qp.S.team[0].shield.c = 100")
     r = await pg.evaluate("(() => { const b = document.getElementById('btnShield').getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; })()")
@@ -45,7 +47,7 @@ async def run(p, W, H, name):
     await pg.touchscreen.tap(r[0], r[1]); await pg.wait_for_timeout(300)
     mode = await pg.evaluate("window.__qp.G.mode")
     await pg.screenshot(path=str(root / f'shots/touch_{W}x{H}.png'))
-    print(f'{name}: rot={rot} 瞄準 {a0} → 往右拖 {a1} → 往上拖 {a2}  方向{"正確" if ok_aim else "錯誤"}  發射規則{"正確" if ok_fire else "錯誤"} ({s1} | {s2} | {s3})  敵軍回合放開沒發射={f3 == f4}  護罩點擊={sh}  暫停後 mode={mode}  errors={msgs}')
+    print(f'{name}: rot={rot} 瞄準 {a0} → 往右拖 {a1} → 往上拖 {a2}  方向{"正確" if ok_aim else "錯誤"}  發射規則{"正確" if ok_fire else "錯誤"} ({s1} | {s2} | {s3})  還沒輪到我時放開沒發射={f3.split(':')[0] == f4.split(':')[0]}（{f3} → {f4}）  護罩點擊={sh}  暫停後 mode={mode}  errors={msgs}')
     await b.close()
 async def main():
     async with async_playwright() as p:

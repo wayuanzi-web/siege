@@ -1,0 +1,28 @@
+# ---- level 1 ----
+# ---- level 2 ----
+# ---- level 3 ----
+3 --name=r4_L3_foe_x0 --bot=expert --side=0 --skip=0 --seed=104
+3 --name=r4_L3_foe_x1 --bot=expert --side=0 --skip=1 --seed=104
+3 --name=r4_L3_foe_x2 --bot=expert --side=0 --skip=2 --seed=104
+3 --name=r4_L3_foe_c0 --bot=casual --side=0 --skip=0 --seed=214
+3 --name=r4_L3_foe_c1 --bot=casual --side=0 --skip=1 --seed=214
+3 --name=r4_L3_me_c0 --bot=casual --side=1 --skip=0 --seed=310
+3 --name=r4_L3_me_c1 --bot=casual --side=1 --skip=1 --seed=310
+3 --name=r4_L3_me_c2 --bot=casual --side=1 --skip=2 --seed=310
+3 --name=r4_L3_me_c3 --bot=casual --side=1 --skip=3 --seed=310
+3 --name=r4_L3_end_win --bot=expert --end=1 --seed=404
+3 --name=r4_L3_end_lose --bot=newbie --diff=2 --end=1 --seed=506
+# ---- level 4 ----
+4 --name=r4_L4_foe_x0 --bot=expert --side=0 --skip=0 --seed=105
+4 --name=r4_L4_foe_x1 --bot=expert --side=0 --skip=1 --seed=105
+4 --name=r4_L4_foe_x2 --bot=expert --side=0 --skip=2 --seed=105
+4 --name=r4_L4_foe_c0 --bot=casual --side=0 --skip=0 --seed=215
+4 --name=r4_L4_foe_c1 --bot=casual --side=0 --skip=1 --seed=215
+4 --name=r4_L4_me_c0 --bot=casual --side=1 --skip=0 --seed=311
+4 --name=r4_L4_me_c1 --bot=casual --side=1 --skip=1 --seed=311
+4 --name=r4_L4_me_c2 --bot=casual --side=1 --skip=2 --seed=311
+4 --name=r4_L4_me_c3 --bot=casual --side=1 --skip=3 --seed=311
+4 --name=r4_L4_end_win --bot=expert --end=1 --seed=405
+4 --name=r4_L4_end_lose --bot=newbie --diff=2 --end=1 --seed=507
+# ---- level 5 ----
+# ---- level 6 ----

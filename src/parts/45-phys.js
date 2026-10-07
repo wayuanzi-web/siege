@@ -65,24 +65,25 @@ function physNew() {
     const n = wm.normal, p = wm.points[0], ca = A.getWorldCenter(), cb = B.getWorldCenter();
     const ax = va.x - wa * (p.y - ca.y), ay = va.y + wa * (p.x - ca.x), bx = vb.x - wb * (p.y - cb.y), by = vb.y + wb * (p.x - cb.x);
     const vn = (ax - bx) * n.x + (ay - by) * n.y;          // 法線由 A 指向 B，正的表示正在靠近
-    if (vn > IMP_GATE) { c._vn = vn; c._vs = PH.stepId; c._px = p.x; c._py = p.y; }
+    if (vn > IMP_GATE) { c._vn = vn; c._vs = PH.stepId; c._px = p.x; c._py = p.y; c._ny = n.y; }
   });
   world.on('post-solve', (c, imp) => {
-    // 壓在兵身上的重量：每一步把「從上面壓下來」的力道記在那個兵身上（撐太重、撐太久會被壓扁）
+    /* 壓在兵身上的重量：每一步把磚「往下壓」的力道記在那個兵身上（撐太重、撐太久會被壓扁）。
+       只算磚和石球，只算垂直往下的分量：從旁邊橫著擠過來的不算（頭上明明沒東西卻被判壓扁），地面往上頂的當然也不算 */
     const ua = c.getFixtureA().getUserData(), ub = c.getFixtureB().getUserData();
     if ((ua && ua.isUnit) || (ub && ub.isUnit)) {
       const ni = imp.normalImpulses; let J = 0; for (let k = 0; k < ni.length; k++) J += ni[k] || 0;
-      if (J > 0) { const wm = c.getWorldManifold(PH.wm); if (wm) { PH.wm = wm; const py = wm.points[0].y;
-        if (ua && ua.isUnit && ua.alive && ub && py > ua.body.getPosition().y + ua.bh * 0.2) ua.loadJ += J;
-        if (ub && ub.isUnit && ub.alive && ua && py > ub.body.getPosition().y + ub.bh * 0.2) ub.loadJ += J; } }
+      if (J > 0) { const wm = c.getWorldManifold(PH.wm); if (wm) { PH.wm = wm; const ny = wm.normal.y;        // 法線由 A 指向 B
+        if (ua && ua.isUnit && ua.alive && ub && ub.isBlock && ny > 0.35) ua.loadJ += J * ny;
+        if (ub && ub.isUnit && ub.alive && ua && ua.isBlock && ny < -0.35) ub.loadJ -= J * ny; } }
     }
     if (c._vs !== PH.stepId || !c._vn) return;
     c._vs = -1;
     const ni = imp.normalImpulses; let J = 0; for (let k = 0; k < ni.length; k++) J += ni[k] || 0;
     if (J <= 0) return;
-    let r = PH.imp[PH.impN]; if (!r) r = PH.imp[PH.impN] = { a: null, b: null, J: 0, vn: 0, x: 0, y: 0 };
+    let r = PH.imp[PH.impN]; if (!r) r = PH.imp[PH.impN] = { a: null, b: null, J: 0, vn: 0, x: 0, y: 0, ny: 0 };
     PH.impN++;
-    r.a = c.getFixtureA().getUserData() || null; r.b = c.getFixtureB().getUserData() || null; r.J = J; r.vn = c._vn; r.x = c._px; r.y = c._py;
+    r.a = c.getFixtureA().getUserData() || null; r.b = c.getFixtureB().getUserData() || null; r.J = J; r.vn = c._vn; r.x = c._px; r.y = c._py; r.ny = c._ny || 0;
   });
   return world;
 }
@@ -144,7 +145,7 @@ function blockOutline(b) {
 // sec：只碎掉這一段（自己座標裡的外形），沒給就是整塊
 function fracture(b, p, ang, vel, om, sec) {
   if (b.frag || b.kind === 'ball' || b.kind === 'poly' || b.mat === M_KEG) return 0;
-  const room = FRAG_MAX - S.nfrag; if (room < 2) return 0;
+  const room = FRAG_MAX + (S.state === 'play' ? 0 : 36) - S.nfrag; if (room < 2) return 0;          // 城破、整座垮下來的時候多留一些碎塊在場上
   const area = (sec ? polyArea(sec) : b.w * b.h) / (CS * CS);
   let want = area <= 1.25 ? 2 : area <= 2.6 ? 3 : 4; if (b.mat === M_ICE || b.mat === M_ROOF) want++;
   if (want > room) want = room;
@@ -257,7 +258,7 @@ function segSplit(b, side, kind) {
     if (alive) {
       // 還撐得住的一截：變成新的一塊，留在原本的位置、跟著原本的速度
       const c = mkBlock(st, { mat: b.mat, kind: 'box', x: wx, y: wy, w: m * cw, h: b.h, a: ang, awake: true, deco: b.deco });
-      c.cx = b.cx + j; c.cy = b.cy; c.cw = m; c.ch = 1; c.x0 = b.x0 + lx; c.y0 = b.y0; c.inPlace = was; c.gone = !was || !!b.gone;       // 已經歪掉的樓板再斷開：斷下來的不會再被算回原位
+      c.cx = b.cx + j; c.cy = b.cy; c.cw = m; c.ch = 1; c.x0 = b.x0 + lx; c.y0 = b.y0; c.inPlace = was; c.gone = !was || !!b.gone; c.lost = !was || !!b.lost;       // 已經歪掉的樓板再斷開：斷下來的不會再被算回原位
       c.seg = seg.slice(j, e + 1); c.sootS = b.sootS.slice(j, e + 1); c.flashM = (b.flashM >> j) & ((1 << m) - 1); c.segM = b.segM; c.hm = m * b.segM; let hp = 0, low = 1; for (let k = 0; k < m; k++) { hp += c.seg[k]; if (c.seg[k] / c.segM < low) low = c.seg[k] / c.segM; } c.hp = hp; c.low = low;
       c.base = b.base; c.wt = b.wt; c.brit = b.brit; c.soot = b.soot; c.vr = b.vr; c.flash = 1; c.chV = b.chV;
       if (b.burn > 0) { c.burn = b.burn; c.burnBy = b.burnBy; S.nburn++; }
@@ -305,20 +306,24 @@ function ignite(b, dur, by) {
 
 /* ---------- 兵的身體 ---------- */
 function mkUnitBody(u) {
-  /* 兵的身體：不會倒的一顆「寶石形」——腳窄、肩寬、頭頂是尖的。
-     腳窄：腳下那一格沒了就真的掉下去，不會半個身體懸在外面；魔王的肩膀比一格窄，腳下的樓板破一格他就摔下去。
-     頭和肩是斜的、很滑：砸下來的石球、屋頂、樓板、別的兵都會順著滑到旁邊，不會被他用頭頂著 */
+  /* 兵的身體：不會倒的一間「小房子」——兩側是直的、頭頂是尖的、腳底兩角削掉一點。
+     兩側直而且很滑：不會被兩塊磚的角架住肩膀、腳懸在半空（腳窄肩寬的形狀會），被夾住也撐不住自己，會滑下去。
+     腳底削角：腳下那一格沒了就真的掉下去，不會半個身體懸在外面；魔王比一格窄，腳下的樓板破一格他就摔下去。
+     頭頂是斜的、很滑，尖端還稍微偏一邊：砸下來的石球、屋頂、樓板會順著滑到旁邊，不會被他用頭頂著（卡住滑不掉的，就是真的被壓住了）。
+     只有鞋底抓得住地（站在歪掉的樓板上，歪得不多不會滑；冰面例外）。
+     兵跟兵不互相碰撞：不會踩在別人頭上，也不會互相擠死；疊在一起的時候 unitsStep 會慢慢把他們往兩邊推開 */
   const big = !!u.def.big, w = big ? BOSS_BW : UNIT_W, h = UNIT_H * (big ? MUZ_BIG : 1), hw = w / 2, hh = h / 2;
   u.bw = w; u.bh = h;
-  const foot = hw * 0.55, sy = hh * 0.47, wy = -hh * 0.13, top = hw * 0.1;        // 腳寬、肩膀高度、腰的高度；頭頂是一個稍微偏一邊的尖（正正砸下來的東西也待不住）
-  const lower = [{ x: -foot, y: -hh }, { x: foot, y: -hh }, { x: hw, y: wy }, { x: hw, y: sy }, { x: -hw, y: sy }, { x: -hw, y: wy }];
-  const upper = [{ x: -hw, y: sy }, { x: hw, y: sy }, { x: top, y: hh }];
-  const area = (foot + hw) * (wy + hh) + 2 * hw * (sy - wy) + hw * (hh - sy);
-  const den = UNIT_DEN * UNIT_W * UNIT_H * (big ? MUZ_BIG * MUZ_BIG : 1) / area;           // 形狀變了，重量照舊
+  const foot = hw * 0.6, ch = Math.min(0.55, hh * 0.3), sy = hh * 0.4, top = hw * 0.1, lift = 0.06;
+  const sole = [{ x: -foot, y: -hh }, { x: foot, y: -hh }, { x: foot, y: -hh + ch }, { x: -foot, y: -hh + ch }];
+  const trunk = [{ x: -foot, y: -hh + lift }, { x: foot, y: -hh + lift }, { x: hw, y: -hh + ch }, { x: hw, y: sy }, { x: top, y: hh }, { x: -hw, y: sy }, { x: -hw, y: -hh + ch }];
+  const area = 2 * foot * ch + (foot + hw) * (ch - lift) + 2 * hw * (sy + hh - ch) + hw * (hh - sy);
+  const den = UNIT_DEN * UNIT_W * UNIT_H * (big ? MUZ_BIG * MUZ_BIG : 1) / area;           // 形狀怎麼改，重量都照舊
   const body = PH.world.createBody({ type: 'dynamic', position: { x: u.x, y: u.y + hh }, fixedRotation: true, awake: false, userData: u });
-  body.createFixture({ shape: new PL.Polygon(lower), density: den, friction: 0.9, restitution: 0, filterCategoryBits: CAT_UNIT, userData: u });
-  body.createFixture({ shape: new PL.Polygon(upper), density: den, friction: 0.02, restitution: 0, filterCategoryBits: CAT_UNIT, userData: u });
-  u.body = body; u.mass = body.getMass(); u.loadJ = 0; u.loadT = 0;
+  const mask = CAT_TERR | CAT_BLOCK;
+  body.createFixture({ shape: new PL.Polygon(sole), density: den, friction: 0.9, restitution: 0, filterCategoryBits: CAT_UNIT, filterMaskBits: mask, userData: u });
+  body.createFixture({ shape: new PL.Polygon(trunk), density: den, friction: 0.03, restitution: 0, filterCategoryBits: CAT_UNIT, filterMaskBits: mask, userData: u });
+  u.body = body; u.mass = body.getMass(); u.loadJ = 0; u.loadT = 0; u.load = 0; u.sepT = 0;
 }
 
 /* ---------- 每一步 ---------- */
@@ -359,10 +364,14 @@ function physStep(dt) {
         const d = (dv - IMP_V0) * IMP_K * MAT[o.mat].frag;
         if (d > 0) blockHurt(o, Math.min(d, (o.seg ? o.segM : o.hm) * 0.9 + 6), K_CRUSH, o.side === credit ? 2 : credit, r.x, r.y);
       } else if (o.alive) {
+        // 屋瓦砸在兵（或魔王）頭上：瓦是脆的，當場碎掉、順著頭兩邊滑下去。該痛的照痛（下面照撞擊的力道算），
+        // 但不會整片屋頂完好地蓋在頭上、一路把人壓到扁——頂樓的兵不該因為亭子的柱子斷了就必死
+        { const oth = k ? r.a : r.b; if (oth && oth.isBlock && oth.mat === M_ROOF && !oth.dead && !oth.frag && (k ? -r.ny : r.ny) > 0.3) blockKill(oth, oth.side === credit ? 2 : credit, K_CRUSH); }
         if (o.def.big) {
           // 魔王皮厚：摔不死。但是摔一層、被掉下來的屋頂或樓板砸到頭，每一下至少扣半成血（一下之後隔一會才會再算）。
           // 被爆炸震得跳一下再落地的不算；輕的碎塊砸到也不算
-          const oth = k ? r.a : r.b, top = oth && oth.isBlock && oth.mass >= 12 && r.y > o.body.getPosition().y + o.bh * 0.2;
+          // （法線由 a 指向 b：魔王是 a 的話，對方在上面 = 法線朝上；魔王是 b 就反過來。從正側面撞過來的不算「砸到頭」）
+          const oth = k ? r.a : r.b, top = oth && oth.isBlock && oth.mass >= 12 && (k ? -r.ny : r.ny) > 0.5 && r.y > o.body.getPosition().y + o.bh * 0.2;
           const d = (dv - (top ? BOSS_V1 : BOSS_V0)) * UIMP_K;
           if (d > 0 && !(S.time < o.crushCd)) { o.crushCd = S.time + 0.7; hurtUnit(o, clamp(d * 0.9, o.hpMax * 0.05, o.hpMax * 0.12), o.side === credit ? 2 : credit, K_CRUSH); }
         } else {
