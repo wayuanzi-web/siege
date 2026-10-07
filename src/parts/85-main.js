@@ -86,7 +86,9 @@ function finishLevel() {
   if (won) { SV.stars[idx] = Math.max(SV.stars[idx], stars); SV.open = Math.max(SV.open, Math.min(LEVELS.length, idx + 2)); }
   SV.coins += coins; SV.seen = true; save();
   G.mode = 'result'; sayClear(); musStop(); sfx(won ? 'win' : 'lose');
-  showResult(won, { idx, stars, bar, lost, rounds: S.round, chain: S.stat.chain, swarm: S.stat.swarm, coins });
+  if (won || G.lossAt !== idx) G.lossN = 0;
+  if (!won) { G.lossAt = idx; G.lossN = (G.lossN || 0) + 1; }         // 同一關連輸幾場
+  showResult(won, { idx, stars, bar, lost, rounds: S.round, chain: S.stat.chain, swarm: S.stat.swarm, coins, streak: won ? 0 : G.lossN });
 }
 // 模擬事件裡跟介面有關的：橫幅、提示
 function uiEvent(t, a, b, c, d, e) {

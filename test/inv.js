@@ -16,6 +16,12 @@ for (let li = 0; li < LEVELS.length; li++) for (const bot of ['newbie', 'casual'
       if ((steps & 31) === 0) {
         let nf = 0, nb = 0; for (const b of S.blocks) { if (b.dead) continue; if (b.frag) nf++; if (b.burn > 0) nb++; const p = b.body.getPosition(); if (!(p.x === p.x) || !(p.y === p.y)) fail(`${tag}: 磚的位置變成 NaN`); }
         if (nf !== S.nfrag) fail(`${tag}: 碎塊數對不上 ${nf} vs ${S.nfrag}`);
+        // 分段的樓板、長樑：每一段都還活著、加起來等於整塊的耐久、長度跟段數對得上
+        for (const b of S.blocks) { if (b.dead || !b.seg) continue; let sum = 0, bad0 = false; for (let k = 0; k < b.seg.length; k++) { if (!(b.seg[k] > 0)) bad0 = true; sum += b.seg[k]; }
+          if (b.seg.length !== b.cw) fail(`${tag}: 段數 ${b.seg.length} 跟格數 ${b.cw} 對不上`);
+          if (bad0) fail(`${tag}: 有一段已經打穿了卻還連在整塊上（${Array.from(b.seg).map((v) => v.toFixed(0)).join(',')}）`);
+          if (Math.abs(sum - b.hp) > 0.5) fail(`${tag}: 整塊耐久 ${b.hp.toFixed(1)} 跟各段加起來 ${sum.toFixed(1)} 對不上`);
+          if (Math.abs(b.w - b.cw * G.CS) > 0.01) fail(`${tag}: 寬度 ${b.w.toFixed(2)} 跟 ${b.cw} 格對不上`); }
         if (nb !== S.nburn) fail(`${tag}: 著火數對不上 ${nb} vs ${S.nburn}`);
         for (let s = 0; s < 2; s++) { let a = 0; for (const u of S.team[s].units) { if (u.alive) { a++; if (!u.body) fail(`${tag}: 活著的兵沒有身體`); if (!(u.x === u.x)) fail(`${tag}: 兵的位置 NaN`); } else if (u.body) fail(`${tag}: 倒下的兵還有身體`); } if (a !== S.team[s].alive) fail(`${tag}: 存活數對不上 side${s} ${a} vs ${S.team[s].alive}`); }
         let c0 = 0, c1 = 0, c2 = 0; for (let i = 0; i < SH.n; i++) { if (SH.side[i] === 0) c0++; else if (SH.side[i] === 1) c1++; else c2++; if (!(SH.x[i] === SH.x[i])) fail(`${tag}: 砲彈 NaN`); }

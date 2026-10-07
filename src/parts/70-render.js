@@ -33,7 +33,7 @@ function flameSprite() {
 function drawFoundations(c) {
   for (const st of S.structs) {
     if (st.side > 1) continue;
-    const P = SKINS[st.skin], x0 = X(st.x0 - CS * 0.45), x1 = X(st.x1 + CS * 0.45), y0 = Y(st.y0), h = V.s * 2.1, s = V.s;
+    const P = SKINS[st.skin], x0 = X(st.fx0 - CS * 0.45), x1 = X(st.fx1 + CS * 0.45), y0 = Y(st.y0), h = V.s * 2.1, s = V.s;
     c.fillStyle = lg(c, 0, y0, 0, y0 + h, [0, P.stone[1], 1, P.stone[2]]); rrect(c, x0, y0 - s * 0.05, x1 - x0, h, s * 0.5); c.fill();
     c.fillStyle = P.stone[0]; c.fillRect(x0 + s * 0.3, y0 - s * 0.05, x1 - x0 - s * 0.6, Math.max(1, s * 0.3));
     c.strokeStyle = P.ink; c.lineWidth = Math.max(1.5, s * 0.28); rrect(c, x0, y0 - s * 0.05, x1 - x0, h, s * 0.5); c.stroke();

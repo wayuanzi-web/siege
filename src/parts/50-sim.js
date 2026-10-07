@@ -117,6 +117,8 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
     b.wt = b.mat === M_KEG || b.prop ? 0 : low ? BASE_WT : 1; st.hp0 += b.hm * b.wt;
   }
   st.hpNow = st.hp0; st.slots.sort((a, b) => a.slot - b.slot);
+  // 城基實際佔的範圍（最底下一列有磚的地方）：露台之類伸出去的部分底下沒有地基
+  { let c0 = cols, c1 = -1; for (let cx = 0; cx < cols; cx++) if (st.cellK[cx]) { if (cx < c0) c0 = cx; if (cx > c1) c1 = cx; } st.fx0 = c1 < 0 ? x0 : x0 + c0 * CS; st.fx1 = c1 < 0 ? st.x1 : x0 + (c1 + 1) * CS; }
   for (let i = 0; i < n; i++) { st.backTo[i] = st.cellK[i] ? 1 : 0; st.back[i] = st.backTo[i]; }
   return st;
 }
