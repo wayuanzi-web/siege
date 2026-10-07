@@ -93,7 +93,7 @@ const LEVELS = [
     hints: [{ r: 1, t: '把砲彈射進藍色傳送門，會從敵城頭頂灌下去' }, { r: 2, t: '兩座城都在浮島邊上：把兵轟下去就回不來了' }, { r: 3, t: '防空弩每一輪射下你三發砲彈：把它腳下的木板露台打斷，它就掉進雲海', ok: () => foeHas('flak') }],
     voids: [[36, 77.6]],
     me: { castle: 'P3', crew: ['rocket', 'ice', 'zap', 'bomb'] },
-    foe: { castle: 'E5', crew: ['bal', 'bomb', 'flak', 'zap'], hp: 1.3, dmg: 1.8, ai: { err: 3.4, think: 1.1, gate: 0.75, hate: 0.25, skill: 0.5, sap: 0.6 } },
+    foe: { castle: 'E5', crew: ['bal', 'bomb', 'flak', 'zap'], hp: 1.35, dmg: 1.85, ai: { err: 3.4, think: 1.1, gate: 0.75, hate: 0.25, skill: 0.5, sap: 0.6 } },
     objs: [
       // 藍色傳送門放在 ×3 符的後面：穿過符的砲彈順勢飛進去，從敵城正上方灌下來
       { t: 'portal', owner: 0, x: 58, y: 40, r: 3.8, ex: 93.3, ey: 50, ea: -Math.PI / 2, ej: 0.22, ew: 14, mv: { a: 3, per: 9 } },
@@ -102,7 +102,7 @@ const LEVELS = [
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[46, 38]], move: { t: 'bob', a: 3, per: 8 } },
       { owner: 0, mult: 5, h: 5.5, spots: [[64, 45], [47, 27]], at: 2, hop: true },
-      { owner: 2, mult: 10, h: 5.5, spots: [[52, 46]], at: 4, life: 1, gap: 2 },
+      { owner: 0, mult: 10, h: 5.5, spots: [[52, 46]], at: 4, life: 1, gap: 2 },
       { owner: 1, mult: 2, h: 5.5, spots: [[69, 33], [66, 22]], at: 3, hop: true, regap: 2 }
     ],
     lantern: { at: 3, every: 3, spots: [[56, 24], [52, 47], [60, 30]] }
