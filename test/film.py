@@ -1,5 +1,5 @@
 """連續畫面：看一次砲擊後城樓怎麼垮。
-   python3 test/film.py <關卡> [--side=1] [--aim=vx,vy] [--bomb=x,y,武器] [--frames=12] [--dt=0.15] [--crop=x0,y0,x1,y1（戰場座標）] [--tag=名字] [--skip=回合數] [--cols=4] [--scale=2]
+   python3 test/film.py <關卡> [--side=1] [--aim=vx,vy] [--bomb=x,y,武器] [--kill=x,y] [--frames=12] [--dt=0.15] [--crop=x0,y0,x1,y1（戰場座標）] [--tag=名字] [--skip=回合數] [--cols=4] [--scale=2]
    預設：我方用自動玩家打一輪，鏡頭對著敵城。--bomb 直接在指定位置引爆一顆（看結構怎麼塌）。"""
 import asyncio, sys, pathlib, json, io
 from playwright.async_api import async_playwright
@@ -29,6 +29,10 @@ async def main():
         if 'end' in opt:
             # 一路打到分出勝負的前一刻（最後一個兵倒下的那一步），從那裡開始拍
             await pg.evaluate("""() => { const q = window.__qp, S = q.S; let n = 0; while (n++ < 60 * 900 && S.state === 'play') q.advance(1 / 60); }""")
+        elif 'kill' in opt:
+            # 直接把離指定位置最近的那塊磚打掉（看上面的東西怎麼塌）
+            x, y = [float(v) for v in opt['kill'].split(',')]
+            await pg.evaluate("([x, y]) => { const q = window.__qp, S = q.S; let best = null, bd = 1e9; for (const b of S.blocks) { if (b.dead || !b.inPlace) continue; const p = b.body.getPosition(), d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = b; } } S.phase = 'resolve'; S.phaseT = 0; q.blockKill(best, 0, 0); }", [x, y])
         elif 'bomb' in opt:
             x, y, w = opt['bomb'].split(','); 
             await pg.evaluate("([x, y, w]) => { const q = window.__qp; q.S.phase = 'resolve'; q.S.phaseT = 0; q.physExplode(x, y, q.WPN[w], 0, 1, 0, null, 1, -0.3); }", [float(x), float(y), w])
@@ -40,7 +44,7 @@ async def main():
                 await pg.evaluate("(side) => { const q = window.__qp, S = q.S; let n = 0; while (n++ < 600 && S.phase === 'aim') q.advance(1 / 60); }", side)
             if 'lead' in opt: await pg.evaluate("(t) => window.__qp.advance(t)", float(opt['lead']))
         info = await pg.evaluate("(() => { const q = window.__qp, V = q.V, S = q.S; return {s: V.s, cx: V.cx, gy: V.gy, W: V.W, H: V.H, st: S.st.map(t => [t.x0, t.y0, t.x1, t.y1])}; })()")
-        tgt = info['st'][1 - side] if 'bomb' not in opt else info['st'][1]
+        tgt = info['st'][1 - side] if 'bomb' not in opt and 'kill' not in opt else info['st'][1]
         if 'end' in opt:
             loser = await pg.evaluate("window.__qp.S.loser"); tgt = info['st'][loser if loser in (0, 1) else 1]
         if 'crop' in opt: cx0, cy0, cx1, cy1 = [float(v) for v in opt['crop'].split(',')]

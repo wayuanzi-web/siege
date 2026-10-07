@@ -102,13 +102,22 @@ function drawBlocks(c, t, rdt) {
   const f0 = flagBlock(S.st[0]), f1 = flagBlock(S.st[1]);
   for (const b of S.blocks) {
     if (b.dead) continue;
-    const p = b.body.getPosition(), a = b.body.getAngle(), f = b.hp / b.hm;
+    const p = b.body.getPosition(), a = b.body.getAngle(), seg = b.seg, f = seg ? 1 : b.hp / b.hm;
     if (b.hot > 0) { b.hot -= rdt * 0.22; if (b.hot < 0) b.hot = 0; }
     const ds = b.mat === M_KEG || b.mat === M_ROCK ? 0 : f > 0.66 ? 0 : f > 0.33 ? 1 : 2, sp = b.frag ? fragSprite(b) : blockSprite(b, ds);
     if (a === 0) c.setTransform(1, 0, 0, 1, X(p.x) + sx, Y(p.y) + sy);
     else { const cs = Math.cos(a), sn = Math.sin(a); c.setTransform(cs, -sn, sn, cs, X(p.x) + sx, Y(p.y) + sy); }
     if (b === f0 || b === f1) drawFlag(c, b.st, b, t);
     c.drawImage(sp.cv, -sp.ax, -sp.ay);
+    if (seg && b.low < 0.66) {
+      // 長樑、樓板：哪一段受傷，裂痕就畫在哪一段（從有裂痕的那張貼圖上切那一段下來蓋上去）
+      const n = b.cw, wpx = b.w * s, pad = sp.ax - wpx / 2, cell = wpx / n, H = sp.cv.height;
+      for (let k = 0; k < n; k++) {
+        const r = seg[k] / b.segM; if (r > 0.66) continue;
+        const d2 = blockSprite(b, r > 0.33 ? 1 : 2), x0 = k === 0 ? 0 : Math.round(pad + k * cell), x1 = k === n - 1 ? sp.cv.width : Math.round(pad + (k + 1) * cell);
+        c.drawImage(d2.cv, x0, 0, x1 - x0, H, x0 - sp.ax, -sp.ay, x1 - x0, H);
+      }
+    }
     if (b.soot > 0.05 && !FX.low) { c.globalCompositeOperation = 'multiply'; c.globalAlpha = Math.min(1, b.soot); c.drawImage(sp.cv, -sp.ax, -sp.ay); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
     if (b.brit > 0) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.28; c.drawImage(sp.cv, -sp.ax, -sp.ay); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
     if (b.flash > 0) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = Math.min(1, b.flash) * 0.55; c.drawImage(sp.cv, -sp.ax, -sp.ay); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; b.flash = Math.max(0, b.flash - rdt * 5); }

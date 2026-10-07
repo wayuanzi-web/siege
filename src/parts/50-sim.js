@@ -50,6 +50,7 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
     if (ex) { o.deco = ex.deco || 0; if (kind === 'roof') { o.il = (mirror ? ex.ir : ex.il) * CS; o.ir = (mirror ? ex.il : ex.ir) * CS; } if (kind === 'ball') { o.r = ex.r; o.y = y0 + cy * CS + ex.r; } if (ex.bw) { o.w = ex.bw; o.h = ex.bh; o.y = y0 + cy * CS + ex.bh / 2; } if (ex.sw) o.w = cw * CS * ex.sw; }
     const b = mkBlock(st, o);
     b.cx = mx; b.cy = cy; b.cw = cw; b.ch = ch;
+    if (kind === 'box' && ch === 1 && cw >= 3 && !(ex && ex.deco) && (mat === M_STONE || mat === M_WOOD || mat === M_ICE)) segInit(b);        // 長樑、樓板：分段算耐久
     for (let a = 0; a < cw; a++) for (let bb = 0; bb < ch; bb++) { const i = (cy + bb) * cols + mx + a; st.cellB[i] = b; st.cellK[i] = 1; }
     return b;
   };
@@ -112,7 +113,7 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
   st.base = base;
   for (const b of st.blocks) {
     const low = b.cy + b.ch <= base;
-    if (low && !b.prop && b.mat !== M_WOOD) { b.hp *= BASE_HP; b.hm *= BASE_HP; b.base = true; }
+    if (low && !b.prop && b.mat !== M_WOOD) { b.hp *= BASE_HP; b.hm *= BASE_HP; b.base = true; if (b.seg) { b.segM *= BASE_HP; for (let k = 0; k < b.cw; k++) b.seg[k] *= BASE_HP; } }
     b.wt = b.mat === M_KEG || b.prop ? 0 : low ? BASE_WT : 1; st.hp0 += b.hm * b.wt;
   }
   st.hpNow = st.hp0; st.slots.sort((a, b) => a.slot - b.slot);

@@ -15,7 +15,7 @@ const PAL_ROCK = ['#8e8794', '#665f70', '#403a49', '#2a2532'];
 /* ---------- 磚塊：每一塊一張貼圖（依外觀、材質、形狀、大小、破損程度），第一次用到時才畫 ---------- */
 const BSPR = {};
 function blockSprite(b, ds) {
-  const key = b.skin + ':' + b.mat + ':' + b.kind + ':' + Math.round(b.w * 10) + ':' + Math.round(b.h * 10) + ':' + Math.round(b.il * 10) + ':' + Math.round(b.ir * 10) + ':' + b.deco + ':' + ds + ':' + (b.vr & 1) + (b.hot ? 'h' : '') + (b.prop ? 'p' : '');
+  const key = b.skin + ':' + b.mat + ':' + b.kind + ':' + Math.round(b.w * 10) + ':' + Math.round(b.h * 10) + ':' + Math.round(b.il * 10) + ':' + Math.round(b.ir * 10) + ':' + b.deco + ':' + ds + ':' + (b.vr & 1) + (b.hot ? 'h' : '') + (b.prop ? 'p' : '') + (b.seg ? 's' : '');
   let s = BSPR[key]; if (s) return s;
   const sc = V.s, w = b.w * sc, h = b.h * sc, roof = b.kind === 'roof';
   const padX = Math.ceil((roof ? 0.62 : 0.14) * CS * sc), padY = Math.ceil((roof ? 0.5 : 0.14) * CS * sc);
@@ -102,8 +102,8 @@ function paintBlock(c, b, ds, w, h, sc) {
         c.fillStyle = rgba(p[2], 0.75); c.fillRect(w / 2 - Math.max(1, u * 0.05), 0, Math.max(2, u * 0.1), h);
         c.fillStyle = '#3a3340'; c.fillRect(0, h * 0.22, w, u * 0.16); c.fillRect(0, h * 0.7, w, u * 0.16);
         c.fillStyle = '#ffc93c'; for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) { c.beginPath(); c.arc(w * (0.14 + 0.24 * i), h * (0.22 + 0.48 * j) + u * 0.08, Math.max(1, u * 0.07), 0, TAU); c.fill(); }
-      } else if (!vert && w < u * 1.5) {
-        // 單塊木頭：木箱的斜撐
+      } else if (!vert && w < u * 1.5 && !b.seg) {
+        // 單塊木頭：木箱的斜撐（從長樑上斷下來的一截不算，還是畫成木板）
         c.strokeStyle = rgba(p[2], 0.7); c.lineWidth = Math.max(1.5, u * 0.11); c.beginPath(); c.moveTo(u * 0.1, h - u * 0.1); c.lineTo(w - u * 0.1, u * 0.1); c.stroke();
         c.strokeRect(u * 0.09, u * 0.09, w - u * 0.18, h - u * 0.18);
       } else {

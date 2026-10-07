@@ -58,7 +58,7 @@ const LEVELS = [
       { r: 2, t: '冰術士躲在冰板底下的大廳：轟破冰板，或從正面打進去', ok: () => foeAt(3) && !foeAt(1) && !foeAt(2) }],
     ground: [[-40, 3], [0, 0], [36, 0], [41, -2], [71, -2], [76, 0], [112, 0], [152, 3]],
     me: { castle: 'P2', crew: ['bolt', 'bomb', 'fire'] },
-    foe: { castle: 'E3', crew: ['rocket', 'bomb', 'ice'], hp: 1.4, dmg: 1.7, ai: { err: 4.2, think: 1.2, gate: 0.6, hate: 0.15, lob: 1, skill: 0.4, sap: 0.4 } },
+    foe: { castle: 'E3', crew: ['rocket', 'bomb', 'ice'], hp: 1.4, dmg: 1.9, ai: { err: 4.2, think: 1.2, gate: 0.6, hate: 0.15, lob: 1, skill: 0.4, sap: 0.4 } },
     extra: [{ castle: 'WALL', x: 56, y: -2, hp: 1 }],
     gates: [
       { owner: 0, mult: 5, h: 5.5, spots: [[56, 43.5]] },
@@ -73,7 +73,7 @@ const LEVELS = [
     hints: [{ r: 1, t: '敵城正面是鐵甲：吊高一點，從屋頂打進去' }, { r: 2, t: '樓上是火藥庫：炸到一桶，三桶連環爆', ok: foeKegs }],
     ground: [[-40, 5], [0, 0], [36, 0], [40, -3.5], [72, -3.5], [76, 0], [112, 0], [152, 5]],
     me: { castle: 'P2', crew: ['rocket', 'bomb', 'ice'] },
-    foe: { castle: 'E4', crew: ['fire', 'fire', 'bomb'], hp: 1.5, dmg: 1.25, ai: { err: 5.5, think: 1.1, gate: 0.65, hate: 0.2, skill: 0.5, sap: 0.5 } },
+    foe: { castle: 'E4', crew: ['fire', 'fire', 'bomb'], hp: 1.5, dmg: 1.7, ai: { err: 5.3, think: 1.1, gate: 0.65, hate: 0.2, skill: 0.5, sap: 0.5 } },
     objs: [
       { t: 'geyser', x: 46, w: 2.8, hgt: 45 },
       { t: 'geyser', x: 56, w: 2.8, hgt: 48 },
@@ -93,7 +93,7 @@ const LEVELS = [
     hints: [{ r: 1, t: '把砲彈射進藍色傳送門，會從敵城頭頂灌下去' }, { r: 2, t: '兩座城都在浮島邊上：把兵轟下去就回不來了' }, { r: 3, t: '防空弩每一輪會射下你三發砲彈，先解決它', ok: () => foeHas('flak') }],
     voids: [[36, 76]],
     me: { castle: 'P3', crew: ['rocket', 'ice', 'zap', 'bomb'] },
-    foe: { castle: 'E5', crew: ['bal', 'bomb', 'flak', 'zap'], hp: 1.2, dmg: 1.6, ai: { err: 3.5, think: 1.1, gate: 0.75, hate: 0.25, skill: 0.5, sap: 0.6 } },
+    foe: { castle: 'E5', crew: ['bal', 'bomb', 'flak', 'zap'], hp: 1.2, dmg: 1.65, ai: { err: 3.5, think: 1.1, gate: 0.75, hate: 0.25, skill: 0.5, sap: 0.6 } },
     objs: [
       // 藍色傳送門放在 ×3 符的後面：穿過符的砲彈順勢飛進去，從敵城正上方灌下來
       { t: 'portal', owner: 0, x: 58, y: 40, r: 3.8, ex: 93.3, ey: 50, ea: -Math.PI / 2, ej: 0.22, ew: 14, mv: { a: 3, per: 9 } },
@@ -113,7 +113,7 @@ const LEVELS = [
     hints: [{ r: 1, t: '打倒魔王就贏：打斷大殿的木柱、掀掉屋頂，再把砲彈吊進去' }, { r: 2, t: '把魔王腳下的樓板打掉，他摔一層就痛一次；轟出城外也會摔掉一截血' }],
     voids: [[36, 69.5]],
     me: { castle: 'P3', crew: ['rocket', 'zap', 'bomb', 'fire'] },
-    foe: { castle: 'E6', crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 1.1, dmg: 1.8, ai: { err: 5, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
+    foe: { castle: 'E6', crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 1.1, dmg: 1.8, ai: { err: 4.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
     boss: { p2: 0.8, p3: 0.45, segHp: 60, regen: 2, orbHp: 30, orbGap: [3, 2], meteors: 1 },
     gates: [
       { owner: 0, mult: 3, h: 6, spots: [[45, 37]] },
