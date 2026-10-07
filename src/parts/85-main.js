@@ -144,14 +144,15 @@ function uiEvent(t, a, b, c, d, e) {
       if (c === 1) once('rg', '敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它', 1, there);
       else if (c === 2) once('gg', '黃金符：倍數很高，兩邊都能用，而且只出現一回合', 0, there);
       else if (c === 3) once('hz', '紫色的折損符會吃掉一半砲彈，別穿過去', 0, there);
-      else if (c === 0 && d >= 10) say('×' + d + ' 的倍增符出現了！只出現這一回合：穿過去，一發變' + (d === 20 ? '二十' : d === 10 ? '十' : d) + '發', 0, 'big' + d, there);
+      else if (c === 0 && d >= 10) say('×' + d + ' 的倍增符出現了！只出現這一回合：穿過去，一發變' + (d === 20 ? '二十' : d === 10 ? '十' : d) + '發', 1, 'big' + d, there);       // 只有這一回合：插隊先講
       break;
     }
-    case 'launch': if (c === 1) once('bal', '轟炸氣球升空了！它先停在半路，下一輪才飛過來，趁現在打下來', 1, () => S.objs.some((o) => o.t === 'balloon' && o.side === 1 && o.hp > 0 && o.st === 'hover')); break;
-    case 'orb': once('orb', '毀滅光球！它先停在半空中，下一輪砸過來：現在打爆它，它會掉頭砸在魔王自己身上', 1, () => S.objs.some((o) => o.t === 'orb' && o.hp > 0 && o.st === 'hover')); break;
+    case 'launch': if (c === 1) once('bal', '轟炸氣球升空了！它先停在半路，下一輪才飛過來，趁現在打下來', 1, () => S.objs.some((o) => o.t === 'balloon' && o.side === 1 && o.hp > 0 && (o.st === 'out' || o.st === 'hover'))); break;
+    case 'orb': once('orb', '毀滅光球！它先停在半空中，下一輪砸過來：現在打爆它，它會掉頭砸在魔王自己身上', 1, () => S.objs.some((o) => o.t === 'orb' && o.hp > 0 && (o.st === 'out' || o.st === 'hover'))); break;
     case 'orbback': once('orbb', '漂亮！光球打爆了會掉頭砸回魔王身上，連結界都擋不住'); break;
     case 'lantern': once('lan', '天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走', 0, () => S.objs.some((o) => o.t === 'lantern' && o.hp > 0)); break;
-    case 'rockwarn': once('rock', '紅圈是這一回合結束時落石的位置，會砸到你就開護罩', 1, () => S.phase !== 'hazard'); break;
+    // 魔王關的隕石跟 ×20 的符同一回合開始出現：讓符先講（它只出現一回合），紅圈晚幾秒再講
+    case 'rockwarn': { const f = () => once('rock', '紅圈是這一回合結束時落石的位置，會砸到你就開護罩', 1, () => S.phase !== 'hazard'); if (S.lv.boss && !G.said.rock) later(3400, f); else f(); break; }
     case 'erupt': if (!G.said.gey) later(3200, () => once('gey', '地火噴發：砲彈穿過火柱會著火，威力多五成')); break;        // 晚一點講，先讓這一關的訣竅講完
     case 'freeze': if (c === 0) once('frz', '兵被凍住了，下一輪不能開火；開護罩可以立刻解凍', 1); break;
     case 'udie': if (c === 0) once('lost', '有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住', 1); else if (S.idx === 0 && S.team[1].alive > 0) once('kill', '打倒一個守軍！守軍全倒，城就破了'); break;
