@@ -1,0 +1,11 @@
+# ---- 落石、隕石砸我方城樓；後段敵軍砲擊（我方城樓已經受損） ----
+4 --name=L4_h_rock1 --bot=casual --seed=41 --until=S.phase==='hazard'&&S.hz --cam=0 --crop=-8,-7,48,62 --tail=2
+4 --name=L4_h_rock2 --bot=casual --seed=42 --skip=3 --until=S.phase==='hazard'&&S.hz --cam=0 --full=1 --tail=2
+6 --name=L6_h_meteor --bot=casual --seed=43 --until=S.phase==='hazard'&&S.hz&&S.boss.phase>=3 --cam=0 --crop=-8,-7,48,62 --tail=2
+3 --name=L3_e6 --bot=newbie --side=1 --skip=5 --seed=81
+4 --name=L4_e6 --bot=newbie --side=1 --skip=5 --seed=82
+5 --name=L5_e4 --bot=newbie --side=1 --skip=3 --seed=83
+6 --name=L6_e5 --bot=newbie --side=1 --skip=4 --seed=84
+6 --name=L6_e7 --bot=casual --side=1 --skip=6 --seed=85
+2 --name=L2_e5 --bot=newbie --side=1 --skip=4 --seed=86
+1 --name=L1_e5 --bot=newbie --side=1 --skip=4 --seed=87

@@ -1,0 +1,72 @@
+# ---- level 1: bot volleys ----
+1 --name=L1_p1_casual --bot=casual --skip=0 --seed=11
+1 --name=L1_p2_casual --bot=casual --skip=1 --seed=11
+1 --name=L1_p3_casual --bot=casual --skip=2 --seed=11
+1 --name=L1_p1_expert --bot=expert --skip=0 --seed=23
+1 --name=L1_p2_expert --bot=expert --skip=1 --seed=23
+1 --name=L1_p3_expert --bot=expert --skip=2 --seed=23
+1 --name=L1_e1 --bot=casual --side=1 --skip=0 --seed=31
+1 --name=L1_e3 --bot=casual --side=1 --skip=2 --seed=47
+1 --name=L1_mid5 --bot=casual --skip=4 --seed=59
+1 --name=L1_end_expert --bot=expert --end=1 --seed=67
+1 --name=L1_end_newbie --bot=newbie --end=1 --seed=71
+# ---- level 2: bot volleys ----
+2 --name=L2_p1_casual --bot=casual --skip=0 --seed=12
+2 --name=L2_p2_casual --bot=casual --skip=1 --seed=12
+2 --name=L2_p3_casual --bot=casual --skip=2 --seed=12
+2 --name=L2_p1_expert --bot=expert --skip=0 --seed=24
+2 --name=L2_p2_expert --bot=expert --skip=1 --seed=24
+2 --name=L2_p3_expert --bot=expert --skip=2 --seed=24
+2 --name=L2_e1 --bot=casual --side=1 --skip=0 --seed=32
+2 --name=L2_e3 --bot=casual --side=1 --skip=2 --seed=48
+2 --name=L2_mid5 --bot=casual --skip=4 --seed=60
+2 --name=L2_end_expert --bot=expert --end=1 --seed=68
+2 --name=L2_end_newbie --bot=newbie --end=1 --seed=72
+# ---- level 3: bot volleys ----
+3 --name=L3_p1_casual --bot=casual --skip=0 --seed=13
+3 --name=L3_p2_casual --bot=casual --skip=1 --seed=13
+3 --name=L3_p3_casual --bot=casual --skip=2 --seed=13
+3 --name=L3_p1_expert --bot=expert --skip=0 --seed=25
+3 --name=L3_p2_expert --bot=expert --skip=1 --seed=25
+3 --name=L3_p3_expert --bot=expert --skip=2 --seed=25
+3 --name=L3_e1 --bot=casual --side=1 --skip=0 --seed=33
+3 --name=L3_e3 --bot=casual --side=1 --skip=2 --seed=49
+3 --name=L3_mid5 --bot=casual --skip=4 --seed=61
+3 --name=L3_end_expert --bot=expert --end=1 --seed=69
+3 --name=L3_end_newbie --bot=newbie --end=1 --seed=73
+# ---- level 4: bot volleys ----
+4 --name=L4_p1_casual --bot=casual --skip=0 --seed=14
+4 --name=L4_p2_casual --bot=casual --skip=1 --seed=14
+4 --name=L4_p3_casual --bot=casual --skip=2 --seed=14
+4 --name=L4_p1_expert --bot=expert --skip=0 --seed=26
+4 --name=L4_p2_expert --bot=expert --skip=1 --seed=26
+4 --name=L4_p3_expert --bot=expert --skip=2 --seed=26
+4 --name=L4_e1 --bot=casual --side=1 --skip=0 --seed=34
+4 --name=L4_e3 --bot=casual --side=1 --skip=2 --seed=50
+4 --name=L4_mid5 --bot=casual --skip=4 --seed=62
+4 --name=L4_end_expert --bot=expert --end=1 --seed=70
+4 --name=L4_end_newbie --bot=newbie --end=1 --seed=74
+# ---- level 5: bot volleys ----
+5 --name=L5_p1_casual --bot=casual --skip=0 --seed=15
+5 --name=L5_p2_casual --bot=casual --skip=1 --seed=15
+5 --name=L5_p3_casual --bot=casual --skip=2 --seed=15
+5 --name=L5_p1_expert --bot=expert --skip=0 --seed=27
+5 --name=L5_p2_expert --bot=expert --skip=1 --seed=27
+5 --name=L5_p3_expert --bot=expert --skip=2 --seed=27
+5 --name=L5_e1 --bot=casual --side=1 --skip=0 --seed=35
+5 --name=L5_e3 --bot=casual --side=1 --skip=2 --seed=51
+5 --name=L5_mid5 --bot=casual --skip=4 --seed=63
+5 --name=L5_end_expert --bot=expert --end=1 --seed=77
+5 --name=L5_end_newbie --bot=newbie --end=1 --seed=75
+# ---- level 6: bot volleys ----
+6 --name=L6_p1_casual --bot=casual --skip=0 --seed=16
+6 --name=L6_p2_casual --bot=casual --skip=1 --seed=16
+6 --name=L6_p3_casual --bot=casual --skip=2 --seed=16
+6 --name=L6_p1_expert --bot=expert --skip=0 --seed=28
+6 --name=L6_p2_expert --bot=expert --skip=1 --seed=28
+6 --name=L6_p3_expert --bot=expert --skip=2 --seed=28
+6 --name=L6_e1 --bot=casual --side=1 --skip=0 --seed=36
+6 --name=L6_e3 --bot=casual --side=1 --skip=2 --seed=52
+6 --name=L6_mid5 --bot=casual --skip=4 --seed=64
+6 --name=L6_end_expert --bot=expert --end=1 --seed=78
+6 --name=L6_end_newbie --bot=newbie --end=1 --seed=76

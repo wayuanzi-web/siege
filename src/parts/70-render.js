@@ -78,6 +78,7 @@ function drawBackdrop(c, st, rdt) {
   }
   c.globalAlpha = 1;
 }
+const _noBlock = { h: 0 };
 // 旗子插在最高的那片屋瓦上，屋瓦歪了、掉了，旗子跟著走
 function flagBlock(st) {
   if (st._flagB !== undefined) return st._flagB;
@@ -96,10 +97,19 @@ function drawFlag(c, st, b, t) {
   for (let k = 6; k >= 0; k--) { const u = k / 6; c.lineTo(dir * fw * u * (k === 6 ? 0.82 : 1), y0 + fh * (1 - u * 0.25) + Math.sin(t * sp - u * 5) * fh * amp * u); }
   c.closePath(); c.fillStyle = lg(c, 0, 0, dir * fw, 0, [0, P.flag, 1, P.flagDk]); c.fill(); c.strokeStyle = P.ink; c.lineWidth = Math.max(1, s * 0.2); c.stroke();
 }
+// 一塊磚的冰藍剪影（變脆的磚罩在上面用），跟著那張貼圖一起留著
+function frostSprite(sp) {
+  if (sp.frost) return sp.frost;
+  const cv = mkCanvas(sp.cv.width, sp.cv.height), c = cv.getContext('2d');
+  c.drawImage(sp.cv, 0, 0); c.globalCompositeOperation = 'source-in'; c.fillStyle = '#9fdcff'; c.fillRect(0, 0, cv.width, cv.height);
+  sp.frost = cv; return cv;
+}
 // 每一塊磚：照它現在的位置和角度貼上去
 function drawBlocks(c, t, rdt) {
   const s = V.s, sx = FX.shx, sy = FX.shy, burn = RD.burn; burn.length = 0;
   const f0 = flagBlock(S.st[0]), f1 = flagBlock(S.st[1]);
+  // 插旗的那片屋瓦碎了：旗子飛出去（不是憑空不見）
+  for (let k = 0; k < 2; k++) { const fb = k ? f1 : f0, st = S.st[k]; if (fb && fb.dead && !st._flagOut) { st._flagOut = 1; FX.flung.push({ flag: st, x: fb.x, y: fb.y + fb.h / 2, vx: rndS() * 9, vy: 15 + Math.random() * 9, rot: 0, vr: (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 3), t: 0 }); } }
   for (const b of S.blocks) {
     if (b.dead) continue;
     const p = b.body.getPosition(), a = b.body.getAngle(), seg = b.seg, f = seg ? 1 : b.hp / b.hm;
@@ -109,18 +119,26 @@ function drawBlocks(c, t, rdt) {
     else { const cs = Math.cos(a), sn = Math.sin(a); c.setTransform(cs, -sn, sn, cs, X(p.x) + sx, Y(p.y) + sy); }
     if (b === f0 || b === f1) drawFlag(c, b.st, b, t);
     c.drawImage(sp.cv, -sp.ax, -sp.ay);
-    if (seg && b.low < 0.66) {
-      // 長樑、樓板：哪一段受傷，裂痕就畫在哪一段（從有裂痕的那張貼圖上切那一段下來蓋上去）
-      const n = b.cw, wpx = b.w * s, pad = sp.ax - wpx / 2, cell = wpx / n, H = sp.cv.height;
+    if (seg) {
+      /* 長樑、樓板一段一段畫：哪一段受傷，裂痕、燻黑、挨打的那一下閃光就只畫在那一段
+         （裂痕另外有一張只有裂紋的透明貼圖；燻黑和閃光是把原圖那一段再疊一次） */
+      const n = b.cw, wpx = b.w * s, pad = sp.ax - wpx / 2, cell = wpx / n, H = sp.cv.height, soot = b.sootS, fl = b.flash > 0 ? b.flashM : 0;
+      let cr = null;
       for (let k = 0; k < n; k++) {
-        const r = seg[k] / b.segM; if (r > 0.66) continue;
-        const d2 = blockSprite(b, r > 0.33 ? 1 : 2), x0 = k === 0 ? 0 : Math.round(pad + k * cell), x1 = k === n - 1 ? sp.cv.width : Math.round(pad + (k + 1) * cell);
-        c.drawImage(d2.cv, x0, 0, x1 - x0, H, x0 - sp.ax, -sp.ay, x1 - x0, H);
+        const r = seg[k] / b.segM, so = soot && !FX.low ? soot[k] : 0, f1 = (fl >> k) & 1;
+        if (r > 0.66 && so <= 0.05 && !f1) continue;
+        const x0 = k === 0 ? 0 : Math.round(pad + k * cell), x1 = k === n - 1 ? sp.cv.width : Math.round(pad + (k + 1) * cell), w0 = x1 - x0;
+        if (so > 0.05) { c.globalCompositeOperation = 'multiply'; c.globalAlpha = Math.min(1, so); c.drawImage(sp.cv, x0, 0, w0, H, x0 - sp.ax, -sp.ay, w0, H); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
+        if (r <= 0.66) { if (!cr) cr = blockSprite(b, 3); c.drawImage(cr.cv, x0, 0, w0, H, x0 - sp.ax, -sp.ay, w0, H); if (r <= 0.33) c.drawImage(cr.cv, sp.cv.width - x1, 0, w0, H, x0 - sp.ax, -sp.ay, w0, H); }
+        if (f1) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = Math.min(1, b.flash) * 0.55; c.drawImage(sp.cv, x0, 0, w0, H, x0 - sp.ax, -sp.ay, w0, H); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
       }
+      if (b.flash > 0) { b.flash = Math.max(0, b.flash - rdt * 5); if (b.flash <= 0) b.flashM = 0; }
+    } else {
+      if (b.soot > 0.05 && !FX.low) { c.globalCompositeOperation = 'multiply'; c.globalAlpha = Math.min(1, b.soot); c.drawImage(sp.cv, -sp.ax, -sp.ay); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
+      if (b.flash > 0) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = Math.min(1, b.flash) * 0.55; c.drawImage(sp.cv, -sp.ax, -sp.ay); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; b.flash = Math.max(0, b.flash - rdt * 5); }
     }
-    if (b.soot > 0.05 && !FX.low) { c.globalCompositeOperation = 'multiply'; c.globalAlpha = Math.min(1, b.soot); c.drawImage(sp.cv, -sp.ax, -sp.ay); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
-    if (b.brit > 0) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.28; c.drawImage(sp.cv, -sp.ax, -sp.ay); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
-    if (b.flash > 0) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = Math.min(1, b.flash) * 0.55; c.drawImage(sp.cv, -sp.ax, -sp.ay); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; b.flash = Math.max(0, b.flash - rdt * 5); }
+    // 被冰術士打到、變脆的磚：罩一層淡淡的冰藍（不是整塊變白）
+    if (b.brit > 0 && !b.frag) { const fr = frostSprite(sp); c.globalAlpha = 0.34; c.drawImage(fr, -sp.ax, -sp.ay); c.globalAlpha = 1; }
     if (b.burn > 0) burn.push(b);
   }
   c.setTransform(1, 0, 0, 1, sx, sy);
@@ -157,7 +175,7 @@ function drawUnits(c, t) {
     }
     if (u.stun > 0) { c.fillStyle = '#ffe14a'; for (let k = 0; k < 3; k++) { const a = t * 7 + k * 2.1; c.beginPath(); c.arc(x + Math.cos(a) * hw * 0.8, top - s * 0.3 + Math.sin(a) * s * 0.35, Math.max(1.2, s * 0.26), 0, TAU); c.fill(); } }
     if (u.hp < u.hpMax * 0.995) {
-      const f = clamp(u.hp / u.hpMax, 0, 1), bw = s * 3.1 * big, bh = Math.max(2.5, s * 0.52), bx = x - bw / 2, by = top - s * 0.95;
+      const f = clamp(u.hp / u.hpMax, 0.06, 1), bw = s * 3.1 * big, bh = Math.max(2.5, s * 0.52), bx = x - bw / 2, by = top - s * 0.95;
       c.fillStyle = 'rgba(10,8,20,.75)'; c.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
       c.fillStyle = f > 0.5 ? '#6fe05a' : f > 0.25 ? '#ffc93c' : '#ff5a3c'; c.fillRect(bx, by, bw * f, bh);
     }
@@ -244,6 +262,7 @@ function drawObjs(c, t) {
         break;
       }
       case 'barrier': {
+        if (S.state !== 'play') break;                       // 分出勝負了：結界跟著消失
         const x = X(o.x), y = Y(o.y), R = o.R * s;
         c.lineCap = 'butt';
         for (const sg of o.segs) {
@@ -382,8 +401,10 @@ function fxDraw(c) {
   c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
   // 被炸飛的兵
   for (const f of FX.flung) {
-    const sp = unitSprite(f.side, f.type), cs = Math.cos(f.rot), sn = Math.sin(f.rot);
-    c.globalAlpha = Math.min(1, (2.2 - f.t) * 2); c.setTransform(cs, sn, -sn, cs, X(f.x) + sx, Y(f.y) + sy); c.drawImage(sp.cv, -sp.ax, -sp.cy);
+    const cs = Math.cos(f.rot), sn = Math.sin(f.rot);
+    c.globalAlpha = Math.min(1, (2.2 - f.t) * 2); c.setTransform(cs, sn, -sn, cs, X(f.x) + sx, Y(f.y) + sy);
+    if (f.flag) { drawFlag(c, f.flag, _noBlock, RD.t); continue; }
+    const sp = unitSprite(f.side, f.type); c.drawImage(sp.cv, -sp.ax, -sp.cy);
   }
   c.setTransform(1, 0, 0, 1, sx, sy); c.globalAlpha = 1;
   // 跳出來的字

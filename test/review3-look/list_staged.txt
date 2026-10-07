@@ -1,0 +1,69 @@
+# ---- level 1：望樓的柱子、小屋 ----
+1 --name=L1_s_post_lowfront --kill=83.1,17
+1 --name=L1_s_post_lowback --kill=89.9,17
+1 --name=L1_s_post_midfront --kill=83.1,27.2
+1 --name=L1_s_post_midback --kill=89.9,27.2
+1 --name=L1_s_post_topfront --kill=83.1,35.7
+1 --name=L1_s_post_rockets --shot=62,21,60,-2,rocket;62,21.5,60,-2,rocket@0.16;62,21,60,-2,rocket@0.4;62,21.5,60,-2,rocket@0.56
+1 --name=L1_s_hut_post --kill=96.7,15.3
+1 --name=L1_s_bomb_foot --shot=66,12,60,0,bomb
+# ---- level 2：木板平台、石球、細塔 ----
+2 --name=L2_s_deck_front --cut=79.7,28.9
+2 --name=L2_s_deck_mid --cut=86.5,28.9
+2 --name=L2_s_deck_boulderF --cut=83.1,28.9
+2 --name=L2_s_deck_boulderB --cut=89.9,28.9
+2 --name=L2_s_deck_bombtop --shot=86.5,44,0,-30,bomb
+2 --name=L2_s_deck_rockets --shot=70,46,26,-36,rocket;69.5,46.7,26,-36,rocket@0.16
+2 --name=L2_s_tower_lowF --kill=96.7,22.1
+2 --name=L2_s_tower_lowB --kill=103.5,22.1
+2 --name=L2_s_tower_bomb --bomb=100.1,22,bomb
+2 --name=L2_s_hallwall_front --kill=79.7,22.1
+2 --name=L2_s_hallwall_back --kill=93.3,22.1
+# ---- level 3：冰板、冰塔、中間的冰牆 ----
+3 --name=L3_s_slab_frontL --cut=83.1,22.1
+3 --name=L3_s_slab_frontC --cut=86.5,22.1
+3 --name=L3_s_slab_frontR --cut=89.9,22.1
+3 --name=L3_s_slab_backL --cut=96.7,22.1
+3 --name=L3_s_slab_backC --cut=100.1,22.1
+3 --name=L3_s_slab_backR --cut=103.5,22.1
+3 --name=L3_s_small_front --cut=86.5,28.9
+3 --name=L3_s_small_back --cut=100.1,28.9
+3 --name=L3_s_bomb_front --shot=70,42,30,-30,bomb
+3 --name=L3_s_fire_front --shot=70,42,30,-30,fire;69,43,30,-30,fire@0.2
+3 --name=L3_s_wall_low --bomb=56,4,bomb --crop=36,-8,76,44
+3 --name=L3_s_wall_mid --bomb=56,18,bomb --crop=36,-8,76,44
+3 --name=L3_s_wall_shots --shot=40,14,60,4,bomb;40,22,60,4,rocket@0.2;40,22.6,60,4,rocket@0.36 --crop=36,-8,76,44
+3 --name=L3_s_wall_fire --shot=40,10,60,4,fire;40,10.6,60,4,fire@0.2 --crop=36,-8,76,44
+# ---- level 4：火藥桶、亭子底下的石板 ----
+4 --name=L4_s_keg_mid --kill=93.3,25.3
+4 --name=L4_s_keg_front --kill=86.5,25.3
+4 --name=L4_s_keg_back --kill=100.1,25.3
+4 --name=L4_s_slab_mid --cut=93.3,28.9
+4 --name=L4_s_slab_front --cut=83.1,28.9
+4 --name=L4_s_slab_back --cut=103.5,28.9
+4 --name=L4_s_post_front --kill=86.5,32.3
+4 --name=L4_s_beam_mid --cut=93.3,22.1
+4 --name=L4_s_roofbomb --shot=93.3,48,0,-30,bomb
+4 --name=L4_s_fire_roof --shot=90,48,4,-30,fire;90,49,4,-30,fire@0.2
+# ---- level 5：木板露台、頂樓的石板 ----
+5 --name=L5_s_plank_0 --cut=76.3,25.5
+5 --name=L5_s_plank_1 --cut=79.7,25.5
+5 --name=L5_s_plank_2 --cut=83.1,25.5
+5 --name=L5_s_plank_3 --cut=86.5,25.5
+5 --name=L5_s_plank_5 --cut=93.3,25.5
+5 --name=L5_s_plank_7 --cut=100.1,25.5
+5 --name=L5_s_top_mid --cut=89.9,32.3
+5 --name=L5_s_top_front --cut=79.7,32.3
+5 --name=L5_s_top_back --cut=100.1,32.3
+5 --name=L5_s_bomb_balcony --shot=66,40,20,-28,bomb
+5 --name=L5_s_rockets_balcony --shot=60,30,50,2,rocket;60,30.6,50,2,rocket@0.16
+# ---- level 6：大殿的柱子、魔王腳下的樓板、側樓的火藥桶 ----
+6 --name=L6_s_post_front --kill=83.1,34
+6 --name=L6_s_post_back --kill=96.7,34
+6 --name=L6_s_post_both --kill=83.1,34;96.7,34@0.3
+6 --name=L6_s_slab_mid --cut=89.9,28.9
+6 --name=L6_s_slab_front --cut=83.1,28.9
+6 --name=L6_s_slab_all --kill=89.9,28.9
+6 --name=L6_s_keg_front --kill=76.3,15.3
+6 --name=L6_s_keg_back --kill=103.5,15.3
+6 --name=L6_s_slab_two --cut=89.9,28.9;89.9,18.7@1.5

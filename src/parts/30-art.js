@@ -57,12 +57,12 @@ function paintBlock(c, b, ds, w, h, sc) {
     else rrect(c, 0, 0, w, h, Math.min(w, h) * 0.09);
   };
   c.save(); path(); c.clip();
-  switch (b.mat) {
+  if (ds !== 3) switch (b.mat) {
     case M_STONE: {
       const p = P.stone;
       c.fillStyle = lg(c, 0, 0, 0, h, [0, mix(p[1], p[0], 0.55), 0.6, p[1], 1, mix(p[1], p[2], 0.45)]); c.fillRect(0, 0, w, h);
-      if (w > u * 2.6) {
-        // 石板：一條有齒飾的飾帶
+      if (w > u * 2.6 || b.seg) {
+        // 石板：一條有齒飾的飾帶（從石板上斷下來的一小截也照樣畫）
         c.fillStyle = rgba(p[2], 0.55); c.fillRect(0, h * 0.62, w, h * 0.38);
         c.fillStyle = mix(p[1], p[0], 0.3); for (let x = u * 0.2; x < w - u * 0.3; x += u * 0.5) c.fillRect(x, h * 0.66, u * 0.26, h * 0.22);
         c.fillStyle = rgba(p[3], 0.5); c.fillRect(0, h * 0.54, w, Math.max(1, h * 0.07));
@@ -174,13 +174,20 @@ function paintBlock(c, b, ds, w, h, sc) {
   }
   if (ds > 0 && b.mat !== M_KEG) {
     // 裂痕；第二級更多、整塊變暗
-    c.strokeStyle = b.mat === M_ICE ? 'rgba(40,90,140,.85)' : 'rgba(10,6,14,.75)'; c.lineWidth = Math.max(1, u * 0.06);
+    c.strokeStyle = b.mat === M_ICE ? 'rgba(40,90,140,.85)' : 'rgba(10,6,14,.75)'; c.lineWidth = Math.max(1, u * 0.06); c.lineCap = 'round';
     const crack = (x, y, a, len, n) => { c.beginPath(); c.moveTo(x, y); for (let k = 0; k < n; k++) { a += (R() - 0.5) * 1.3; x += Math.cos(a) * len; y += Math.sin(a) * len; c.lineTo(x, y); } c.stroke(); };
-    const nc = Math.max(1, Math.round(Math.max(w, h) / u * 0.7)) * ds;
-    for (let k = 0; k < nc; k++) crack(R() * w, R() < 0.5 ? 0 : h, R() < 0.5 ? 1.2 + R() * 0.7 : -1.2 - R() * 0.7, u * 0.24, 3);
-    if (ds > 1) { c.fillStyle = 'rgba(8,4,12,.2)'; c.fillRect(0, 0, w, h); }
+    if (ds === 3) {
+      // 只有裂紋的透明貼圖（長樑、樓板一段一段蓋上去用）：每一格各畫各的，裂紋不跨到隔壁那一格
+      const n = Math.max(1, Math.round(w / u));
+      for (let k = 0; k < n; k++) { const x0 = w * k / n, cw = w / n; c.save(); c.beginPath(); c.rect(x0 + 1, 0, cw - 2, h); c.clip(); for (let j = 0; j < 2; j++) crack(x0 + cw * (0.2 + R() * 0.6), j ? h : 0, j ? -1.2 - R() * 0.7 : 1.2 + R() * 0.7, u * 0.24, 3); c.restore(); }
+    } else {
+      const nc = Math.max(1, Math.round(Math.max(w, h) / u * 0.7)) * ds;
+      for (let k = 0; k < nc; k++) crack(R() * w, R() < 0.5 ? 0 : h, R() < 0.5 ? 1.2 + R() * 0.7 : -1.2 - R() * 0.7, u * 0.24, 3);
+      if (ds > 1) { c.fillStyle = 'rgba(8,4,12,.2)'; c.fillRect(0, 0, w, h); }
+    }
   }
   c.restore();
+  if (ds === 3) return;
   path(); c.strokeStyle = b.mat === M_KEG ? '#2a1608' : b.mat === M_CLAY ? '#3a1c0a' : P.ink; c.lineWidth = b.prop ? lw * 0.8 : lw; c.stroke();
   if (roof) {
     // 屋簷兩端往上翹的角（只是畫的，不算在碰撞裡）

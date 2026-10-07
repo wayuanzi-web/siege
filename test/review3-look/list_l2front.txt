@@ -1,0 +1,5 @@
+# 第二關：玩家從左邊平射、吊射打「木板平台」最容易打到的地方（前端），石球會往哪裡去
+2 --name=L2_r_rockets_front --shot=60,29,60,1,rocket;60,29.5,60,1,rocket@0.16;60,29,60,1,rocket@0.5;60,29.5,60,1,rocket@0.66 --tail=2
+2 --name=L2_r_bomb_front --shot=60,30,55,3,bomb --tail=2
+2 --name=L2_r_bomb_lob_front --shot=72,46,14,-34,bomb --tail=2
+2 --name=L2_r_bomb_lob_mid --shot=80,48,12,-36,bomb --tail=2

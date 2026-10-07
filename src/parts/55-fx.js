@@ -35,7 +35,13 @@ function burst(type, x, y, n, sp, life, size, col, up) {
   for (let k = 0; k < n; k++) { const a = Math.random() * TAU, v = sp * (0.35 + Math.random() * 0.65); part(type, x, y, Math.cos(a) * v, Math.sin(a) * v + (up || 0), life * (0.6 + Math.random() * 0.6), size * (0.7 + Math.random() * 0.6), col); }
 }
 function ring(x, y, r0, r1, life, col, lw) { if (FX.rings.length < 40) FX.rings.push({ x, y, r0, r1, t: 0, max: life, col, lw: lw || 0.5 }); }
-function pop(x, y, txt, col, size, life) { if (FX.pops.length > 14) FX.pops.shift(); FX.pops.push({ x, y, txt, col: col || '#fff', size: size || 3.4, t: 0, max: life || 1.0 }); }
+// 跳出來的字。附近剛好有別的字還在：往上疊，不要蓋在一起
+function pop(x, y, txt, col, size, life) {
+  if (FX.pops.length > 14) FX.pops.shift();
+  size = size || 3.4;
+  for (let k = 0; k < 4; k++) { let hit = false; for (const q of FX.pops) if (q.t < q.max * 0.75 && Math.abs(q.x - x) < (q.txt.length + txt.length) * 0.5 * Math.max(q.size, size) * 0.62 && Math.abs(q.y - y) < (q.size + size) * 0.52) { hit = true; y = q.y + (q.size + size) * 0.56; } if (!hit) break; }
+  FX.pops.push({ x, y, txt, col: col || '#fff', size, t: 0, max: life || 1.0 });
+}
 function shake(a) { if (FX.calm) return; if (a > FX.shake) FX.shake = Math.min(a, 2.2); }
 // 整個畫面閃一下。任一秒內最多兩次（閃太快對光敏感的人有危險）；系統設了「減少動態效果」就只留很淡的一層
 function flash(v, col) {
@@ -147,12 +153,14 @@ function fxOn(t, a, b, c, d, e, f) {
       // a,b 位置；c 哪一邊；d 兵種；e 死法
       FX.flung.push({ side: c, type: d, x: a, y: b - 1.8, vx: (c === 0 ? -1 : 1) * (8 + Math.random() * 14), vy: 26 + Math.random() * 14, rot: 0, vr: (c === 0 ? 1 : -1) * (5 + Math.random() * 6), t: 0 });
       burst(P_SPARK, a, b, 8, 22, 0.5, 0.6, c === 0 ? C_SKY : C_SALMON); ring(a, b, 0.5, 5, 0.3, '#ffffff', 0.4);
-      pop(a, b + 3.5, c === 1 ? (e === 1 ? '砸扁！' : e === 4 ? '摔下去了！' : e === 5 ? '轟出城外！' : e === 3 ? '燒到了！' : '擊倒！') : (e === 5 ? '被轟出城' : e === 4 ? '摔下去了' : '陣亡'), c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.1);
+      // 剛才那一聲「哇！」不用留著跟這一句疊在一起；整座城垮掉時順便倒下的不再一個一個報
+      for (let i = FX.pops.length - 1; i >= 0; i--) { const q = FX.pops[i]; if (q.yelp && Math.abs(q.x - a) < 9 && Math.abs(q.y - b) < 12) FX.pops.splice(i, 1); }
+      if (S.state === 'play') pop(a, b + 3.5, c === 1 ? (e === 1 ? '砸扁！' : e === 4 ? '摔下去了！' : e === 5 ? '轟出城外！' : e === 6 ? '轟飛了！' : e === 3 ? '燒到了！' : '擊倒！') : (e === 5 ? '被轟出城' : e === 4 ? '摔下去了' : e === 6 ? '被轟飛了' : e === 1 ? '被砸扁了' : '陣亡'), c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.1);
       sfx(c === 1 ? 'kill' : 'lostunit'); if (c === 0) { shake(0.4); vibrate(60); }
       if (e === 1 && S.state === 'play') slowmo(0.5, 0.7);
       break;
     }
-    case 'yelp': pop(a, b, c ? '哇啊！' : '哇！', '#ffffff', 2.5, 0.8); break;
+    case 'yelp': pop(a, b, c ? '哇啊！' : '哇！', '#ffffff', 2.5, 0.8); FX.pops[FX.pops.length - 1].yelp = 1; break;
     case 'uland': burst(P_DUST, a, b, 3, 8, 0.4, 1.4, C_SAND); break;
     case 'zap': {
       // a 欄位中心 x；b 劈到的高度；c 從多高劈下來

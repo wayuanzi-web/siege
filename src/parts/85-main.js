@@ -112,7 +112,7 @@ function uiEvent(t, a, b, c, d, e) {
         else if (G.tut === 4) { G.tut = 5; if (!G.said.kill) say('把守軍全部打倒就破城；上面的頭像是雙方還站著的兵'); }
         // 這一關的訣竅：一回合最多講一句，而且要還用得上才講（該打的東西已經不在了就跳過）。第一次玩第一關的時候讓教學先講
         const hs = S.lv.hints;
-        if (!G.tut && hs) for (let i = 0; i < hs.length; i++) { const h = hs[i]; if (G.hinted[i] || b < h.r || (h.ok && !h.ok())) continue; G.hinted[i] = 1; say(h.t); break; }
+        if (!G.tut && hs) for (let i = 0; i < hs.length; i++) { const h = hs[i]; if (G.hinted[i] || b < h.r || (h.ok && !h.ok())) continue; G.hinted[i] = 1; say(h.t, 0, 'hint' + i); break; }
         const T = S.team[0];
         if (!SV.seenUlt && T.ult.c >= T.ult.need && !T.ult.armed) once('ult', '「連珠」集滿了！按右下角金色按鈕上膛，這一輪每個兵連打三次');
         // 沒有一個兵開得了火（全被凍住、電暈）：護罩可以解凍；沒有護罩就自動跳過這一輪，不用玩家對著空氣拖一下
@@ -135,11 +135,11 @@ function uiEvent(t, a, b, c, d, e) {
     case 'gate': if (e === 0 && G.tut >= 1 && G.tut <= 3 && !G.said.gt) { G.said.gt = 1; say('就是這樣！穿過倍增符，砲彈變多了'); } break;
     case 'gspawn': if (c === 1) once('rg', '敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它', 1); else if (c === 2) once('gg', '黃金符：倍數很高，兩邊都能用，而且只出現一回合'); else if (c === 3) once('hz', '紫色的折損符會吃掉一半砲彈，別穿過去'); break;
     case 'launch': if (c === 1) once('bal', '轟炸氣球升空了！它先停在半路，下一輪才飛過來，趁現在打下來', 1); break;
-    case 'orb': once('orb', '毀滅光球！它先停在城門口，下一輪砸過來：現在打爆它，它會掉頭砸在魔王自己身上', 1); break;
+    case 'orb': once('orb', '毀滅光球！它先停在半空中，下一輪砸過來：現在打爆它，它會掉頭砸在魔王自己身上', 1); break;
     case 'orbback': once('orbb', '漂亮！光球打爆了會掉頭砸回魔王身上，連結界都擋不住'); break;
     case 'lantern': once('lan', '天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走'); break;
     case 'rockwarn': once('rock', '紅圈是這一回合結束時落石的位置，會砸到你就開護罩', 1); break;
-    case 'erupt': once('gey', '地火噴發：砲彈穿過火柱會著火，威力多五成'); break;
+    case 'erupt': if (!G.said.gey) later(3200, () => once('gey', '地火噴發：砲彈穿過火柱會著火，威力多五成')); break;        // 晚一點講，先讓這一關的訣竅講完
     case 'freeze': if (c === 0) once('frz', '兵被凍住了，下一輪不能開火；開護罩可以立刻解凍', 1); break;
     case 'udie': if (c === 0) once('lost', '有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住', 1); else if (S.idx === 0 && S.team[1].alive > 0) once('kill', '打倒一個守軍！守軍全倒，城就破了'); break;
     case 'chain': if (b === 0 && a >= 10) once('chain', '漂亮的坍塌！一次垮得越多，「連珠」集得越快'); break;

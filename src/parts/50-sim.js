@@ -23,6 +23,7 @@ const DIFFS = [
   { name: '標準', aiErr: 1.0, foeHp: 1.0, foeDmg: 1.0 },
   { name: '硬仗', aiErr: 0.6, foeHp: 1.15, foeDmg: 1.15 }
 ];
+const CRUSH_LOAD = 2.2;   // 兵頭上壓著超過自己體重幾倍的東西，就會被壓扁
 const BAR_TH = 0.15;       // 城樓完整度：還留在原位的磚剩不到這個比例就算全毀
 const BASE_HP = 4;         // 城基的石磚特別厚：一輪齊射打不穿（不然轟一下牆腳，整座城連人一起倒，沒得打）
 const BOSS_SOFT = 0.35;     // 魔王跨過換階段門檻的那一輪，超過門檻的傷害打幾折
@@ -127,17 +128,22 @@ function castleScan(st) {
   let hp = 0; const { cols, rows, cellB, cellK, backTo } = st;
   for (const b of st.blocks) {
     if (b.dead || b.frag) continue;
-    const p = b.body.getPosition(), a = b.body.getAngle(), was = b.inPlace;
-    b.inPlace = Math.abs(p.x - b.x0) < CS * 0.5 && Math.abs(p.y - b.y0) < CS * 0.5 && Math.abs(a) < 0.4;
+    const p = b.body.getPosition(), a = Math.abs(b.body.getAngle()), was = b.inPlace, dx = Math.abs(p.x - b.x0), dy = Math.abs(p.y - b.y0);
+    // 離開原位之後，要回到很接近原位才算回來（不然被震得晃回來一下，城防條會自己往上跳）
+    b.inPlace = !b.gone && (was ? dx < CS * 0.5 && dy < CS * 0.5 && a < 0.4 : dx < CS * 0.2 && dy < CS * 0.2 && a < 0.15);
+    b.snug = b.inPlace && dx < CS * 0.25 && dy < CS * 0.25 && a < 0.1;          // 幾乎沒動：背後的屋內暗色才畫（滑開了、歪了就看得到天）
     if (was && !b.inPlace) { chainCount(b); st.ver++; }
     if (b.inPlace) hp += b.hp * b.wt;
   }
   st.hpNow = hp;
+  // 屋內的暗色背景：頭頂上還有東西蓋著的格子才畫。地板破了一格不影響（還是在屋裡），天花板那一格沒了就透天
   for (let cx = 0; cx < cols; cx++) {
-    let below = true;                                    // 最底下一列站在地上
-    for (let cy = 0; cy < rows; cy++) { const i = cy * cols + cx; backTo[i] = below ? 1 : 0; const b = cellB[i]; if (cellK[i] === 1) below = !!(b && b.inPlace); else if (cellK[i] === 0) below = false; }
     let above = false;
-    for (let cy = rows - 1; cy >= 0; cy--) { const i = cy * cols + cx; if (!above || !cellK[i]) backTo[i] = 0; const b = cellB[i]; if (cellK[i] === 1 && b && b.inPlace) above = true; else if (cellK[i] === 0) above = false; }
+    for (let cy = rows - 1; cy >= 0; cy--) {
+      const i = cy * cols + cx, k = cellK[i];
+      backTo[i] = k && above ? 1 : 0;
+      if (k === 1) { const b = cellB[i]; if (b && !b.dead && b.snug) above = true; } else if (k === 0) above = false;
+    }
   }
 }
 // 城樓完整度（0..1）：還留在原位、沒被打壞的磚
@@ -184,7 +190,7 @@ function hurtUnit(u, d, side, kind) {
   if (side < 2 && side !== u.side) { const T = S.team[side]; T.ult.c = Math.min(T.ult.need, T.ult.c + d * T.ult.gain * 0.6); }
   if (u.hp <= 0) killUnit(u, side, kind === K_CRUSH ? 1 : kind === K_FIRE ? 3 : 0);
 }
-// how: 0 被打倒、1 被砸到或摔到、3 燒到、4 掉出戰場、5 被轟出自己的城
+// how: 0 被打倒、1 被砸到或摔到、3 燒到、4 掉下深淵、5 被轟出自己的城、6 被轟飛出戰場
 function killUnit(u, side, how) {
   if (!u.alive) return;
   u.alive = false; u.hp = 0;
@@ -217,8 +223,11 @@ function unitsStep(dt) {
     u.tilt += ((u.air ? clamp(v.x * 0.035, -0.9, 0.9) : 0) - u.tilt) * Math.min(1, dt * 9);
     if (u.hurtT > 0) u.hurtT -= dt; if (u.recoil > 0) u.recoil = Math.max(0, u.recoil - dt * 5);
     if (u.flakT > 0) u.flakT -= dt;
-    // 飛出畫面、掉下深淵：出局
-    if (u.y < -26 || u.x < -GUT + 1.5 || u.x > VIEW_W + GUT - 1.5) { if (u.def.big) bossReturn(u); else killUnit(u, 1 - u.side, 4); continue; }
+    // 被重的東西壓住（石球、整片樓板）：撐超過自己體重兩倍多、撐了一會，就一直扣血直到被壓扁
+    { const load = u.loadJ / (dt * u.mass * GRAV); u.loadJ = 0;
+      if (load > CRUSH_LOAD) { u.loadT += dt; if (u.loadT > 0.3) { hurtUnit(u, (u.def.big ? u.hpMax * 0.03 : 110) * dt, S.phase === 'hazard' ? 2 : 1 - u.side, K_CRUSH); if (!u.alive) continue; } } else if (u.loadT > 0) u.loadT = Math.max(0, u.loadT - dt * 2); }
+    // 掉下深淵、飛出戰場兩邊：出局
+    if (u.y < -26 || u.x < -GUT + 1.5 || u.x > VIEW_W + GUT - 1.5) { if (u.def.big) bossReturn(u); else killUnit(u, 1 - u.side, u.y < -26 ? 4 : 6); continue; }
     // 被轟出自己的城、落地站定了：也算出局（守不了城了）。魔王會自己飛回去
     const st = u.st;
     if ((u.x < st.x0 - OUT_M || u.x > st.x1 + OUT_M) && !u.air) { u.outT += dt; if (u.outT > 0.6) { if (u.def.big) bossReturn(u); else killUnit(u, 1 - u.side, 5); } } else u.outT = 0;
@@ -501,7 +510,10 @@ function grantBonus(side, kind, x, y) {
       let floor = -999; PH.world.rayCast({ x: u.x, y: u.hy + 1.2 }, { x: u.x, y: u.hy - 1.2 }, (f, pt, n, fr) => { const o = f.getUserData(); if (o && !o.isBlock) return -1; floor = pt.y; return fr; });
       const q = physQuery(u.x, u.hy + 1.6, 2); let blocked = false; for (const o of q) if (o.isBlock && !o.dead && blockDist(o, u.x, u.hy + 1.6) < 1.25) blocked = true;
       if (blocked || floor < u.hy - 0.7 || floor > u.hy + 0.5) {
-        let top = -999; PH.world.rayCast({ x: u.x, y: st.y1 + 30 }, { x: u.x, y: st.y0 - 2 }, (f, pt, n, fr) => { const o = f.getUserData(); if (o && !o.isBlock) return -1; top = pt.y; return fr; });
+        const find = () => { let top = -999; PH.world.rayCast({ x: u.x, y: st.y1 + 30 }, { x: u.x, y: st.y0 - 2 }, (f, pt, n, fr) => { const o = f.getUserData(); if (o && !o.isBlock) return -1; top = pt.y; return fr; }); return top; };
+        let top = find();
+        // 原本站的地方底下什麼都沒有了（例如伸出去的露台斷了，下面是深淵）：改站回城基的範圍裡
+        if (top < -900) { u.x = clamp(u.x, st.fx0 + 1.7, st.fx1 - 1.7); top = find(); }
         u.y = (top > -900 ? top : st.y0) + 0.25;
       } else u.y = floor + 0.1;
       mkUnitBody(u); u.body.setAwake(true);
@@ -675,12 +687,14 @@ function simFire(side) {
   ev('volley', side, any ? 1 : 0);
   return true;
 }
-// 場上的東西都停下來了嗎（畫面外的不管）
+// 場上的東西都停下來了嗎（畫面外的不管）。城樓的磚和兵要真的停了才算；碎塊、小擺設、落石慢慢滾的不等
 function worldQuiet() {
   for (let b = PH.world.getBodyList(); b; b = b.getNext()) {
     if (!b.isDynamic() || !b.isAwake()) continue;
     const p = b.getPosition(); if (p.x < -GUT - 2 || p.x > VIEW_W + GUT + 2 || p.y < -10) continue;
-    const v = b.getLinearVelocity(); if (v.x * v.x + v.y * v.y > 3.2 || Math.abs(b.getAngularVelocity()) > 0.7) return false;
+    const v = b.getLinearVelocity(), s2 = v.x * v.x + v.y * v.y, om = Math.abs(b.getAngularVelocity()), o = b.getUserData();
+    if (s2 > 3.2 || om > 0.7) return false;
+    if (o && (o.isUnit || (o.isBlock && !o.frag && !o.prop && !o.st.loose)) && (s2 > 0.5 || om > 0.16)) return false;
   }
   return true;
 }
@@ -807,7 +821,7 @@ function simInit(idx, up, seed, diff, opts) {
   S.phase = 'intro'; S.turn = 0; S.round = 0; S.phaseT = 0; S.quietT = 0; S.vq.length = 0; S.vqi = 0;
   SH.n = 0; SH.cnt[0] = SH.cnt[1] = SH.cnt[2] = 0;
   S.structs = []; S.blocks = []; S.balls = []; S.units = []; S.gates = []; S.gsp = []; S.objs = []; S.marks = []; S.pend = []; S.bitUse.fill(0);
-  S.wind = 0; S.rage = 1; S.sudden = false; S.nburn = 0; S.burnT = 0; S.chain = 0; S.vol = 0; S.nfrag = 0; S.bid = 0; S.hz = 0; S.endBar[0] = S.endBar[1] = 0;
+  S.wind = 0; S.rage = 1; S.sudden = false; S.nburn = 0; S.burnT = 0; S.chain = 0; S.chainT = -99; S.vol = 0; S.nfrag = 0; S.bid = 0; S.hz = 0; S.endBar[0] = S.endBar[1] = 0;
   S.gpts = lv.ground || null; S.voids = lv.voids || null;
   S.stat = { fired: 0, peak: 0, swarm: 1, cells: 0, kills: 0, gates: 0, lost: 0, chain: 0 };
   physNew();
@@ -871,7 +885,8 @@ function simStep(dt) {
       case 'resolve': case 'hazard': {
         const busy = SH.n > 0 || S.pend.length > 0 || flyersBusy() || (S.nburn > 0 && S.phaseT < 6);
         if (!busy && worldQuiet()) S.quietT += dt; else S.quietT = 0;
-        if (S.quietT >= 0.45 || S.phaseT > 9) { if (S.phase === 'hazard') roundStart(); else endTurn(); }
+        // 最多等 9 秒；還在一塊接一塊垮的時候多等一下（等最後一塊垮完再過 1.5 秒），最久 14 秒
+        if (S.quietT >= 0.5 || S.phaseT > (S.time - S.chainT < 1.5 ? 14 : 9)) { if (S.phase === 'hazard') roundStart(); else endTurn(); }
         break;
       }
     }
@@ -914,7 +929,7 @@ function burnStep(dt) {
           // 火只會延燒到貼著的東西（隔一層石板、隔一間房燒不過去）
           const B = o.body.getFixtureList().getAABB(0);
           if (Math.max(A.lowerBound.x - B.upperBound.x, B.lowerBound.x - A.upperBound.x, A.lowerBound.y - B.upperBound.y, B.lowerBound.y - A.upperBound.y) > 0.6) continue;
-          if (rnd() < 0.1) ignite(o, 2.5 + rnd() * 2, foe);
+          if (o.mat === M_KEG || rnd() < 0.1) ignite(o, 2.5 + rnd() * 2, foe);          // 火燒到火藥桶：馬上爆
         } else if (o.alive && o.fireT !== S.frame && Math.abs(o.x - p.x) < b.w * 0.5 + 1.6 && Math.abs(o.y + 1.5 - p.y) < b.h * 0.5 + 2.2) { o.fireT = S.frame; hurtUnit(o, 3.5, foe, K_FIRE); }       // 身邊燒著好幾塊，一次也只算燒到一下
       }
     }

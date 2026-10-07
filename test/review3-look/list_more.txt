@@ -1,0 +1,25 @@
+# ---- 這一輪結束了、東西卻還在動：不把戰局停住，看接下來自然發生的事（鏡頭帶到上方資訊列和下方「輪到誰」） ----
+4 --name=L4_n_keg_mid --kill=93.3,25.3 --nohold=1 --max=8 --crop=40,-9,133.6,62.7 --n=16 --from=1.5 --pow=1
+4 --name=L4_n_keg_back --kill=100.1,25.3 --nohold=1 --max=9 --crop=40,-9,133.6,62.7 --n=16 --from=1.5 --pow=1
+3 --name=L3_n_slab_frontC --cut=86.5,22.1 --nohold=1 --max=14 --crop=40,-9,133.6,62.7 --n=16 --from=6.5 --pow=1
+3 --name=L3_n_slab_backL --cut=96.7,22.1 --nohold=1 --max=14 --crop=40,-9,133.6,62.7 --n=16 --from=6.5 --pow=1
+# ---- 第三關中間的冰牆：輕輕碰一下之後會不會自己慢慢滑（拍久一點） ----
+3 --name=L3_w_rockets_mid --shot=40,20,60,2,rocket;40,20.6,60,2,rocket@0.16 --crop=36,-8,80,44 --tail=14 --n=16 --fine=0.2
+3 --name=L3_w_bolts_top --shot=40,31,60,2,bolt;40,31.3,60,2,bolt@0.07;40,31.6,60,2,bolt@0.14;40,31.9,60,2,bolt@0.21;40,32.2,60,2,bolt@0.28;40,32.5,60,2,bolt@0.35 --crop=36,-8,80,44 --tail=14 --n=16 --fine=0.2
+3 --name=L3_w_rocket_top --shot=40,30,60,2,rocket --crop=36,-8,80,44 --tail=14 --n=16 --fine=0.2
+3 --name=L3_w_nearmiss --bomb=47,0,rocket --crop=36,-8,80,44 --tail=14 --n=16 --fine=0.2
+# ---- 補拍：第二關的中盤、第四關的敵軍砲擊 ----
+2 --name=L2_mid5 --bot=newbie --skip=4 --seed=91
+2 --name=L2_mid4 --bot=casual --skip=3 --seed=92
+4 --name=L4_e2 --bot=casual --side=1 --skip=1 --seed=93
+4 --name=L4_e4 --bot=newbie --side=1 --skip=3 --seed=94
+# ---- 真的砲彈打訊號目標（不是直接把磚打掉） ----
+1 --name=L1_r_bolts_post --swarm=60,16.5,70,1,bolt,18,0.004,0.4 --tail=3
+1 --name=L1_r_bolts_toppost --swarm=60,35.5,70,0.5,bolt,12,0.004,0.5 --tail=3
+6 --name=L6_r_rockets_post --shot=60,34,70,0.5,rocket;60,34.5,70,0.5,rocket@0.16;60,33.5,70,0.5,rocket@0.4 --tail=3
+6 --name=L6_r_bomb_roof --shot=89.9,52,0,-30,bomb --tail=3
+6 --name=L6_r_bolts_slab --swarm=89.9,50,1,-40,bolt,30,0.012,0.5;86.5,50,1,-40,bolt,30,0.012,0.5@0.5 --tail=3
+4 --name=L4_r_rocket_keg --shot=93.3,50,0,-34,rocket;92.8,50,0,-34,rocket@0.16;93.3,50,0,-34,rocket@1.0;93.8,50,0,-34,rocket@1.16 --tail=4
+2 --name=L2_r_bolts_deck --swarm=83.1,46,0.5,-40,bolt,18,0.006,0.5 --tail=3
+5 --name=L5_r_bomb_tip --shot=76.3,48,0,-30,bomb --tail=3
+5 --name=L5_r_rocket_tip --shot=58,27,60,1,rocket;58,27.5,60,1,rocket@0.16 --tail=3

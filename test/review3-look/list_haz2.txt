@@ -1,0 +1,6 @@
+# ---- 落石、隕石砸下來的那一刻（--until 的條件用雙引號包起來） ----
+4 --name=L4_h_rock1 --bot=casual --seed=41 "--until=S.phase==='hazard'&&S.hz" --cam=0 --full=1 --tail=2 --from=0
+4 --name=L4_h_rock2 --bot=casual --seed=42 --skip=3 "--until=S.phase==='hazard'&&S.hz" --cam=0 --full=1 --tail=2 --from=0
+4 --name=L4_h_rock3 --bot=newbie --seed=44 --skip=5 "--until=S.phase==='hazard'&&S.hz" --cam=0 --full=1 --tail=2 --from=0
+6 --name=L6_h_meteor --bot=casual --seed=43 "--until=S.phase==='hazard'&&S.hz&&S.boss.phase>=3" --cam=0 --full=1 --tail=2 --from=0
+6 --name=L6_h_meteor2 --bot=expert --seed=45 "--until=S.phase==='hazard'&&S.hz&&S.boss.phase>=3" --cam=0 --full=1 --tail=2 --from=0
