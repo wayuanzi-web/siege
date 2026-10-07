@@ -108,7 +108,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 #hint:not([hidden]) ~ #say { bottom: calc(var(--u) * 25.5); }
 #say.alert { color: #ffb0a2; box-shadow: inset 0 0 0 2px var(--red); background: rgba(60, 8, 10, .88); }
 @keyframes say { 0% { opacity: 0; transform: translate(-50%, 8px); } 8%, 88% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, 0); } }
-#mile { position: absolute; left: 50%; top: calc(var(--u) * 27); font-family: var(--f-display); font-weight: 900; font-size: calc(var(--u) * 6.6); letter-spacing: .14em; color: var(--gold-lt); white-space: nowrap;
+#mile { position: absolute; left: 50%; top: calc(var(--u) * 15.5); font-family: var(--f-display); font-weight: 900; font-size: calc(var(--u) * 6.6); letter-spacing: .14em; color: var(--gold-lt); white-space: nowrap;
   text-shadow: 0 2px 0 #3a2203, 0 0 14px rgba(255, 190, 40, .8); opacity: 0; transform: translateX(-50%); }
 #mile.show { animation: mile 1.5s ease both; }
 @keyframes mile { 0% { opacity: 0; transform: translateX(-50%) scale(2.2) rotate(-4deg); } 14%, 80% { opacity: 1; transform: translateX(-50%) scale(1) rotate(-4deg); } 100% { opacity: 0; transform: translateX(-50%) scale(.9) rotate(-4deg); } }
@@ -136,7 +136,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 .actions { display: grid; gap: calc(var(--u) * 2.2); }
 .actions .row { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 2.2); }
 .lvls { display: grid; gap: calc(var(--u) * 1.5); }
-.lv { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: calc(var(--u) * 2.2); align-items: center; text-align: left; padding: calc(var(--u) * 1.2) calc(var(--u) * 2.6); background: var(--line); --cut: calc(var(--u) * 1.9); transition: transform .12s ease; min-height: calc(var(--u) * 12.6); }
+.lv { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: calc(var(--u) * 2.2); align-items: center; text-align: left; padding: calc(var(--u) * 1.2) calc(var(--u) * 2.6); background: var(--line); --cut: calc(var(--u) * 1.9); transition: transform .12s ease; min-height: max(calc(var(--u) * 12.6), 40px); }
 .lv::before { content: ""; position: absolute; inset: 2px; background: linear-gradient(180deg, rgba(43, 36, 70, .96), rgba(29, 24, 48, .96)); clip-path: inherit; }
 .lv > * { position: relative; }
 .lv b { font-family: var(--f-num); font-weight: 400; font-size: calc(var(--u) * 6.6); line-height: 1; color: var(--bone); min-width: 1ch; text-align: center; }
@@ -154,8 +154,9 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 .lvinfo small { display: inline-block; margin-top: calc(var(--u) * .8); font-weight: 700; font-size: calc(var(--u) * 2.9); letter-spacing: .1em; padding: 1px calc(var(--u) * 1.8); color: var(--gold-ink); background: var(--gold); }
 .lvinfo p { margin: calc(var(--u) * 1.2) 0 0; color: #cfc8e6; font-size: calc(var(--u) * 3.2); line-height: 1.5; text-wrap: pretty; }
 .webbar { display: flex; gap: calc(var(--u) * 2); justify-content: center; }
+#home.web .home-m { justify-content: space-between; }
 .btn.chip { min-height: max(calc(var(--u) * 10.4), 40px); padding: calc(var(--u) * .8) calc(var(--u) * 3); font-size: calc(var(--u) * 3.1); letter-spacing: .1em; text-indent: .1em; color: var(--gold-lt); --cut: calc(var(--u) * 1.6); }
-.btn { position: relative; display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * 2); min-height: calc(var(--u) * 11.5); padding: calc(var(--u) * 1.6) calc(var(--u) * 3); font-weight: 700; font-size: calc(var(--u) * 3.9); letter-spacing: .14em; text-indent: .14em; white-space: nowrap;
+.btn { position: relative; display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * 2); min-height: max(calc(var(--u) * 11.5), 40px); padding: calc(var(--u) * 1.6) calc(var(--u) * 3); font-weight: 700; font-size: calc(var(--u) * 3.9); letter-spacing: .14em; text-indent: .14em; white-space: nowrap;
   color: var(--bone); background: var(--line); --cut: calc(var(--u) * 2.1); clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut)); transition: transform .08s ease, filter .08s ease; }
 .btn::before { content: ""; position: absolute; inset: 2px; background: linear-gradient(180deg, var(--panel-2), var(--panel)); clip-path: inherit; }
 .btn span, .btn b, .btn em { position: relative; }
@@ -170,6 +171,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 
 /* ---------- 軍牌（彈出視窗） ---------- */
 .modal { position: absolute; inset: 0; display: grid; place-items: center; padding: calc(var(--u) * 3) calc(var(--u) * 4 + var(--pr)) calc(var(--u) * 3) calc(var(--u) * 4 + var(--pl)); background: rgba(8, 5, 16, .74); overflow-y: auto; touch-action: pan-y; -webkit-overflow-scrolling: touch; z-index: 5; }
+#stage.rot .modal { touch-action: pan-x; }       /* 舞台轉了 90 度：視窗的上下捲動，在螢幕上是左右滑 */
 #shop { z-index: 7; background: rgba(8, 5, 16, .9); }
 #opt { z-index: 6; }
 .plaque { position: relative; width: 100%; max-width: calc(var(--u) * 150); padding: calc(var(--u) * 4) calc(var(--u) * 4.4) calc(var(--u) * 4); display: grid; gap: calc(var(--u) * 2.6); background: var(--gold-deep); --cut: calc(var(--u) * 3.2); animation: rise .22s cubic-bezier(.2, .9, .3, 1.2) both; }
@@ -220,7 +222,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 #turn { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 10px; padding: 18px 22px; font-size: 16px; font-weight: 700; letter-spacing: .12em; text-align: center; white-space: nowrap;
   color: var(--bone); background: rgba(12, 8, 22, .9); border: 2px solid var(--gold); border-radius: 14px; z-index: 20; pointer-events: none; animation: turn 3.4s ease both; }
 #turn i { display: block; width: 30px; height: 50px; border: 3px solid var(--gold-lt); border-radius: 7px; animation: tilt 1.5s ease-in-out infinite; }
-@keyframes tilt { 0%, 25% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+@keyframes tilt { 0%, 25% { transform: rotate(0); } 60%, 100% { transform: rotate(var(--tilt, -90deg)); } }
 @keyframes turn { 0% { opacity: 0; } 10%, 80% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes fadeio { 0% { opacity: 0; } 12%, 80% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
@@ -235,7 +237,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 }
 </style>
 
-<div id="app">
+<div id="app" lang="zh-Hant">
   <div id="stage">
     <canvas id="cv"></canvas>
 
@@ -348,7 +350,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
             </dl>
           </div>
         </div>
-        <div class="stack three">
+        <div class="stack three" id="resBtns">
           <button class="btn btn-gold" id="btnNext"><span>下一關</span></button>
           <button class="btn" id="btnAgain"><span>再戰</span></button>
           <button class="btn" id="btnUp"><span>強化</span></button>

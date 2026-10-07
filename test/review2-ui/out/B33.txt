@@ -1,0 +1,11 @@
+L5: reached round 3 (play); state {"flakAlive": 0}
+    round 3 toast: 防空弩每一輪會射下你三發砲彈，先解決它
+L4: reached round 2 (play); state {}
+    round 2 toast: 樓上是火藥庫：炸到一桶，三桶連環爆
+L3: reached round 4 (play); state {"enemyAlive": ["rocket@y31", "ice@y31"], "lowestWasKilled": true}
+    round 4 toast: 最後一個兵躲在冰板底下的大廳：轟破冰板，或從正面打進去
+errors: []
+
+real	0m33.406s
+user	0m3.086s
+sys	0m0.493s

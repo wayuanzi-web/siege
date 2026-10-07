@@ -1,0 +1,20 @@
+  0.1s {"t": 0.1, "r": 0, "ph": "intro0", "hint": false, "say": "", "banner": "", "mile": "", "chip": "", "tut": 1}
+  0.9s {"t": 0.9, "r": 0, "ph": "intro0", "hint": false, "say": "", "banner": "第一關青丘試砲", "mile": "", "chip": "", "tut": 1}
+  1.6s {"t": 1.5, "r": 1, "ph": "aim0", "hint": true, "say": "", "banner": "第一關青丘試砲", "mile": "", "chip": "輪到你：拖曳瞄準", "tut": 1}
+  2.3s {"t": 2.3, "r": 1, "ph": "aim0", "hint": true, "say": "", "banner": "", "mile": "", "chip": "輪到你：拖曳瞄準", "tut": 1}
+  6.0s {"t": 5.7, "r": 1, "ph": "volley0", "hint": false, "say": "", "banner": "", "mile": "", "chip": "輪到你：拖曳瞄準", "tut": 2}
+  6.4s {"t": 6.2, "r": 1, "ph": "volley0", "hint": false, "say": "", "banner": "", "mile": "", "chip": "我方砲擊", "tut": 2}
+  7.2s {"t": 6.9, "r": 1, "ph": "resolve0", "hint": false, "say": "就是這樣！穿過倍增符，砲彈變多了", "banner": "", "mile": "", "chip": "我方砲擊", "tut": 2}
+ 10.1s {"t": 9.8, "r": 1, "ph": "resolve0", "hint": false, "say": "", "banner": "", "mile": "", "chip": "我方砲擊", "tut": 2}
+ 10.6s {"t": 10.3, "r": 1, "ph": "resolve0", "hint": false, "say": "打倒一個守軍！守軍全倒，城就破了", "banner": "", "mile": "", "chip": "我方砲擊", "tut": 2}
+ 11.9s {"t": 11.4, "r": 1, "ph": "aim1", "hint": false, "say": "打倒一個守軍！守軍全倒，城就破了", "banner": "", "mile": "", "chip": "敵軍瞄準中", "tut": 2}
+ 13.0s {"t": 12.6, "r": 1, "ph": "volley1", "hint": false, "say": "打倒一個守軍！守軍全倒，城就破了", "banner": "", "mile": "", "chip": "敵軍砲擊", "tut": 2}
+ 14.2s {"t": 13.7, "r": 1, "ph": "resolve1", "hint": false, "say": "", "banner": "", "mile": "", "chip": "敵軍砲擊", "tut": 2}
+ 15.8s {"t": 15.3, "r": 2, "ph": "aim0", "hint": false, "say": "", "banner": "", "mile": "", "chip": "輪到你：拖曳瞄準", "tut": 3}
+ 17.8s {"t": 17.2, "r": 2, "ph": "aim0", "hint": false, "say": "按住拖曳瞄準，放開就發射；也可以按左下角", "banner": "", "mile": "", "chip": "輪到你：拖曳瞄準", "tut": 3}
+ 22.0s {"t": 21.2, "r": 2, "ph": "aim0", "hint": false, "say": "", "banner": "", "mile": "", "chip": "輪到你：拖曳瞄準", "tut": 3}
+sheet (3376, 1950) errors: []
+
+real	0m31.988s
+user	0m5.988s
+sys	0m0.478s

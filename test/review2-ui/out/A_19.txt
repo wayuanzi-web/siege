@@ -1,0 +1,7 @@
+150ms after tapping 重來: {"phase": "intro", "phaseT": 0.17, "chipVisible": false, "chip": "輪到你：拖曳瞄準，放開發射", "cls": "chamfer me go", "canFire": false}
+at release: {"phase": "aim0", "chip": "輪到你：拖曳瞄準，放開發射", "dragLive": true} -> volleys fired: 1 | any feedback toast: chamfer show / 打斷望樓的細柱子，整座連人一
+errors: []
+
+real	0m6.024s
+user	0m1.016s
+sys	0m0.163s

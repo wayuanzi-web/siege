@@ -1,0 +1,25 @@
+=== 844x390  level 4 (tip: lob over the iron front through the roof)
+   {'deg': 45, 'pow': 60, 'total': 14, 'drawn': 10, 'visible': 10, 'hudBottomWorld': 56, 'top': 62.7, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+   {'deg': 60, 'pow': 60, 'total': 14, 'drawn': 11, 'visible': 4, 'hudBottomWorld': 56, 'top': 62.7, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+   {'deg': 70, 'pow': 60, 'total': 14, 'drawn': 11, 'visible': 3, 'hudBottomWorld': 56, 'top': 62.7, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+   {'deg': 75, 'pow': 65, 'total': 14, 'drawn': 12, 'visible': 3, 'hudBottomWorld': 56, 'top': 62.7, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+   {'deg': 80, 'pow': 70, 'total': 14, 'drawn': 12, 'visible': 3, 'hudBottomWorld': 56, 'top': 62.7, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+   {'deg': 85, 'pow': 70, 'total': 14, 'drawn': 12, 'visible': 3, 'hudBottomWorld': 56, 'top': 62.7, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+=== 667x375  level 4 (tip: lob over the iron front through the roof)
+   {'deg': 45, 'pow': 60, 'total': 14, 'drawn': 10, 'visible': 10, 'hudBottomWorld': 57.3, 'top': 64.1, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+   {'deg': 60, 'pow': 60, 'total': 14, 'drawn': 11, 'visible': 5, 'hudBottomWorld': 57.3, 'top': 64.1, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+   {'deg': 70, 'pow': 60, 'total': 14, 'drawn': 11, 'visible': 4, 'hudBottomWorld': 57.3, 'top': 64.1, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+   {'deg': 75, 'pow': 65, 'total': 14, 'drawn': 12, 'visible': 4, 'hudBottomWorld': 57.3, 'top': 64.1, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+   {'deg': 80, 'pow': 70, 'total': 14, 'drawn': 12, 'visible': 3, 'hudBottomWorld': 57.3, 'top': 64.1, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+   {'deg': 85, 'pow': 70, 'total': 14, 'drawn': 12, 'visible': 3, 'hudBottomWorld': 57.3, 'top': 64.1, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+=== 1024x768  level 4 (tip: lob over the iron front through the roof)
+   {'deg': 45, 'pow': 60, 'total': 14, 'drawn': 10, 'visible': 10, 'hudBottomWorld': 65.7, 'top': 72.3, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+   {'deg': 60, 'pow': 60, 'total': 14, 'drawn': 11, 'visible': 11, 'hudBottomWorld': 65.7, 'top': 72.3, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+   {'deg': 70, 'pow': 60, 'total': 14, 'drawn': 11, 'visible': 9, 'hudBottomWorld': 65.7, 'top': 72.3, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+   {'deg': 75, 'pow': 65, 'total': 14, 'drawn': 12, 'visible': 7, 'hudBottomWorld': 65.7, 'top': 72.3, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+   {'deg': 80, 'pow': 70, 'total': 14, 'drawn': 12, 'visible': 6, 'hudBottomWorld': 65.7, 'top': 72.3, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+   {'deg': 85, 'pow': 70, 'total': 14, 'drawn': 12, 'visible': 6, 'hudBottomWorld': 65.7, 'top': 72.3, 'castleTop': 44.199999999999996, 'aimT': 0.95}
+
+real	0m10.947s
+user	0m3.098s
+sys	0m0.290s

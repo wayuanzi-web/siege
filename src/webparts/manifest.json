@@ -1,0 +1,18 @@
+{
+  "name": "千砲破城",
+  "short_name": "千砲破城",
+  "description": "兩座城樓隔空對轟：拖曳調角度和力道，砲彈穿過倍增符一發變多發，把對面的城一層一層轟垮。六個關卡，不用帳號，點開就能玩。",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#120f1c",
+  "theme_color": "#120f1c",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,58 @@
+--- keyboard-only flow from the home screen
+  Tab -> ['home:btnGo']
+  Enter on 出戰 -> {"mode": "play", "v": 0, "armed": false, "sh": false, "open": "hud", "inert": ""} | focus BODY
+  Space on my turn -> volleys 1 | focus BODY
+  P -> {"mode": "pause", "v": 1, "armed": false, "sh": false, "open": "opt+hud", "inert": "result+home+hud"} | focus BODY
+  Tab x8 in pause menu -> ['opt:btnResume', 'opt:btnRetry', 'opt:btnQuit', 'opt:tSfx', 'opt:tMus', 'opt:tVib', 'BODY', 'opt:btnResume']
+  Shift+Tab x2 -> ['BODY', 'opt:tVib']
+  focus on opt:btnResume
+  Space on 繼續 -> {"mode": "play", "v": 1, "armed": false, "sh": false, "open": "hud", "inert": ""} | focus BODY | fired by the same key press: 0
+  ArrowUp 0.3s: [54.43, 46] -> [64.74, 46] | Shift+ArrowUp 0.3s -> [67.83, 46] (fine = about a third)
+  NumpadEnter fires? 0
+--- Tab through the in-battle HUD
+  Tab x6 -> ['hud:btnPause', 'hud:btnFire', 'hud:btnShield', 'hud:btnUlt', 'BODY', 'hud:btnPause']
+  focus hud:btnFire
+  Space on focused 發射 -> volleys 1
+  Enter again during my volley -> volleys 1
+  focus hud:btnUlt
+  Enter held on focused 連珠 (1 press + 6 auto-repeats): click events 7 -> armed True
+  then Space (focus still on 連珠): fired 0 | armed False | focus hud:btnUlt
+--- options from home
+  focus home:btnOpt
+  Enter -> {"mode": "home", "v": 0, "armed": false, "sh": false, "open": "opt+home", "inert": "result+home+hud"} | focus right after opening: BODY
+  Tab x12 -> ['opt:tSfx', 'opt:tMus', 'opt:tVib', 'opt:輕鬆', 'opt:標準', 'opt:硬仗', 'opt:btnUnlock', 'opt:btnWipe', 'opt:返回', 'BODY', 'opt:tSfx', 'opt:tMus']
+  Esc -> {"mode": "home", "v": 0, "armed": false, "sh": false, "open": "home", "inert": ""} | focus after closing: BODY
+  next Tab lands on -> ['home:btnGo']
+--- shop from home
+  Space on 強化 -> {"mode": "home", "v": 0, "armed": false, "sh": false, "open": "shop+home", "inert": "opt+result+home+hud"} | focus BODY
+  Tab x8 -> ['shop:80', 'shop:80', 'shop:80', 'shop:80', 'shop:80', 'shop:返回', 'BODY', 'shop:80']
+  P in shop -> {"mode": "home", "v": 0, "armed": false, "sh": false, "open": "shop+home", "inert": "opt+result+home+hud"}
+  Esc -> {"mode": "home", "v": 0, "armed": false, "sh": false, "open": "home", "inert": ""} | focus BODY
+--- result screen (won level 1)
+  state {"mode": "result", "v": 0, "armed": false, "sh": false, "open": "result+hud", "inert": "home+hud"} | focus BODY
+  Tab x6 -> ['result:btnNext', 'result:btnAgain', 'result:btnUp', 'result:btnHome', 'BODY', 'result:btnNext']
+  Esc on result -> {"mode": "result", "v": 0, "armed": false, "sh": false, "open": "result+hud", "inert": "home+hud"}
+  P, Space on result (focus body?) -> {"mode": "play", "v": 0, "armed": false, "sh": false, "open": "hud", "inert": ""} | focus BODY
+  focus BODY
+  Enter on 強化 -> {"mode": "play", "v": 0, "armed": false, "sh": false, "open": "hud", "inert": ""} | focus BODY
+  Tab x9 in shop over result -> ['hud:btnPause', 'hud:btnFire', 'hud:btnShield', 'hud:btnUlt', 'BODY', 'hud:btnPause', 'hud:btnFire', 'hud:btnShield', 'hud:btnUlt']
+  Esc -> {"mode": "pause", "v": 0, "armed": false, "sh": false, "open": "opt+hud", "inert": "result+home+hud"} | focus BODY
+  Tab x2 -> ['opt:btnResume', 'opt:btnRetry']
+  Esc again -> {"mode": "play", "v": 0, "armed": false, "sh": false, "open": "hud", "inert": ""}
+  Enter on 下一關 -> {"mode": "play", "v": 0, "armed": false, "sh": false, "open": "hud", "inert": ""} idx 1 | focus BODY
+  Space -> volleys 1
+--- result screen (lost level 3)
+  Tab x5 -> ['result:btnAgain', 'result:btnUp', 'result:btnHome', 'BODY', 'result:btnAgain']
+  Enter on 回主畫面 -> {"mode": "home", "v": 0, "armed": false, "sh": false, "open": "home", "inert": ""} | focus BODY
+--- keys while paused / in menus
+  Esc -> pause | focus BODY
+  X Z Space Enter ArrowUp while paused -> {"mode": "pause", "v": 0, "armed": false, "sh": false, "open": "opt+hud", "inert": "result+home+hud"}
+  mouse click 音效 -> False | then Space -> True | focus opt:tSfx | mode pause
+  P -> {"mode": "play", "v": 0, "armed": false, "sh": false, "open": "hud", "inert": ""} | focus BODY
+  Space after resuming -> fired 1
+  Enter on 重來 -> {"mode": "play", "v": 0, "armed": false, "sh": false, "open": "hud", "inert": ""} phase intro | focus BODY
+errors: []
+
+real	0m34.195s
+user	0m1.715s
+sys	0m0.285s

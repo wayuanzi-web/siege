@@ -1,0 +1,55 @@
+
+===== 667x375 touch=True {"rot": 0, "sw": 667, "sh": 375, "ox": 0, "oy": 0, "u": "3.605px", "cv": [1334, 750], "s": 10.26, "top": 64.1, "x0": -9, "x1": 121}
+  [home1] ok
+  [home6_locked] ok
+  [opt] ok
+  [shop] ok
+  [home5_progress] ok
+  [L1_hint] ok
+  [L1_hint_plus_tap_toast] ok
+  [L2_wind_skills] ok
+  [L2_long_toast] ok
+  [pause] ok
+  [L6_boss] ok
+  [win_L6] ok
+  [lose_L4] ok
+  [win_L1] ok
+  errors: []
+
+===== 844x390 touch=True {"rot": 0, "sw": 844, "sh": 390, "ox": 0, "oy": 0, "u": "3.900px", "cv": [1688, 780], "s": 10.88, "top": 62.7, "x0": -21.6, "x1": 133.6}
+  [home1] ok
+  [home6_locked] ok
+  [opt] ok
+  [shop] ok
+  [home5_progress] ok
+  [L1_hint] ok
+  [L1_hint_plus_tap_toast] ok
+  [L2_wind_skills] ok
+  [L2_long_toast] ok
+  [pause] ok
+  [L6_boss] ok
+  [win_L6] ok
+  [lose_L4] ok
+  [win_L1] ok
+  errors: []
+
+===== 932x430 touch=True {"rot": 0, "sw": 932, "sh": 430, "ox": 0, "oy": 0, "u": "4.300px", "cv": [1840, 849], "s": 11.83, "top": 62.8, "x0": -21.7, "x1": 133.7}
+  [home1] ok
+  [home6_locked] ok
+  [opt] ok
+  [shop] ok
+  [home5_progress] ok
+  [L1_hint] ok
+  [L1_hint_plus_tap_toast] ok
+  [L2_wind_skills] ok
+  [L2_long_toast] ok
+  [pause] ok
+  [L6_boss] ok
+  [win_L6] ok
+  [lose_L4] ok
+  [win_L1] ok
+  errors: []
+
+real	1m47.142s
+user	0m9.810s
+sys	0m0.752s

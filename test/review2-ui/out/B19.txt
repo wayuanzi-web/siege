@@ -1,0 +1,30 @@
+A. desktop: window resized while the left button is held (mid-drag)
+   1000x600: {"rot": 0, "stage": [1000, 600, 0, 0], "u": 5.405, "cv": [1000, 600], "V": [1000, 600], "hud": 43, "hudExpected": 43, "s": 7.69, "offStage": [], "shots": 0, "phase": "aim0", "drag": true, "turnOverlay": false} aim [52.72, 59.59] volleys 0 {'mean': 151, 'stddev': 58}
+   700x900: {"rot": 0, "stage": [700, 438, 0, 231], "u": 3.784, "cv": [700, 438], "V": [700, 438], "hud": 30, "hudExpected": 30, "s": 5.38, "offStage": [], "shots": 0, "phase": "aim0", "drag": true, "turnOverlay": false} aim [42.92, 61.84] volleys 0 {'mean': 78, 'stddev': 83}
+   1600x500: {"rot": 0, "stage": [1250, 500, 175, 0], "u": 5, "cv": [1250, 500], "V": [1250, 500], "hud": 40, "hudExpected": 40, "s": 6.97, "offStage": [], "shots": 0, "phase": "aim0", "drag": true, "turnOverlay": false} aim [47.41, 58.96] volleys 0 {'mean': 120, 'stddev': 78}
+   1280x720: {"rot": 0, "stage": [1280, 720, 0, 0], "u": 6.4, "cv": [1280, 720], "V": [1280, 720], "hud": 51, "hudExpected": 51, "s": 9.85, "offStage": [], "shots": 0, "phase": "aim0", "drag": true, "turnOverlay": false} aim [47.68, 62.21] volleys 0 {'mean': 150, 'stddev': 58}
+   released: volleys 1 (expected 1)
+B. desktop: resized several times while the volley is in the air
+   900x500: {"rot": 0, "stage": [900, 500, 0, 0], "u": 4.865, "cv": [900, 500], "V": [900, 500], "hud": 39, "hudExpected": 39, "s": 6.92, "offStage": [], "shots": 9, "phase": "resolve0", "drag": false, "turnOverlay": false} {'mean': 119, 'stddev': 53}
+   500x800: {"rot": 0, "stage": [500, 313, 0, 244], "u": 2.9, "cv": [500, 313], "V": [500, 313], "hud": 23, "hudExpected": 23, "s": 3.85, "offStage": [], "shots": 9, "phase": "resolve0", "drag": false, "turnOverlay": false} {'mean': 50, 'stddev': 63}
+   1920x1080: {"rot": 0, "stage": [1920, 1080, 0, 0], "u": 6.4, "cv": [1840, 1035], "V": [1840, 1035], "hud": 49, "hudExpected": 49, "s": 14.15, "offStage": [], "shots": 9, "phase": "resolve0", "drag": false, "turnOverlay": false} {'mean': 123, 'stddev': 50}
+   1024x768: {"rot": 0, "stage": [1024, 640, 0, 64], "u": 5.535, "cv": [1024, 640], "V": [1024, 640], "hud": 44, "hudExpected": 44, "s": 7.88, "offStage": [], "shots": 2, "phase": "resolve0", "drag": false, "turnOverlay": false} {'mean': 101, 'stddev': 64}
+   1280x720: {"rot": 0, "stage": [1280, 720, 0, 0], "u": 6.4, "cv": [1280, 720], "V": [1280, 720], "hud": 51, "hudExpected": 51, "s": 9.85, "offStage": [], "shots": 0, "phase": "aim1", "drag": false, "turnOverlay": false} {'mean': 120, 'stddev': 53}
+   next turn reached: {"mode": "play", "demo": false, "state": "play", "phase": "aim", "turn": 0, "round": 2, "idx": 1, "volleys": 1, "shots": 0, "drag": false, "me": 94, "foe": 99}
+   trail kept: {'n': 34, 'first': [30, 44.3], 'last': [125.8, 1.4]}
+   errors: []
+C. phone: rotated while the volley is in the air, then while paused, then on the result screen
+   -> portrait mid-volley: {"rot": 1, "stage": [844, 390, 0, 0], "u": 3.9, "cv": [1688, 780], "V": [1688, 780], "hud": 62, "hudExpected": 62, "s": 10.88, "offStage": [], "shots": 5, "phase": "resolve0", "drag": false, "turnOverlay": true} {'mean': 73, 'stddev': 54}
+   3.5s later overlay hidden: True
+   -> back to landscape: {"rot": 0, "stage": [844, 390, 0, 0], "u": 3.9, "cv": [1688, 780], "V": [1688, 780], "hud": 62, "hudExpected": 62, "s": 10.88, "offStage": [], "shots": 5, "phase": "resolve1", "drag": false, "turnOverlay": false} {'mean': 78, 'stddev': 53}
+   portrait: drag screen-right 40px [54.43, 46] -> [61.09, 55.35] (steeper expected); then screen-down 40px -> [52.05, 61.44] (stronger expected); volleys 2
+   rotated while paused: {"plaque": [204, 107, 640, 283], "stage": [0, 0, 844, 390], "mode": "pause"} {'mean': 33, 'stddev': 34}
+   rotated on the result screen: {"plaque": [23, 130, 367, 715], "stage": [0, 0, 390, 844], "mode": "result"}
+   tap 回主畫面 in portrait -> home
+   errors: []
+D. 40 rapid size changes during a volley (address bar sliding in and out)
+   6016ms for 40 resizes, frames rendered 43 (7 fps), final {"rot": 0, "stage": [844, 342, 0, 0], "u": 3.42, "cv": [1688, 684], "V": [1688, 684], "hud": 55, "hudExpected": 55, "s": 9.53, "offStage": [], "shots": 1, "phase": "resolve0", "drag": false, "turnOverlay": false} errors []
+
+real	0m51.214s
+user	0m5.219s
+sys	0m0.567s

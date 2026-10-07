@@ -1,0 +1,49 @@
+P1. L3 round 3 begins: {"cur": "敵軍的赤符：會擋住你的砲彈，", "queue": ["天燈升起來了：打中它"], "said": "chain,ult,sh,rg,lan", "cls": "chamfer alert show", "mode": "play", "round": 3}
+    after 12s in the pause menu: {"cur": null, "queue": [], "said": "chain,ult,sh,rg,lan", "cls": "chamfer show", "mode": "pause", "round": 3}
+    6s after resuming: {"cur": null, "queue": [], "said": "chain,ult,sh,rg,lan", "cls": "chamfer show", "mode": "play", "round": 3}
+    log:
+      -0.0s   sayClear() (threw away 0)
+       1.0s say  中間的冰牆擋住平射：吊高越過去，或是先把它轟倒 [key -; queue 0]
+       1.0s   SHOW (4.5s) 中間的冰牆擋住平射：吊高越過去，或是先把它轟倒
+      11.5s say  漂亮的坍塌！一次垮得越多，「連珠」集得越快 [key chain; queue 0]
+      11.5s   SHOW (4.2s) 漂亮的坍塌！一次垮得越多，「連珠」集得越快
+      17.6s say  冰很滑：打掉冰塔底下的冰塊，上面的兵就溜下來 [key -; queue 0]
+      17.6s   SHOW (4.4s) 冰很滑：打掉冰塔底下的冰塊，上面的兵就溜下來
+      17.6s say  「連珠」集滿了！按右下角金色按鈕上膛，這一輪每個兵連打三 [key ult; queue 0]
+      20.3s   SHOW (5.4s) 「連珠」集滿了！按右下角金色按鈕上膛，這一輪每個兵連打三
+      27.0s say  輪到敵軍了：按「護罩」可以擋下他們這一整輪 [key sh; queue 0]
+      27.0s   SHOW (4.2s) 輪到敵軍了：按「護罩」可以擋下他們這一整輪
+      34.5s say! 敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉 [key rg; queue 0]
+      34.5s   SHOW (5.4s) 敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉
+      34.5s say  天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走 [key lan; queue 0]
+      34.9s   -- PAUSE (P key)
+      37.7s   SHOW (5.2s) 天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走
+      46.9s   -- RESUME
+P1b. boss enters phase 2 (the explanation is scheduled 1.9s later), player pauses 0.6s after the banner for 3s:
+      12.3s   -- BOSS PHASE 2 banner
+      13.0s   -- PAUSE
+      16.0s   -- RESUME
+    barrier explanation ever shown: False
+P3. retry with 3 toasts pending -> 2.5s into the new attempt: {"cur": "中間的冰牆擋住平射：吊高越過", "queue": [], "said": "", "cls": "chamfer show", "mode": "play", "round": 1}
+    log after retry:
+      28.8s   sayClear() (threw away 3)
+      28.9s   -- RETRY
+      29.9s say  中間的冰牆擋住平射：吊高越過去，或是先把它轟倒 [key -; queue 0]
+      29.9s   SHOW (4.5s) 中間的冰牆擋住平射：吊高越過去，或是先把它轟倒
+P4. home with 3 toasts pending: {"cur": null, "queue": [], "said": "chain,sh,lost,rg,lan,ult", "cls": "chamfer", "mode": "home", "round": 0} | hud hidden True
+    anything said/shown during 8s on the home screen (demo battle running): []
+    2.5s into level 1: {"cur": "打斷望樓的細柱子，整座連人一", "queue": [], "said": "", "cls": "chamfer show", "mode": "play", "round": 1}
+P5. result screen: {"cur": null, "queue": [], "said": "chain,ult,sh,lost,rg,lan", "cls": "chamfer", "mode": "result", "round": 3}
+    log from the winning blow:
+      34.9s   -- WIN
+      37.2s   SHOW (5.4s) 敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉
+      39.1s   sayClear() (threw away 2)
+P6. once() flags when the queue is full:
+    after lantern event with a full queue: said.lan=undefined queue=乙乙乙乙,丙丙丙丙,丁丁丁丁
+    second lantern event: said.lan=undefined queue=乙乙乙乙,丙丙丙丙,丁丁丁丁
+    alert (rockwarn) with a full queue: said.rock=1 queue=紅圈是這,乙乙乙乙,丙丙丙丙 cur=甲甲甲甲
+errors: []
+
+real	1m8.106s
+user	0m6.577s
+sys	0m0.956s

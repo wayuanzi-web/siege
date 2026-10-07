@@ -1,0 +1,32 @@
+
+===== 667x375 touch=True {"rot": 0, "stage": [667, 375], "u": 3.6, "unitsWide": 185}
+  - mile overlaps banner by 108x33px   [L1/toast+banner+mile, L2/toast+banner+mile, L3/toast+banner+mile, L4/toast+banner+mile, L5/toast+banner+mile, L6/toast+banner+mile]
+  errors: []
+
+===== 844x390 touch=True {"rot": 0, "stage": [844, 390], "u": 3.9, "unitsWide": 216}
+  - mile overlaps banner by 117x36px   [L1/toast+banner+mile, L2/toast+banner+mile, L3/toast+banner+mile, L4/toast+banner+mile, L5/toast+banner+mile, L6/toast+banner+mile]
+  errors: []
+
+===== 932x430 touch=True {"rot": 0, "stage": [932, 430], "u": 4.3, "unitsWide": 217}
+  - mile overlaps banner by 129x40px   [L1/toast+banner+mile, L2/toast+banner+mile, L3/toast+banner+mile, L4/toast+banner+mile, L5/toast+banner+mile, L6/toast+banner+mile]
+  errors: []
+
+===== 1024x768 touch=False {"rot": 0, "stage": [1024, 640], "u": 5.54, "unitsWide": 185}
+  - mile overlaps banner by 167x34px   [L1/toast+banner+mile, L2/toast+banner+mile, L3/toast+banner+mile, L4/toast+banner+mile, L5/toast+banner+mile, L6/toast+banner+mile]
+  errors: []
+
+===== 1280x720 touch=False {"rot": 0, "stage": [1280, 720], "u": 6.4, "unitsWide": 200}
+  - mile overlaps banner by 193x45px   [L1/toast+banner+mile, L2/toast+banner+mile, L3/toast+banner+mile, L4/toast+banner+mile, L5/toast+banner+mile, L6/toast+banner+mile]
+  errors: []
+
+===== 390x844 touch=True {"rot": 1, "stage": [844, 390], "u": 3.9, "unitsWide": 216}
+  - mile overlaps banner by 36x117px   [L1/toast+banner+mile, L2/toast+banner+mile, L3/toast+banner+mile, L4/toast+banner+mile, L5/toast+banner+mile, L6/toast+banner+mile]
+  errors: []
+
+===== 360x640 touch=True {"rot": 1, "stage": [640, 360], "u": 3.46, "unitsWide": 185}
+  - mile overlaps banner by 32x104px   [L1/toast+banner+mile, L2/toast+banner+mile, L3/toast+banner+mile, L4/toast+banner+mile, L5/toast+banner+mile, L6/toast+banner+mile]
+  errors: []
+
+real	0m24.245s
+user	0m3.575s
+sys	0m0.763s

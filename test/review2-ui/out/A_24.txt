@@ -1,0 +1,6 @@
+{"open":2.5} => {"sel": 1, "lvName": "黃沙風口", "frames": 76, "canvas": [1688, 780], "goDisabled": false, "afterGo": {"mode": "play", "frames": 106, "simTime": 0.55}} | errors: []
+{"up":{"dmg":2.5},"coins":500} => {"sel": 0, "lvName": "青丘試砲", "frames": 76, "canvas": [1688, 780], "goDisabled": false, "afterGo": {"mode": "play", "frames": 106, "simTime": 0.55}, "shopButtons": "240|80|80|80|80"} | errors: []
+
+real	0m6.569s
+user	0m1.089s
+sys	0m0.241s

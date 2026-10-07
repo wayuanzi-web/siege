@@ -1,0 +1,22 @@
+=== 844x390 dpr3
+before {'low': False, 'dprCap': 2, 'cv': [1688, 780], 's': 10.88, 'ft': 16.7, 'slowFrames': 0, 'started': True, 'state': 'play', 'phase': 'aim', 'round': 1, 'parts': 30}
+  t+0.0s {'low': False, 'dprCap': 2, 'cv': [1688, 780], 's': 10.88, 'ft': 35.3, 'slowFrames': 0, 'started': True, 'state': 'play', 'phase': 'resolve', 'round': 1, 'parts': 18} errors 0
+  t+2.2s {'low': True, 'dprCap': 2, 'cv': [1688, 780], 's': 10.88, 'ft': 50, 'slowFrames': 6, 'started': True, 'state': 'play', 'phase': 'resolve', 'round': 1, 'parts': 6} errors 0
+  t+4.2s {'low': True, 'dprCap': 1.5, 'cv': [1266, 585], 's': 8.15, 'ft': 50, 'slowFrames': 9, 'started': True, 'state': 'play', 'phase': 'resolve', 'round': 2, 'parts': 13} errors 0
+  t+6.0s {'low': True, 'dprCap': 1, 'cv': [844, 390], 's': 5.44, 'ft': 50, 'slowFrames': 8, 'started': True, 'state': 'play', 'phase': 'resolve', 'round': 3, 'parts': 226} errors 0
+after 6s at 60fps {'low': True, 'dprCap': 1, 'cv': [844, 390], 's': 5.44, 'ft': 16.7, 'slowFrames': 0, 'started': True, 'state': 'won', 'phase': 'over', 'round': 7, 'parts': 228}
+new level {'low': True, 'dprCap': 1, 'cv': [844, 390], 's': 5.44, 'ft': 16.7, 'slowFrames': 0, 'started': True, 'state': 'play', 'phase': 'intro', 'round': 0, 'parts': 0}
+errors: []
+=== 1920x1080 dpr2
+before {'low': False, 'dprCap': 2, 'cv': [1840, 1035], 's': 14.15, 'ft': 16.7, 'slowFrames': 0, 'started': True, 'state': 'play', 'phase': 'intro', 'round': 0, 'parts': 0}
+  t+0.0s {'low': False, 'dprCap': 2, 'cv': [1840, 1035], 's': 14.15, 'ft': 31, 'slowFrames': 0, 'started': True, 'state': 'play', 'phase': 'volley', 'round': 1, 'parts': 21} errors 0
+  t+3.8s {'low': True, 'dprCap': 2, 'cv': [1840, 1035], 's': 14.15, 'ft': 50, 'slowFrames': 6, 'started': True, 'state': 'play', 'phase': 'resolve', 'round': 1, 'parts': 20} errors 0
+  t+7.0s {'low': True, 'dprCap': 1.5, 'cv': [1840, 1035], 's': 14.15, 'ft': 50, 'slowFrames': 6, 'started': True, 'state': 'play', 'phase': 'resolve', 'round': 2, 'parts': 22} errors 0
+  t+10.0s {'low': True, 'dprCap': 1, 'cv': [1840, 1035], 's': 14.15, 'ft': 50, 'slowFrames': 1, 'started': True, 'state': 'play', 'phase': 'resolve', 'round': 2, 'parts': 3} errors 0
+after 6s at 60fps {'low': True, 'dprCap': 1, 'cv': [1840, 1035], 's': 14.15, 'ft': 16.7, 'slowFrames': 0, 'started': True, 'state': 'play', 'phase': 'hazard', 'round': 6, 'parts': 10}
+new level {'low': True, 'dprCap': 1, 'cv': [1840, 1035], 's': 14.15, 'ft': 16.7, 'slowFrames': 0, 'started': True, 'state': 'play', 'phase': 'intro', 'round': 0, 'parts': 0}
+errors: []
+
+real	1m36.959s
+user	0m14.779s
+sys	0m1.036s

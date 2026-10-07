@@ -1,0 +1,5 @@
+original right-click mid-drag: drag alive after it = False; aim [50.48, 56.41] -> [49.15, 59.54]; volleys on left release = 0
+original middle-click mid-drag: drag alive after it = False; aim [50.48, 56.41] -> [49.15, 59.54]; volleys on left release = 0
+PATCHED  right-click mid-drag: drag alive after it = True; aim [50.48, 56.41] -> [47.45, 75.61]; volleys on left release = 1
+PATCHED  middle-click mid-drag: drag alive after it = True; aim [50.48, 56.41] -> [47.45, 75.61]; volleys on left release = 1
+errors: []

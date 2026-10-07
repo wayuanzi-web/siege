@@ -1,0 +1,12 @@
+1. aim through gate: {'mask': 1, 'gates': [[1, 48, 36, 3]]}
+   aim away -> mask 0
+3. pops: [['赤符破！', 68, 49.5], ['怒火！下一輪打兩次', 56, 51], ['擋住了！', 22, 51.6], ['×5', 60, 51], ['screen top (world y)', 62.7]]
+   L6 pops: [['魔王飛回來了', 89.89999999999999, 57.2], ['擋住了！', 18.7, 55.1], ['screen top (world y)', 62.7]]
+4. frozen/brittle: {'frozen': [0, 0, 0], 'brit': 4, 'soot': 3, 'burning': 1, 'crewClass': ['cu', 'cu', 'cu']}
+5. balloon: {'st': 'run', 'x': 29.9, 'y': 46.2, 'top': 62.7}
+6. marks: {'marks': [[7.1, 28.924821537691532]], 'trail': 26}
+errors: []
+
+real	0m21.894s
+user	0m2.773s
+sys	0m0.348s

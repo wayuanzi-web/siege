@@ -42,7 +42,7 @@ def script(code):
 
 def full_page(extra_head, code):
     # 完整頁面：<title>、字型、樣式放進 <head>，其餘是 <body>
-    cut = head.index('<div id="app">')
+    cut = head.index('<div id="app"')
     return ('<!doctype html>\n<html lang="zh-Hant"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">'
             + extra_head + head[:cut] +

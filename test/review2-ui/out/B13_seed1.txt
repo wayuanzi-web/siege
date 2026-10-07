@@ -1,0 +1,6 @@
+350 random steps (seed 1): 0 problems. final state: {"bad": [], "open": "hud", "mode": "play", "top": null, "drag": false, "state": "won", "phase": "over"}
+action counts: {"again": 4, "blur": 80, "buy": 7, "closeBtn": 8, "diff": 3, "fire": 39, "go": 5, "hide": 66, "home": 2, "key:Enter": 6, "key:Escape": 13, "key:KeyP": 13, "key:KeyX": 16, "key:KeyZ": 7, "key:Space": 9, "key:Tab": 12, "lose": 2, "lvl": 7, "mouse:pause": 13, "next": 2, "openOpt": 10, "openShop": 4, "quit": 2, "resume": 3, "retry": 3, "toggle": 5, "unlock": 2, "win": 7}
+
+real	0m55.266s
+user	0m3.739s
+sys	0m0.628s

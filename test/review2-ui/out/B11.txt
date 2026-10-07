@@ -1,0 +1,35 @@
+  [PASS] left drag 85px: aims, fires once {"aim": [[54.43, 46], [52.37, 58.79]], "drag": {"id": 1, "type": "mouse", "far": 84.9, "live": true}}
+  [PASS] click without moving: no fire, aim unchanged 
+  [PASS] double-click: no fire {"sel": ""}
+  [PASS] hover (no button) does not move the aim 
+  [FAIL] right-click in the middle of a left drag: drag survives, no early fire, one volley on left release {"vMid": 0, "dragAfterRight": {"id": 1, "type": "mouse", "far": 72.1, "live": true}, "vEnd": 0, "ev": "pointerdown:mouse#1b0/1@cv gotpointercapture:mouse#1b-1/1@stage contextmenu:mouse#1b2/3@stage ctxmenu-default-prevented@stage auxclick:mouse#1b2/1@stage lostpointercapture:mouse#1b-1/1@stage pointerup:mouse#1b0/0@cv"}
+  [INFO] left released while right still held, then right released {"volleysAfterLeftUp": 0, "dragStillAliveAfterLeftUp": {"id": 1, "type": "mouse", "far": 72.1, "live": true}, "aimKeepsMovingWithOnlyRightHeld": [49.46, 69.29], "volleysAfterRightUp": 1, "ev": "pointerdown:mouse#1b0/1@cv gotpointercapture:mouse#1b-1/1@stage contextmenu:mouse#1b2/3@stage ctxmenu-default-prevented@stage click:mouse#1b0/2@stage lostpointercapture:mouse#1b-1/2@stage pointerup:mouse#1b2/0@cv"}
+  [PASS] right-button drag alone: nothing {"ev": "pointerdown:mouse#1b2/2@cv contextmenu:mouse#1b2/2@cv ctxmenu-default-prevented@cv pointerup:mouse#1b2/0@cv auxclick:mouse#1b2/0@cv"}
+  [INFO] right held first, then left drag {"drag": null, "aimMoved": false, "volleys": 0}
+  [PASS] middle-click in the middle of a left drag: one volley on left release {"vMid": 0, "drag": {"id": 1, "type": "mouse", "far": 72.1, "live": true}, "vEnd": 1, "ev": "pointerdown:mouse#1b0/1@cv gotpointercapture:mouse#1b-1/1@stage auxclick:mouse#1b1/1@stage lostpointercapture:mouse#1b-1/1@stage pointerup:mouse#1b0/0@cv"}
+  [PASS] middle-button drag alone: nothing {"scroll": [0, 0, 0]}
+  [PASS] right/middle click on HUD buttons: no action, no browser context menu {"btnUlt": {"armed": false, "sh": false, "v": 0, "mode": "play", "ev": "ctxmenu-default-prevented@SPAN"}, "btnShield": {"armed": false, "sh": false, "v": 0, "mode": "play", "ev": "ctxmenu-default-prevented@SPAN"}, "btnFire": {"armed": false, "sh": false, "v": 0, "mode": "play", "ev": "ctxmenu-default-prevented@SPAN"}, "btnPause": {"armed": false, "sh": false, "v": 0, "mode": "play", "ev": "ctxmenu-default-prevented@I"}}
+  [PASS] left click: ult arms once, shield once, double-click on fire = one volley {"armed": true, "shieldUses": 1, "volleys": 1, "focus": "btnPause"}
+  [PASS] mouse held 1.5s on 連珠 then released: stays armed {"ev": "pointerdown:mouse#1b0/1@SPAN pointerup:mouse#1b0/0@SPAN click:mouse#1b0/0@SPAN"}
+  [PASS] drag from canvas, release over 發射: exactly one volley 1
+  [PASS] press 發射 and drag out to the canvas: one volley (at press), aim untouched {"volleys": 1}
+  [INFO] dragged out past the window corner, released outside {"dragAliveOutside": {"id": 1, "type": "mouse", "far": 966, "live": true}, "aim": [31.46, 86], "volleys": 1, "ev": "pointerdown:mouse#1b0/1@cv gotpointercapture:mouse#1b-1/1@stage pointerup:mouse#1b0/0@stage lostpointercapture:mouse#1b0/0@stage click:mouse#1b0/0@stage"}
+  [PASS] after the outside release, hovering does not move the aim 
+  [FAIL] Space while mouse-dragging fires once; releasing the mouse during the volley does not fire again {"dragStillAlive": null}
+  [PASS] Esc pause + Esc resume in the middle of a mouse drag: release does not fire {"aimStillFollowsHeldMouse": false}
+  [INFO] mouse button held from round 1 (fired with Space) until my next turn, then released without moving {"round": 2, "volleysBefore": 1, "volleysAfterRelease": 2, "drag": {"id": 1, "type": "mouse", "far": 84.9, "live": true}}
+  [PASS] pen drag: aims and fires once {"drag": {"id": 2, "type": "pen", "far": 76.8, "live": true}, "aim": [[54.43, 46], [51.25, 57.35]], "volleys": 1, "ev": "pointerdown:pen#2b0/1@cv gotpointercapture:pen#2b-1/1@stage pointerup:pen#2b0/0@stage lostpointercapture:pen#2b0/0@stage click:pen#2b0/0@stage"}
+  [PASS] pen tap: no fire 
+  [PASS] pen hover: aim does not move 
+  [PASS] pen tap on 連珠: armed once (not toggled twice) {"ev": "pointerdown:pen#2b0/1@SPAN pointerup:pen#2b0/0@SPAN click:pen#2b0/0@SPAN"}
+  [PASS] pen tap on 發射: one volley 
+  [INFO] press in the black letterbox bar (above the stage) and drag into the field {"stage": [0, 64, 1024, 640], "drag": null, "aimMoved": false, "volleys": 0, "target": "app"}
+   console/page errors: []
+
+summary: PASS 19 FAIL 2 INFO 5
+   FAIL: right-click in the middle of a left drag: drag survives, no early fire, one volley on left release
+   FAIL: Space while mouse-dragging fires once; releasing the mouse during the volley does not fire again
+
+real	0m40.112s
+user	0m1.821s
+sys	0m0.236s

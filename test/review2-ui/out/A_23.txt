@@ -1,0 +1,12 @@
+tap 設定 hit: True | flip button visible: True
+tap 畫面上下顛倒 hit: True -> rot -1 saved flip True | turn hint shown again: True
+tap 返回 hit: True -> opt hidden True
+tap 出戰 hit: True -> mode play
+tap 暫停 hit: True -> mode pause
+tap 主畫面 hit: True -> mode home
+after reload rot: -1
+errors: []
+
+real	0m14.499s
+user	0m1.295s
+sys	0m0.184s

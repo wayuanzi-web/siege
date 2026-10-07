@@ -1,0 +1,50 @@
+portrait 390x844 rot=1 | save at boot: None | SV.seen False
+   0.0s r0 intro0    tut0 | chip「」 hint「」 say「」 banner「」 [rotate-phone overlay]
+   2.7s r1 resolve0  tut0 | chip「」 hint「」 say「」 banner「」
+   3.7s r1 resolve0  tut0 | chip「」 hint「」 say「」 banner「」  <== home screen
+   4.6s r0 intro0    tut1 | chip「」 hint「」 say「」 banner「」  <== tapped 出戰
+   6.1s r1 volley0   tut2 | chip「我方砲擊」 hint「」 say「」 banner「第一關青丘試砲」  <== dragged 58px + released during the intro (phase intro0)
+   9.8s r1 aim1      tut2 | chip「敵軍瞄準中」 hint「」 say「」 banner「」
+  11.5s r1 volley1   tut2 | chip「敵軍砲擊」 hint「」 say「」 banner「」
+  12.3s r1 resolve1  tut2 | chip「敵軍砲擊」 hint「」 say「」 banner「」  <== tapped once (no drag): volleys=1
+  14.0s r1 resolve1  tut2 | chip「敵軍砲擊」 hint「」 say「」 banner「」  <== tiny 8px drag: volleys=1
+  15.9s r2 aim0      tut3 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「」 banner「」
+  16.6s r2 aim0      tut3 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「這次讓虛線穿過藍色的倍增符：一發變三發」 banner「」
+  19.8s r2 volley0   tut3 | chip「我方砲擊」 hint「」 say「」 banner「」  <== round 2: dragged (6,29)px aim [46.9, 62.57] -> [40.37, 58.36]; fired=1
+  21.1s r2 resolve0  tut3 | chip「我方砲擊」 hint「」 say「就是這樣！穿過倍增符，砲彈變多了」 banner「」
+  22.2s r2 resolve0  tut3 | chip「我方砲擊」 hint「」 say「就是這樣！穿過倍增符，砲彈變多了」 banner「」 mile「百砲齊發」
+  23.2s r2 resolve0  tut3 | chip「我方砲擊」 hint「」 say「就是這樣！穿過倍增符，砲彈變多了」 banner「」
+  24.2s r2 resolve0  tut3 | chip「我方砲擊」 hint「」 say「」 banner「」
+  25.9s r2 aim1      tut3 | chip「敵軍瞄準中」 hint「」 say「」 banner「」
+  26.8s r2 aim1      tut3 | chip「敵軍瞄準中」 hint「」 say「漂亮的坍塌！一次垮得越多，「連珠」集得越快」 banner「」
+  28.0s r2 volley1   tut3 | chip「敵軍砲擊」 hint「」 say「漂亮的坍塌！一次垮得越多，「連珠」集得越快」 banner「」
+  28.8s r2 resolve1  tut3 | chip「敵軍砲擊」 hint「」 say「輪到敵軍了：按「護罩」可以擋下他們這一整輪」 banner「」
+  32.6s r2 resolve1  tut3 | chip「敵軍砲擊」 hint「」 say「」 banner「」
+  34.5s r3 aim0      tut4 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「」 banner「」
+  35.4s r3 aim0      tut4 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走」 banner「」
+  37.9s r3 aim0      tut4 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「打斷望樓的細柱子，上面整座會自己倒下來」 banner「」
+  38.9s r3 volley0   tut4 | chip「我方砲擊」 hint「」 say「打斷望樓的細柱子，上面整座會自己倒下來」 banner「」  <== round 3: dragged (32,28)px aim [40.37, 58.36] -> [29.43, 61.34]; fired=1
+  41.3s r3 resolve0  tut4 | chip「我方砲擊」 hint「」 say「」 banner「」
+  42.1s r3 resolve0  tut4 | chip「我方砲擊」 hint「」 say「打倒一個守軍！守軍全倒，城就破了」 banner「」
+  43.3s r3 aim1      tut4 | chip「敵軍瞄準中」 hint「」 say「打倒一個守軍！守軍全倒，城就破了」 banner「」
+  44.7s r3 volley1   tut4 | chip「敵軍砲擊」 hint「」 say「」 banner「」
+  49.6s r4 aim0      tut5 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「」 banner「」
+  53.7s r4 volley0   tut5 | chip「我方砲擊」 hint「」 say「」 banner「」  <== round 4: dragged (10,20)px aim [29.43, 61.34] -> [23.58, 61.28]; fired=1
+  56.9s r4 aim1      tut5 | chip「敵軍瞄準中」 hint「」 say「」 banner「」
+  58.8s r4 volley1   tut5 | chip「敵軍砲擊」 hint「」 say「」 banner「」
+  62.3s r5 aim0      tut5 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「」 banner「」
+  63.0s r5 aim0      tut5 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「「連珠」集滿了！按右下角金色按鈕上膛，這一輪每個兵連打三次」 banner「」
+  66.2s r5 volley0   tut5 | chip「我方砲擊」 hint「」 say「「連珠」集滿了！按右下角金色按鈕上膛，這一輪每個兵連打三次」 banner「」  <== round 5: dragged (42,0)px aim [23.58, 61.28] -> [19.86, 72.15]; fired=1
+  67.3s r5 resolve0  tut5 | chip「我方砲擊」 hint「」 say「」 banner「」
+  68.5s r5 over0     tut5 | chip「」 hint「」 say「」 banner「」
+  69.4s r5 over0     tut5 | chip「」 hint「」 say「」 banner「守軍全滅敵城攻破」
+  70.4s r5 over0     tut5 | chip「」 hint「」 say「」 banner「」
+  73.1s r5 over0     tut5 | chip「」 hint「」 say「」 banner「」  <== end of script: mode=result state=won me=92% foe=0%
+  75.4s r5 over0     tut5 | chip「」 hint「」 say「」 banner「」  <== result screen
+  result: {"title": "敵城攻破", "stars": 3, "bar": "92%", "hudBar": "92%", "coins": "+137", "tip": null}
+  save after: {"coins":137,"stars":[3,0,0,0,0,0],"open":2,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":true,"seenUlt":false,"seenSh":false,"diff":1,"flip":false}
+sheet (3376, 4290) 42 tiles; errors: []
+
+real	1m20.426s
+user	0m21.521s
+sys	0m0.859s

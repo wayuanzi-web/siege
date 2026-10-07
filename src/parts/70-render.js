@@ -3,7 +3,7 @@ const F_NUM = '"Lilita One", "NumFB", "Arial Black", system-ui, sans-serif';
 const F_ZH = '900 1px "Noto Serif TC", "Songti TC", "Source Han Serif TC", "PMingLiU", serif';
 const RD = {
   cv: null, c: null, t: 0, frame: 0, glow: {}, flame: null, flameKey: 0,
-  showAim: true, aimOn: false, aimT: 1.0, aimMask: 0, trail: null, sh: [0, 0], burn: []
+  showAim: true, aimOn: false, aimT: 1.0, aimMask: 0, aimFar: 0, trail: null, sh: [0, 0], burn: []
 };
 const GATE_COL = [
   { e: 'rgba(60,140,255,.36)', m: 'rgba(160,214,255,.62)', line: '#cfe6ff', glow: 'rgba(60,140,255,.30)', ink: '#0f2a78' },
@@ -286,11 +286,14 @@ function drawFlyers(c, t) {
     } else if (o.t === 'orb') {
       const x = X(o.x), y = Y(o.y), r = o.r * s * (1 + 0.06 * Math.sin(t * 12));
       if (o.st === 'hover') { c.strokeStyle = 'rgba(255,225,74,' + (0.45 + 0.35 * Math.sin(t * 6)) + ')'; c.lineWidth = Math.max(1.2, s * 0.3); c.setLineDash([s * 1.2, s * 1.2]); c.lineDashOffset = -t * s * 6; ell(c, x, y, r * 1.9, r * 1.9); c.stroke(); c.setLineDash([]); }
-      c.globalCompositeOperation = 'lighter'; const g = glowSprite(C_PINK); c.drawImage(g, x - r * 2.6, y - r * 2.6, r * 5.2, r * 5.2); c.globalCompositeOperation = 'source-over';
-      ell(c, x, y, r, r); c.fillStyle = rg(c, x - r * 0.3, y - r * 0.3, r * 0.1, r, [0, '#ffb0e6', 0.35, '#a024cc', 1, '#16042a']); c.fill(); c.strokeStyle = '#0c0410'; c.lineWidth = Math.max(1.5, s * 0.3); c.stroke();
-      c.strokeStyle = '#ffe14a'; c.lineWidth = Math.max(1.5, s * 0.45); c.beginPath(); c.arc(x, y, r * 1.35, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(o.hp / o.hm, 0, 1)); c.stroke();
+      // 被打爆、掉頭飛回去的光球換成藍白色（變成我方的了）
+      const mine = o.st === 'back';
+      c.globalCompositeOperation = 'lighter'; const g = glowSprite(mine ? C_SKY : C_PINK); c.drawImage(g, x - r * 2.6, y - r * 2.6, r * 5.2, r * 5.2); c.globalCompositeOperation = 'source-over';
+      ell(c, x, y, r, r); c.fillStyle = rg(c, x - r * 0.3, y - r * 0.3, r * 0.1, r, mine ? [0, '#ffffff', 0.35, '#58b8ff', 1, '#0a2a6a'] : [0, '#ffb0e6', 0.35, '#a024cc', 1, '#16042a']); c.fill(); c.strokeStyle = mine ? '#06183a' : '#0c0410'; c.lineWidth = Math.max(1.5, s * 0.3); c.stroke();
+      if (!mine) { c.strokeStyle = '#ffe14a'; c.lineWidth = Math.max(1.5, s * 0.45); c.beginPath(); c.arc(x, y, r * 1.35, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(o.hp / o.hm, 0, 1)); c.stroke(); }
       if (o.flash > 0) { c.globalAlpha = o.flash * 0.7; ell(c, x, y, r, r); c.fillStyle = '#fff'; c.fill(); c.globalAlpha = 1; }
-      if ((RD.frame & 1) === 0) part(P_EMBER, o.x + rndS() * 3, o.y + rndS() * 3, rndS() * 6, rndS() * 6, 0.5, 0.9, C_PURPLE);
+      if (mine) { part(P_SPARK, o.x + rndS() * 2, o.y + rndS() * 2, rndS() * 8, rndS() * 8, 0.35, 0.7, C_SKY); part(P_EMBER, o.x + rndS() * 2.5, o.y + rndS() * 2.5, rndS() * 5, rndS() * 5, 0.5, 1.0, C_WHITE); }
+      else if ((RD.frame & 1) === 0) part(P_EMBER, o.x + rndS() * 3, o.y + rndS() * 3, rndS() * 6, rndS() * 6, 0.5, 0.9, C_PURPLE);
     }
   }
   // 落石的預告：這一回合結束時會砸在這裡。落點一圈紅、往上一條虛線
@@ -402,12 +405,12 @@ function drawShields(c, t, rdt) {
 
 /* ---------- 瞄準 ---------- */
 // 一串圓點：照現在的角度、力道和風算出來的彈道（跟模擬用同一種算法，所以對得上）。
-// box：還在這座城樓的範圍裡的那一段不畫（自己的砲彈會穿過自己的城，畫出來反而亂）
-function aimDots(c, mx, my, vx, vy, t0, t1, tMax, r0, r1, box) {
+// box：還在這座城樓的範圍裡的那一段不畫（自己的砲彈會穿過自己的城，畫出來反而亂）；inside = true 則是只畫那一段（帶頭的那一發用，畫淡一點）
+function aimDots(c, mx, my, vx, vy, t0, t1, tMax, r0, r1, box, inside) {
   const w = S.wind, s = V.s; let n = 0;
   for (let tt = t0; tt <= t1; tt += 0.065) {
     const x = mx + vx * tt + 0.5 * w * tt * (tt + STEP), y = my + vy * tt - 0.5 * GRAV * tt * (tt + STEP);
-    if (box && x > box.x0 - 1 && x < box.x1 + 1.2 && y < box.y1 + 2.5) continue;
+    if (box && (x > box.x0 - 1 && x < box.x1 + 1.2 && y < box.y1 + 2.5) !== !!inside) continue;
     const px = X(x), py = Y(y), r = Math.max(1.3, s * lerp(r0, r1, tt / tMax));
     c.moveTo(px + r, py); c.arc(px, py, r, 0, TAU); n++;
   }
@@ -433,7 +436,13 @@ function drawAim(c, t) {
       if (!u.alive || !u.w || u.frozen > 0 || u.stun > 0) continue;
       const mx = u.x + 1.3, my = u.y + 2.3, inBox = u.x > box.x0 - 1 && u.x < box.x1 + 1 ? box : null;
       let end = maxT;
-      if (mine) { const R = simTrace(0, mx, my, vx, vy, S.wind, S.time, kmax); RD.aimMask |= R.gm; if (R.hit && R.t < end) end = R.t; }
+      if (mine) {
+        const R = simTrace(0, mx, my, vx, vy, S.wind, S.time, kmax); RD.aimMask |= R.gm; if (R.hit && R.t < end) end = R.t;
+        // 帶頭那一發的整條彈道會穿過哪些符（虛線畫不到那麼遠的也算）：符會亮起來。每四幀算一次就夠
+        if (first) { if ((RD.frame & 3) === 0) RD.aimFar = R.hit ? R.gm : simTrace(0, mx, my, vx, vy, S.wind, S.time).gm; RD.aimMask |= RD.aimFar; }
+      }
+      // 帶頭那一發在自己城裡的那一段：畫淡淡的小點（吊高打的時候，起頭那一段幾乎都在城裡，不畫就看不出自己瞄哪）
+      if (first && inBox && mine) { c.beginPath(); if (aimDots(c, mx, my, vx, vy, 0.05 + flow, end, maxT, 0.4, 0.3, inBox, true)) { c.fillStyle = 'rgba(255,255,255,.42)'; c.fill(); } }
       c.beginPath();
       if (!aimDots(c, mx, my, vx, vy, 0.05 + flow, end, maxT, first ? 0.6 : 0.36, first ? 0.26 : 0.18, inBox)) { first = false; continue; }
       c.fillStyle = mine ? (first ? 'rgba(255,255,255,.97)' : 'rgba(255,255,255,.55)') : 'rgba(255,255,255,.4)'; c.fill();

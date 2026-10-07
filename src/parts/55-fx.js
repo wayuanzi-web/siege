@@ -153,7 +153,6 @@ function fxOn(t, a, b, c, d, e, f) {
       break;
     }
     case 'yelp': pop(a, b, c ? '哇啊！' : '哇！', '#ffffff', 2.5, 0.8); break;
-    case 'pinned': pop(a, b, '被壓住了', c === 1 ? '#ffe14a' : '#ff8a7a', 2.5, 1.0); break;
     case 'uland': burst(P_DUST, a, b, 3, 8, 0.4, 1.4, C_SAND); break;
     case 'zap': {
       // a 欄位中心 x；b 劈到的高度；c 從多高劈下來
@@ -203,6 +202,7 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'build': part(P_DUST, a, b, 0, 3, 0.5, 2.2, C_WHITE); break;
     case 'orb': sfx('orb'); break;
     case 'orbdie': burst(P_SPARK, a, b, 22, 44, 0.7, 0.9, C_PINK); burst(P_SMOKE, a, b, 8, 12, 0.9, 2.6, C_PURPLE); ring(a, b, 1, 14, 0.45, '#ff9ad8', 0.7); pop(a, b + 5, '擊破！', '#ffe14a', 3.6, 1.0); shake(0.5); sfx('boom2'); break;
+    case 'orbback': burst(P_SPARK, a, b, 26, 46, 0.7, 0.9, C_SKY); ring(a, b, 1, 16, 0.45, '#bfe6ff', 0.8); ring(a, b, 12, 2, 0.3, '#ffffff', 0.5); pop(a, b + 6, '反彈！', '#8fe0ff', 4.2, 1.3); flash(0.2, '#cfeaff'); shake(0.5); slowmo(0.45, 0.5); sfx('ping'); sfx('orb'); vibrate(50); break;
     case 'bar': part(P_FLASH, a, b, 0, 0, 0.1, 2.2, C_PINK); burst(P_SPARK, a, b, 2, 14, 0.25, 0.4, C_PINK); sfx('shieldhit'); break;
     case 'barbreak': burst(P_SHARD, a, b, 16, 36, 0.9, 0.7, C_PINK, 8); ring(a, b, 1, 10, 0.4, '#ffffff', 0.5); pop(a, b + 5, '結界破！', '#ffe14a', 3.4, 1.0); sfx('gbreak'); shake(0.3); break;
     case 'barup': sfx('gspawn'); break;

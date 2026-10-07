@@ -1,0 +1,21 @@
+--- result screen (won level 1)
+  state {"mode": "result", "v": 0, "armed": false, "sh": false, "open": "result+hud", "inert": "home+hud"} | focus BODY
+  Tab x6 -> ['result:btnNext', 'result:btnAgain', 'result:btnUp', 'result:btnHome', 'BODY', 'result:btnNext']
+  Esc on result -> {"mode": "result", "v": 0, "armed": false, "sh": false, "open": "result+hud", "inert": "home+hud"}
+  P, Space, Enter, X, Z, ArrowUp on result with focus on body -> {"mode": "result", "v": 0, "armed": false, "sh": false, "open": "result+hud", "inert": "home+hud"} | focus BODY
+  focus result:btnUp
+  Enter on 強化 -> {"mode": "result", "v": 0, "armed": false, "sh": false, "open": "shop+result+hud", "inert": "opt+result+home+hud"} | focus BODY
+  Tab x9 in shop over result -> ['shop:80', 'shop:80', 'shop:80', 'shop:80', 'shop:80', 'shop:返回', 'BODY', 'shop:80', 'shop:80']
+  Esc -> {"mode": "result", "v": 0, "armed": false, "sh": false, "open": "result+hud", "inert": "home+hud"} | focus BODY
+  Tab x2 -> ['result:btnNext', 'result:btnAgain']
+  Esc again -> {"mode": "result", "v": 0, "armed": false, "sh": false, "open": "result+hud", "inert": "home+hud"}
+  Enter on 下一關 -> {"mode": "play", "v": 0, "armed": false, "sh": false, "open": "hud", "inert": ""} idx 1 | focus BODY
+  Space -> volleys 1
+--- result screen (lost level 3)
+  Tab x5 -> ['result:btnAgain', 'result:btnUp', 'result:btnHome', 'BODY', 'result:btnAgain']
+  Enter on 回主畫面 -> {"mode": "home", "v": 0, "armed": false, "sh": false, "open": "home", "inert": ""} | focus BODY
+errors: []
+
+real	0m17.639s
+user	0m1.042s
+sys	0m0.194s

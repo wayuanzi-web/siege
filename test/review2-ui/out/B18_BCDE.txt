@@ -1,0 +1,18 @@
+result buttons at {"btnNext": [236, 262], "btnAgain": [422, 262], "btnUp": [608, 262], "btnHome": [422, 315]}
+B. tapping repeatedly during the 4.2s collapse (trying to skip)
+   tapping every ~120ms where btnNext appears: result first seen at tap #21, left the result screen at tap #22 -> {"mode": "play", "idx": 1, "state": "play", "v": 0, "result": false, "shop": false}
+   tapping every ~120ms where btnAgain appears: result first seen at tap #None, left the result screen at tap #24 -> {"mode": "play", "idx": 0, "state": "play", "v": 0, "result": false, "shop": false}
+   tapping every ~120ms where btnHome appears: result first seen at tap #25, left the result screen at tap #25 -> {"mode": "home", "idx": 1, "state": "play", "v": 0, "result": false, "shop": false}
+C. one finger resting on the screen, another finger taps a modal button
+   result screen, thumb resting at (150,300): tap 下一關 with another finger -> mode result (tapped twice: result); events: pointerdown#77@SPAN touchstart@SPAN pointerup#77@SPAN touchend@SPAN
+   after lifting the resting thumb: mode result; tapping 下一關 again -> mode play idx 1
+   aiming finger still down, 2nd finger taps 暫停 -> pause; 2nd finger taps 繼續 -> pause (events: pointerdown#82@SPAN touchstart@SPAN pointerup#82@SPAN touchend@SPAN); after lifting the first finger and tapping 繼續 -> play
+D. aiming finger lifts at the same moment another finger presses 發射
+   volleys after near-simultaneous lift+press: 1 | drag left over: False
+E. five fingers down together on the field, then all lifted
+   drag while 5 fingers down: {'id': 86, 'far': 36} | volleys after lifting all: 1 | aim [54.43, 46] -> [50.79, 55.41] | drag left over: False
+errors: []
+
+real	0m39.089s
+user	0m1.527s
+sys	0m0.214s

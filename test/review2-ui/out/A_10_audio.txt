@@ -1,0 +1,9 @@
+audio no AudioContext => {"boot": {"mode": "home", "lvls": 6, "cv": [1688, 780], "sel": 0, "open": 1, "coins": 0, "up": {"dmg": 0, "aim": 0, "hp": 0, "shield": 0, "ult": 0}, "stars": [0, 0, 0, 0, 0, 0], "go": false, "homeCoins": "0"}, "shop": "80|80|80|80|80", "play": "resolve shots=10 au=none mus=false", "home": "home", "errors": []}
+audio constructor throws => {"boot": {"mode": "home", "lvls": 6, "cv": [1688, 780], "sel": 0, "open": 1, "coins": 0, "up": {"dmg": 0, "aim": 0, "hp": 0, "shield": 0, "ult": 0}, "stars": [0, 0, 0, 0, 0, 0], "go": false, "homeCoins": "0"}, "shop": "80|80|80|80|80", "play": "resolve shots=10 au=none mus=false", "home": "home", "errors": []}
+audio resume() rejects => {"boot": {"mode": "home", "lvls": 6, "cv": [1688, 780], "sel": 0, "open": 1, "coins": 0, "up": {"dmg": 0, "aim": 0, "hp": 0, "shield": 0, "ult": 0}, "stars": [0, 0, 0, 0, 0, 0], "go": false, "homeCoins": "0"}, "shop": "80|80|80|80|80", "play": "resolve shots=10 au=running mus=true", "home": "home", "errors": []}
+audio no navigator.vibrate => {"boot": {"mode": "home", "lvls": 6, "cv": [1688, 780], "sel": 0, "open": 1, "coins": 0, "up": {"dmg": 0, "aim": 0, "hp": 0, "shield": 0, "ult": 0}, "stars": [0, 0, 0, 0, 0, 0], "go": false, "homeCoins": "0"}, "shop": "80|80|80|80|80", "play": "resolve shots=10 au=running mus=true", "home": "home", "errors": []}
+zero-size boot {'cv': [1, 1], 's': 1} => after show {"boot": {"mode": "home", "lvls": 6, "cv": [1688, 780], "sel": 0, "open": 1, "coins": 0, "up": {"dmg": 0, "aim": 0, "hp": 0, "shield": 0, "ult": 0}, "stars": [0, 0, 0, 0, 0, 0], "go": false, "homeCoins": "0"}, "shop": "80|80|80|80|80", "play": "resolve shots=10 au=running mus=true", "home": "home", "errors": []}
+
+real	0m21.065s
+user	0m1.559s
+sys	0m0.413s

@@ -1,0 +1,13 @@
+result buttons at {"btnNext": [236, 262], "btnAgain": [422, 262], "btnUp": [608, 262], "btnHome": [422, 315]}
+errors: []
+F. do the modals overflow on small phones, and can they be scrolled by touch?
+   390x844 rot=1 u=3.900px: shop: content 390px in 390px ok | options: content 390px in 390px ok | pause: content 390px in 390px ok | result-win: content 390px in 390px ok | result-lose: content 390px in 390px ok | errors []
+   360x640 rot=1 u=3.459px: shop: content 360px in 360px ok | options: content 360px in 360px ok | pause: content 360px in 360px ok | result-win: content 360px in 360px ok | result-lose: content 360px in 360px ok | errors []
+   320x568 rot=1 u=3.070px: shop: content 320px in 320px ok | options: content 320px in 320px ok | pause: content 320px in 320px ok | result-win: content 320px in 320px ok | result-lose: content 320px in 320px ok | errors []
+   280x653 rot=1 u=2.900px: shop: content 300px in 280px -> OVERFLOWS by 20px; swipe scroll result {'screen-up': 0, 'screen-down': 0, 'screen-left': 0, 'screen-right': 0} | options: content 280px in 280px ok | pause: content 280px in 280px ok | result-win: content 282px in 280px -> OVERFLOWS by 2px; swipe scroll result {'screen-up': 0, 'screen-down': 0, 'screen-left': 0, 'screen-right': 0} | result-lose: content 280px in 280px ok | errors []
+   568x320 rot=0 u=3.070px: shop: content 320px in 320px ok | options: content 320px in 320px ok | pause: content 320px in 320px ok | result-win: content 320px in 320px ok | result-lose: content 320px in 320px ok | errors []
+   640x360 rot=0 u=3.459px: shop: content 360px in 360px ok | options: content 360px in 360px ok | pause: content 360px in 360px ok | result-win: content 360px in 360px ok | result-lose: content 360px in 360px ok | errors []
+
+real	1m44.175s
+user	0m3.163s
+sys	0m0.796s

@@ -1,0 +1,6 @@
+844x390 dpr2 { "L1": { "startLevel": [ 46, 14, 10 ], "firstFrame": 25, "layoutRebuild": 12, "frameAfterRebuild": 32 }, "L2": { "startLevel": [ 26, 18, 14 ], "firstFrame": 54, "layoutRebuild": 7, "frameAfterRebuild": 44 }, "L3": { "startLevel": [ 66, 16, 10 ], "firstFrame": 47, "layoutRebuild": 6, "frameAfterRebuild": 37 }, "L4": { "startLevel": [ 32, 15, 15 ], "firstFrame": 62, "layoutRebuild": 14, "frameAfterRebuild": 58 }, "L5": { "startLevel": [ 51, 43, 41 ], "firstFrame": 85, "layoutRebuild": 42, "frameAfterRebuild": 72 }, "L6": { "startLevel": [ 24, 19, 16 ], "firstFrame": 57, "layoutRebuild": 12, "frameAfterRebuild": 57 } }
+932x430 dpr3 { "L1": { "startLevel": [ 40, 15, 13 ], "firstFrame": 28, "layoutRebuild": 11, "frameAfterRebuild": 29 }, "L2": { "startLevel": [ 21, 13, 9 ], "firstFrame": 53, "layoutRebuild": 14, "frameAfterRebuild": 47 }, "L3": { "startLevel": [ 63, 13, 12 ], "firstFrame": 52, "layoutRebuild": 7, "frameAfterRebuild": 41 }, "L4": { "startLevel": [ 35, 14, 14 ], "firstFrame": 73, "layoutRebuild": 14, "frameAfterRebuild": 62 }, "L5": { "startLevel": [ 56, 48, 45 ], "firstFrame": 83, "layoutRebuild": 43, "frameAfterRebuild": 86 }, "L6": { "startLevel": [ 20, 14, 15 ], "firstFrame": 62, "layoutRebuild": 13, "frameAfterRebuild": 59 } }
+
+real	0m5.617s
+user	0m0.762s
+sys	0m0.235s

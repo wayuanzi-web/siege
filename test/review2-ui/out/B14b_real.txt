@@ -1,0 +1,14 @@
+REAL build, real time. L2 round 1, 0.7s into my turn: {"txt": "沙城閣樓堆著大石球：打斷撐著它的", "opacity": 1}
+  1.5s into the pause menu: {"txt": "沙城閣樓堆著大石球：打斷撐著它的", "opacity": 1} (the toast is dimmed behind the menu)
+  resumed after 7s: {"txt": "沙城閣樓堆著大石球：打斷撐著它的", "opacity": 0} | mode play
+  every toast written during this session:
+      1958 ms  round 1 play 沙城閣樓堆著大石球：打斷撐著它的木樑，石球就砸在兵的頭上
+      16202 ms  round 2 play 起風了！每回合風向都會變，虛線已經把風算進去
+      19541 ms  round 2 play 紫色的折損符會吃掉一半砲彈，別穿過去
+      22482 ms  round 3 play 敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它
+  round-1 hint shown again after the pause: False
+errors: []
+
+real	0m23.369s
+user	0m1.505s
+sys	0m0.209s

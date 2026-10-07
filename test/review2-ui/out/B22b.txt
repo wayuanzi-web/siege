@@ -1,0 +1,15 @@
+1. clicked 出戰 inside the iframe: {"mode": "play", "phase": "aim0", "volleys": 0, "aim": 54.4, "frameHasFocus": true} | host {"hostActive": "f", "hostText": "", "hostKeys": "", "hostScrollY": 0}
+   ArrowUp 0.3s + Space: {"mode": "play", "phase": "volley0", "volleys": 1, "aim": 65.3, "frameHasFocus": true}
+2. clicked the host page text box: {"mode": "play", "phase": "aim0", "volleys": 1, "aim": 65.3, "frameHasFocus": false} | host {"hostActive": "t", "hostText": "", "hostKeys": "", "hostScrollY": 0}
+   clicked the battlefield inside the iframe: {"mode": "play", "phase": "aim0", "volleys": 1, "aim": 65.3, "frameHasFocus": false} | host {"hostActive": "t", "hostText": "", "hostKeys": "", "hostScrollY": 0}
+   ArrowUp 0.3s + Space + P: {"mode": "play", "phase": "aim0", "volleys": 1, "aim": 65.3, "frameHasFocus": false} | host {"hostActive": "t", "hostText": " p", "hostKeys": "ArrowUp,Space,KeyP", "hostScrollY": 0}
+   -> game reacted to the keys: False | keys ended up in the host page: True | typed into the host text box: ' p'
+   after a real aim drag + release (fired), next turn Space: NOT fired | frame has focus False | host got Space
+   clicked #btnFire: frame has focus False
+   clicked #btnShield: frame has focus False
+3. pause (mouse): frame focus False -> click 繼續: frame focus True -> Space fires
+errors: []
+
+real	0m11.640s
+user	0m0.876s
+sys	0m0.116s

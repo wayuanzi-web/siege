@@ -1,0 +1,46 @@
+touch 844x390 rot=0 | save at boot: None | SV.seen False
+   0.0s r0 intro0    tut0 | chip「」 hint「」 say「」 banner「」
+   0.8s r1 aim0      tut0 | chip「」 hint「」 say「」 banner「」  <== home screen
+   1.4s r0 intro0    tut1 | chip「」 hint「」 say「」 banner「」  <== tapped 出戰
+   2.4s r0 intro0    tut1 | chip「」 hint「」 say「」 banner「第一關青丘試砲」  <== dragged 58px + released during the intro (phase intro0)
+   2.8s r1 aim0      tut1 | chip「輪到你：拖曳瞄準，放開發射」 hint「按住畫面任何地方拖曳：往」 say「」 banner「第一關青丘試砲」
+   3.3s r1 aim0      tut1 | chip「輪到你：拖曳瞄準，放開發射」 hint「按住畫面任何地方拖曳：往」 say「」 banner「」
+   4.6s r1 aim0      tut1 | chip「輪到你：拖曳瞄準，放開發射」 hint「按住畫面任何地方拖曳：往」 say「」 banner「」  <== tapped once (no drag): volleys=0
+   5.9s r1 aim0      tut1 | chip「輪到你：拖曳瞄準，放開發射」 hint「按住畫面任何地方拖曳：往」 say「」 banner「」  <== tiny 8px drag: volleys=0
+   9.4s r1 volley0   tut2 | chip「我方砲擊」 hint「」 say「」 banner「」  <== round 1: dragged (6,29)px aim [46.9, 62.57] -> [40.45, 58.26]; fired=1
+  10.4s r1 resolve0  tut2 | chip「我方砲擊」 hint「」 say「就是這樣！穿過倍增符，砲彈變多了」 banner「」
+  13.6s r1 resolve0  tut2 | chip「我方砲擊」 hint「」 say「」 banner「」
+  14.2s r1 aim1      tut2 | chip「敵軍瞄準中」 hint「」 say「」 banner「」
+  15.4s r1 volley1   tut2 | chip「敵軍砲擊」 hint「」 say「」 banner「」
+  17.9s r2 aim0      tut3 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「」 banner「」
+  21.7s r2 volley0   tut3 | chip「我方砲擊」 hint「」 say「」 banner「」  <== round 2: dragged (31,30)px aim [40.45, 58.26] -> [29.33, 60.51]; fired=1
+  22.9s r2 resolve0  tut3 | chip「我方砲擊」 hint「」 say「」 banner「」 mile「彈如雨下」
+  24.1s r2 resolve0  tut3 | chip「我方砲擊」 hint「」 say「」 banner「」
+  26.5s r2 aim1      tut3 | chip「敵軍瞄準中」 hint「」 say「」 banner「」
+  26.9s r2 aim1      tut3 | chip「敵軍瞄準中」 hint「」 say「輪到敵軍了：按「護罩」可以擋下他們這一整輪」 banner「」
+  28.1s r2 volley1   tut3 | chip「敵軍砲擊」 hint「」 say「輪到敵軍了：按「護罩」可以擋下他們這一整輪」 banner「」
+  30.3s r2 resolve1  tut3 | chip「敵軍砲擊」 hint「」 say「」 banner「」
+  31.9s r3 aim0      tut4 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「」 banner「」
+  32.3s r3 aim0      tut4 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走」 banner「」
+  35.1s r3 aim0      tut4 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「」 banner「」
+  35.8s r3 volley0   tut4 | chip「我方砲擊」 hint「」 say「打斷望樓的細柱子，上面整座會自己倒下來」 banner「」  <== round 3: dragged (15,20)px aim [29.33, 60.51] -> [22.97, 61.92]; fired=1
+  37.2s r3 resolve0  tut4 | chip「我方砲擊」 hint「」 say「打斷望樓的細柱子，上面整座會自己倒下來」 banner「」 mile「百砲齊發」
+  38.0s r3 resolve0  tut4 | chip「我方砲擊」 hint「」 say「打倒一個守軍！守軍全倒，城就破了」 banner「」 mile「百砲齊發」
+  38.7s r3 resolve0  tut4 | chip「我方砲擊」 hint「」 say「打倒一個守軍！守軍全倒，城就破了」 banner「」
+  40.1s r3 aim1      tut4 | chip「敵軍瞄準中」 hint「」 say「打倒一個守軍！守軍全倒，城就破了」 banner「」
+  41.1s r3 aim1      tut4 | chip「敵軍瞄準中」 hint「」 say「」 banner「」
+  41.7s r3 volley1   tut4 | chip「敵軍砲擊」 hint「」 say「」 banner「」
+  46.4s r4 aim0      tut5 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「」 banner「」
+  50.0s r4 volley0   tut5 | chip「我方砲擊」 hint「」 say「」 banner「」  <== round 4: dragged (26,0)px aim [22.97, 61.92] -> [20.61, 68.64]; fired=1
+  52.0s r4 over0     tut5 | chip「」 hint「」 say「」 banner「」
+  52.7s r4 over0     tut5 | chip「」 hint「」 say「」 banner「守軍全滅敵城攻破」
+  53.7s r4 over0     tut5 | chip「」 hint「」 say「」 banner「」
+  56.2s r4 over0     tut5 | chip「」 hint「」 say「」 banner「」  <== end of script: mode=result state=won me=95% foe=0%
+  58.1s r4 over0     tut5 | chip「」 hint「」 say「」 banner「」  <== result screen
+  result: {"title": "敵城攻破", "stars": 3, "bar": "95%", "hudBar": "95%", "coins": "+139", "tip": null}
+  save after: {"coins":139,"stars":[3,0,0,0,0,0],"open":2,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":true,"seenUlt":false,"seenSh":false,"diff":1,"flip":false}
+sheet (3376, 3900) 38 tiles; errors: []
+
+real	1m1.928s
+user	0m11.716s
+sys	0m0.770s

@@ -1,0 +1,24 @@
+===== landscape 844x390 rot=0
+  btnShield: single-finger tap -> shieldOn=True | tap with 2nd finger while 1st is aiming -> shieldOn=True (drag alive True)
+      events: pointerdown#3@cv touchstart@cv pointerdown#4@SPAN touchstart@SPAN pointerup#4@SPAN touchend@SPAN
+  btnUlt: single-finger tap -> ultArmed=True | tap with 2nd finger while 1st is aiming -> ultArmed=True (drag alive True)
+      events: pointerdown#6@cv touchstart@cv pointerdown#7@SPAN touchstart@SPAN pointerup#7@SPAN touchend@SPAN
+  btnFire: single-finger tap -> volleys=1 | tap with 2nd finger while 1st is aiming -> volleys=1 (drag alive True)
+      events: pointerdown#9@cv touchstart@cv pointerdown#10@SPAN touchstart@SPAN pointerup#10@SPAN touchend@SPAN
+  btnPause: single-finger tap -> mode=pause | tap with 2nd finger while 1st is aiming -> mode=pause (drag alive False)
+      events: pointerdown#12@cv touchstart@cv pointerdown#13@I touchstart@I pointerup#13@I touchend@I
+  errors: []
+===== portrait 390x844 rot=1
+  btnShield: single-finger tap -> shieldOn=True | tap with 2nd finger while 1st is aiming -> shieldOn=True (drag alive True)
+      events: pointerdown#3@cv touchstart@cv pointerdown#4@SPAN touchstart@SPAN pointerup#4@SPAN touchend@SPAN
+  btnUlt: single-finger tap -> ultArmed=True | tap with 2nd finger while 1st is aiming -> ultArmed=True (drag alive True)
+      events: pointerdown#6@cv touchstart@cv pointerdown#7@SPAN touchstart@SPAN pointerup#7@SPAN touchend@SPAN
+  btnFire: single-finger tap -> volleys=1 | tap with 2nd finger while 1st is aiming -> volleys=1 (drag alive True)
+      events: pointerdown#9@cv touchstart@cv pointerdown#10@SPAN touchstart@SPAN pointerup#10@SPAN touchend@SPAN
+  btnPause: single-finger tap -> mode=pause | tap with 2nd finger while 1st is aiming -> mode=pause (drag alive False)
+      events: pointerdown#12@cv touchstart@cv pointerdown#13@I touchstart@I pointerup#13@I touchend@I
+  errors: []
+
+real	0m35.217s
+user	0m1.743s
+sys	0m0.330s

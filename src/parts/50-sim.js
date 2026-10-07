@@ -25,7 +25,8 @@ const DIFFS = [
 ];
 const BAR_TH = 0.15;       // 城樓完整度：還留在原位的磚剩不到這個比例就算全毀
 const BASE_HP = 4;         // 城基的石磚特別厚：一輪齊射打不穿（不然轟一下牆腳，整座城連人一起倒，沒得打）
-const BASE_WT = 0.125;     // 城基的磚在城防裡只算一點點（主要看上面的樓閣）
+const BOSS_SOFT = 0.35;     // 魔王跨過換階段門檻的那一輪，超過門檻的傷害打幾折
+const BASE_WT = 0.05;      // 城基的磚在城防裡只算一點點（主要看上面的樓閣）
 const SPLIT_P = 0.6;       // 砲彈穿過倍增符後，每一發的威力打幾折：數量 ×n，總威力大約 ×n^(1-SPLIT_P)
 const SHOT_CAP = 520;      // 每一邊同時在天上的砲彈上限（超過就改成加重）
 function ev(t, a, b, c, d, e, f) { if (S.on) S.on(t, a, b, c, d, e, f); }
@@ -110,8 +111,9 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
   if (base >= rows) base = 0;
   st.base = base;
   for (const b of st.blocks) {
-    if (b.cy < base && !b.prop && b.mat !== M_WOOD) { b.hp *= BASE_HP; b.hm *= BASE_HP; b.base = true; }
-    b.wt = b.mat === M_KEG || b.prop ? 0 : b.cy < base ? BASE_WT : 1; st.hp0 += b.hm * b.wt;
+    const low = b.cy + b.ch <= base;
+    if (low && !b.prop && b.mat !== M_WOOD) { b.hp *= BASE_HP; b.hm *= BASE_HP; b.base = true; }
+    b.wt = b.mat === M_KEG || b.prop ? 0 : low ? BASE_WT : 1; st.hp0 += b.hm * b.wt;
   }
   st.hpNow = st.hp0; st.slots.sort((a, b) => a.slot - b.slot);
   for (let i = 0; i < n; i++) { st.backTo[i] = st.cellK[i] ? 1 : 0; st.back[i] = st.backTo[i]; }
@@ -161,7 +163,21 @@ function mkUnit(side, type, st, slot, hpMul) {
 }
 function hurtUnit(u, d, side, kind) {
   if (!u.alive || d <= 0) return;
+  const boss = u.def.big && S.boss ? S.boss : null;
+  if (boss) {
+    /* 魔王換階段：血一掉過門檻就馬上換（第二階段的結界當場張開）。跨過門檻的那一輪，超過的傷害只算三成五，
+       而且最多打到下一個門檻上面一點：連珠砲穿過倍增符一輪幾百點，不這樣會直接跳過結界和暴怒，什麼都沒看到就打完了 */
+    const lb = S.lv.boss;
+    if (boss.softVol === S.vol) d *= BOSS_SOFT;
+    else {
+      const th = u.hpMax * (boss.phase === 1 ? lb.p2 : boss.phase === 2 ? lb.p3 : -1);
+      if (th > 0 && u.hp - d < th) { const pre = Math.max(0, u.hp - th); d = pre + (d - pre) * BOSS_SOFT; boss.softVol = S.vol; boss.softLo = u.hpMax * (boss.phase === 1 ? lb.p3 + 0.05 : 0.08); }
+    }
+    if (boss.softVol === S.vol && u.hp - d < boss.softLo) d = Math.max(0, u.hp - boss.softLo);
+    if (d <= 0) { u.hurtT = 0.25; return; }
+  }
   u.hp -= d; u.hurtT = 0.25;
+  if (boss && u.hp > 0) bossPhase(u);
   if (side < 2 && side !== u.side) { const T = S.team[side]; T.ult.c = Math.min(T.ult.need, T.ult.c + d * T.ult.gain * 0.6); }
   if (u.hp <= 0) killUnit(u, side, kind === K_CRUSH ? 1 : kind === K_FIRE ? 3 : 0);
 }
@@ -203,23 +219,6 @@ function unitsStep(dt) {
     // 被轟出自己的城、落地站定了：也算出局（守不了城了）。魔王會自己飛回去
     const st = u.st;
     if ((u.x < st.x0 - OUT_M || u.x > st.x1 + OUT_M) && !u.air) { u.outT += dt; if (u.outT > 0.6) { if (u.def.big) bossReturn(u); else killUnit(u, 1 - u.side, 5); } } else u.outT = 0;
-  }
-}
-// 被壓住：對方一輪打完，被埋在瓦礫裡的兵會受傷（壓得越重傷得越重），壓久了就撐不住。
-// 只算挨打的那一邊，一回合一次。還站在自己位置上、頭上只頂著一點東西的不算（那是屋樑歪了，不是被埋）
-function burialCheck() {
-  const credit = S.turn;
-  for (const u of S.units) {
-    if (!u.alive || u.def.big || u.side === credit) continue;
-    const p = u.body.getPosition(); let load = 0;
-    for (let ce = u.body.getContactList(); ce; ce = ce.next) {
-      if (!ce.contact.isTouching()) continue;
-      const o = ce.other.getUserData(); if (!o || !o.isBlock || o.dead) continue;
-      const q = ce.other.getPosition();
-      if (q.y > p.y + u.bh * 0.3 && Math.abs(q.x - p.x) < o.w / 2 + u.bw * 0.4) load += o.mass;
-    }
-    const moved = Math.abs(u.x - u.hx) > CS * 0.8 || Math.abs(u.y - u.hy) > CS * 0.6;
-    if (load > (moved ? 3 : 30)) { ev('pinned', u.x, u.y + 4.6, u.side); hurtUnit(u, 14 + Math.min(load, 80) * 0.7, credit, K_CRUSH); }
   }
 }
 
@@ -495,9 +494,13 @@ function grantBonus(side, kind, x, y) {
     if (u) {
       // 回到原本的位置；那裡的樓板已經不在（或被磚佔住）就站到那個位置現在最高的東西上面，不會摔傷
       u.alive = true; u.hp = u.hpMax * 0.7; u.frozen = 0; u.stun = 0; u.dazed = 0; u.outT = 0; u.dieT = 0; u.x = u.hx; u.y = u.hy + 0.2;
-      let top = -999; PH.world.rayCast({ x: u.x, y: st.y1 + 30 }, { x: u.x, y: st.y0 - 2 }, (f, pt, n, fr) => { const o = f.getUserData(); if (o && !o.isBlock) return -1; top = pt.y; return fr; });
-      const q = physQuery(u.x, u.y + 1.5, 2); let blocked = false; for (const o of q) if (o.isBlock && !o.dead && blockDist(o, u.x, u.y + 1.5) < 1.6) blocked = true;
-      if (blocked || top < u.hy - 0.6 || top > u.hy + 0.6) u.y = (top > -900 ? top : st.y0) + 0.25;
+      // 腳下有沒有東西：從原位的腰部往下看一小段；身體那一格有沒有被磚佔住
+      let floor = -999; PH.world.rayCast({ x: u.x, y: u.hy + 1.2 }, { x: u.x, y: u.hy - 1.2 }, (f, pt, n, fr) => { const o = f.getUserData(); if (o && !o.isBlock) return -1; floor = pt.y; return fr; });
+      const q = physQuery(u.x, u.hy + 1.6, 2); let blocked = false; for (const o of q) if (o.isBlock && !o.dead && blockDist(o, u.x, u.hy + 1.6) < 1.25) blocked = true;
+      if (blocked || floor < u.hy - 0.7 || floor > u.hy + 0.5) {
+        let top = -999; PH.world.rayCast({ x: u.x, y: st.y1 + 30 }, { x: u.x, y: st.y0 - 2 }, (f, pt, n, fr) => { const o = f.getUserData(); if (o && !o.isBlock) return -1; top = pt.y; return fr; });
+        u.y = (top > -900 ? top : st.y0) + 0.25;
+      } else u.y = floor + 0.1;
       mkUnitBody(u); u.body.setAwake(true);
       T.alive++; ev('revive', u.x, u.y, side, u.slot);
     } else kind = 'heal';
@@ -508,7 +511,7 @@ function grantBonus(side, kind, x, y) {
   ev('bonus', x, y, side, kind);
 }
 // 飛行物還在動嗎（這一輪還不能結束）
-function flyersBusy() { for (const o of S.objs) if ((o.t === 'balloon' || o.t === 'orb') && (o.st === 'out' || o.st === 'run')) return true; return false; }
+function flyersBusy() { for (const o of S.objs) if ((o.t === 'balloon' || o.t === 'orb') && (o.st === 'out' || o.st === 'run' || o.st === 'back')) return true; return false; }
 function objsStep(dt) {
   const objs = S.objs;
   for (let i = objs.length - 1; i >= 0; i--) {
@@ -547,7 +550,20 @@ function objsStep(dt) {
       }
       case 'orb': {
         o.age += dt;
-        if (o.hp <= 0) { ev('orbdie', o.x, o.y); const T = S.team[0]; T.ult.c = Math.min(T.ult.need, T.ult.c + 16); gone = true; break; }
+        if (o.st === 'back') {
+          // 被我方打爆的光球：掉頭飛回去，砸在魔王自己身上（結界和城牆都擋不住它）
+          const bu = bossUnit(); if (bu && bu.alive) { const p = bu.body.getPosition(); o.tx = p.x; o.ty = p.y; }
+          const dx = o.tx - o.x, dy = o.ty - o.y, d = Math.hypot(dx, dy) || 1, v = (16 + o.age * 90) * dt;
+          if (o.age > 0.25 && d <= v + 1.2) { physExplode(o.tx, o.ty, WPN.doom, 0, 1, 0, bu && bu.alive ? bu : null, dx / d, dy / d); gone = true; break; }
+          if (o.age > 0.25) { o.x += dx / d * v; o.y += dy / d * v; }
+          break;
+        }
+        if (o.hp <= 0) {
+          const T = S.team[0], bu = bossUnit(); T.ult.c = Math.min(T.ult.need, T.ult.c + 16);
+          if (o.st !== 'run' && bu && bu.alive) { o.st = 'back'; o.side = 0; o.age = 0; o.hp = 0; o.tx = bu.x; o.ty = bu.y; ev('orbback', o.x, o.y); }
+          else { ev('orbdie', o.x, o.y); gone = true; }
+          break;
+        }
         if (o.st === 'out') { const k = Math.min(1, dt * 1.4); o.x += (o.hx - o.x) * k; o.y += (o.hy - o.y) * k; if (Math.abs(o.x - o.hx) < 0.6 && Math.abs(o.y - o.hy) < 0.6) o.st = 'hover'; }
         else if (o.st === 'hover') { o.y = o.hy + Math.sin(o.age * 2) * 0.5; }
         else if (o.st === 'run') {
@@ -628,7 +644,8 @@ function simFire(side) {
     u.held = false;
     if (!u.alive || T.mute) continue;                       // mute：測試用，這一邊只瞄不打
     // 被凍住、被電暈：這一輪不能動（包括魔王放光球、氣球兵放氣球）
-    if (u.frozen > 0 || u.stun > 0) { u.held = true; ev('skip', u.x, u.y + 4, side, u.frozen > 0 ? 0 : 1); u.frozen = Math.max(0, u.frozen - 1); u.stun = Math.max(0, u.stun - 1); continue; }
+    if (u.frozen > 0 || u.stun > 0) { u.held = true; u.immune = true; ev('skip', u.x, u.y + 4, side, u.frozen > 0 ? 0 : 1); u.frozen = Math.max(0, u.frozen - 1); u.stun = Math.max(0, u.stun - 1); continue; }
+    u.immune = false;
     if (u.w) {
       const w = u.w, n = w.n || 1, g = w.gap || 0;
       for (let r = 0; r < reps; r++) for (let k = 0; k < n; k++) q.push({ t: t0 + r * (n * g + 0.16) + k * g, u, w, ax, ay });
@@ -670,7 +687,6 @@ function chainNote() {
 }
 function endTurn() {
   chainNote();
-  burialCheck();
   endCheck(); if (S.state !== 'play') return;
   if (S.turn === 0) startTurn(1); else roundEnd();
 }
@@ -697,18 +713,19 @@ function roundStart() {
   let gi = 0, gn = 0; for (const o of S.objs) if (o.t === 'geyser') gn++;
   for (const o of S.objs) if (o.t === 'geyser') { const was = o.on; o.on = (S.round - 1) % gn === gi; o.next = S.round % gn === gi; if (o.on && !was) ev('erupt', o.x, o.base, o.hgt); gi++; }
   // 落石預告：這一回合結束時砸下來
-  if (lv.rocks && S.round >= lv.rocks.at && (S.round - lv.rocks.at) % (lv.rocks.every || 1) === 0) rockMarks(lv.rocks.n || 2, false);
-  if (S.boss && S.boss.phase >= 3) rockMarks(lv.boss.meteors || 2, true);
+  if (lv.rocks && S.round >= lv.rocks.at && (S.round - lv.rocks.at) % (lv.rocks.every || 1) === 0) rockMarks(lv.rocks.n || 2, false, lv.rocks.foe || 0);
+  if (S.boss && S.boss.phase >= 3) rockMarks(lv.boss.meteors || 2, true, 0);
   // 拖太久：雙方的砲火越來越猛
   const sd = lv.sudden || 10;
   if (S.round > sd) { if (!S.sudden) { S.sudden = true; ev('sudden'); } S.rage = 1 + Math.min(2, (S.round - sd) * 0.4); }
   ev('round', S.round);
   startTurn(0);
 }
-function rockMarks(n, big) {
-  // 落石是敵方地盤上的災害：砸我方城樓，或是砸在兩城之間（敵城自己不會被砸）
+function rockMarks(n, big, foe) {
+  // 落石：砸我方城樓，或是砸在兩城之間。foe 是砸到敵城頭上的機率（火山不認人；魔王的隕石只砸我方）
   for (let k = 0; k < n; k++) {
-    let x = rnd() < 0.62 ? S.st[0].x0 + 2 + rnd() * (S.st[0].w - 4) : 38 + rnd() * 30;
+    const p = rnd();
+    let x = p < foe ? S.st[1].x0 + 2 + rnd() * (S.st[1].w - 4) : p < foe + (1 - foe) * 0.62 ? S.st[0].x0 + 2 + rnd() * (S.st[0].w - 4) : 38 + rnd() * 30;
     if (groundY(x) < -100) x = S.st[0].cx + (rnd() - 0.5) * (S.st[0].w - 4);
     S.marks.push({ x, big, t0: S.time });
   }
@@ -743,16 +760,20 @@ function barrierRound(o) {
   const open2 = B.phase >= 3 ? (o.open + 1 + ri(2)) % 3 : -1;
   o.segs.forEach((sg, k) => { sg.on = k !== o.open && k !== open2; });
 }
-function bossRound() {
-  const B = S.boss, lb = S.lv.boss, bu = bossUnit(); if (!bu || !bu.alive) return;
-  const f = bu.hp / bu.hpMax;
-  if (B.phase === 1 && f < lb.p2) {
+// 魔王的血掉過門檻：馬上換階段
+function bossPhase(bu) {
+  const B = S.boss, lb = S.lv.boss, f = bu.hp / bu.hpMax;
+  if (B.phase === 1 && f <= lb.p2 + 1e-6) {
     B.phase = 2;
-    const st = S.st[1], hp = (lb.segHp || 60) * S.team[1].hpMul;
-    S.objs.push({ t: 'barrier', x: st.cx, y: st.y0 + st.h * 0.45, R: Math.max(st.w, st.h) * 0.62 + 4, regen: lb.regen || 2, flash: 0, open: ri(3),
-      segs: BAR_LANES.map((l) => ({ a0: l[0], a1: l[1], hp, hm: hp, dead: 0, on: true, lvl: 0, flash: 0 })) });
+    const st = S.st[1], hp = (lb.segHp || 60) * S.team[1].hpMul, open = ri(3);
+    S.objs.push({ t: 'barrier', x: st.cx, y: st.y0 + st.h * 0.45, R: Math.max(st.w, st.h) * 0.62 + 4, regen: lb.regen || 2, flash: 0, open,
+      segs: BAR_LANES.map((l, k) => ({ a0: l[0], a1: l[1], hp, hm: hp, dead: 0, on: k !== open, lvl: 0, flash: 0 })) });
     ev('phase', 2);
-  } else if (B.phase === 2 && f < lb.p3) { B.phase = 3; ev('phase', 3); }
+  } else if (B.phase === 2 && f <= lb.p3 + 1e-6) { B.phase = 3; ev('phase', 3); }
+}
+function bossRound() {
+  const bu = bossUnit(); if (!bu || !bu.alive) return;
+  bossPhase(bu);
   for (const o of S.objs) if (o.t === 'barrier') barrierRound(o);
 }
 // 魔王這一輪額外做的事：第二階段起每隔一輪放一顆毀滅光球（先停在半路，下一輪砸過來）
@@ -760,7 +781,8 @@ function bossVolley(q, t0) {
   const B = S.boss, bu = bossUnit(); if (!bu || !bu.alive || bu.held) return;
   if (B.phase >= 2) {
     let has = false; for (const o of S.objs) if (o.t === 'orb') has = true;
-    if (!has && (B.orbN++ % (B.phase >= 3 ? 2 : 3)) === 0) q.push({ t: t0 + 0.5, u: bu, w: null, act: 'orb' });       // 第二階段每三輪一顆，第三階段每兩輪一顆
+    const gap = S.lv.boss.orbGap || [3, 2];
+    if (!has && (B.orbN++ % gap[B.phase >= 3 ? 1 : 0]) === 0) q.push({ t: t0 + 0.5, u: bu, w: null, act: 'orb' });       // orbGap：第二、第三階段各隔幾輪放一顆
   }
 }
 function spawnOrb(u) {
@@ -868,7 +890,7 @@ function simStep(dt) {
   if ((S.frame & 15) === 0) for (const b of S.blocks) if (!b.dead) { const p = b.body.getPosition(); if (p.y < -28 || p.x < -GUT - 9 || p.x > VIEW_W + GUT + 9) blockKill(b, 2, K_CRUSH, true); }
   if ((S.frame & 255) === 0) for (const st of S.structs) { let k = 0; for (const b of st.blocks) if (!b.dead) st.blocks[k++] = b; st.blocks.length = k; }
   if ((S.frame & 255) === 0) { let k = 0; for (const b of S.blocks) if (!b.dead) S.blocks[k++] = b; S.blocks.length = k; k = 0; for (const b of S.balls) if (!b.dead) S.balls[k++] = b; S.balls.length = k; }
-  if (play) endCheck(); else S.endT += dt;
+  if (S.state === 'play') endCheck(); else if (!play) S.endT += dt;
 }
 // 著火的木頭和屋瓦：一直掉血，會延燒到碰在一起的
 function burnStep(dt) {
@@ -878,14 +900,19 @@ function burnStep(dt) {
   for (const b of S.blocks) {
     if (b.dead || b.burn <= 0) continue;
     b.burn -= dt; if (b.burn <= 0) { b.burn = 0; continue; }
-    const foe = b.side === credit ? 2 : credit;
+    const foe = b.burnBy !== undefined && b.burnBy !== b.side ? b.burnBy : b.side === credit ? 2 : credit;
     blockHurt(b, 4.2 * dt, K_FIRE, foe);
     if (tick && !b.dead) {
-      const p = b.body.getPosition(), reach = Math.max(b.w, b.h) * 0.5 + 0.8, list = physQuery(p.x, p.y, reach).slice();
+      const p = b.body.getPosition(), reach = Math.max(b.w, b.h) * 0.5 + 0.8, list = physQuery(p.x, p.y, reach).slice(), A = b.body.getFixtureList().getAABB(0);
       for (let k = 0; k < list.length; k++) {
         const o = list[k];
-        if (o.isBlock) { if (!o.dead && o !== b && o.burn <= 0 && MAT[o.mat].burn && rnd() < 0.1) ignite(o, 2.5 + rnd() * 2); }
-        else if (o.alive && Math.abs(o.x - p.x) < b.w * 0.5 + 1.6 && Math.abs(o.y + 1.5 - p.y) < b.h * 0.5 + 2.2) hurtUnit(o, 3, foe, K_FIRE);
+        if (o.isBlock) {
+          if (o.dead || o === b || o.burn > 0 || !MAT[o.mat].burn) continue;
+          // 火只會延燒到貼著的東西（隔一層石板、隔一間房燒不過去）
+          const B = o.body.getFixtureList().getAABB(0);
+          if (Math.max(A.lowerBound.x - B.upperBound.x, B.lowerBound.x - A.upperBound.x, A.lowerBound.y - B.upperBound.y, B.lowerBound.y - A.upperBound.y) > 0.6) continue;
+          if (rnd() < 0.1) ignite(o, 2.5 + rnd() * 2, foe);
+        } else if (o.alive && o.fireT !== S.frame && Math.abs(o.x - p.x) < b.w * 0.5 + 1.6 && Math.abs(o.y + 1.5 - p.y) < b.h * 0.5 + 2.2) { o.fireT = S.frame; hurtUnit(o, 3.5, foe, K_FIRE); }       // 身邊燒著好幾塊，一次也只算燒到一下
       }
     }
   }
@@ -893,6 +920,7 @@ function burnStep(dt) {
   S.nburn = nb;
 }
 function endCheck() {
+  if (S.state !== 'play') return;
   let lose0 = false, lose1 = false;
   for (let s = 0; s < 2; s++) {
     const T = S.team[s];

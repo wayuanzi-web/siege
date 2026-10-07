@@ -1,0 +1,317 @@
+short click: no fire, aim jumps to cursor => {
+ "volleys": 0,
+ "aim": [
+  [
+   54.4,
+   46
+  ],
+  [
+   54.4,
+   46
+  ]
+ ],
+ "toast": "打斷望樓的細柱子，整座連人一起倒下來",
+ "miss": {
+  "aimPx": [
+   498,
+   164
+  ],
+  "cursor": [
+   700,
+   250
+  ],
+  "missPx": 219.4,
+  "tau": 0.8075
+ }
+}
+press 320ms without moving: fires (by design) => 0
+right/middle button: no fire => 0
+mouse drag: preview passes through cursor? => [
+ {
+  "aimPx": [
+   619,
+   43
+  ],
+  "cursor": [
+   600,
+   300
+  ],
+  "missPx": 258.2,
+  "tau": 0.8075,
+  "aim": [
+   51.4,
+   67.3
+  ]
+ },
+ {
+  "aimPx": [
+   785,
+   -6
+  ],
+  "cursor": [
+   800,
+   200
+  ],
+  "missPx": 206.1,
+  "tau": 0.8075,
+  "aim": [
+   43,
+   86
+  ]
+ },
+ {
+  "aimPx": [
+   792,
+   2
+  ],
+  "cursor": [
+   900,
+   120
+  ],
+  "missPx": 159.8,
+  "tau": 0.8075,
+  "aim": [
+   42.2,
+   86
+  ]
+ },
+ {
+  "aimPx": [
+   913,
+   220
+  ],
+  "cursor": [
+   1000,
+   300
+  ],
+  "missPx": 117.9,
+  "tau": 0.8075,
+  "aim": [
+   21,
+   84.6
+  ]
+ },
+ {
+  "aimPx": [
+   549,
+   435
+  ],
+  "cursor": [
+   700,
+   500
+  ],
+  "missPx": 164.8,
+  "tau": 0.8075,
+  "aim": [
+   5.7,
+   33.3
+  ]
+ },
+ {
+  "aimPx": [
+   315,
+   50
+  ],
+  "cursor": [
+   420,
+   200
+  ],
+  "missPx": 183.4,
+  "tau": 0.8075,
+  "aim": [
+   85.9,
+   51.9
+  ]
+ },
+ {
+  "aimPx": [
+   323,
+   -67
+  ],
+  "cursor": [
+   300,
+   100
+  ],
+  "missPx": 168.3,
+  "tau": 0.8075,
+  "aim": [
+   85.9,
+   66.6
+  ]
+ },
+ {
+  "aimPx": [
+   685,
+   -93
+  ],
+  "cursor": [
+   640,
+   20
+  ],
+  "missPx": 122.2,
+  "tau": 0.8075,
+  "aim": [
+   54.2,
+   86
+  ]
+ },
+ {
+  "aimPx": [
+   921,
+   209
+  ],
+  "cursor": [
+   1270,
+   10
+  ],
+  "missPx": 401.6,
+  "tau": 0.8075,
+  "aim": [
+   21.7,
+   86
+  ]
+ }
+]
+mouse drag release fires => 1
+mouse: steepest reachable lob (touch/keyboard can reach 86 deg at any power) => {
+ "1280x720": {
+  "unitY": 30.6,
+  "top": 64.1,
+  "tau": 0.807,
+  "maxAngleByPower": {
+   "30": 85.9,
+   "40": 85.9,
+   "50": 85.9,
+   "60": 85.9,
+   "70": 63.1,
+   "80": 50.6,
+   "90": 43
+  },
+  "steepestShotThatReachesEnemyCastle": {
+   "vx": 26,
+   "vy": 58,
+   "ang": 65.9,
+   "v": 63.5,
+   "descent": 65.9
+  }
+ },
+ "844x390": {
+  "unitY": 30.6,
+  "top": 62.7,
+  "tau": 0.807,
+  "maxAngleByPower": {
+   "30": 85.9,
+   "40": 85.9,
+   "50": 85.9,
+   "60": 85.9,
+   "70": 59.5,
+   "80": 48.6,
+   "90": 41.3
+  },
+  "steepestShotThatReachesEnemyCastle": {
+   "vx": 30.5,
+   "vy": 56.3,
+   "ang": 61.6,
+   "v": 64,
+   "descent": 61.6
+  }
+ },
+ "1024x768": {
+  "unitY": 30.6,
+  "top": 72.2,
+  "tau": 0.807,
+  "maxAngleByPower": {
+   "30": 85.9,
+   "40": 85.9,
+   "50": 85.9,
+   "60": 85.9,
+   "70": 85.9,
+   "80": 64.8,
+   "90": 52.9
+  },
+  "steepestShotThatReachesEnemyCastle": {
+   "vx": 21.9,
+   "vy": 68.1,
+   "ang": 72.1,
+   "v": 71.5,
+   "descent": 72.1
+  }
+ },
+ "1920x1080": {
+  "unitY": 30.6,
+  "top": 64.2,
+  "tau": 0.807,
+  "maxAngleByPower": {
+   "30": 85.9,
+   "40": 85.9,
+   "50": 85.9,
+   "60": 85.9,
+   "70": 63.1,
+   "80": 50.7,
+   "90": 43
+  },
+  "steepestShotThatReachesEnemyCastle": {
+   "vx": 27.1,
+   "vy": 58.1,
+   "ang": 65,
+   "v": 64.1,
+   "descent": 65
+  }
+ }
+}
+mouse dragged above the window, released outside => {"aimWhileOutside": [73.1, 86, 25.1, 82.3], "dragAlive": true, "volleys": 1}
+window blur mid-drag: release does not fire => 0
+keyboard => {
+ "arrows": [
+  [
+   54.4,
+   46
+  ],
+  [
+   65.3,
+   46
+  ],
+  [
+   65.3,
+   53.8
+  ],
+  [
+   65.3,
+   53.8
+  ]
+ ],
+ "X arms": true,
+ "C disarms": true,
+ "Z shield": true,
+ "Space fires": 1,
+ "Enter during volley no double": 1,
+ "P pauses": "pause",
+ "Space while paused": [
+  "pause",
+  1
+ ],
+ "Esc resumes": "play",
+ "no stuck key after pause": true
+}
+focused HUD button + Enter/Space => {
+ "after click: focused": "",
+ "focused before Enter": "",
+ "Enter -> volleys +": 1,
+ "Enter -> shield uses + (should be 0)": 0,
+ "pause-click, Esc resume: focused": " mode=play",
+ "then Enter -> ": {
+  "volleys+": 1,
+  "mode (should be play)": "play"
+ },
+ "Space with focused shield button": {
+  "volleys+": 1,
+  "shield uses+": 0
+ },
+ "after clicking fire: focus": ""
+}
+modifier combos trigger skills => {"Ctrl+C arms ult": false, "Shift(+Tab) fires shield": false}
+errors: []
+
+real	0m28.460s
+user	0m1.373s
+sys	0m0.202s

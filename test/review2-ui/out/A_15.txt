@@ -1,0 +1,6 @@
+elements with the hidden attribute that are still displayed: {}
+errors: []
+
+real	0m2.872s
+user	0m0.850s
+sys	0m0.109s

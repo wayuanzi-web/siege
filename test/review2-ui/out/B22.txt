@@ -1,0 +1,42 @@
+--- fragment in a bare page
+  844x390 touch: stage [844, 390, 0, 0] rot 0 u 3.9 title '千砲破城' lang (none) -> ok | errors []
+  390x844 touch: stage [844, 390, 0, 0] rot 1 u 3.9 title '千砲破城' lang (none) -> ok | errors []
+  360x640 touch: stage [640, 360, 0, 0] rot 1 u 3.46 title '千砲破城' lang (none) -> ok | errors []
+  1280x720: stage [1280, 720, 0, 0] rot 0 u 6.4 title '千砲破城' lang (none) -> ok | errors []
+  1024x768: stage [1024, 640, 0, 64] rot 0 u 5.54 title '千砲破城' lang (none) -> ok | errors []
+  640x480: stage [640, 400, 0, 40] rot 0 u 3.46 title '千砲破城' lang (none) -> ok | errors []
+  480x320: stage [480, 320, 0, 0] rot 0 u 2.9 title '千砲破城' lang (none) -> ok | errors []
+  600x800: stage [600, 375, 0, 213] rot 0 u 3.24 title '千砲破城' lang (none) -> ok | errors []
+  400x700: stage [400, 250, 0, 225] rot 0 u 2.9 title '千砲破城' lang (none) -> home level list sticks out of the stage by 3px; HUD overlap ['aimInfoxturnChip 5x19'] | errors []
+--- inside an <iframe>
+  boot: {"win": [800, 450], "stage": [800, 450, 0, 0], "rot": 0, "u": 4.32, "mode": "home", "frames": 68, "hiddenShown": [], "scroll": [0, 0, 0]} | localStorage works
+  iframe -> 400x700: win [400, 700] stage [400, 250, 0, 225] u 2.9 frames 90 ok
+  iframe -> 320x200: win [320, 200] stage [320, 200, 0, 0] u 2.9 frames 111 ok
+  iframe -> 0x0: win [0, 0] stage [320, 200, 0, 0] u 2.9 frames 133 ok
+  iframe -> 900x500: win [900, 500] stage [900, 500, 0, 0] u 4.87 frames 152 ok
+  iframe -> 500x500: win [500, 500] stage [500, 313, 0, 94] u 2.9 frames 173 ok
+  iframe -> 800x450: win [800, 450] stage [800, 450, 0, 0] u 4.32 frames 194 ok
+  display:none for 0.5s then shown again: stage [800, 450, 0, 0] frames + 31
+  level 1 in the 800x450 iframe: {"phase": "aim", "offStage": [], "overlap": [], "minTap": 45}
+  mouse drag out of the iframe: aim [54.43, 46] -> [49.46, 63.67] (inside) -> [53, 86] (above iframe) -> [5.73, 86] (outside, lower right); drag alive True | released outside -> volleys 1 | drag left False
+  mouse back over the iframe with no button: aim moved False
+  click inside the iframe then Space: fired 0 | then click on the host page and press P: mode play (keys go to the host page now)
+  home again: home | errors []
+--- inside an <iframe> sandbox=allow-scripts (no same-origin: localStorage throws)
+  boot: {"win": [800, 450], "stage": [800, 450, 0, 0], "rot": 0, "u": 4.32, "mode": "home", "frames": 66, "hiddenShown": [], "scroll": [0, 0, 0]} | localStorage throws SecurityError
+  iframe -> 400x700: win [400, 700] stage [400, 250, 0, 225] u 2.9 frames 88 ok
+  iframe -> 320x200: win [320, 200] stage [320, 200, 0, 0] u 2.9 frames 109 ok
+  iframe -> 0x0: win [0, 0] stage [320, 200, 0, 0] u 2.9 frames 131 ok
+  iframe -> 900x500: win [900, 500] stage [900, 500, 0, 0] u 4.87 frames 151 ok
+  iframe -> 500x500: win [500, 500] stage [500, 313, 0, 94] u 2.9 frames 172 ok
+  iframe -> 800x450: win [800, 450] stage [800, 450, 0, 0] u 4.32 frames 193 ok
+  display:none for 0.5s then shown again: stage [800, 450, 0, 0] frames + 32
+  level 1 in the 800x450 iframe: {"phase": "aim", "offStage": [], "overlap": [], "minTap": 45}
+  mouse drag out of the iframe: aim [54.43, 46] -> [49.46, 63.67] (inside) -> [53, 86] (above iframe) -> [5.73, 86] (outside, lower right); drag alive True | released outside -> volleys 1 | drag left False
+  mouse back over the iframe with no button: aim moved False
+  click inside the iframe then Space: fired 0 | then click on the host page and press P: mode play (keys go to the host page now)
+  home again: home | errors []
+
+real	0m30.491s
+user	0m3.273s
+sys	0m0.812s

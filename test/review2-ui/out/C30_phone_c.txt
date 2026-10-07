@@ -1,0 +1,21 @@
+   30_L2_round3_my_turn_toast
+   31_L5_enemy_aiming
+   32_L5_enemy_gate_warning
+   33_L5_enemy_ult_armed
+   34_L6_phase2_banner
+   35_L6_phase2_barrier_toast
+   36_L2_shield_ult_wind
+   37_L2_volley_in_air
+   40_pause
+   41_win_finale_collapse
+   42_result_win_L1
+   43_shop_over_result
+   44_result_win_L5_tip
+   45_result_win_L6_final
+   46_lose_finale_collapse
+   47_result_lose_L4_longest_tip
+shots: 16 errors: []
+
+real	2m34.863s
+user	0m5.842s
+sys	0m0.571s

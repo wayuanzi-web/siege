@@ -29,17 +29,30 @@ const UPS = [
 ];
 const UP_COST = [80, 150, 240, 360, 520];
 const NUM_ZH = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
-const UI = { sel: 0, wipeArm: 0, resRun: 0 };
+const UI = { sel: 0, wipeArm: 0, resRun: 0, resAt: -1e9 };
 function numZh(n) { return n <= 10 ? NUM_ZH[n - 1] : n < 20 ? '十' + NUM_ZH[n - 11] : n % 10 === 0 ? NUM_ZH[n / 10 - 1] + '十' : NUM_ZH[((n / 10) | 0) - 1] + '十' + NUM_ZH[n % 10 - 1]; }
 
 function replay(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+/* 選單和視窗裡的按鈕：手指或滑鼠在按鈕上按下去、再放開就算，不等瀏覽器的 click
+   （另一根手指還放在螢幕上的時候，瀏覽器不會替這一下合成 click，按鈕會像壞掉一樣）。
+   鍵盤（Tab 選到再按 Enter／空白鍵）和程式呼叫的 click() 還是走 click */
+function onTap(el, fn) {
+  const go = (e) => { if (typeof auInit === 'function') auInit(); fn(e); };
+  if (!window.PointerEvent) { el.addEventListener('click', go); return; }
+  let pid = -1, x0 = 0, y0 = 0;
+  el.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse' && e.button !== 0) return; pid = e.pointerId; x0 = e.clientX; y0 = e.clientY; });
+  el.addEventListener('pointerup', (e) => { if (e.pointerId !== pid) return; pid = -1; if (Math.hypot(e.clientX - x0, e.clientY - y0) <= 24) go(e); });
+  el.addEventListener('pointercancel', () => { pid = -1; });
+  el.addEventListener('pointerleave', (e) => { if (e.pointerId === pid && e.pointerType === 'mouse') pid = -1; });
+  el.addEventListener('click', (e) => { if (e.pointerType || e.detail > 0) return; go(e); });
+}
 function banner(txt, kind, small) {
   const el = $('banner'); el.className = kind || 'gold'; el.textContent = '';
   if (small) { const s = document.createElement('small'); s.textContent = small; el.appendChild(s); }
   el.appendChild(document.createTextNode(txt)); replay(el, 'show');
 }
 // 底部的提示一次只放得下一句：排隊輪流講，字多的講久一點。等太久、排太多而沒講到的，記號拿掉，下次遇到再講
-const SAY = { q: [], cur: null, t0: 0, dur: 0, tm: 0 };
+const SAY = { q: [], cur: null, t0: 0, dur: 0, tm: 0, held: 0 };
 function sayDur(txt) { return clamp(1.3 + txt.length * 0.14, 2.6, 6.5) * 1000; }
 function sayDrop(m) { if (m.key && typeof G !== 'undefined') delete G.said[m.key]; }
 function say(txt, alert, key) {
@@ -47,11 +60,11 @@ function say(txt, alert, key) {
   const m = { txt, alert: !!alert, key: key || '', at: performance.now() };
   if (m.alert) { let i = 0; while (i < SAY.q.length && SAY.q[i].alert) i++; SAY.q.splice(i, 0, m); } else SAY.q.push(m);      // 警告插隊
   while (SAY.q.length > 3) sayDrop(SAY.q.pop());
-  sayPump();
+  if (!SAY.held) sayPump();
 }
 function sayPump() {
-  clearTimeout(SAY.tm);
-  const now = performance.now(), hold = () => (SAY.q.length ? Math.max(1800, SAY.dur * 0.6) : SAY.dur);      // 後面有人在等：這一句至少講六成
+  clearTimeout(SAY.tm); if (SAY.held) return;
+  const now = performance.now(), hold = () => (SAY.q.length ? Math.max(2300, SAY.dur * 0.78) : SAY.dur);      // 後面有人在等：這一句至少講將近八成
   if (SAY.cur) { const left = hold() - (now - SAY.t0); if (left > 0) { SAY.tm = setTimeout(sayPump, left + 15); return; } SAY.cur = null; }
   while (SAY.q.length && now - SAY.q[0].at > 9000) sayDrop(SAY.q.shift());
   const m = SAY.q.shift(), el = $('say'); if (!m) return;
@@ -59,7 +72,13 @@ function sayPump() {
   el.textContent = m.txt; el.classList.toggle('alert', m.alert); el.style.setProperty('--say', (SAY.dur / 1000).toFixed(2) + 's'); replay(el, 'show');
   SAY.tm = setTimeout(sayPump, hold() + 15);
 }
-function sayClear() { clearTimeout(SAY.tm); SAY.q.length = 0; SAY.cur = null; $('say').className = 'chamfer'; }
+function sayClear() { clearTimeout(SAY.tm); SAY.q.length = 0; SAY.cur = null; SAY.held = 0; const el = $('say'); el.className = 'chamfer'; el.style.animationPlayState = ''; }
+// 暫停的時候提示也停住（計時和淡出動畫都停），繼續之後接著講
+function sayHold(on) {
+  const el = $('say');
+  if (on) { if (SAY.held) return; SAY.held = performance.now(); clearTimeout(SAY.tm); el.style.animationPlayState = 'paused'; }
+  else if (SAY.held) { const d = performance.now() - SAY.held; SAY.held = 0; SAY.t0 += d; for (const m of SAY.q) m.at += d; el.style.animationPlayState = ''; sayPump(); }
+}
 function mile(txt) { const el = $('mile'); el.textContent = txt; replay(el, 'show'); }
 
 function starsHtml(n) { return '<em>' + '★'.repeat(n) + '</em>' + '★'.repeat(3 - n); }
@@ -73,8 +92,8 @@ function homeRender() {
     const nm = document.createElement('strong'); nm.textContent = lv.name;
     const st = document.createElement('span'); st.className = 'stars'; st.innerHTML = starsHtml(SV.stars[i]);
     b.appendChild(n); b.appendChild(nm); b.appendChild(st);
-    b.addEventListener('click', () => {
-      auInit(); sfx('click'); if (UI.sel === i) return; UI.sel = i; homeRender(); if (typeof demoStart === 'function') demoStart(i);
+    onTap(b, () => {
+      sfx('click'); if (UI.sel === i) return; UI.sel = i; homeRender(); if (typeof demoStart === 'function') demoStart(i);
       const nb = $('lvls').children[i]; if (nb) nb.focus({ preventScroll: true });      // 清單重畫過了，把焦點放回同一關（用鍵盤選關才不會跳掉）
     });
     box.appendChild(b);
@@ -97,7 +116,7 @@ function shopRender() {
     if (lvl >= 5) { b.innerHTML = '<span>已滿</span>'; b.disabled = true; }
     else {
       b.innerHTML = '<em class="coin">' + UP_COST[lvl] + '</em>'; b.setAttribute('aria-label', '升級' + u.name + '，花費 ' + UP_COST[lvl]);
-      b.addEventListener('click', () => {
+      onTap(b, () => {
         if (SV.coins < UP_COST[lvl]) { sfx('deny'); return; }
         SV.coins -= UP_COST[lvl]; SV.up[u.k]++; save(); sfx('buy'); shopRender(); homeRender();
       });
@@ -127,11 +146,11 @@ const LOSE_TIPS = [
 const TIP_RED = '敵軍的赤符會擋住你的砲彈，也讓他們的砲彈變多：把它打掉，或是換個角度繞過去。';
 const LOSE_TIPS_LV = [
   ['上一輪的彈道會留一條淡淡的虛線，盡頭打一個叉：照著它微調就好。', '望樓只靠幾根細柱子撐著，打斷一根，整座連人一起倒。'],
-  ['每回合風向都會變，虛線已經把風算進去了，照著虛線打。', '倍增符下面那道紫色的折損符會吃掉一半砲彈，瞄高一點。', '沙城閣樓上的大石球：打斷撐著它的木樑，它就砸在底下的兵頭上。', TIP_RED],
-  ['兵被凍住就開護罩，會立刻解凍。', '冰很滑：打掉冰塔底下的一塊，整座就溜下來。火油兵的火對冰特別有效。', '中間的冰牆擋平射：吊高越過去，或是先把它轟倒。', TIP_RED],
+  ['每回合的風都不一樣，虛線已經把風算進去了；逆風很強的時候別吊太高，砲彈會被吹回來。', '倍增符下面那道紫色的折損符會吃掉一半砲彈，瞄高一點。', '沙城閣樓上的大石球：打斷撐著它的木樑，它就砸在底下的兵頭上。', TIP_RED],
+  ['兵被凍住就開護罩，會立刻解凍。', '冰很滑：打掉冰塔底下的一塊，整座就溜下來。火油兵的火對冰特別有效。', '中間的冰牆擋平射：吊高越過去，或是先把它轟倒。躲在大廳的冰術士要轟破冰板才打得到。', TIP_RED],
   ['敵城正面是鐵甲：吊高從屋頂打進去，把樓上的火藥庫炸開，一桶爆就三桶連環爆。', '讓砲彈從正在噴的地火裡穿過去，威力多五成。', '紅圈是這一回合結束時的落石，砸得到你就開護罩。', TIP_RED],
   ['氣球先停在半路，下一輪才飛過來：趁它停著的時候打下來。', '把砲彈射進藍色傳送門，會從敵城頭頂往下灌，繞過正面的金甲。', '先打掉防空弩，不然每一輪都會被射下三發。', TIP_RED],
-  ['結界每回合只開一個缺口：看哪一段沒有光牆，就用那個角度打進去；光牆也打得破。', '毀滅光球先停在半路，下一輪才砸過來：打掉它，或是開護罩。', '先把魔王頭上的屋頂轟掉，再把砲彈吊高落進大殿。', TIP_RED]
+  ['結界每回合只開一個缺口：看哪一段沒有光牆，就用那個角度打進去；光牆也打得破。', '毀滅光球先停在半路，下一輪才砸過來：打掉它，或是開護罩。', '先打斷大殿的木柱、掀掉屋頂，再把砲彈吊高落進去；把魔王腳下的樓板打掉，他摔一層就痛一次。', TIP_RED]
 ];
 function showResult(won, st) {
   $('resTitle').textContent = won ? (st.idx === LEVELS.length - 1 ? '魔王伏誅' : '敵城攻破') : '城樓失守';
@@ -146,9 +165,11 @@ function showResult(won, st) {
   const tip = $('resTip'), own = LOSE_TIPS_LV[st.idx] || [], tips = Math.random() < 0.7 && own.length ? own : LOSE_TIPS;      // 多半講這一關自己的訣竅
   if (won) { tip.hidden = st.stars >= 3; if (st.stars < 3) tip.textContent = st.lost ? '三顆星：一個兵都不能倒，城防還要剩六成以上。' : '三顆星：城防要剩六成以上。'; }
   else { tip.hidden = false; tip.textContent = tips[(Math.random() * tips.length) | 0]; }
-  $('btnNext').hidden = !(won && st.idx < LEVELS.length - 1);
+  const next = won && st.idx < LEVELS.length - 1;
+  $('btnNext').hidden = !next; $('resBtns').className = 'stack ' + (next ? 'three' : 'two');         // 沒有「下一關」的時候兩顆按鈕各佔一半
   $('btnAgain').firstChild.textContent = won ? '再玩一次' : '再戰';
-  $('btnAgain').className = 'btn' + (won ? '' : ' btn-gold');
+  $('btnAgain').className = 'btn' + (next ? '' : ' btn-gold');
+  UI.resAt = performance.now();                                    // 剛跳出來的那一下不收點擊（玩家可能正在點畫面想跳過垮城的演出）
   $('result').hidden = false;
 }
 
@@ -184,7 +205,7 @@ function hudUpdate() {
   // 輪到誰
   const play = S.state === 'play', mine = play && S.phase === 'aim' && S.turn === 0;
   // 敵軍瞄準的彈道會穿過倍增符：先講，讓玩家來得及開護罩
-  const eA = S.team[1].ai, em = play && S.phase === 'aim' && S.turn === 1 && eA && eA.st === 2 && eA.mult >= 3 ? Math.round(eA.mult) : 0;
+  const eA = S.team[1].ai, em = play && S.phase === 'aim' && S.turn === 1 && eA && eA.st === 2 && eA.warn >= 2 ? Math.round(eA.warn) : 0;
   const tk = !play || S.phase === 'intro' || (S.phase === 'hazard' && !S.hz) ? '' : S.phase === 'hazard' ? 'hz' : S.phase + S.turn + (S.team[S.turn].ult.armed ? 'u' : '') + (em ? 'm' + em : '');
   if (tk !== HUD.turn) {
     HUD.turn = tk; const el = $('turnChip');
@@ -192,7 +213,7 @@ function hudUpdate() {
     else {
       el.hidden = false;
       el.className = 'chamfer ' + (tk === 'hz' ? 'hz' : S.turn === 0 ? 'me' : 'foe') + (mine ? ' go' : '') + (S.turn === 1 && S.phase === 'aim' && (em || S.team[1].ult.armed) ? ' warn' : '');
-      el.textContent = tk === 'hz' ? '落石！' : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : S.team[1].ult.armed ? '敵軍連珠砲上膛！' : em ? '敵軍瞄準了 ×' + em + ' 倍增符！' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
+      el.textContent = tk === 'hz' ? '落石！' : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : S.team[1].ult.armed ? '敵軍連珠砲上膛！' : em ? '敵軍的砲彈會穿過倍增符：×' + em + '！' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
     }
   }
   const fk = mine ? 1 : 0; if (fk !== HUD.fire) { HUD.fire = fk; $('btnFire').classList.toggle('ready', !!mine); $('btnFire').classList.toggle('btn-gold', !!mine); }

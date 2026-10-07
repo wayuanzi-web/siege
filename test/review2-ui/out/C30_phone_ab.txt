@@ -1,0 +1,21 @@
+   01_home_new
+   02_home_progress_L3
+   03_home_L6_locked
+   03b_home_L5_locked
+   04_options
+   04b_options_wipe_armed
+   05_shop
+   10_L1_intro_banner
+   11_L1_first_time_hint
+   20_L1_start
+   21_L2_start
+   22_L3_start
+   23_L4_start
+   24_L5_start
+   25_L6_start
+   27_L3_lob_aim5
+shots: 16 errors: []
+
+real	0m37.993s
+user	0m4.590s
+sys	0m0.258s

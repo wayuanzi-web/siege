@@ -1,0 +1,28 @@
+1. button names: {"home": {"buttons": 31, "unnamed": []}, "shop": {"buttons": 36, "unnamed": []}}
+   pause btn label: 暫停 | modal roles: dialog/true,dialog/true,dialog/true | toast aria-live: polite | html lang: zh-Hant
+2. Tab order on home (outline = computed outline; clippedBy = clip-path that cuts the outline off):
+     {"el": "btnGo", "txt": "出戰", "outline": "solid 3px", "focusVisible": true, "clippedBy": "self", "hiddenBehindModal": false}
+     {"el": "btnShop", "txt": "強化500", "outline": "solid 3px", "focusVisible": true, "clippedBy": "self", "hiddenBehindModal": false}
+     {"el": "btnOpt", "txt": "設定", "outline": "solid 3px", "focusVisible": true, "clippedBy": "self", "hiddenBehindModal": false}
+     {"el": "lv.chamfer", "txt": "1青丘試砲★", "outline": "solid 3px", "focusVisible": true, "clippedBy": "self", "hiddenBehindModal": false}
+     {"el": "lv.chamfer", "txt": "2黃沙風口★", "outline": "solid 3px", "focusVisible": true, "clippedBy": "self", "hiddenBehindModal": false}
+     {"el": "lv.chamfer", "txt": "3霜河冰壁★", "outline": "solid 3px", "focusVisible": true, "clippedBy": "self", "hiddenBehindModal": false}
+     {"el": "lv.chamfer", "txt": "4熔岩雙峰★", "outline": "solid 3px", "focusVisible": true, "clippedBy": "self", "hiddenBehindModal": false}
+     {"el": "lv.chamfer", "txt": "5雲海浮島★", "outline": "solid 3px", "focusVisible": true, "clippedBy": "self", "hiddenBehindModal": false}
+     {"el": "lv.chamfer", "txt": "6魔王城★★", "outline": "solid 3px", "focusVisible": true, "clippedBy": "self", "hiddenBehindModal": false}
+     {"el": "BODY", "txt": "100%我方", "outline": "none 0px", "focusVisible": false, "clippedBy": null, "hiddenBehindModal": false}
+   options opened by keyboard -> focus on: BODY
+   Tab while options modal is open reaches controls behind it: []
+   focus on toggle: {'el': 'tSfx', 'txt': '音效', 'outline': 'solid 3px', 'focusVisible': True, 'clippedBy': 'plaque narrow chamfer', 'hiddenBehindModal': False}
+   focus on 返回: {'el': 'btn', 'txt': '返回', 'outline': 'solid 3px', 'focusVisible': True, 'clippedBy': 'self', 'hiddenBehindModal': False}
+   after choosing level 2 with Enter, focus is on: BUTTON# (list is rebuilt, focused button destroyed)
+3. prefers-reduced-motion: reduce -> True
+   intro banner anims: ['banner:fadeio']
+   my aim, skills ready, tutorial hint: CSS anims running: ['banner:fadeio']
+   castle destroyed with reduced motion requested -> peak canvas shake 0 (offset up to 0 canvas px), full-screen flash alpha 0 , slow-mo factor 0.3
+   result modal anims: ['plaque chamfer:fadein']
+errors: []
+
+real	0m11.493s
+user	0m1.456s
+sys	0m0.357s

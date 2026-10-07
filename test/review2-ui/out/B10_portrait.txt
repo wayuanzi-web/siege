@@ -1,0 +1,46 @@
+===== portrait 390x844 rot=1
+  [PASS] tap: no fire, aim unchanged {"say": "打斷望樓的細柱子，整座連人一起倒下來"}
+  [PASS] second tap: still no fire 
+  [PASS] drag 8px game-right then release: no fire {"volleys": 0, "drag": {"id": 4, "type": "touch", "far": 8, "live": true}}
+  [PASS] drag 13px game-right then release: no fire {"volleys": 0, "drag": {"id": 5, "type": "touch", "far": 13, "live": true}}
+  [PASS] drag 16px game-right then release: fires {"volleys": 1, "drag": {"id": 6, "type": "touch", "far": 16, "live": true}}
+  [PASS] drag 30px game-right then release: fires {"volleys": 1, "drag": {"id": 7, "type": "touch", "far": 30, "live": true}}
+  [PASS] drag game-up: steeper [[54.43, 46], [62.41, 57.78]]
+  [PASS] drag game-right: stronger (and flatter) [[62.41, 57.78], [49.78, 67.06]]
+  [PASS] release fires once 
+  [INFO] drag out 42px and back to start, release {"volleys": 1, "aimBefore": [54.43, 46], "aimAtRelease": [54.43, 46], "drag": {"id": 9, "type": "touch", "far": 42.4, "live": true}}
+  [PASS] drag begun in intro, moved >14px after my turn started: fires {"ph0": "intro", "d0": {"id": 10, "type": "touch", "far": 44.7, "live": false}, "d1": {"id": 10, "type": "touch", "far": 42.4, "live": true}, "volleys": 1}
+  [INFO] drag begun in intro, finger held still after my turn started, release {"volleys": 0, "drag": {"id": 11, "type": "touch", "far": 44.7, "live": false}, "chip": "輪到你：拖曳瞄準，放開發射", "say": "打斷望樓的細柱子，整座連人一起倒下來"}
+  [INFO] drag 72px in intro, +5px after turn started, release {"volleys": 0, "drag": {"id": 12, "type": "touch", "far": 5, "live": true}, "say": "打斷望樓的細柱子，整座連人一起倒下來"}
+  [PASS] drag+release during my volley: no fire, aim pre-adjusts {"phase": "volley0", "aim": [[54.43, 46], [50.79, 55.41]]}
+  [PASS] drag held from enemy aim into my turn, +22px, release: fires once {"d0": {"id": 15, "type": "touch", "far": 22.4, "live": false}, "d1": {"id": 15, "type": "touch", "far": 22.4, "live": true}, "volleys": [1, 2]}
+  [PASS] fire button when not my turn: no fire volley0
+  [PASS] 2nd finger: no steal, its release does not fire, 1st release fires once {"ids": [17, 17], "aim": [[52.05, 61.44], [52.05, 61.44]], "vMid": 0, "vEnd": 1}
+  [PASS] 1st up fires; 2nd finger still down then released: no second fire {"v1": 1, "vEnd": 1, "dragFor2nd": null}
+  [INFO] two-finger pinch-out (each finger 80px), lift both {"volleys": 1, "aim": [[54.43, 46], [82.85, 37.71]], "drag": {"id": 21, "type": "touch", "far": 80, "live": true}, "scale": 1}
+  [PASS] touchcancel mid-drag: no fire, drag cleared 
+  [PASS] drag again after cancel: fires 
+  [INFO] capture released by script mid-drag {"dragAfter": null, "volleys": 0, "ev": "pointerdown#25@cv+37902 gotpointercapture#25@stage+37952 lostpointercapture#25@stage+38635 pointerup#25@cv+38902 touchend#@cv+38902"}
+  [PASS] can aim+fire again afterwards 1
+  [PASS] 2nd finger taps pause mid-drag: paused, drag dropped, release does not fire, resume works {"mode": "pause", "v": 0}
+  [INFO] finger held across pause/resume, then moved 40px and released {"modeAfterKeys": "play", "aimMoved": false, "volleys": 0}
+  [PASS] window blur mid-drag: drag dropped, release does not fire 
+  [PASS] tab hidden mid-drag: auto-pause, no fire pause/false/true
+  [PASS] drag starting on HUD non-button elements aims and fires {"hpA": {"hitTarget": "cv", "aimMoved": true, "fired": 1}, "crewB": {"hitTarget": "cv", "aimMoved": true, "fired": 1}, "hudName": {"hitTarget": "cv", "aimMoved": true, "fired": 1}, "aimInfo": {"hitTarget": "cv", "aimMoved": true, "fired": 1}, "turnChip": {"hitTarget": "cv", "aimMoved": true, "fired": 1}, "say": {"hitTarget": "cv", "aimMoved": true, "fired": 1}}
+  [PASS] press button and slide away: no aim drag; fire fires once {"btnShield": {"drag": null, "aimMoved": false, "fired": 0}, "btnUlt": {"drag": null, "aimMoved": false, "fired": 0}, "btnFire": {"drag": null, "aimMoved": false, "fired": 1}}
+  [PASS] drag from canvas, release over pause button: fires once, no pause 
+  [PASS] long-press 連珠 900ms: armed once (not toggled back on release) {"ev": "pointerdown#43@SPAN+79378 gotpointercapture#43@SPAN+80324 pointerup#43@SPAN+80324 lostpointercapture#43@SPAN+80324 touchend#@SPAN+80324 click#43@SPAN+80325"}
+  [INFO] tap 連珠 again {"armed": false}
+  [PASS] tap 護罩: one use {"c": 0, "need": 100, "gain": 25, "on": true, "uses": 1}
+  [PASS] triple-tap 發射: one volley 1
+  [PASS] fast flick (one 175px move, immediate release): fires once [[54.43, 46], [42.41, 86]]
+  [PASS] very slow drag (30px over 1.8s): aims and fires [[54.43, 46], [46.89, 51.26]]
+  [PASS] rotate device mid-drag: no spurious fire before release {"rot": [1, 0], "dragAlive": {"id": 51, "type": "touch", "far": 56.6, "live": true}, "volleysAfterRelease": 1, "aim": [[52.05, 61.44], [52.05, 61.44]]}
+   console/page errors: []
+
+===== summary
+portrait PASS 30 FAIL 0 INFO 7
+
+real	1m32.408s
+user	0m3.922s
+sys	0m0.568s

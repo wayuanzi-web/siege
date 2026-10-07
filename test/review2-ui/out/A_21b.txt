@@ -1,0 +1,3 @@
+700x900 {'coarse': False, 'maxTouchPoints': 10, 'rot': 0, 'stage': [700, 438, 0, 231], 'turnOverlay': False, 'keyHelp': True} []
+900x1000 {'coarse': False, 'maxTouchPoints': 10, 'rot': 0, 'stage': [900, 563, 0, 219], 'turnOverlay': False, 'keyHelp': True} []
+500x800 {'coarse': False, 'maxTouchPoints': 10, 'rot': 0, 'stage': [500, 313, 0, 244], 'turnOverlay': False, 'keyHelp': True} []

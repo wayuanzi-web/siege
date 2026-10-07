@@ -10,10 +10,11 @@ function aiInit(T, p, D) {
     guard: p.guard === undefined ? 1 : p.guard,              // 會不會打氣球、光球、天燈
     lob: p.lob || 0,                                         // 偏好吊高砲的程度
     sap: p.sap === undefined ? 1 : p.sap,                    // 這一輪會考慮「打牆腳、打柱子」的機率（不然就只瞄兵和火藥桶）
-    st: 0, t: 0, fireAt: 0, cand: [], ci: 0, best: null, bs: 0, px: T.aim[0], py: T.aim[1], lead: null, useGate: true, mult: 1
+    st: 0, t: 0, fireAt: 0, cand: [], ci: 0, best: null, bs: 0, px: T.aim[0], py: T.aim[1], lead: null, useGate: true, mult: 1, warn: 1
   };
 }
 const _av = [0, 0], _gp = [0, 0];
+const BOSS_W = 0.9;      // 魔王關：自動玩家特別想打魔王（打倒他才算贏，其他的兵只是順便）
 // 從砲口 (mx,my) 出發，tau 秒後要到 (tx,ty)，需要的初速（把風算進去）
 function aimFor(mx, my, tx, ty, tau, wind, out) {
   out[0] = (tx - mx - 0.5 * wind * tau * tau) / tau; out[1] = (ty - my + 0.5 * GRAV * tau * tau) / tau; return out;
@@ -84,7 +85,7 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax) {
 // 輪到自己：列出這一輪想試的打法
 function aiBegin(T) {
   const A = T.ai, side = T.side, dir = T.dir, foeT = S.team[1 - side], fst = S.st[1 - side], wind = S.wind;
-  A.st = 1; A.t = A.think * (0.8 + rnd() * 0.4); A.fireAt = S.time + A.t + 0.25; A.cand.length = 0; A.ci = 0; A.best = null; A.bs = 0.004; A.useGate = rnd() < A.gate;
+  A.warn = 1; A.st = 1; A.t = A.think * (0.8 + rnd() * 0.4); A.fireAt = S.time + A.t + 0.25; A.cand.length = 0; A.ci = 0; A.best = null; A.bs = 0.004; A.useGate = rnd() < A.gate;
   // 連珠集滿了：一輪到自己就先上膛（對方看得到，來得及開護罩），多想一下再打
   if (A.skill > 0 && T.ult.c >= T.ult.need && !T.ult.armed && rnd() < A.skill) { simSkill(side, 'ult'); A.t += 0.7; A.fireAt += 0.7; A.useGate = true; }
   let lead = null, bv = -1;
@@ -93,7 +94,7 @@ function aiBegin(T) {
   A.lead = lead; if (!lead) return;
   const big = lead.def.big ? MUZ_BIG : 1, mx = lead.x + dir * 1.3 * big, my = lead.y + 2.3 * big;
   const tg = [];
-  for (const u of foeT.units) if (u.alive) tg.push({ x: u.x, y: u.y + 1.6, w: 1.15 + (u.type === 'boss' ? 0.4 : 0) + (u.hp < u.hpMax * 0.4 ? 0.25 : 0) });
+  for (const u of foeT.units) if (u.alive) tg.push({ x: u.x, y: u.y + 1.6 * (u.def.big ? MUZ_BIG : 1), w: 1.15 + (u.type === 'boss' ? BOSS_W : 0) + (u.hp < u.hpMax * 0.4 ? 0.25 : 0) });
   if (A.guard > 0 && rnd() < A.guard) for (const o of S.objs) {
     if (o.t === 'lantern') tg.push({ x: o.x, y: o.y, w: 1.0, obj: o });
     else if ((o.t === 'balloon' || o.t === 'orb') && o.side !== side && o.hp > 0 && o.st === 'hover') tg.push({ x: o.x, y: o.y, w: o.t === 'orb' ? 3 : 1.9, obj: o });
@@ -144,6 +145,14 @@ function aiChoose(T) {
   const ex = gauss() * A.err, ey = gauss() * A.err * 0.7;
   const a = clampAim(b.vx + ex / b.tau, b.vy + ey / b.tau, dir);
   A.px = a[0]; A.py = a[1];
+  // 真的要打出去的這個角度（手抖之後），每個開得了火的兵各試射一發：最多會穿過幾倍的符。畫面上拿來預警「敵軍瞄準了倍增符」
+  let wm = 1;
+  for (const u of T.units) {
+    if (!u.alive || !u.w || u.frozen > 0 || u.stun > 0) continue;
+    const big = u.def.big ? MUZ_BIG : 1, R = simTrace(T.side, u.x + dir * 1.3 * big, u.y + 2.3 * big, a[0], a[1], wind, A.fireAt);
+    if (R.mult > wm) wm = R.mult;
+  }
+  A.warn = wm;
 }
 function aiStep(T, dt) {
   const A = T.ai; A.t -= dt;

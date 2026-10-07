@@ -1,0 +1,21 @@
+--- reduce: prefers-reduced-motion matches = True
+   {"level": 5, "gameSec": 60.0, "rounds": 8, "state": "play", "calm": true, "flashes": 14, "maxInAny1000ms": 2, "at": [30645, 30656], "minSpanOf3": 1024, "peakFlashAlpha": 0.049, "peakShake": 0, "peakShakeOffsetPx": 0, "slowMoMin": 1, "peakShotsInAir": 81}
+   {"level": 6, "gameSec": 40.0, "rounds": 4, "state": "play", "calm": true, "flashes": 11, "maxInAny1000ms": 2, "at": [64064, 64245], "minSpanOf3": 1472, "peakFlashAlpha": 0.049, "peakShake": 0, "peakShakeOffsetPx": 0, "slowMoMin": 0.4, "peakShotsInAir": 129}
+   {"level": 4, "gameSec": 34.0, "rounds": 3, "state": "play", "calm": true, "flashes": 3, "maxInAny1000ms": 1, "at": [98768], "minSpanOf3": 30817, "peakFlashAlpha": 0.049, "peakShake": 0, "peakShakeOffsetPx": 0, "slowMoMin": 0.45, "peakShotsInAir": 62}
+   errors: []
+--- toggle at runtime: calm False -> (reduce) True -> (no-preference) False; castle destroyed while reduced: shake 0.00 flash 0.00; errors []
+--- CSS animations still running with prefers-reduced-motion: reduce
+   intro banner: ['banner:fadeio']
+   my turn (tutorial hint, ready skills, "your turn" chip): ['banner:fadeio']
+   toast showing: ['say:say', 'banner:fadeio'] | moving parts: ['say:say moves translate(-50%, 8px) -> translate(-50%)']
+   milestone text: ['say:say', 'mile:fadeio', 'banner:fadeio'] | moving parts: ['say:say moves translate(-50%, 8px) -> translate(-50%)']
+   pause menu opening: ['say:say', 'mile:fadeio', 'banner:fadeio', 'plaque:fadein'] | moving parts: ['say:say moves translate(-50%, 8px) -> translate(-50%)']
+   result (stars popping): ['on:fadein'] | moving parts: []
+   home, level picked: [] | moving parts: []
+   options, toggle flipped: ['plaque:fadein'] | moving parts: []
+   errors: []
+   portrait rotate-your-phone overlay: ['turn:turn'] | moving parts: []
+
+real	2m15.024s
+user	0m2.346s
+sys	0m0.729s

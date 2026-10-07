@@ -1,0 +1,10 @@
+start    heapMB 3.74 {"dom": 198, "cvMade": 54, "cvLive": 48, "bodies": 86, "blocks": 80, "units": 5, "fx": [0, 0, 0, 0, 0, 0], "gpop": 0, "glow": 0, "timers": 0, "timersSet": 0, "listeners": 52, "said": 0, "auLast": 0, "crew": 0, "ticks": 0}
+cycle  1 heapMB 5.63 {"dom": 209, "cvMade": 131, "cvLive": 85, "bodies": 86, "blocks": 80, "units": 5, "fx": [0, 0, 0, 0, 0, 0], "gpop": 0, "glow": 3, "timers": 0, "timersSet": 13, "listeners": 58, "said": 3, "auLast": 10, "crew": 5, "ticks": 0}
+cycle  5 heapMB 8.53 {"dom": 215, "cvMade": 591, "cvLive": 302, "bodies": 101, "blocks": 92, "units": 8, "fx": [0, 0, 0, 0, 0, 0], "gpop": 0, "glow": 8, "timers": 0, "timersSet": 100, "listeners": 95, "said": 3, "auLast": 28, "crew": 8, "ticks": 0}
+cycle 10 heapMB 9.75 {"dom": 211, "cvMade": 955, "cvLive": 380, "bodies": 90, "blocks": 83, "units": 6, "fx": [0, 0, 0, 0, 0, 0], "gpop": 0, "glow": 10, "timers": 0, "timersSet": 194, "listeners": 125, "said": 4, "auLast": 30, "crew": 6, "ticks": 0}
+idle 20s heapMB 9.06 {"dom": 217, "cvMade": 1134, "cvLive": 411, "bodies": 97, "blocks": 121, "units": 8, "fx": [321, 6, 0, 0, 0, 0], "gpop": 2, "glow": 10, "timers": 0, "timersSet": 214, "listeners": 137, "said": 3, "auLast": 31, "crew": 8, "ticks": 2}
+errors: []
+
+real	1m24.176s
+user	0m1.773s
+sys	0m0.401s

@@ -1,0 +1,9 @@
+ctx state: running | sfx names: 61
+after all sfx: swallowed audio exceptions = [] | nodes {'made': 708, 'live': 223, 'peak': 230}
+after music: exceptions = [] | nodes {'made': 843, 'live': 4, 'peak': 230}
+busy battle (real time): peak simultaneous sources = 20 made 1331 | exceptions = []
+errors: []
+
+real	0m41.296s
+user	0m1.521s
+sys	0m0.257s

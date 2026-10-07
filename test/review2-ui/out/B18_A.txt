@@ -1,0 +1,16 @@
+result buttons at {"btnNext": [236, 262], "btnAgain": [422, 262], "btnUp": [608, 262], "btnHome": [422, 315]}
+A. finger already down when the result modal appears
+   finger down 150ms before the modal at where btnNext will be, lifted 120ms after: BUTTON ACTIVATED -> {"mode": "play", "idx": 1, "state": "play", "v": 0, "result": false, "shop": false} | pointerdown#2@cv click#2@SPAN
+   finger down 600ms before the modal at where btnNext will be, lifted 150ms after: BUTTON ACTIVATED -> {"mode": "play", "idx": 1, "state": "play", "v": 0, "result": false, "shop": false} | pointerdown#3@cv click#3@SPAN
+   finger down 1200ms before the modal at where btnNext will be, lifted 400ms after: BUTTON ACTIVATED -> {"mode": "play", "idx": 1, "state": "play", "v": 0, "result": false, "shop": false} | pointerdown#4@cv click#4@SPAN
+   finger down 150ms before the modal at where btnHome will be, lifted 120ms after: BUTTON ACTIVATED -> {"mode": "home", "idx": 1, "state": "play", "v": 0, "result": false, "shop": false} | pointerdown#5@cv click#5@btnHome
+   finger down 600ms before the modal at where btnHome will be, lifted 150ms after: BUTTON ACTIVATED -> {"mode": "home", "idx": 1, "state": "play", "v": 0, "result": false, "shop": false} | pointerdown#6@cv click#6@btnHome
+   finger down 1200ms before the modal at where btnHome will be, lifted 400ms after: BUTTON ACTIVATED -> {"mode": "home", "idx": 1, "state": "play", "v": 0, "result": false, "shop": false} | pointerdown#7@cv click#7@btnHome
+   finger down 150ms before the modal at where btnUp will be, lifted 120ms after: BUTTON ACTIVATED -> {"mode": "result", "idx": 0, "state": "won", "v": 0, "result": true, "shop": true} | pointerdown#8@cv click#8@SPAN
+   finger down 600ms before the modal at where btnUp will be, lifted 150ms after: BUTTON ACTIVATED -> {"mode": "result", "idx": 0, "state": "won", "v": 0, "result": true, "shop": true} | pointerdown#9@cv click#9@SPAN
+   finger down 1200ms before the modal at where btnUp will be, lifted 400ms after: BUTTON ACTIVATED -> {"mode": "result", "idx": 0, "state": "won", "v": 0, "result": true, "shop": true} | pointerdown#10@cv click#10@SPAN
+errors: []
+
+real	1m1.904s
+user	0m1.457s
+sys	0m0.356s

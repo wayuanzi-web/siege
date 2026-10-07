@@ -1,0 +1,82 @@
+===== landscape 844x390 rot=0
+   tap: no fire => true
+   tap: toast => "打斷望樓的細柱子，整座連人一起倒下來"
+   tap: events => "pointerdown#2@cv+1410 gotpointercapture#2@stage+1499 pointerup#2@stage+1499 lostpointercapture#2@stage+1499 click#2@cv+1512"
+   drag: aim up+stronger => [[54.4, 46], [52, 61.4], false]
+   drag: fires once => 1
+   drag: events => "pointerdown#3@cv+2993 gotpointercapture#3@stage+3015 pointerup#3@stage+3557 lostpointercapture#3@stage+3558"
+   hold 100ms then drag => {"aim": [[54.4, 46], [52, 61.4]], "dragAliveBeforeRelease": true, "volleys": 1, "ev": "pointerdown#4@cv+5024 gotpointercapture#4@stage+5165 pointerup#4@stage+5773 lostpointercapture#4@stage+5773"}
+   hold 300ms then drag => {"aim": [[54.4, 46], [52, 61.4]], "dragAliveBeforeRelease": true, "volleys": 1, "ev": "pointerdown#5@cv+7188 gotpointercapture#5@stage+7531 pointerup#5@stage+8187 lostpointercapture#5@stage+8188"}
+   hold 450ms then drag => {"aim": [[54.4, 46], [52, 61.4]], "dragAliveBeforeRelease": true, "volleys": 1, "ev": "pointerdown#6@cv+9605 gotpointercapture#6@stage+10098 pointerup#6@stage+10756 lostpointercapture#6@stage+10756"}
+   hold 700ms then drag => {"aim": [[54.4, 46], [52, 61.4]], "dragAliveBeforeRelease": true, "volleys": 1, "ev": "pointerdown#7@cv+12157 gotpointercapture#7@stage+12898 pointerup#7@stage+13554 lostpointercapture#7@stage+13554"}
+   hold 1500ms then drag => {"aim": [[54.4, 46], [52, 61.4]], "dragAliveBeforeRelease": true, "volleys": 1, "ev": "pointerdown#8@cv+14956 gotpointercapture#8@stage+16498 pointerup#8@stage+17156 lostpointercapture#8@stage+17156"}
+   cancel: no fire => [true, false]
+   enemy-turn drag released on my turn: no fire => ["resolve0", "aim0 r2", false]
+   drag begun in intro, released in my aim => {"phaseAtRelease": "aim0", "chip": "輪到你：拖曳瞄準，放開發射", "volleys": 1, "toast": "1"}
+   2nd finger <2s: no hijack => {"aimSame": true, "afterSecondUp": 0, "afterFirstUp": 1, "ev": "pointerdown#12@cv+29887 gotpointercapture#12@stage+29930 pointerdown#13@cv+30589 gotpointercapture#13@cv+30680 pointerup#13@cv+30753 lostpointercapture#13@cv+30753 pointerup#12@stage+30874 lostpointercapture#12@stage+30874"}
+   2nd finger after 2.2s hold => {"dragIdBefore": 14, "dragIdAfter2ndDown": 14, "volleysAfter2ndUp": 0, "dragAliveAfter2ndUp": true, "volleysAfterFirstUp(should be 1)": 1, "toast": "打斷望樓的細柱子，整座連人一起倒下來"}
+   two fingers both drag+release => 1
+   press HUD button then slide away => {"btnFire": {"dragOnDown": false, "dragAfterSlide": false, "volleys": 1, "mode": "play"}, "btnShield": {"dragOnDown": false, "dragAfterSlide": false, "volleys": 1, "mode": "play"}, "btnUlt": {"dragOnDown": false, "dragAfterSlide": false, "volleys": 1, "mode": "play"}, "btnPause": {"dragOnDown": false, "dragAfterSlide": false, "volleys": 1, "mode": "pause"}}
+   drag from canvas, release over pause button => {"volleys": 1, "mode": "play", "ev": "pointerdown#22@cv+42654 gotpointercapture#22@stage+42696 pointerup#22@stage+43354 lostpointercapture#22@stage+43354"}
+   fire button when not my turn => ["volley0", true]
+   pause during drag => {"afterPauseTap": "pause drag=false", "volleysAfterResumeRelease": 0, "mode": "play"}
+   visibilitychange during drag => ["pause drag=false opt=true au=suspended", "volleys", 0, "pause"]
+   long-press with 1px jitter (net move <=1px) => {"pathLen": null, "volleys(should be 0)": 0, "aim": [[54.4, 46], [54.2, 46.2]]}
+   rotate device mid-drag => {"rot": [0, 1], "volleysBeforeRelease": 0, "dragAlive": true, "volleysAfterRelease": 1, "aim": [[52, 61.4], [52, 61.4]]}
+   errors: []
+===== portrait 390x844 rot=1
+   tap: no fire => true
+   tap: toast => "打斷望樓的細柱子，整座連人一起倒下來"
+   tap: events => "pointerdown#2@cv+1329 gotpointercapture#2@stage+1445 pointerup#2@stage+1445 lostpointercapture#2@stage+1445 click#2@cv+1446"
+   drag: aim up+stronger => [[54.4, 46], [52, 61.4], false]
+   drag: fires once => 1
+   drag: events => "pointerdown#3@cv+2877 gotpointercapture#3@stage+2921 pointerup#3@stage+3579 lostpointercapture#3@stage+3580"
+   hold 100ms then drag => {"aim": [[54.4, 46], [52, 61.4]], "dragAliveBeforeRelease": true, "volleys": 1, "ev": "pointerdown#4@cv+5011 gotpointercapture#4@stage+5154 pointerup#4@stage+5832 lostpointercapture#4@stage+5832"}
+   hold 300ms then drag => {"aim": [[54.4, 46], [52, 61.4]], "dragAliveBeforeRelease": true, "volleys": 1, "ev": "pointerdown#5@cv+7277 gotpointercapture#5@stage+7620 pointerup#5@stage+8277 lostpointercapture#5@stage+8277"}
+   hold 450ms then drag => {"aim": [[54.4, 46], [52, 61.4]], "dragAliveBeforeRelease": true, "volleys": 1, "ev": "pointerdown#6@cv+9694 gotpointercapture#6@stage+10187 pointerup#6@stage+10866 lostpointercapture#6@stage+10866"}
+   hold 700ms then drag => {"aim": [[54.4, 46], [52, 61.4]], "dragAliveBeforeRelease": true, "volleys": 1, "ev": "pointerdown#7@cv+12317 gotpointercapture#7@stage+13070 pointerup#7@stage+13731 lostpointercapture#7@stage+13732"}
+   hold 1500ms then drag => {"aim": [[54.4, 46], [52, 61.4]], "dragAliveBeforeRelease": true, "volleys": 1, "ev": "pointerdown#8@cv+15179 gotpointercapture#8@stage+16720 pointerup#8@stage+17381 lostpointercapture#8@stage+17381"}
+   cancel: no fire => [true, false]
+   enemy-turn drag released on my turn: no fire => ["resolve0", "aim0 r2", false]
+   drag begun in intro, released in my aim => {"phaseAtRelease": "aim0", "chip": "輪到你：拖曳瞄準，放開發射", "volleys": 1, "toast": "1"}
+   2nd finger <2s: no hijack => {"aimSame": true, "afterSecondUp": 0, "afterFirstUp": 1, "ev": "pointerdown#12@cv+29882 gotpointercapture#12@stage+29919 pointerdown#13@cv+30576 gotpointercapture#13@cv+30669 pointerup#13@cv+30746 lostpointercapture#13@cv+30746 pointerup#12@stage+30859 lostpointercapture#12@stage+30859"}
+   2nd finger after 2.2s hold => {"dragIdBefore": 14, "dragIdAfter2ndDown": 14, "volleysAfter2ndUp": 0, "dragAliveAfter2ndUp": true, "volleysAfterFirstUp(should be 1)": 1, "toast": "打斷望樓的細柱子，整座連人一起倒下來"}
+   two fingers both drag+release => 1
+   press HUD button then slide away => {"btnFire": {"dragOnDown": false, "dragAfterSlide": false, "volleys": 1, "mode": "play"}, "btnShield": {"dragOnDown": false, "dragAfterSlide": false, "volleys": 1, "mode": "play"}, "btnUlt": {"dragOnDown": false, "dragAfterSlide": false, "volleys": 1, "mode": "play"}, "btnPause": {"dragOnDown": false, "dragAfterSlide": false, "volleys": 1, "mode": "pause"}}
+   drag from canvas, release over pause button => {"volleys": 1, "mode": "play", "ev": "pointerdown#22@cv+42647 gotpointercapture#22@stage+42686 pointerup#22@stage+43346 lostpointercapture#22@stage+43347"}
+   fire button when not my turn => ["volley0", true]
+   pause during drag => {"afterPauseTap": "pause drag=false", "volleysAfterResumeRelease": 0, "mode": "play"}
+   visibilitychange during drag => ["pause drag=false opt=true au=suspended", "volleys", 0, "pause"]
+   long-press with 1px jitter (net move <=1px) => {"pathLen": null, "volleys(should be 0)": 0, "aim": [[54.4, 46], [54.6, 46.2]]}
+   rotate device mid-drag => {"rot": [1, 0], "volleysBeforeRelease": 0, "dragAlive": true, "volleysAfterRelease": 1, "aim": [[52, 61.4], [52, 61.4]]}
+   errors: []
+===== portrait-flip 390x844 rot=-1
+   tap: no fire => true
+   tap: toast => "打斷望樓的細柱子，整座連人一起倒下來"
+   tap: events => "pointerdown#2@cv+1281 gotpointercapture#2@stage+1378 pointerup#2@stage+1378 lostpointercapture#2@stage+1378 click#2@cv+1379"
+   drag: aim up+stronger => [[54.4, 46], [52, 61.4], false]
+   drag: fires once => 1
+   drag: events => "pointerdown#3@cv+2817 gotpointercapture#3@stage+2855 pointerup#3@stage+3557 lostpointercapture#3@stage+3558"
+   hold 100ms then drag => {"aim": [[54.4, 46], [52, 61.4]], "dragAliveBeforeRelease": true, "volleys": 1, "ev": "pointerdown#4@cv+5001 gotpointercapture#4@stage+5155 pointerup#4@stage+5830 lostpointercapture#4@stage+5830"}
+   hold 300ms then drag => {"aim": [[54.4, 46], [52, 61.4]], "dragAliveBeforeRelease": true, "volleys": 1, "ev": "pointerdown#5@cv+7284 gotpointercapture#5@stage+7624 pointerup#5@stage+8267 lostpointercapture#5@stage+8268"}
+   hold 450ms then drag => {"aim": [[54.4, 46], [52, 61.4]], "dragAliveBeforeRelease": true, "volleys": 1, "ev": "pointerdown#6@cv+9717 gotpointercapture#6@stage+10204 pointerup#6@stage+10899 lostpointercapture#6@stage+10899"}
+   hold 700ms then drag => {"aim": [[54.4, 46], [52, 61.4]], "dragAliveBeforeRelease": true, "volleys": 1, "ev": "pointerdown#7@cv+12338 gotpointercapture#7@stage+13088 pointerup#7@stage+13782 lostpointercapture#7@stage+13782"}
+   hold 1500ms then drag => {"aim": [[54.4, 46], [52, 61.4]], "dragAliveBeforeRelease": true, "volleys": 1, "ev": "pointerdown#8@cv+15205 gotpointercapture#8@stage+16754 pointerup#8@stage+17330 lostpointercapture#8@stage+17330"}
+   cancel: no fire => [true, false]
+   enemy-turn drag released on my turn: no fire => ["resolve0", "aim0 r2", false]
+   drag begun in intro, released in my aim => {"phaseAtRelease": "aim0", "chip": "輪到你：拖曳瞄準，放開發射", "volleys": 1, "toast": "1"}
+   2nd finger <2s: no hijack => {"aimSame": true, "afterSecondUp": 0, "afterFirstUp": 1, "ev": "pointerdown#12@cv+29537 gotpointercapture#12@stage+29570 pointerdown#13@cv+30131 gotpointercapture#13@cv+30226 pointerup#13@cv+30293 lostpointercapture#13@cv+30293 pointerup#12@stage+30410 lostpointercapture#12@stage+30410"}
+   2nd finger after 2.2s hold => {"dragIdBefore": 14, "dragIdAfter2ndDown": 14, "volleysAfter2ndUp": 0, "dragAliveAfter2ndUp": true, "volleysAfterFirstUp(should be 1)": 1, "toast": "打斷望樓的細柱子，整座連人一起倒下來"}
+   two fingers both drag+release => 1
+   press HUD button then slide away => {"btnFire": {"dragOnDown": false, "dragAfterSlide": false, "volleys": 1, "mode": "play"}, "btnShield": {"dragOnDown": false, "dragAfterSlide": false, "volleys": 1, "mode": "play"}, "btnUlt": {"dragOnDown": false, "dragAfterSlide": false, "volleys": 1, "mode": "play"}, "btnPause": {"dragOnDown": false, "dragAfterSlide": false, "volleys": 1, "mode": "pause"}}
+   drag from canvas, release over pause button => {"volleys": 1, "mode": "play", "ev": "pointerdown#22@cv+42320 gotpointercapture#22@stage+42353 pointerup#22@stage+42930 lostpointercapture#22@stage+42930"}
+   fire button when not my turn => ["volley0", true]
+   pause during drag => {"afterPauseTap": "pause drag=false", "volleysAfterResumeRelease": 0, "mode": "play"}
+   visibilitychange during drag => ["pause drag=false opt=true au=suspended", "volleys", 0, "pause"]
+   long-press with 1px jitter (net move <=1px) => {"pathLen": null, "volleys(should be 0)": 0, "aim": [[54.4, 46], [54.2, 45.8]]}
+   rotate device mid-drag => {"rot": [-1, 0], "volleysBeforeRelease": 0, "dragAlive": true, "volleysAfterRelease": 1, "aim": [[52, 61.4], [52, 61.4]]}
+   errors: []
+
+real	2m49.000s
+user	0m7.125s
+sys	0m1.449s

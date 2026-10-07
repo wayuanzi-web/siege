@@ -1,0 +1,38 @@
+  L5 run 0: 12 rounds play; enemy turns so far 11, warnings 2
+  L5 run 1: 12 rounds play; enemy turns so far 22, warnings 3
+  L5 run 2: 6 rounds lost; enemy turns so far 28, warnings 3
+  L5 run 3: 12 rounds play; enemy turns so far 39, warnings 4
+  L5 run 4: 12 rounds play; enemy turns so far 50, warnings 6
+  L5 run 5: 7 rounds lost; enemy turns so far 57, warnings 6
+  L5 run 6: 12 rounds play; enemy turns so far 68, warnings 8
+  L5 run 7: 12 rounds play; enemy turns so far 79, warnings 8
+  L6 run 0: 10 rounds play; enemy turns so far 88, warnings 9
+  L6 run 1: 5 rounds lost; enemy turns so far 93, warnings 10
+  L6 run 2: 10 rounds play; enemy turns so far 102, warnings 12
+  L6 run 3: 10 rounds play; enemy turns so far 111, warnings 13
+  L6 run 4: 8 rounds lost; enemy turns so far 119, warnings 15
+  L6 run 5: 10 rounds play; enemy turns so far 128, warnings 15
+  L6 run 6: 6 rounds lost; enemy turns so far 134, warnings 16
+  L6 run 7: 6 rounds lost; enemy turns so far 140, warnings 18
+
+TOTAL {"turns": 140, "warn": 18, "warnTrue": 14, "warnFalse": 4, "silentGold": 3, "flicker": 0, "stale": 0, "wrongN": 3, "goldTurns": 49}
+  warn chip shown but NO enemy shot went through a gold gate (false alarm): 4 of 18 warnings
+      [5, 10, "敵軍瞄準了 ×10 倍增符！", "shown 62 frames", "enemy shots actually passed: no gate at all"]
+      [6, 2, "敵軍瞄準了 ×20 倍增符！", "shown 52 frames", "enemy shots actually passed: no gate at all"]
+      [6, 6, "敵軍瞄準了 ×20 倍增符！", "shown 71 frames", "enemy shots actually passed: no gate at all"]
+      [6, 2, "敵軍瞄準了 ×20 倍增符！", "shown 61 frames", "enemy shots actually passed: no gate at all"]
+  enemy shots DID go through a gold gate but the chip never warned: 3
+      [5, 10, ["敵軍瞄準中"], "A.mult=1", "passed 10/2"]
+      [6, 2, ["敵軍瞄準中"], "A.mult=1", "passed 20/2"]
+      [6, 2, ["敵軍瞄準中"], "A.mult=1", "passed 20/2"]
+  number on the chip is not the multiplier of any gate on the field: 3
+      [6, 8, "敵軍瞄準了 ×40 倍增符！", "gates on field: x20", "A.mult=40"]
+      [6, 4, "敵軍瞄準了 ×40 倍增符！", "gates on field: x20", "A.mult=40"]
+      [6, 6, "敵軍瞄準了 ×40 倍增符！", "gates on field: x20", "A.mult=40"]
+  chip text flip-flopped within one enemy aim phase: 0
+  chip still on a warning / wrong text right after the enemy fired: 0
+errors: []
+
+real	0m21.090s
+user	0m0.848s
+sys	0m0.238s

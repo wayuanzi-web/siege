@@ -1,0 +1,28 @@
+A. extra mouse button pressed during a left-button aim drag
+  right-click mid-drag: drag before={"id": 1, "type": "mouse", "far": 72.1, "live": true} | 300ms after the right click={"id": 1, "type": "mouse", "far": 72.1, "live": true} | after moving 22px more (left still held)=null
+     aim before right click [50.48, 56.41] -> after dragging 100px further with the left button still down [49.15, 59.54]  (aim follows mouse: True)
+     left button released: volleys fired = 0  (expected 1)
+     events: pointerdown btn=0 buttons=1 @cv | gotpointercapture btn=-1 buttons=1 @stage | contextmenu btn=2 buttons=3 @stage | auxclick btn=2 buttons=1 @stage | lostpointercapture btn=-1 buttons=1 @stage | pointerup btn=0 buttons=0 @cv
+  middle-click mid-drag: drag before={"id": 1, "type": "mouse", "far": 72.1, "live": true} | 300ms after the middle click={"id": 1, "type": "mouse", "far": 72.1, "live": true} | after moving 22px more (left still held)=null
+     aim before middle click [50.48, 56.41] -> after dragging 100px further with the left button still down [49.15, 59.54]  (aim follows mouse: True)
+     left button released: volleys fired = 0  (expected 1)
+     events: pointerdown btn=0 buttons=1 @cv | gotpointercapture btn=-1 buttons=1 @stage | auxclick btn=1 buttons=1 @stage | lostpointercapture btn=-1 buttons=1 @stage | pointerup btn=0 buttons=0 @cv
+
+B. right/middle click on an in-battle button, then Space / Enter
+  right-click btnPause: {"focus": "btnPause", "focusVisibleBeforeKey": false, "armed": false, "shield": false, "mode": "play", "volleys": 0}
+     then Space: {"focus": "BODY", "armed": false, "shield": false, "mode": "pause", "volleys": 0}   -> fired: False
+  right-click btnUlt: {"focus": "btnUlt", "focusVisibleBeforeKey": false, "armed": false, "shield": false, "mode": "play", "volleys": 0}
+     then Space: {"focus": "btnUlt", "armed": true, "shield": false, "mode": "play", "volleys": 0}   -> fired: False
+  middle-click btnUlt: {"focus": "btnUlt", "focusVisibleBeforeKey": true, "armed": false, "shield": false, "mode": "play", "volleys": 0}
+     then Enter: {"focus": "btnUlt", "armed": true, "shield": false, "mode": "play", "volleys": 0}   -> fired: False
+  right-click btnShield: {"focus": "btnShield", "focusVisibleBeforeKey": false, "armed": false, "shield": false, "mode": "play", "volleys": 0}
+     then Enter: {"focus": "btnShield", "armed": false, "shield": true, "mode": "play", "volleys": 0}   -> fired: False
+  after restarting the level, focus is still on: btnShield
+  control (focus on body, no right-click first), Space: volleys = 1
+  control (LEFT click 連珠): focus = BODY | armed = True
+     then Space: volleys = 1 | armed (consumed by the volley) = False
+errors: []
+
+real	0m17.515s
+user	0m1.062s
+sys	0m0.143s

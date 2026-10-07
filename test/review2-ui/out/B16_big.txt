@@ -1,0 +1,116 @@
+  L5 run 0: 12 rounds play; enemy turns so far 11, warnings 2
+  L5 run 1: 12 rounds play; enemy turns so far 22, warnings 2
+  L5 run 2: 12 rounds play; enemy turns so far 33, warnings 4
+  L5 run 3: 12 rounds play; enemy turns so far 44, warnings 5
+  L5 run 4: 12 rounds play; enemy turns so far 55, warnings 6
+  L5 run 5: 12 rounds play; enemy turns so far 66, warnings 8
+  L5 run 6: 7 rounds lost; enemy turns so far 73, warnings 9
+  L5 run 7: 12 rounds play; enemy turns so far 84, warnings 10
+  L5 run 8: 12 rounds play; enemy turns so far 95, warnings 11
+  L5 run 9: 10 rounds won; enemy turns so far 104, warnings 12
+  L5 run 10: 9 rounds won; enemy turns so far 112, warnings 13
+  L5 run 11: 7 rounds lost; enemy turns so far 119, warnings 13
+  L5 run 12: 12 rounds play; enemy turns so far 130, warnings 14
+  L5 run 13: 5 rounds won; enemy turns so far 134, warnings 15
+  L5 run 14: 12 rounds play; enemy turns so far 145, warnings 17
+  L5 run 15: 7 rounds won; enemy turns so far 151, warnings 18
+  L5 run 16: 12 rounds play; enemy turns so far 162, warnings 19
+  L5 run 17: 12 rounds play; enemy turns so far 173, warnings 22
+  L5 run 18: 12 rounds play; enemy turns so far 184, warnings 23
+  L5 run 19: 12 rounds play; enemy turns so far 195, warnings 24
+  L5 run 20: 9 rounds lost; enemy turns so far 203, warnings 25
+  L5 run 21: 8 rounds won; enemy turns so far 210, warnings 26
+  L5 run 22: 10 rounds lost; enemy turns so far 220, warnings 26
+  L5 run 23: 12 rounds play; enemy turns so far 231, warnings 26
+  L5 run 24: 12 rounds play; enemy turns so far 242, warnings 27
+  L5 run 25: 9 rounds lost; enemy turns so far 251, warnings 27
+  L5 run 26: 12 rounds play; enemy turns so far 262, warnings 28
+  L5 run 27: 6 rounds won; enemy turns so far 267, warnings 28
+  L5 run 28: 12 rounds play; enemy turns so far 278, warnings 30
+  L5 run 29: 12 rounds play; enemy turns so far 289, warnings 31
+  L5 run 30: 10 rounds won; enemy turns so far 298, warnings 32
+  L5 run 31: 12 rounds play; enemy turns so far 309, warnings 33
+  L5 run 32: 11 rounds won; enemy turns so far 319, warnings 36
+  L5 run 33: 12 rounds play; enemy turns so far 330, warnings 38
+  L5 run 34: 11 rounds won; enemy turns so far 340, warnings 39
+  L5 run 35: 12 rounds play; enemy turns so far 351, warnings 40
+  L5 run 36: 12 rounds play; enemy turns so far 362, warnings 43
+  L5 run 37: 12 rounds play; enemy turns so far 373, warnings 45
+  L5 run 38: 12 rounds play; enemy turns so far 384, warnings 47
+  L5 run 39: 12 rounds play; enemy turns so far 395, warnings 49
+  L6 run 0: 10 rounds play; enemy turns so far 404, warnings 51
+  L6 run 1: 6 rounds lost; enemy turns so far 410, warnings 52
+  L6 run 2: 8 rounds lost; enemy turns so far 418, warnings 52
+  L6 run 3: 10 rounds play; enemy turns so far 427, warnings 53
+  L6 run 4: 6 rounds lost; enemy turns so far 433, warnings 55
+  L6 run 5: 5 rounds lost; enemy turns so far 438, warnings 55
+  L6 run 6: 5 rounds lost; enemy turns so far 443, warnings 55
+  L6 run 7: 4 rounds lost; enemy turns so far 447, warnings 56
+  L6 run 8: 6 rounds won; enemy turns so far 452, warnings 56
+  L6 run 9: 10 rounds play; enemy turns so far 461, warnings 58
+  L6 run 10: 5 rounds lost; enemy turns so far 466, warnings 58
+  L6 run 11: 6 rounds won; enemy turns so far 471, warnings 59
+  L6 run 12: 6 rounds won; enemy turns so far 476, warnings 59
+  L6 run 13: 10 rounds play; enemy turns so far 485, warnings 61
+  L6 run 14: 6 rounds lost; enemy turns so far 491, warnings 62
+  L6 run 15: 10 rounds play; enemy turns so far 500, warnings 62
+  L6 run 16: 5 rounds lost; enemy turns so far 505, warnings 62
+  L6 run 17: 10 rounds play; enemy turns so far 514, warnings 65
+  L6 run 18: 8 rounds lost; enemy turns so far 522, warnings 67
+  L6 run 19: 10 rounds play; enemy turns so far 531, warnings 67
+  L6 run 20: 5 rounds lost; enemy turns so far 536, warnings 67
+  L6 run 21: 10 rounds play; enemy turns so far 545, warnings 68
+  L6 run 22: 5 rounds lost; enemy turns so far 550, warnings 68
+  L6 run 23: 5 rounds lost; enemy turns so far 555, warnings 68
+  L6 run 24: 6 rounds won; enemy turns so far 560, warnings 70
+  L6 run 25: 4 rounds lost; enemy turns so far 564, warnings 71
+  L6 run 26: 4 rounds lost; enemy turns so far 568, warnings 72
+  L6 run 27: 9 rounds lost; enemy turns so far 577, warnings 72
+  L6 run 28: 10 rounds play; enemy turns so far 586, warnings 73
+  L6 run 29: 7 rounds lost; enemy turns so far 593, warnings 73
+  L6 run 30: 7 rounds lost; enemy turns so far 600, warnings 74
+  L6 run 31: 10 rounds play; enemy turns so far 609, warnings 77
+  L6 run 32: 4 rounds won; enemy turns so far 612, warnings 77
+  L6 run 33: 10 rounds play; enemy turns so far 621, warnings 77
+  L6 run 34: 4 rounds lost; enemy turns so far 625, warnings 77
+  L6 run 35: 5 rounds lost; enemy turns so far 630, warnings 78
+  L6 run 36: 6 rounds lost; enemy turns so far 636, warnings 78
+  L6 run 37: 7 rounds lost; enemy turns so far 643, warnings 79
+  L6 run 38: 6 rounds lost; enemy turns so far 649, warnings 79
+  L6 run 39: 10 rounds play; enemy turns so far 658, warnings 81
+
+TOTAL {"turns": 658, "warn": 81, "warnTrue": 47, "warnFalse": 34, "silentGold": 13, "flicker": 0, "stale": 0, "wrongN": 11, "goldTurns": 223}
+  warn chip shown but NO enemy shot went through a gold gate (false alarm): 34 of 81 warnings
+      [5, 7, "敵軍瞄準了 ×10 倍增符！", "shown 55 frames", "enemy shots actually passed: no gate at all"]
+      [5, 10, "敵軍瞄準了 ×10 倍增符！", "shown 56 frames", "enemy shots actually passed: no gate at all"]
+      [5, 10, "敵軍瞄準了 ×10 倍增符！", "shown 74 frames", "enemy shots actually passed: no gate at all"]
+      [5, 10, "敵軍瞄準了 ×10 倍增符！", "shown 65 frames", "enemy shots actually passed: no gate at all"]
+      [5, 4, "敵軍瞄準了 ×10 倍增符！", "shown 69 frames", "enemy shots actually passed: no gate at all"]
+      [5, 7, "敵軍瞄準了 ×10 倍增符！", "shown 59 frames", "enemy shots actually passed: no gate at all"]
+      [5, 7, "敵軍瞄準了 ×10 倍增符！", "shown 49 frames", "enemy shots actually passed: no gate at all"]
+      [5, 4, "敵軍瞄準了 ×10 倍增符！", "shown 63 frames", "enemy shots actually passed: no gate at all"]
+  enemy shots DID go through a gold gate but the chip never warned: 13
+      [5, 7, ["敵軍瞄準中"], "A.mult=1", "passed 10/2"]
+      [6, 6, ["敵軍瞄準中"], "A.mult=2", "passed 2/1,20/2"]
+      [6, 4, ["敵軍瞄準中"], "A.mult=1", "passed 2/1,20/2"]
+      [6, 2, ["敵軍瞄準中"], "A.mult=1", "passed 20/2"]
+      [6, 4, ["敵軍瞄準中"], "A.mult=1", "passed 2/1,20/2"]
+      [6, 2, ["敵軍瞄準中"], "A.mult=1", "passed 20/2"]
+      [6, 2, ["敵軍瞄準中"], "A.mult=1", "passed 20/2"]
+      [6, 4, ["敵軍瞄準中"], "A.mult=1", "passed 2/1,20/2"]
+  number on the chip is not the multiplier of any gate on the field: 11
+      [5, 7, "敵軍瞄準了 ×20 倍增符！", "gates on field: x10", "A.mult=20"]
+      [6, 6, "敵軍瞄準了 ×40 倍增符！", "gates on field: x20", "A.mult=40"]
+      [6, 4, "敵軍瞄準了 ×40 倍增符！", "gates on field: x20", "A.mult=40"]
+      [6, 4, "敵軍瞄準了 ×40 倍增符！", "gates on field: x20", "A.mult=40"]
+      [6, 6, "敵軍瞄準了 ×40 倍增符！", "gates on field: x20", "A.mult=40"]
+      [6, 4, "敵軍瞄準了 ×40 倍增符！", "gates on field: x20", "A.mult=40"]
+      [6, 4, "敵軍瞄準了 ×40 倍增符！", "gates on field: x20", "A.mult=40"]
+      [6, 4, "敵軍瞄準了 ×40 倍增符！", "gates on field: x20", "A.mult=40"]
+  chip text flip-flopped within one enemy aim phase: 0
+  chip still on a warning / wrong text right after the enemy fired: 0
+errors: []
+
+real	1m22.211s
+user	0m1.581s
+sys	0m0.425s

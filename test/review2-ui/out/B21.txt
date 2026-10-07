@@ -1,0 +1,82 @@
+ok  '' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  'null' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  'true' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '0' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '-1' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '"abc"' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '[]' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '[1,2,3]' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '}{' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  'undefined' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  'NaN' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"coins":NaN}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  "{'coins':5}" => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '\x00' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  ' ' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '[[[[[[[[[[]]]]]]]]]]' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"coins":null,"open":null,"stars":null,"up":null,"diff":null,"sf'… => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"coins":"1e3","open":"0x5","diff":"2"}' => {"coins":1000,"stars":[0,0,0,0,0,0],"open":5,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":  
+ok  '{"coins":1e308,"open":1e308}' => {"coins":9999999,"stars":[0,0,0,0,0,0],"open":6,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUl coins after reward = 10000264 (over the 9,999,999 load cap; reload clamps it) 
+ok  '{"coins":-1e308,"open":-1e308}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"coins":"Infinity","open":"Infinity"}' => {"coins":9999999,"stars":[0,0,0,0,0,0],"open":6,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUl coins after reward = 10000264 (over the 9,999,999 load cap; reload clamps it) 
+ok  '{"coins":"-Infinity","open":"-Infinity"}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"coins":"999999999999999999999999999999999999999999999999999999'… => {"coins":9999999,"stars":[0,0,0,0,0,0],"open":6,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUl coins after reward = 10000264 (over the 9,999,999 load cap; reload clamps it) 
+ok  '{"coins":9999999999999999999999999999999999999999999999999999999'… => {"coins":9999999,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUl coins after reward = 10000139 (over the 9,999,999 load cap; reload clamps it) 
+ok  '{"coins":0.0000001,"open":0.9999}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"coins":-0,"open":-0}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"coins":[5],"open":[3]}' => {"coins":5,"stars":[0,0,0,0,0,0],"open":3,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"coins":[1,2],"open":[1,2]}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"coins":{"a":1},"open":{"a":1}}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"coins":true,"open":true}' => {"coins":1,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"coins":"","open":""}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"coins":" 12 ","open":" 3 "}' => {"coins":12,"stars":[0,0,0,0,0,0],"open":3,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fa  
+ok  '{"coins":"12abc","open":"3abc"}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"stars":[3,3,3,3,3,3],"open":1}' => {"coins":0,"stars":[3,3,3,3,3,3],"open":6,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"stars":[0,0,0,0,0,3]}' => {"coins":0,"stars":[0,0,0,0,0,3],"open":6,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"stars":[null,"2",2.9,-1,1e9,"x",3,3,3]}' => {"coins":0,"stars":[0,2,2,0,3,0],"open":6,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"stars":"333333"}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"stars":{"0":3,"length":6}}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"stars":[]}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"stars":[[3],[2]]}' => {"coins":0,"stars":[3,2,0,0,0,0],"open":3,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"stars":[true,false,true]}' => {"coins":0,"stars":[1,0,1,0,0,0],"open":4,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"stars":[1e400,-1e400]}' => {"coins":0,"stars":[3,0,0,0,0,0],"open":2,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"up":{"dmg":"5","aim":"abc","hp":true,"shield":[3],"ult":{"a":1'… => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":5,"aim":0,"hp":1,"shield":3,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"up":{"rate":4}}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":4,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"up":{"rate":"x"}}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"up":{"aim":null,"rate":4}}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"up":[5,5,5,5,5]}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"up":"dmg"}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"up":5}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"up":{"dmg":99,"aim":99,"hp":99,"shield":99,"ult":99}}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":5,"aim":5,"hp":5,"shield":5,"ult":5},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"up":{"dmg":-99,"aim":-99,"hp":-99,"shield":-99,"ult":-99}}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"up":{"dmg":1e400,"hp":-1e400}}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":5,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"up":{"dmg":4.99,"aim":0.5,"hp":"2.7"}}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":4,"aim":0,"hp":2,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"diff":0}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"diff":2}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"diff":3}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"diff":-1}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"diff":1.5}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"diff":"0"}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"diff":[2]}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"sfx":false,"mus":false,"vib":false,"seen":true,"seenUlt":true,'… => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":false,"mus":false,"vib":false,"seen":true,"seenUlt":t  
+ok  '{"sfx":0,"mus":"","vib":"false","seen":"false","flip":"no"}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":true,"seenUlt":fals  
+ok  '{"__proto__":{"coins":5,"open":6}}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"up":{"__proto__":{"dmg":3}},"constructor":{"prototype":{"x":1}'… => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"toString":5,"valueOf":7,"hasOwnProperty":1}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"open":7}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":6,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"open":0}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"open":-1}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"open":1e9}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":6,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"open":6,"stars":[0,0,0,0,0,0]}' => {"coins":0,"stars":[0,0,0,0,0,0],"open":6,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fal  
+ok  '{"coins":50}' => {"coins":50,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUlt":fa  
+ok  '{"coins":9999999}' => {"coins":9999999,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUl coins after reward = 10000139 (over the 9,999,999 load cap; reload clamps it) 
+ok  '{"coins":10000000}' => {"coins":9999999,"stars":[0,0,0,0,0,0],"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":false,"seenUl coins after reward = 10000139 (over the 9,999,999 load cap; reload clamps it) 
+ok  '{"coins": 1234, "stars": [3, 2, 1, 0, 0, 0], "open": 4, "up": {"'… => {"coins":1234,"stars":[3,2,1,0,0,0],"open":4,"up":{"dmg":2,"aim":1,"hp":3,"shield":0,"ult":5},"sfx":true,"mus":false,"vib":true,"seen":true,"seenUlt":  
+
+76 saves, 0 with problems
+
+real	2m28.428s
+user	0m4.661s
+sys	0m1.335s

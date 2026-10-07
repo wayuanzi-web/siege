@@ -1,0 +1,20 @@
+L1 side0 rocket  sprite x[-1.24,+1.73] y[-0.25,+4.19]  hitbox x[±1.10] y[0,3.00]  -> head sticks out +1.19 above box (28% of visible height)
+L1 side0 bolt    sprite x[-1.23,+2.05] y[-0.16,+4.29]  hitbox x[±1.10] y[0,3.00]  -> head sticks out +1.29 above box (30% of visible height)
+L1 side1 rocket  sprite x[-1.79,+1.10] y[-0.30,+3.99]  hitbox x[±1.10] y[0,3.00]  -> head sticks out +0.99 above box (25% of visible height)
+L1 later: {'mode': 'play', 'demo': False, 'state': 'play', 'phase': 'aim', 'turn': 0, 'round': 4, 'idx': 0, 'fired': 30, 'shots': 0, 'drag': False, 'me': 98, 'foe': 51}
+L3 side0 bomb    sprite x[-1.43,+2.24] y[-0.21,+4.32]  hitbox x[±1.10] y[0,3.00]  -> head sticks out +1.32 above box (31% of visible height)
+L3 side0 fire    sprite x[-1.17,+1.87] y[-0.19,+4.49]  hitbox x[±1.10] y[0,3.00]  -> head sticks out +1.49 above box (33% of visible height)
+L3 side1 ice     sprite x[-1.63,+1.10] y[-0.17,+4.90]  hitbox x[±1.10] y[0,3.00]  -> head sticks out +1.90 above box (39% of visible height)
+L3 side1 bomb    sprite x[-2.35,+1.47] y[-0.26,+4.11]  hitbox x[±1.10] y[0,3.00]  -> head sticks out +1.11 above box (27% of visible height)
+L3 later: {'mode': 'play', 'demo': False, 'state': 'play', 'phase': 'aim', 'turn': 0, 'round': 4, 'idx': 2, 'fired': 45, 'shots': 0, 'drag': False, 'me': 76, 'foe': 40}
+L5 side0 ice     sprite x[-1.13,+1.60] y[-0.22,+4.77]  hitbox x[±1.10] y[0,3.00]  -> head sticks out +1.77 above box (37% of visible height)
+L5 side0 zap     sprite x[-1.32,+1.73] y[-0.13,+4.24]  hitbox x[±1.10] y[0,3.00]  -> head sticks out +1.24 above box (29% of visible height)
+L5 side1 bal     sprite x[-2.15,+1.13] y[-0.30,+4.30]  hitbox x[±1.10] y[0,3.00]  -> head sticks out +1.30 above box (30% of visible height)
+L5 side1 flak    sprite x[-2.34,+1.56] y[-0.13,+4.16]  hitbox x[±1.10] y[0,3.00]  -> head sticks out +1.16 above box (28% of visible height)
+L5 side1 zap     sprite x[-1.80,+1.32] y[-0.27,+4.17]  hitbox x[±1.10] y[0,3.00]  -> head sticks out +1.17 above box (28% of visible height)
+L5 later: {'mode': 'play', 'demo': False, 'state': 'play', 'phase': 'aim', 'turn': 0, 'round': 4, 'idx': 4, 'fired': 21, 'shots': 0, 'drag': False, 'me': 88, 'foe': 76}
+errors: ['warning: Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true. See: https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-will-read-frequently']
+
+real	0m33.663s
+user	0m4.837s
+sys	0m0.387s

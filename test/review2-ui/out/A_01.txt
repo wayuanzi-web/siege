@@ -1,0 +1,61 @@
+home sel 0 {'sel': 0, 'idx': 0, 'demo': True, 'go': False, 'tip': '雙方輪流開火。按住畫面拖曳瞄準，放開就發射；砲彈穿過', 'name': '青丘試砲'}
+home sel 1 {'sel': 1, 'idx': 1, 'demo': True, 'go': True, 'tip': '先打下第一關「青丘試砲」才能出戰。', 'name': '黃沙風口'}
+home sel 2 {'sel': 2, 'idx': 2, 'demo': True, 'go': True, 'tip': '先打下第二關「黃沙風口」才能出戰。', 'name': '霜河冰壁'}
+home sel 3 {'sel': 3, 'idx': 3, 'demo': True, 'go': True, 'tip': '先打下第三關「霜河冰壁」才能出戰。', 'name': '熔岩雙峰'}
+home sel 4 {'sel': 4, 'idx': 4, 'demo': True, 'go': True, 'tip': '先打下第四關「熔岩雙峰」才能出戰。', 'name': '雲海浮島'}
+home sel 5 {'sel': 5, 'idx': 5, 'demo': True, 'go': True, 'tip': '先打下第五關「雲海浮島」才能出戰。', 'name': '魔王城'}
+locked go -> home
+locked enter -> home
+toggles off [False, False, False, False]
+diff 0 0 true,false,false
+diff 2 2 false,false,true
+diff 1 1 false,true,false
+wipe armed text: 再按一次，確定清除
+reopen -> wipe text: 清除進度 | armed 0
+unlock [6, 0, True]
+buy with 0 coins {"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0} 0
+aim maxed {"dmg":0,"aim":5,"hp":0,"shield":0,"ult":0} 98649 已滿 homeCoins=98,649
+L1 start {"mode": "play", "hint": false, "chip": null, "say": "chamfer | ", "sayOp": 0, "banner": "blue show | 第一關青丘試砲", "rdSh": [0, 0], "trail": null, "slow": 1, "mus": 104, "wind": null, "ticks": 0, "foeLbl": "敵城", "name": "青丘試砲"}
+L1 bot {'t': 48, 'round': 5, 'phase': 'over', 'state': 'won', 'me': 94, 'foe': 0, 'parts': 0, 'blocks': 54, 'nfrag': 5} errors so far 0
+L1 result {'title': '敵城攻破', 'next': True, 'stars': 3, 'coins': '+138', 'tip': None}
+L1 home {"mode": "home", "demo": true, "hud": false, "home": true, "result": false, "opt": false, "showAim": false, "trail": null, "slow": 1, "flash": 0, "mus": 84, "drag": false}
+L2 start {"mode": "play", "hint": false, "chip": null, "say": "chamfer | 天燈升起來了：打中它有補給（敵軍也會", "sayOp": 0, "banner": "blue show | 第二關黃沙風口", "rdSh": [0, 0], "trail": null, "slow": 1, "mus": 100, "wind": "無風", "ticks": 0, "foeLbl": "敵城", "name": "黃沙風口"}
+L2 bot {'t': 48, 'round': 5, 'phase': 'over', 'state': 'won', 'me': 83, 'foe': 0, 'parts': 934, 'blocks': 96, 'nfrag': 9} errors so far 0
+L2 result {'title': '敵城攻破', 'next': True, 'stars': 3, 'coins': '+160', 'tip': None}
+L2 home {"mode": "home", "demo": true, "hud": false, "home": true, "result": false, "opt": false, "showAim": false, "trail": null, "slow": 1, "flash": 0, "mus": 84, "drag": false}
+L3 start {"mode": "play", "hint": false, "chip": null, "say": "chamfer | 輪到敵軍了：按「護罩」可以擋下他們這", "sayOp": 0, "banner": "blue show | 第三關霜河冰壁", "rdSh": [0, 0], "trail": null, "slow": 1, "mus": 90, "wind": null, "ticks": 0, "foeLbl": "敵城", "name": "霜河冰壁"}
+L3 bot {'t': 96, 'round': 8, 'phase': 'over', 'state': 'lost', 'me': 0, 'foe': 31, 'parts': 126, 'blocks': 95, 'nfrag': 20} errors so far 0
+L3 result {'title': '城樓失守', 'next': False, 'stars': 0, 'coins': '+27', 'tip': '敵軍的赤符會擋住你的砲彈，也讓他們的砲彈變多：把它打掉，或是換個角度繞過去。'}
+L3 home {"mode": "home", "demo": true, "hud": false, "home": true, "result": false, "opt": false, "showAim": false, "trail": null, "slow": 1, "flash": 0, "mus": 84, "drag": false}
+L4 start {"mode": "play", "hint": false, "chip": null, "say": "chamfer | 天燈升起來了：打中它有補給（敵軍也會", "sayOp": 0, "banner": "blue show | 第四關熔岩雙峰", "rdSh": [0, 0], "trail": null, "slow": 1, "mus": 118, "wind": null, "ticks": 0, "foeLbl": "敵城", "name": "熔岩雙峰"}
+L4 bot {'t': 60, 'round': 4, 'phase': 'over', 'state': 'won', 'me': 57, 'foe': 0, 'parts': 8, 'blocks': 57, 'nfrag': 16} errors so far 0
+L4 result {'title': '敵城攻破', 'next': True, 'stars': 2, 'coins': '+182', 'tip': '三顆星：城防要剩六成以上。'}
+L4 home {"mode": "home", "demo": true, "hud": false, "home": true, "result": false, "opt": false, "showAim": false, "trail": null, "slow": 1, "flash": 0, "mus": 84, "drag": false}
+L5 start {"mode": "play", "hint": false, "chip": null, "say": "chamfer | 天燈升起來了：打中它有補給（敵軍也會", "sayOp": 0, "banner": "blue show | 第五關雲海浮島", "rdSh": [0, 0], "trail": null, "slow": 1, "mus": 108, "wind": null, "ticks": 0, "foeLbl": "敵城", "name": "雲海浮島"}
+L5 bot {'t': 96, 'round': 10, 'phase': 'over', 'state': 'won', 'me': 19, 'foe': 0, 'parts': 8, 'blocks': 63, 'nfrag': 10} errors so far 0
+L5 result {'title': '敵城攻破', 'next': True, 'stars': 1, 'coins': '+176', 'tip': '三顆星：一個兵都不能倒，城防還要剩六成以上。'}
+L5 home {"mode": "home", "demo": true, "hud": false, "home": true, "result": false, "opt": false, "showAim": false, "trail": null, "slow": 1, "flash": 0, "mus": 84, "drag": false}
+L6 start {"mode": "play", "hint": false, "chip": null, "say": "chamfer | 天燈升起來了：打中它有補給（敵軍也會", "sayOp": 0, "banner": "blue show | 第六關魔王城", "rdSh": [0, 0], "trail": null, "slow": 1, "mus": 124, "wind": null, "ticks": 2, "foeLbl": "魔王", "name": "魔王城"}
+L6 bot {'t': 96, 'round': 8, 'phase': 'over', 'state': 'lost', 'me': 0, 'foe': 3, 'parts': 4, 'blocks': 39, 'nfrag': 7} errors so far 0
+L6 result {'title': '城樓失守', 'next': False, 'stars': 0, 'coins': '+34', 'tip': '毀滅光球先停在半路，下一輪才砸過來：打掉它，或是開護罩。'}
+L6 home {"mode": "home", "demo": true, "hud": false, "home": true, "result": false, "opt": false, "showAim": false, "trail": null, "slow": 1, "flash": 0, "mus": 84, "drag": false}
+ERRORS after six levels: []
+pause mid-aim frozen True True
+esc resume -> play
+P pause -> pause
+pause mid-volley volley 5 chip: 我方砲擊 [chamfer me]
+RETRY mid-volley ->  {"mode": "play", "phase": "intro", "round": 0, "chip": null, "fireReady": false, "say": "chamfer | 沙城閣樓堆著大石球：打斷撐著它的木樑", "sayOp": 0, "hint": false, "trail": null, "slow": 1, "parts": 0, "wind": "無風", "roundTxt": ""} shots 0
+  +0.8s chip: 輪到你：拖曳瞄準，放開發射 [chamfer me go] phase aim
+enemy aim chip: 敵軍瞄準中 [chamfer foe]
+QUIT during enemy aim -> start L1:  {"phase": "intro", "chip": null, "fireReady": false, "wind": null, "name": "青丘試砲", "roundTxt": "", "shBtn": "skill", "ultBtn": "skill gold"}
+during finale mode play
+WIN result leftovers {"mode": "result", "hud": true, "result": true, "chip": null, "hint": false, "sayOp": 0, "bannerOp": 0, "slow": 1, "flash": 0, "shake": 0.01, "mus": null}
+next -> play idx 1
+shop from result closed -> {"mode": "result", "result": true, "shop": false, "home": false}
+again -> play idx 1 dmg mul 1.08
+wiped {"c":0,"open":1,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"stars":[0,0,0,0,0,0],"sel":0,"diff":1,"seen":false} locked: 5
+FINAL ERRORS: []
+
+real	2m45.699s
+user	0m5.621s
+sys	0m0.491s

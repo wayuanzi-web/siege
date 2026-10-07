@@ -1,0 +1,9 @@
+--- normal: prefers-reduced-motion matches = False
+   {"level": 5, "gameSec": 76.0, "rounds": 8, "state": "play", "calm": false, "flashes": 23, "maxInAny1000ms": 2, "at": [12832, 12885], "minSpanOf3": 1296, "peakFlashAlpha": 0.199, "peakShake": 0.51, "peakShakeOffsetPx": 2.9, "slowMoMin": 0.45, "peakShotsInAir": 129}
+   {"level": 6, "gameSec": 52.0, "rounds": 5, "state": "play", "calm": false, "flashes": 13, "maxInAny1000ms": 2, "at": [80209, 80241], "minSpanOf3": 1700, "peakFlashAlpha": 0.649, "peakShake": 1.45, "peakShakeOffsetPx": 5.1, "slowMoMin": 0.4, "peakShotsInAir": 65}
+   {"level": 4, "gameSec": 39.0, "rounds": 4, "state": "play", "calm": false, "flashes": 3, "maxInAny1000ms": 1, "at": [129377], "minSpanOf3": 27072, "peakFlashAlpha": 0.199, "peakShake": 0.93, "peakShakeOffsetPx": 4.4, "slowMoMin": 0.4, "peakShotsInAir": 173}
+   errors: []
+
+real	3m47.332s
+user	0m2.170s
+sys	0m0.514s

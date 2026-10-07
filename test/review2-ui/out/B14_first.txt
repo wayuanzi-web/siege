@@ -1,0 +1,23 @@
+--- L1 (first-time tutorial): 8 rounds, 91s game time, state play; say() calls 7, shown 7, dropped 0
+     6.0s r1 resolve0  say  就是這樣！穿過倍增符，砲彈變多了  [queue 0]
+     6.0s r1 resolve0    SHOW after 0.0s wait, 16 chars: 就是這樣！穿過倍增符，砲彈變多了…  <-- CUT to 3.3s of 3.5s = 4.9 chars/s
+     9.2s r1 resolve0  say  打倒一個守軍！守軍全倒，城就破了  [queue 0, showing]
+     9.2s r1 resolve0    SHOW after 0.0s wait, 16 chars: 打倒一個守軍！守軍全倒，城就破了…  <-- CUT to 2.1s of 3.5s = 7.5 chars/s
+    11.2s r1 resolve0  say  漂亮的坍塌！一次垮得越多，「連珠」集得越快  [queue 0, showing]
+    11.4s r1 aim1        SHOW after 0.2s wait, 21 chars: 漂亮的坍塌！一次垮得越多，「連珠」集得越快…
+    22.0s r2 resolve0  say  輪到敵軍了：按「護罩」可以擋下他們這一整輪  [queue 0]
+    22.0s r2 resolve0    SHOW after 0.0s wait, 21 chars: 輪到敵軍了：按「護罩」可以擋下他們這一整輪…  <-- CUT to 3.0s of 4.2s = 6.9 chars/s
+    25.0s r2 resolve1  say  天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走  [queue 0, showing]
+    25.0s r2 resolve1    SHOW after 0.0s wait, 28 chars: 天燈升起來了：打中它有補給（敵軍也會搶），兩…  <-- CUT to 3.1s of 5.2s = 8.9 chars/s
+    25.0s r2 resolve1  say  打斷望樓的細柱子，上面整座會自己倒下來  [queue 0, showing]
+    28.2s r3 aim0        SHOW after 3.1s wait, 19 chars: 打斷望樓的細柱子，上面整座會自己倒下來…
+    77.0s r6 resolve1  say  「連珠」集滿了！按右下角金色按鈕上膛，這一輪每個兵連打三次  [queue 0]
+    77.0s r6 resolve1    SHOW after 0.0s wait, 29 chars: 「連珠」集滿了！按右下角金色按鈕上膛，這一輪…
+
+TOTAL shown 7; cut short 4; waited >3s before showing: 1
+  fastest forced reading speed: 8.9 chars/s (天燈升起來了：打中它有補給（敵軍…)
+errors: []
+
+real	0m28.496s
+user	0m2.508s
+sys	0m0.383s

@@ -1,0 +1,12 @@
+L1: exceptions from events: [] [] | console/page errors so far: 0
+L2: exceptions from events: [] [] | console/page errors so far: 0
+L3: exceptions from events: [] [] | console/page errors so far: 0
+L4: exceptions from events: [] [] | console/page errors so far: 0
+L5: exceptions from events: [] [] | console/page errors so far: 0
+L6: exceptions from events: [] [] | console/page errors so far: 0
+home/demo: exceptions: [] | toast shown in demo? chamfer
+errors: []
+
+real	0m26.276s
+user	0m2.622s
+sys	0m0.239s

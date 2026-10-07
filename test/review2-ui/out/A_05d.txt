@@ -1,0 +1,38 @@
+
+===== 360x640 touch=True {"rot": 1, "sw": 640, "sh": 360, "ox": 0, "oy": 0, "u": "3.459px", "cv": [1280, 720], "s": 9.85, "top": 64.1, "x0": -9, "x1": 121}
+  [home1] {"small": ["#btnShop 40x106", "#btnOpt 40x106"]}
+  [home6_locked] {"small": ["#btnShop 40x106", "#btnOpt 40x106"]}
+  [opt] {"small": [".btn「返回」 40x357"]}
+  [shop] {"small": [".btn「返回」 40x488"]}
+  [home5_progress] {"small": ["#btnShop 40x142", "#btnOpt 40x69"]}
+  [L1_hint] ok
+  [L1_hint_plus_tap_toast] ok
+  [L2_wind_skills] ok
+  [L2_long_toast] ok
+  [pause] {"small": ["#btnResume 40x114", "#btnRetry 40x114", "#btnQuit 40x114"]}
+  [L6_boss] ok
+  [win_L6] {"small": ["#btnAgain 40x158", "#btnUp 40x158"]}
+  [lose_L4] {"small": ["#btnAgain 40x158", "#btnUp 40x158"]}
+  [win_L1] {"small": ["#btnNext 40x158", "#btnAgain 40x158", "#btnUp 40x158"]}
+  errors: []
+
+===== 568x320 touch=True {"rot": 0, "sw": 568, "sh": 320, "ox": 0, "oy": 0, "u": "3.070px", "cv": [1136, 640], "s": 8.74, "top": 64.2, "x0": -9, "x1": 121}
+  [home1] {"small": ["#btnShop 94x35", "#btnOpt 94x35", ".lv「2黃沙風口★★★」 173x39", ".lv「3霜河冰壁★★★」 173x39", ".lv「4熔岩雙峰★★★」 173x39", ".lv「5雲海浮島★★★」 173x39", ".lv「6魔王城★★★」 173x39"]}
+  [home6_locked] {"small": ["#btnShop 94x35", "#btnOpt 94x35", ".lv「1青丘試砲★★★」 173x39", ".lv「2黃沙風口★★★」 173x39", ".lv「3霜河冰壁★★★」 173x39", ".lv「4熔岩雙峰★★★」 173x39", ".lv「5雲海浮島★★★」 173x39"]}
+  [opt] {"small": [".btn「返回」 317x35"]}
+  [shop] {"small": [".btn「返回」 434x35"]}
+  [home5_progress] {"small": ["#btnShop 126x35", "#btnOpt 61x35", ".lv「1青丘試砲★★★」 173x39", ".lv「2黃沙風口★★★」 173x39", ".lv「3霜河冰壁★★★」 173x39", ".lv「4熔岩雙峰★★★」 173x39", ".lv「6魔王城★★★」 173x39"]}
+  [L1_hint] ok
+  [L1_hint_plus_tap_toast] ok
+  [L2_wind_skills] ok
+  [L2_long_toast] {"overlap": ["btnFire x say 2x10"]}
+  [pause] {"small": ["#btnResume 102x35", "#btnRetry 102x35", "#btnQuit 102x35"]}
+  [L6_boss] ok
+  [win_L6] {"small": ["#btnAgain 140x35", "#btnUp 140x35"]}
+  [lose_L4] {"small": ["#btnAgain 140x35", "#btnUp 140x35"]}
+  [win_L1] {"small": ["#btnNext 140x35", "#btnAgain 140x35", "#btnUp 140x35"]}
+  errors: []
+
+real	1m13.057s
+user	0m8.755s
+sys	0m0.547s

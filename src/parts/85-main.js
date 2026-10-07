@@ -26,7 +26,7 @@ function layout() {
   const padL = rot || ox > 0 ? 0 : safeInset('l'), padR = rot || ox > 0 ? 0 : safeInset('r');
   const u = clamp(Math.min(sh / 100, sw / 185), 2.9, 6.4);       // 介面的單位：看高度，但太窄（接近 4:3）的時候也要縮，上面那一列才排得下
   stage.style.setProperty('--u', u.toFixed(3) + 'px'); stage.style.setProperty('--w', (sw / 100).toFixed(3) + 'px'); stage.style.setProperty('--pl', padL + 'px'); stage.style.setProperty('--pr', padR + 'px');
-  $('btnFlip').hidden = !rot;
+  $('btnFlip').hidden = !rot; stage.classList.toggle('rot', !!rot); $('turn').style.setProperty('--tilt', rot === -1 ? '90deg' : '-90deg');
   const changedRot = rot !== G.rot; G.rot = rot; G.sw = sw; G.sh = sh; G.ox = ox; G.oy = oy; G.vw = w; G.vh = h;
   if (rot && (changedRot || !G.turned)) { G.turned = true; const t = $('turn'); t.hidden = false; replay(t, 'x'); clearTimeout(G._turnT); G._turnT = setTimeout(() => { t.hidden = true; }, 3400); } else if (!rot) $('turn').hidden = true;
   const dpr = Math.min(window.devicePixelRatio || 1, G.dprCap);
@@ -57,7 +57,7 @@ function demoStart(idx) {
 }
 function startLevel(idx) {
   auInit();
-  G.demo = false; G.mode = 'play'; G.endT = 0; G.acc = 0; G.fired = 0; G.drag = null; G.said = {}; G.tut = idx === 0 && !SV.seen ? 1 : 0;
+  G.demo = false; G.mode = 'play'; G.endT = 0; G.acc = 0; G.fired = 0; G.drag = null; G.said = {}; G.hinted = {}; G.tapAt = -1e9; G.tut = idx === 0 && !SV.seen ? 1 : 0;
   const run = ++G.run;
   simInit(idx, SV.up, (Math.random() * 1e9) | 0, SV.diff); fxReset(); sceneBuild(true); S.on = fxOn;
   RD.showAim = true; RD.aimOn = false; RD.trail = null; RD.sh[0] = RD.sh[1] = 0;
@@ -75,8 +75,8 @@ function goHome() {
   G.mode = 'home'; sayClear(); $('hud').hidden = true; $('result').hidden = true; $('opt').hidden = true; $('shop').hidden = true; $('home').hidden = false;
   homeRender(); demoStart(UI.sel); musStart(6);
 }
-function pauseGame() { if (G.mode !== 'play' || S.state !== 'play') return; G.mode = 'pause'; G.drag = null; G.keys = {}; openOpt(true); }
-function resumeGame() { if (G.mode !== 'pause') return; G.mode = 'play'; $('opt').hidden = true; G.last = performance.now(); }
+function pauseGame() { if (G.mode !== 'play' || S.state !== 'play') return; G.mode = 'pause'; G.drag = null; G.keys = {}; sayHold(true); openOpt(true); }
+function resumeGame() { if (G.mode !== 'pause') return; G.mode = 'play'; $('opt').hidden = true; G.last = performance.now(); sayHold(false); }
 function finishLevel() {
   // 用分出勝負那一刻的城防（之後整座垮掉的演出不算）
   const won = S.state === 'won', idx = S.idx, bar = S.endBar[0], lost = S.stat.lost;
@@ -92,7 +92,12 @@ function finishLevel() {
 function uiEvent(t, a, b, c, d, e) {
   if (G.demo || G.mode === 'home') return;
   const once = (k, txt, alert) => { if (G.said[k]) return; G.said[k] = 1; say(txt, alert, k); };
-  const later = (ms, fn) => { const run = G.run; setTimeout(() => { if (G.mode === 'play' && G.run === run && S.state === 'play') fn(); }, ms); };
+  // 過一會兒再講：只算真的在玩的時間（暫停的時候不走，免得話在暫停選單後面講完就沒了）
+  const later = (ms, fn) => {
+    const run = G.run; let left = ms, last = performance.now();
+    const tick = () => { if (G.run !== run) return; const now = performance.now(); if (G.mode === 'play') left -= now - last; last = now; if (left > 0) { setTimeout(tick, Math.min(250, Math.max(20, left))); return; } if (G.mode === 'play' && S.state === 'play') fn(); };
+    setTimeout(tick, Math.min(250, ms));
+  };
   switch (t) {
     case 'say': say(a, b); break;
     case 'turn':
@@ -103,26 +108,33 @@ function uiEvent(t, a, b, c, d, e) {
         else if (G.tut === 2) { G.tut = 3; if (!G.said.gt) say('這次讓虛線穿過藍色的倍增符：一發變三發'); }
         else if (G.tut === 3) { G.tut = 4; say('打斷望樓的細柱子，上面整座會自己倒下來'); }
         else if (G.tut === 4) { G.tut = 5; if (!G.said.kill) say('把守軍全部打倒就破城；上面的頭像是雙方還站著的兵'); }
-        // 每一關開頭幾回合各講一句這一關的訣竅（第一次玩第一關的時候讓教學先講）
-        const hs = S.lv.hints; if (!G.tut && hs && hs[b - 1]) say(hs[b - 1]);
+        // 這一關的訣竅：一回合最多講一句，而且要還用得上才講（該打的東西已經不在了就跳過）。第一次玩第一關的時候讓教學先講
+        const hs = S.lv.hints;
+        if (!G.tut && hs) for (let i = 0; i < hs.length; i++) { const h = hs[i]; if (G.hinted[i] || b < h.r || (h.ok && !h.ok())) continue; G.hinted[i] = 1; say(h.t); break; }
         const T = S.team[0];
         if (!SV.seenUlt && T.ult.c >= T.ult.need && !T.ult.armed) once('ult', '「連珠」集滿了！按右下角金色按鈕上膛，這一輪每個兵連打三次');
+        // 沒有一個兵開得了火（全被凍住、電暈）：護罩可以解凍；沒有護罩就自動跳過這一輪，不用玩家對著空氣拖一下
+        if (!T.units.some((u) => u.alive && u.w && u.frozen <= 0 && u.stun <= 0)) {
+          if (T.shield.c >= T.shield.need && !T.shield.on) say('兵都動不了：開護罩可以馬上解凍；不開就按「發射」跳過這一輪', 1);
+          else { say('兵都動不了，這一輪只能跳過', 1); later(1600, () => { if (canFire() && !S.team[0].units.some((u) => u.alive && u.w && u.frozen <= 0 && u.stun <= 0)) fireNow(); }); }
+        }
       } else {
         const T = S.team[0];
         if (!SV.seenSh && b >= 2 && T.shield.c >= T.shield.need && !T.shield.on) once('sh', '輪到敵軍了：按「護罩」可以擋下他們這一整輪');
       }
       break;
-    case 'wind': once('wind', '起風了！每回合風向都會變，虛線已經把風算進去'); break;
+    case 'wind': once('wind', '起風了！每回合的風都不一樣，虛線已經把風算進去'); break;
     case 'ultarm': if (c === 1) { const T = S.team[0]; say(T.shield.c >= T.shield.need && !T.shield.on ? '敵軍連珠砲上膛了，這一輪打三次：快開護罩！' : '敵軍連珠砲上膛了，這一輪打三次！', 1); } break;
-    case 'phase': if (a === 2) { banner('魔王結界', 'boss', '第二階段'); later(1900, () => say('結界分三段，每回合只開一個缺口：從沒有光牆的地方打進去', 1)); } else { banner('魔王暴怒', 'boss', '最終階段'); later(1900, () => say('黃金符出現了：穿過去，一發變二十發！')); } break;
+    case 'phase': if (a === 2) { banner('魔王結界', 'boss', '第二階段'); later(1900, () => say('魔王張開結界了！結界分三段，每回合換缺口：從沒有光牆的地方打進去', 1)); } else { banner('魔王暴怒', 'boss', '最終階段'); later(1900, () => say('×20 的倍增符出現了！只出現一回合：穿過去，一發變二十發')); } break;
     case 'bossback': once('bback', '魔王摔下去又飛回來了，不過摔一次扣不少血'); break;
     case 'rockstop': if (c === 0) once('rstop', '護罩把落石擋下來了'); break;
     case 'sudden': banner('決戰時刻', 'red'); later(1900, () => say('拖太久了，雙方的砲火越來越猛', 1)); break;
-    case 'end': banner(c === 1 ? (S.lv.boss ? '魔王伏誅' : '敵城攻破') : '城樓失守', c === 1 ? 'gold' : 'red', d ? (c === 1 ? '守軍全滅' : '我軍全滅') : ''); $('hint').hidden = true; break;
+    case 'end': sayClear(); banner(c === 1 ? (S.lv.boss ? '魔王伏誅' : '敵城攻破') : '城樓失守', c === 1 ? 'gold' : 'red', d ? (c === 1 ? '守軍全滅' : '我軍全滅') : ''); $('hint').hidden = true; break;
     case 'gate': if (e === 0 && G.tut >= 1 && G.tut <= 3 && !G.said.gt) { G.said.gt = 1; say('就是這樣！穿過倍增符，砲彈變多了'); } break;
     case 'gspawn': if (c === 1) once('rg', '敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它', 1); else if (c === 2) once('gg', '黃金符：倍數很高，兩邊都能用，而且只出現一回合'); else if (c === 3) once('hz', '紫色的折損符會吃掉一半砲彈，別穿過去'); break;
     case 'launch': if (c === 1) once('bal', '轟炸氣球升空了！它先停在半路，下一輪才飛過來，趁現在打下來', 1); break;
-    case 'orb': once('orb', '毀滅光球！它先停在半路，下一輪砸過來：打掉它，或是開護罩', 1); break;
+    case 'orb': once('orb', '毀滅光球！它先停在城門口，下一輪砸過來：現在打爆它，它會掉頭砸在魔王自己身上', 1); break;
+    case 'orbback': once('orbb', '漂亮！光球打爆了會掉頭砸回魔王身上，連結界都擋不住'); break;
     case 'lantern': once('lan', '天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走'); break;
     case 'rockwarn': once('rock', '紅圈是這一回合結束時落石的位置，會砸到你就開護罩', 1); break;
     case 'erupt': once('gey', '地火噴發：砲彈穿過火柱會著火，威力多五成'); break;
@@ -197,8 +209,13 @@ function bindInput() {
   // 這樣每一輪都是從上一輪的角度接著調，吊高、平射都拉得到，手指也不必蓋住城樓
   stage.addEventListener('pointerdown', (e) => {
     auInit(); if (!G.started) { G.started = true; if (G.mode === 'home') musStart(6); }
+    G.kbNav = false;
+    // 分出勝負之後的垮城演出：看了一會兒再點畫面，就直接跳到結算
+    if (G.mode === 'play' && S.state !== 'play' && G.endT > 1.6 && !e.target.closest('button')) { G.endT = 99; return; }
     if (G.mode !== 'play' || S.state !== 'play' || e.target.closest('button')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
+    // 下面會取消這一下的預設動作，連「把鍵盤焦點移進這個頁框」也會被取消（遊戲嵌在別的頁面裡時，方向鍵、空白鍵會打到外面去）：自己拿回來
+    try { window.focus(); } catch (err) { /* 拿不到焦點也能玩 */ }
     // 已經有一根手指在瞄準：其他手指不搶（同一支滑鼠、同一支筆不會同時按兩次，那是上一次沒收乾淨）
     const d0 = G.drag; if (d0 && !(d0.type !== 'touch' && d0.type === e.pointerType)) return;
     G.drag = { id: e.pointerId, type: e.pointerType, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, far: 0, live: canFire() };
@@ -221,20 +238,27 @@ function bindInput() {
     if (e.type !== 'pointerup' || !canFire()) return;
     // 真的拖過才發射（看離起點最遠拖了多遠，手指按著不動的抖動不算）
     if (d.live && d.far > 14) fireNow();
-    else if (d.far <= 14 && !G.said.tap && $('hint').hidden) { G.said.tap = 1; say('按住拖曳瞄準，放開就發射；也可以按左下角的「發射」'); }
+    else if (d.far <= 14 && $('hint').hidden && performance.now() - G.tapAt > 15000) { G.tapAt = performance.now(); say('按住拖曳瞄準，放開就發射；也可以按左下角的「發射」'); }
   };
   stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
   // 萬一沒收到放開的事件（指標捕捉被搶走、系統手勢）：別讓瞄準卡住
-  stage.addEventListener('lostpointercapture', (e) => { const d = G.drag; if (d && d.id === e.pointerId) setTimeout(() => { if (G.drag === d) G.drag = null; }, 60); });
+  stage.addEventListener('lostpointercapture', (e) => {
+    const d = G.drag; if (!d || d.id !== e.pointerId) return;
+    // 左鍵還按著（中途按了一下右鍵或中鍵，瀏覽器會把捕捉收回去）：重新抓住，這次拖曳繼續算
+    if (e.buttons & 1) { try { stage.setPointerCapture(e.pointerId); } catch (err) { /* 抓不回來就算了 */ } return; }
+    setTimeout(() => { if (G.drag === d) G.drag = null; }, 60);
+  });
   const noTouch = (e) => { const d = G.drag; if (d && d.type === 'touch' && e.touches && e.touches.length === 0) setTimeout(() => { if (G.drag === d) G.drag = null; }, 80); };
   document.addEventListener('touchend', noTouch, { passive: true }); document.addEventListener('touchcancel', noTouch, { passive: true });
   stage.addEventListener('contextmenu', (e) => e.preventDefault());
   document.addEventListener('touchmove', (e) => { if (!e.target.closest || !e.target.closest('.modal')) e.preventDefault(); }, { passive: false });
-  const kbFocus = (el) => { try { return el.matches(':focus-visible'); } catch (err) { return false; } };
+  // 是不是正在用 Tab 鍵選按鈕（G.kbNav）：自己記，不靠 :focus-visible（瀏覽器在按下任何鍵的那一刻就會把有焦點的按鈕算成 focus-visible）
+  document.addEventListener('pointerdown', () => { G.kbNav = false; }, true);
   window.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;                 // 瀏覽器、系統自己的快速鍵（Ctrl+C、Alt+←…）不攔
-    const play = G.mode === 'play', ae = document.activeElement, onBtn = !!ae && ae.tagName === 'BUTTON', act = e.code === 'Space' || e.code === 'Enter';
-    if (act && onBtn && kbFocus(ae)) return;                        // 用 Tab 選到某顆按鈕再按 Enter／空白鍵：那是要按那顆按鈕
+    if (e.code === 'Tab') { G.kbNav = true; return; }
+    const play = G.mode === 'play', ae = document.activeElement, onBtn = !!ae && ae.tagName === 'BUTTON', act = e.code === 'Space' || e.code === 'Enter' || e.code === 'NumpadEnter';
+    if (act && onBtn && G.kbNav) return;                            // 用 Tab 選到某顆按鈕再按 Enter／空白鍵：那是要按那顆按鈕
     G.keys[e.code] = true;
     if (play && (/^Arrow/.test(e.code) || act)) e.preventDefault();
     if (e.repeat) return;
@@ -253,15 +277,21 @@ function bindInput() {
   window.addEventListener('resize', layout); window.addEventListener('orientationchange', () => setTimeout(layout, 120));
   if (window.ResizeObserver) new ResizeObserver(layout).observe($('app'));
 
-  const click = (id, fn) => $(id).addEventListener('click', (e) => { auInit(); fn(e); });
+  const click = (id, fn) => onTap($(id), fn);
+  const fresh = (e) => !!e && e.type === 'pointerup' && performance.now() - UI.resAt < 800;       // 結算視窗剛跳出來：手指或滑鼠的這一下多半是想跳過演出的連點，不算（鍵盤按的照算）
   // 戰鬥中的按鈕按下去就算（不等 click）：另一根手指正在瞄準的時候，瀏覽器不會替第二根手指合成 click。
   // 鍵盤（Tab 選到再按 Enter）還是走 click；按完把焦點還回去，免得之後按空白鍵又「按」到它
   const press = (id, fn) => {
     const el = $(id); if (!window.PointerEvent) { click(id, fn); return; }
-    let at = -1e9;
-    el.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse' && e.button !== 0) return; e.preventDefault(); e.stopPropagation(); auInit(); at = performance.now(); fn(e); el.blur(); });
-    // 滑鼠、手指的那一下已經在 pointerdown 處理過；這裡只收鍵盤按的（沒有指標種類、detail 是 0）
-    el.addEventListener('click', (e) => { if (e.pointerType || e.detail > 0 || performance.now() - at < 700) { el.blur(); return; } auInit(); fn(e); });
+    let at = -1e9, kb = -1e9;
+    el.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); e.stopPropagation(); G.kbNav = false;        // 右鍵、中鍵也擋掉（不然按鈕會拿到焦點，之後按空白鍵變成在按它）
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      try { window.focus(); } catch (err) { /* 見舞台的 pointerdown */ }
+      auInit(); at = performance.now(); fn(e); el.blur();
+    });
+    // 滑鼠、手指的那一下已經在 pointerdown 處理過；這裡只收鍵盤按的（沒有指標種類、detail 是 0），而且按住不放不會一直重複
+    el.addEventListener('click', (e) => { const now = performance.now(); if (e.pointerType || e.detail > 0 || now - at < 700) { el.blur(); return; } if (now - kb < 350) { kb = now; return; } kb = now; auInit(); fn(e); });
   };
   press('btnFire', () => { if (!fireNow()) sfx('deny'); });
   press('btnUlt', () => useSkill('ult'));
@@ -273,25 +303,34 @@ function bindInput() {
   click('btnResume', () => { sfx('click'); resumeGame(); });
   click('btnRetry', () => { sfx('click'); startLevel(S.idx); });
   click('btnQuit', () => { sfx('click'); goHome(); });
-  click('btnNext', () => { sfx('click'); UI.sel = Math.min(LEVELS.length - 1, S.idx + 1); startLevel(UI.sel); });
-  click('btnAgain', () => { sfx('click'); startLevel(S.idx); });
-  click('btnUp', () => { sfx('click'); shopRender(); $('shop').hidden = false; });
-  click('btnHome', () => { sfx('click'); UI.sel = Math.min(S.state === 'won' ? S.idx + 1 : S.idx, SV.open - 1, LEVELS.length - 1); goHome(); });
+  click('btnNext', (e) => { if (fresh(e)) return; sfx('click'); UI.sel = Math.min(LEVELS.length - 1, S.idx + 1); startLevel(UI.sel); });
+  click('btnAgain', (e) => { if (fresh(e)) return; sfx('click'); startLevel(S.idx); });
+  click('btnUp', (e) => { if (fresh(e)) return; sfx('click'); shopRender(); $('shop').hidden = false; });
+  click('btnHome', (e) => { if (fresh(e)) return; sfx('click'); UI.sel = Math.min(S.state === 'won' ? S.idx + 1 : S.idx, SV.open - 1, LEVELS.length - 1); goHome(); });
   click('tSfx', () => { SV.sfx = !SV.sfx; toggleSync(); save(); sfx('click'); });
   click('tMus', () => { SV.mus = !SV.mus; toggleSync(); save(); sfx('click'); });
   click('tVib', () => { SV.vib = !SV.vib; toggleSync(); save(); vibrate(30); sfx('click'); });
   click('btnFlip', () => { SV.flip = !SV.flip; save(); sfx('click'); layout(); });
-  document.querySelectorAll('#diffSeg button').forEach((b) => b.addEventListener('click', () => { auInit(); SV.diff = +b.dataset.d; toggleSync(); save(); sfx('click'); }));
+  document.querySelectorAll('#diffSeg button').forEach((b) => onTap(b, () => { SV.diff = +b.dataset.d; toggleSync(); save(); sfx('click'); }));
   click('btnUnlock', () => { SV.open = LEVELS.length; save(); sfx('buy'); homeRender(); $('opt').hidden = true; });
   click('btnWipe', () => {
     if (!UI.wipeArm) { UI.wipeArm = 1; $('btnWipe').textContent = '再按一次，確定清除'; sfx('deny'); return; }
     SV.coins = 0; SV.open = 1; SV.seen = false; SV.seenUlt = false; SV.seenSh = false; SV.stars = LEVELS.map(() => 0); for (const k in SV.up) SV.up[k] = 0;
     save(); UI.sel = 0; homeRender(); demoStart(0); $('opt').hidden = true; sfx('click');
   });
-  document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => { sfx('click'); b.closest('.modal').hidden = true; if (G.mode === 'home') homeRender(); }));
+  document.querySelectorAll('[data-close]').forEach((b) => onTap(b, () => { sfx('click'); b.closest('.modal').hidden = true; if (G.mode === 'home') homeRender(); }));
   // 有視窗開著的時候，後面的東西不收鍵盤焦點（Tab 不會跑到視窗後面的按鈕去）
   const layers = ['result', 'opt', 'shop'];       // 由下到上
-  const scope = () => { let top = -1; layers.forEach((id, i) => { if (!$(id).hidden) top = i; }); $('home').inert = top >= 0; $('hud').inert = top >= 0; layers.forEach((id, i) => { $(id).inert = i < top; }); };
+  let prevTop = -1, opener = null;
+  const scope = () => {
+    let top = -1; layers.forEach((id, i) => { if (!$(id).hidden) top = i; });
+    $('home').inert = top >= 0; $('hud').inert = top >= 0; layers.forEach((id, i) => { $(id).inert = i < top; });
+    if (top === prevTop) return;
+    // 用鍵盤操作的時候：視窗打開，焦點移進去；全部關掉，焦點回到原本那顆按鈕
+    if (top >= 0) { if (prevTop < 0) opener = document.activeElement; if (G.kbNav) { const b = $(layers[top]).querySelector('button:not([hidden]):not([disabled])'); if (b) b.focus(); } }
+    else { if (G.kbNav && opener && opener.isConnected && opener.offsetParent !== null) opener.focus(); opener = null; }
+    prevTop = top;
+  };
   if (window.MutationObserver) { const mo = new MutationObserver(scope); for (const id of layers) mo.observe($(id), { attributes: true, attributeFilter: ['hidden'] }); }
 }
 

@@ -1,0 +1,54 @@
+mouse 1280x720 rot=0 | save at boot: None | SV.seen False
+   0.0s r0 intro0    tut0 | chip「」 hint「」 say「」 banner「」
+   0.9s r1 aim0      tut0 | chip「」 hint「」 say「」 banner「」  <== home screen
+   1.4s r0 intro0    tut1 | chip「」 hint「」 say「」 banner「」  <== tapped 出戰
+   2.3s r0 intro0    tut1 | chip「」 hint「」 say「」 banner「第一關青丘試砲」  <== dragged 58px + released during the intro (phase intro0)
+   2.7s r1 aim0      tut1 | chip「輪到你：拖曳瞄準，放開發射」 hint「按住畫面任何地方拖曳：往」 say「」 banner「第一關青丘試砲」
+   3.2s r1 aim0      tut1 | chip「輪到你：拖曳瞄準，放開發射」 hint「按住畫面任何地方拖曳：往」 say「」 banner「」
+   4.6s r1 aim0      tut1 | chip「輪到你：拖曳瞄準，放開發射」 hint「按住畫面任何地方拖曳：往」 say「」 banner「」  <== tapped once (no drag): volleys=0
+   5.8s r1 aim0      tut1 | chip「輪到你：拖曳瞄準，放開發射」 hint「按住畫面任何地方拖曳：往」 say「」 banner「」  <== tiny 8px drag: volleys=0
+   9.1s r1 volley0   tut2 | chip「我方砲擊」 hint「」 say「」 banner「」  <== round 1: dragged (57,27)px aim [49.71, 55.04] -> [40.45, 58.26]; fired=1
+  10.1s r1 resolve0  tut2 | chip「我方砲擊」 hint「」 say「就是這樣！穿過倍增符，砲彈變多了」 banner「」
+  13.2s r1 resolve0  tut2 | chip「我方砲擊」 hint「」 say「」 banner「」
+  13.6s r1 aim1      tut2 | chip「敵軍瞄準中」 hint「」 say「」 banner「」
+  15.0s r1 volley1   tut2 | chip「敵軍砲擊」 hint「」 say「」 banner「」
+  19.2s r2 aim0      tut3 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「」 banner「」
+  22.6s r2 volley0   tut3 | chip「我方砲擊」 hint「」 say「」 banner「」  <== round 2: dragged (26,77)px aim [40.45, 58.26] -> [28.45, 54.88]; fired=1
+  23.7s r2 resolve0  tut3 | chip「我方砲擊」 hint「」 say「」 banner「」 mile「彈如雨下」
+  24.9s r2 resolve0  tut3 | chip「我方砲擊」 hint「」 say「」 banner「」
+  25.8s r2 aim1      tut3 | chip「敵軍瞄準中」 hint「」 say「」 banner「」
+  26.3s r2 aim1      tut3 | chip「敵軍瞄準中」 hint「」 say「輪到敵軍了：按「護罩」可以擋下他們這一整輪」 banner「」
+  26.8s r2 volley1   tut3 | chip「敵軍砲擊」 hint「」 say「輪到敵軍了：按「護罩」可以擋下他們這一整輪」 banner「」
+  28.7s r3 aim0      tut4 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「」 banner「」
+  29.0s r3 aim0      tut4 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走」 banner「」
+  31.8s r3 aim0      tut4 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「」 banner「」
+  32.4s r3 volley0   tut4 | chip「我方砲擊」 hint「」 say「打斷望樓的細柱子，上面整座會自己倒下來」 banner「」  <== round 3: dragged (23,13)px aim [28.45, 54.88] -> [25.02, 57.14]; fired=1
+  33.6s r3 resolve0  tut4 | chip「我方砲擊」 hint「」 say「打斷望樓的細柱子，上面整座會自己倒下來」 banner「」 mile「百砲齊發」
+  34.8s r3 resolve0  tut4 | chip「我方砲擊」 hint「」 say「打斷望樓的細柱子，上面整座會自己倒下來」 banner「」
+  35.4s r3 resolve0  tut4 | chip「我方砲擊」 hint「」 say「」 banner「」
+  36.4s r3 aim1      tut4 | chip「敵軍瞄準中」 hint「」 say「」 banner「」
+  37.5s r3 volley1   tut4 | chip「敵軍砲擊」 hint「」 say「」 banner「」
+  39.8s r4 aim0      tut5 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「」 banner「」
+  40.2s r4 aim0      tut5 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「把守軍全部打倒就破城；上面的頭像是雙方還站著的兵」 banner「」
+  43.1s r4 volley0   tut5 | chip「我方砲擊」 hint「」 say「把守軍全部打倒就破城；上面的頭像是雙方還站著的兵」 banner「」  <== round 4: dragged (-25,-0)px aim [25.02, 57.14] -> [26.71, 53.77]; fired=1
+  44.1s r4 volley0   tut5 | chip「我方砲擊」 hint「」 say「」 banner「」
+  44.8s r4 resolve0  tut5 | chip「我方砲擊」 hint「」 say「打倒一個守軍！守軍全倒，城就破了」 banner「」
+  46.7s r4 aim1      tut5 | chip「敵軍瞄準中」 hint「」 say「打倒一個守軍！守軍全倒，城就破了」 banner「」
+  47.8s r4 aim1      tut5 | chip「敵軍瞄準中」 hint「」 say「」 banner「」
+  48.3s r4 volley1   tut5 | chip「敵軍砲擊」 hint「」 say「」 banner「」
+  50.2s r5 aim0      tut5 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「」 banner「」
+  50.5s r5 aim0      tut5 | chip「輪到你：拖曳瞄準，放開發射」 hint「」 say「「連珠」集滿了！按右下角金色按鈕上膛，這一輪每個兵連打三次」 banner「」
+  53.4s r5 volley0   tut5 | chip「我方砲擊」 hint「」 say「「連珠」集滿了！按右下角金色按鈕上膛，這一輪每個兵連打三次」 banner「」  <== round 5: dragged (77,-1)px aim [26.71, 53.77] -> [22.12, 64.43]; fired=1
+  55.1s r5 resolve0  tut5 | chip「我方砲擊」 hint「」 say「」 banner「」
+  56.1s r5 over0     tut5 | chip「」 hint「」 say「」 banner「」
+  56.7s r5 over0     tut5 | chip「」 hint「」 say「」 banner「守軍全滅敵城攻破」
+  57.6s r5 over0     tut5 | chip「」 hint「」 say「」 banner「」
+  60.4s r5 over0     tut5 | chip「」 hint「」 say「」 banner「」  <== end of script: mode=result state=won me=78% foe=0%
+  62.3s r5 over0     tut5 | chip「」 hint「」 say「」 banner「」  <== result screen
+  result: {"title": "敵城攻破", "stars": 3, "bar": "78%", "hudBar": "78%", "coins": "+133", "tip": null}
+  save after: {"coins":133,"stars":[3,0,0,0,0,0],"open":2,"up":{"dmg":0,"aim":0,"hp":0,"shield":0,"ult":0},"sfx":true,"mus":true,"vib":true,"seen":true,"seenUlt":false,"seenSh":false,"diff":1,"flip":false}
+sheet (3376, 5700) 46 tiles; errors: []
+
+real	1m8.227s
+user	0m12.717s
+sys	0m0.790s
