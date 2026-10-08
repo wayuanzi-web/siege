@@ -1,21 +1,25 @@
-/* ===== 36-scene-cliff: 第八關「懸空寺」— 高山晴空、雲海上的花崗岩峰；左邊松林台地斷在懸崖邊，底下是霧一層層往遠處退的深谷、
-   谷底一線細河；右邊大山壁從谷底頂到天上，兩間殿嵌在壁上，壁上有小松、棧道、細瀑布 ===== */
+/* ===== 36-scene-cliff: 第八關「懸空寺」— 高山晴空。兩座寺各掛在自己那一邊的花崗岩懸崖上（岩柱、岩簷、殿由遊戲畫），
+   兩道崖面直直落進中間一道看不到底的深谷：谷裡的霧一層層往下沉、越深越暗，遠處的山脊掛著細瀑布，谷底一線細河。
+   崖頂後面是長著黃山松的山頭，更外面幾根花崗岩峰沒在霧裡；天邊一排很淡的遠峰、雲海，峰頂有小小的寺塔 ===== */
 THEMES[8] = (function () {
   const WX0 = -46, WX1 = 162;                        // 佈景一律在這段戰場座標上生成（畫面寬窄不同，看到同一幅）
-  const GL = 53.5, GR = 95.2, GC = (GL + GR) / 2;    // 峽谷的左右崖（跟這一關的 voids 一致）
-  const VPY = 10, FL = 63, FR = 83;                  // 峽谷的消失點高度；左右崖面退到畫面上哪裡
-  const SUNX = -1.5, SUNY = 51.5;                    // 太陽在左上角，我方城樓的左邊
-  const FALLX = 117.2;                               // 山壁上那道瀑布
+  const FL = 13.7, FR = 98.3;                        // 左右兩道崖面（跟 voids 13.8–98.2、岩柱的內緣 13.6 / 98.4 對齊）
+  const VX = 56, VPY = 8;                            // 深谷往遠處退的消失點
+  const SUNX = -1.5, SUNY = 51.5;                    // 太陽在左上角，我方寺頂的左邊
   const SKY = [82, '#2357b6', 68, '#2c6ac6', 56, '#3c82d5', 44, '#589ee2', 33, '#7db8ec', 24, '#a8d1f3', 16, '#cfe7f7', 10, '#e8f4fb', -10, '#f0f8fc'];
-  // 山壁左緣（岩簷以上，由下往上）往右上退，再接山脊
-  const MT = [71.2, 39.3, 70.9, 41.5, 72.2, 43.5, 73.8, 44.2, 74.2, 46.8, 75.6, 48.9, 77.4, 49.5, 77.8, 52.3, 79.3, 54.9, 81.2, 55.7, 81.8, 58.7, 83.3, 61.5, 84.8, 62.3, 85.3, 65.9, 86.5, 69.4, 90, 71, 96, 72.6, 103, 73.4, 112, 74.6, 124, 75, 140, 76.2, WX1 + 4, 77];
+  // 深谷：高度 → 霧的顏色。天邊白、往下越來越藍、越暗
+  const GORGE = [9, '#e6f0f8', 5, '#cfdeeb', 1, '#a9bfd6', -3, '#7e98b8', -6, '#5c7598', -9, '#3d5276', -20, '#2a3a5c'];
+  // 山頭（崖頂後面那座山）的輪廓：由岩柱後面往外（左邊的；右邊的左右鏡射）。最後一段是朝外的那道崖
+  const MASS = [13.2, 39.6, 8, 40.3, 3.4, 41.2, 1.8, 42.4, 0.2, 43, -1.4, 42.6, -2.3, 41.4, -3.2, 42, -4.4, 42.6, -5.4, 41.6, -5.9, 39.6, -5.7, 36.4, -6.3, 34.8, -7.6, 34.6, -8.8, 35.4, -9.6, 34.2, -9.9, 31, -9.6, 26.4, -10.4, 21, -10.1, 15.4, -10.9, 9.6, -10.6, 4, -11.2, -2];
+  const CLEFT = [[-2.3, 41.4, 30], [-6.1, 35, 22], [4.2, 41, 26]];   // 山頭上幾道深的岩縫：x、從多高、到多低
   const lw = (k, m) => Math.max(m || 1, V.s * k);   // 線寬：k 個戰場單位，至少 m 像素
   const vg = (c, a, b, st) => lg(c, 0, Y(a), 0, Y(b), st);   // 由高度 a 到 b 的直向漸層
   const ss = (t) => smooth(clamp(t, 0, 1));
-  const persp = (xf, x0, y) => VPY + (y - VPY) * (xf - GC) / (x0 - GC);   // 近崖 x0 上高 y 的一點退到 xf 時的高度
-  let fog = [], wisps = [], needles = [], birds = [], fogCv = [];
+  const mir = (p) => { const q = p.slice(); for (let i = 0; i < q.length; i += 2) q[i] = 112 - q[i]; return q; };   // 左右鏡射（戰場中線 56）
+  let fog = [], wisps = [], needles = [], birds = [], falls = [], fogCv = [], veil = null;
 
-  function skyAt(y) { for (let i = 2; i < SKY.length; i += 2) if (y >= SKY[i]) return mix(SKY[i - 1], SKY[i + 1], clamp((SKY[i - 2] - y) / (SKY[i - 2] - SKY[i]), 0, 1)); return SKY[SKY.length - 1]; }
+  function grad(T, y) { for (let i = 2; i < T.length; i += 2) if (y >= T[i]) return mix(T[i - 1], T[i + 1], clamp((T[i - 2] - y) / (T[i - 2] - T[i]), 0, 1)); return T[T.length - 1]; }
+  const skyAt = (y) => grad(SKY, y), gorgeAt = (y) => grad(GORGE, y);
   // [x, y, …]（戰場座標）接成封閉路徑；round = 圓滑的曲線
   function wpath(c, p, round) {
     c.beginPath(); const n = p.length / 2;
@@ -32,7 +36,7 @@ THEMES[8] = (function () {
     p.push(x + w / 2, yb, x + w * 0.62, yb - 3);
     return p;
   }
-  // 一座峰：hz 越大越融進天色。左半邊受光，pine = 峰頂幾棵小松
+  // 一座峰：hz 越大越融進天色。左半邊受光，pine = 峰頂幾棵小松；回傳峰頂（給寺塔用）
   function peak(c, R, x, yb, w, h, hz, pine) {
     const s = V.s, p = peakPts(R, x, yb, w, h), sky = skyAt(yb + h * 0.6), top = yb + h, tx = (p[10] + p[12]) / 2;
     const body = mix('#56789c', sky, hz), lit = mix('#e4edf4', sky, hz * 0.6), dk = mix('#3b5878', sky, hz);
@@ -48,6 +52,18 @@ THEMES[8] = (function () {
     }
     c.restore();
     if (pine) { c.fillStyle = mix('#2c5a52', sky, hz * 0.9); c.beginPath(); for (let k = 0; k < pine; k++) { const u = (R() - 0.5) * 0.5, r = w * (0.07 + R() * 0.05), px = X(tx + u * w * 0.8), py = Y(top - Math.abs(u) * h * 0.25) - r * 0.2; c.moveTo(px + r * 1.6, py); c.ellipse(px, py, r * 1.6, r * 0.6, 0, 0, TAU); c.moveTo(px + r * 1.1, py - r * 0.6); c.ellipse(px, py - r * 0.6, r * 1.1, r * 0.45, 0, 0, TAU); } c.fill(); }
+    return [tx, top];
+  }
+  // 遠峰頂上的小寺塔（剪影）：kind 0 = 三層塔，1 = 一座小亭；u = 一層多高（戰場單位）
+  function shrine(c, x, y, u, col, kind) {
+    const s = V.s; c.fillStyle = col;
+    const roof = (cx, yb, w) => { c.beginPath(); c.moveTo(X(cx - w), Y(yb + u * 0.12)); c.quadraticCurveTo(X(cx - w * 0.55), Y(yb + u * 0.2), X(cx - w * 0.42), Y(yb + u * 0.5)); c.lineTo(X(cx + w * 0.42), Y(yb + u * 0.5)); c.quadraticCurveTo(X(cx + w * 0.55), Y(yb + u * 0.2), X(cx + w), Y(yb + u * 0.12)); c.closePath(); c.fill(); };
+    if (kind === 0) {
+      for (let k = 0; k < 3; k++) { const w = u * (1.2 - k * 0.22), yb = y + k * u; c.fillRect(X(x - w * 0.45), Y(yb + u * 0.62), w * 0.9 * s, u * 0.62 * s); roof(x, yb + u * 0.5, w); }
+      c.fillRect(X(x - u * 0.05), Y(y + u * 4.1), Math.max(1, u * 0.1 * s), u * 0.6 * s);
+    } else {
+      c.fillRect(X(x - u * 0.7), Y(y + u * 0.7), u * 1.4 * s, u * 0.7 * s); roof(x, y + u * 0.6, u * 1.3);
+    }
   }
   // 一層雲海：雲頂在 lo…hi 間起伏，圓疊成雲頭，上緣一道亮邊
   function bank(c, R, lo, hi, r0, r1, rim, top, bot) {
@@ -81,6 +97,55 @@ THEMES[8] = (function () {
   }
   // 柔邊的霧帶：在 y ± h 之間淡進淡出
   function band(c, xa, xb, y, h, col, a) { c.fillStyle = vg(c, y + h, y - h, [0, 'rgba(' + col + ',0)', 0.5, 'rgba(' + col + ',' + a + ')', 1, 'rgba(' + col + ',0)']); c.fillRect(X(xa), Y(y + h), X(xb) - X(xa), 2 * h * V.s); }
+  // 花崗岩的直紋：一道暗縫，受光的那一側（左）貼一道亮線
+  function joint(c, R, x, y0, y1, k, dark, lit) {
+    const p = []; for (let y = y0; y > y1; y -= 0.8 + R() * 1.1) p.push(x + (R() - 0.5) * 0.3 * k, y);
+    p.push(x + (R() - 0.5) * 0.3 * k, y1);
+    c.lineWidth = lw(0.32 * k); c.strokeStyle = lit; c.beginPath(); for (let i = 0; i < p.length; i += 2) c.lineTo(X(p[i] - 0.3 * k), Y(p[i + 1])); c.stroke();
+    c.lineWidth = lw(0.15 * k); c.strokeStyle = dark; c.beginPath(); for (let i = 0; i < p.length; i += 2) c.lineTo(X(p[i]), Y(p[i + 1])); c.stroke();
+  }
+  // 崖頂後面那座山頭（side 0 左、1 右）：花崗岩，一根根直立的岩柱、幾道深縫和岩棚，棚上長草、頂上長松；
+  // 朝外那一面（左邊那座朝著太陽）亮、朝岩柱那邊暗一點；山腳沒進谷裡升上來的霧
+  function massif(c, side, R) {
+    const s = V.s, P = side ? mir(MASS) : MASS.slice(), dir = side ? -1 : 1, ex = (x) => side ? 112 - x : x;
+    P.push(P[P.length - 2], -12, P[0], -12);
+    wpath(c, P); c.fillStyle = vg(c, 44, 0, [0, '#b9b0a1', 0.3, '#a59d8f', 0.7, '#8f897f', 1, '#7d8494']); c.fill();
+    c.save(); c.clip();
+    // 整座山的明暗：左邊那座朝外（朝太陽）那一面亮；右邊那座朝外那一面背光
+    c.fillStyle = lg(c, X(ex(-11)), 0, X(ex(13)), 0, side ? [0, 'rgba(52,54,74,.34)', 0.5, 'rgba(52,54,74,.08)', 1, 'rgba(52,54,74,0)'] : [0, 'rgba(255,244,222,.34)', 0.45, 'rgba(255,244,222,.06)', 1, 'rgba(40,40,56,.16)']);
+    c.fillRect(0, 0, V.W, V.H);
+    // 深的岩縫：一道柔邊的暗帶，左緣（受光）貼一道亮線
+    for (const [x0, yt, len] of CLEFT) {
+      const x = ex(x0), w = 1.3;
+      c.fillStyle = lg(c, X(x - w), 0, X(x + w), 0, [0, 'rgba(58,50,46,0)', 0.45, 'rgba(58,50,46,.34)', 0.6, 'rgba(58,50,46,.22)', 1, 'rgba(58,50,46,0)']);
+      c.fillRect(Math.min(X(x - w), X(x + w)), Y(yt), Math.abs(X(x + w) - X(x - w)), len * s);
+      joint(c, R, x, yt, yt - len * 0.9, 1.2, 'rgba(56,48,44,.5)', 'rgba(250,242,226,.42)');
+    }
+    // 直立的岩柱紋：長短、間距都不一樣
+    for (let x = -11.5 + R() * 1.5; x < 13; x += 1.4 + R() * 2.6) {
+      const yt = 42 - R() * 9, yb = Math.max(2, yt - 6 - R() * 22);
+      joint(c, R, ex(x), yt, yb, 0.6 + R() * 0.5, 'rgba(70,60,52,' + (0.2 + R() * 0.22).toFixed(2) + ')', 'rgba(246,238,220,' + (0.18 + R() * 0.26).toFixed(2) + ')');
+    }
+    // 岩棚：上緣一道亮邊、底下影子、棚上長草
+    for (const [a, b, y] of [[-9.4, -6.6, 27.4], [-5.4, -0.6, 31.6], [-3.6, 3.2, 22.8], [-10, -5.2, 14.6], [-2, 4, 8.6]]) {
+      const xa = Math.min(ex(a), ex(b)), xb = Math.max(ex(a), ex(b));
+      const lip = () => { c.beginPath(); c.moveTo(X(xa), Y(y)); c.quadraticCurveTo(X((xa + xb) / 2), Y(y + 0.22), X(xb), Y(y - 0.15)); };
+      c.fillStyle = vg(c, y, y - 1.6, [0, 'rgba(64,54,46,.36)', 1, 'rgba(64,54,46,0)']);
+      lip(); c.lineTo(X(xb - 0.8), Y(y - 1.6)); c.lineTo(X(xa + 0.8), Y(y - 1.6)); c.closePath(); c.fill();
+      lip(); c.strokeStyle = '#ece2cb'; c.lineWidth = lw(0.22); c.stroke();
+      c.fillStyle = '#7fae5a'; c.beginPath();
+      for (let x = xa + R() * 0.6; x < xb - 0.4; x += 0.5 + R() * 1.1) { const r = s * (0.22 + R() * 0.26); c.moveTo(X(x) + r, Y(y + 0.08)); c.ellipse(X(x), Y(y + 0.08), r, r * 0.6, 0, Math.PI, TAU); }
+      c.fill();
+    }
+    // 谷裡升上來的霧把山腳染淡
+    c.fillStyle = vg(c, 18, -1, [0, 'rgba(214,230,244,0)', 1, 'rgba(214,230,244,.62)']); c.fillRect(0, Y(18), V.W, 19 * s);
+    c.restore();
+    // 頂上受光的邊：山頭、外面那一階
+    c.strokeStyle = 'rgba(255,250,232,.8)'; c.lineWidth = lw(0.3); c.lineJoin = 'round';
+    for (const [i0, i1] of [[4, 20], [24, 32]]) { c.beginPath(); for (let i = i0; i <= i1; i += 2) c.lineTo(X(P[i]), Y(P[i + 1])); c.stroke(); }
+    // 頂上、岩棚上的松
+    for (const [x, y, h, d] of [[1.8, 42.4, 3.2, -1], [-4.4, 42.6, 2.4, -1], [-8.8, 35.4, 2.6, -1], [-3.4, 31.6, 2, 1], [2.6, 22.8, 2.6, 1], [-8.6, 14.6, 2, -1]]) pine(c, R, X(ex(x)), Y(y) + 1, h * s, d * dir, '#5a4636', '#3e6a4c', '#7aa564');
+  }
 
   return {
     key: 'cliff',
@@ -100,7 +165,7 @@ THEMES[8] = (function () {
       c.globalCompositeOperation = 'source-over';
       c.fillStyle = rg(c, sx, sy, s * 1.9, s * 4, [0, 'rgba(255,252,236,.8)', 1, 'rgba(255,252,236,0)']); c.fillRect(sx - s * 5, sy - s * 5, s * 10, s * 10);
       c.fillStyle = '#fffef6'; c.beginPath(); c.arc(sx, sy, s * 2.1, 0, TAU); c.fill();
-      // 高空的卷雲（兩城之間更淡）
+      // 高空的卷雲（兩寺之間更淡）
       R = mkRand(802);
       for (let k = 0; k < 9; k++) {
         const x0 = WX0 + R() * (WX1 - WX0), y0 = 40 + R() * Math.max(18, V.top - 36), mid = Math.abs(x0 - 50) < 18 ? 0.45 : 1;
@@ -109,189 +174,116 @@ THEMES[8] = (function () {
           c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + w * 0.45, y - b - th, x + w, y - b * 0.4); c.quadraticCurveTo(x + w * 0.5, y - b + th * 0.4, x, y); c.fillStyle = 'rgba(255,255,255,' + ((0.1 + R() * 0.12) * mid).toFixed(3) + ')'; c.fill();
         }
       }
-      // 遠山：兩排很淡的峰（兩城之間矮一點），峰腳沒進雲海
+      // 遠山：兩排很淡的峰（兩寺之間矮一點），峰腳沒進雲海；兩座峰頂上有小小的寺塔
       R = mkRand(803);
+      const tops = [];
       for (let row = 0; row < 2; row++) for (let x = WX0 + R() * 4; x < WX1; x += (row ? 7 : 9) + R() * 6) {
-        const mid = 1 - 0.6 * (1 - ss((Math.abs(x - 50) - 10) / 10)), w = (row ? 6 : 9) + R() * 7, h = ((row ? 9 : 13) + R() * 12) * mid;
-        peak(c, R, x, 6, w, h, row ? 0.62 : 0.74, 0);
+        const mid = 1 - 0.6 * (1 - ss((Math.abs(x - VX) - 10) / 10)), w = (row ? 6 : 9) + R() * 7, h = ((row ? 9 : 13) + R() * 12) * mid;
+        const tp = peak(c, R, x, 6, w, h, row ? 0.62 : 0.74, 0); if (row) tops.push(tp);
       }
+      for (const [want, kind] of [[41, 0], [72, 1]]) { let b = tops[0]; for (const q of tops) if (Math.abs(q[0] - want) < Math.abs(b[0] - want)) b = q; shrine(c, b[0], b[1] - 0.15, kind ? 0.75 : 0.62, mix('#4a6a90', skyAt(b[1]), 0.5), kind); }
       bank(c, mkRand(804), 8.4, 10.6, 0.9, 2.2, '#ffffff', '#f6fafd', '#dbe8f3');
-      // 近一點的峰：藍一點、峰頂長松（只在兩邊）
+      // 兩側更外面的花崗岩峰：藍一點、峰頂長松，峰腳沒在霧裡（畫面寬的時候才看得到）
       R = mkRand(805);
-      for (const [x, w, t] of [[-44, 7, 20], [-37, 5.2, 15.5], [-29.5, 4.4, 21], [-21, 6.4, 16], [-12.5, 4.6, 19.5], [-5.5, 5.6, 13.5], [124, 6, 19], [131, 4.6, 24], [139, 7, 17], [148, 5, 22], [156, 6, 16]]) peak(c, R, x, 2, w, t - 2, 0.34, 3);
+      for (const [x, w, t] of [[-44, 7, 22], [-37, 5.2, 17], [-30, 4.6, 26], [-23, 6.2, 19], [-16.6, 4.8, 29], [-12.4, 3.4, 20]]) { peak(c, R, x, 2, w, t - 2, 0.34, 3); peak(c, R, 112 - x, 2, w * (0.9 + R() * 0.2), t - 2 + (R() - 0.5) * 4, 0.34, 3); }
       bank(c, mkRand(806), 3.6, 5.8, 1.1, 2.6, '#ffffff', '#eef5fa', '#c9dbea');
-      // 台地遠處的松林；到懸崖那邊沿著崖頂往遠處收
-      R = mkRand(807);
-      const fr = ridgeFn(R, 0.11), lip = (x) => persp(Math.min(x, FL), GL, -3) + 0.4, fy = (x) => (x < GL ? 2.2 + 1.2 * fr(x) : lerp(2.2 + 1.2 * fr(x), lip(x) + 0.6, ss((x - GL + 2) / 9)));
-      c.beginPath(); c.moveTo(X(V.x0 - 4), V.H + 2); for (let x = V.x0 - 4; x <= FL + 0.6; x += 0.6) c.lineTo(X(x), Y(fy(x))); c.lineTo(X(FL + 0.6), Y(lip(FL) - 1)); c.lineTo(X(FL + 0.6), V.H + 2); c.closePath();
-      c.fillStyle = vg(c, 5, -1, [0, '#6f9fae', 1, '#94bcc8']); c.fill();
-      c.fillStyle = '#5a8c9c'; c.beginPath();
-      for (let x = WX0; x < FL - 0.5; x += 0.7 + R() * 1.1) {
-        if (x < V.x0 - 3 || x > V.x1 + 3) { R(); continue; }
-        const h = s * (0.8 + R() * 0.9) * (x > GL ? 0.75 : 1), px = X(x), py = Y(fy(x)) + 2;
-        c.moveTo(px, py - h); for (let i = 1; i < 7; i++) c.lineTo(px + [0, 0.32, 0.12, 0.36, -0.36, -0.12, -0.32][i] * h, py - [1, 0.25, 0.3, 0, 0, 0.3, 0.25][i] * h);
-        c.closePath();
-      }
-      c.fill();
-      // ===== 峽谷 =====
-      const ga = GL - 1.5, gb = GR + 1.5, gw = X(gb) - X(ga);
-      c.fillStyle = vg(c, 5.5, -10, [0, 'rgba(226,238,247,0)', 0.14, '#d9e7f2', 0.38, '#b2c7db', 0.66, '#87a0bc', 1, '#5b7192']);
-      c.fillRect(X(FL - 1.5), Y(5.5), X(gb) - X(FL - 1.5), V.H);
-      R = mkRand(808);
-      // 最遠處的崖：上面淡，往下沒進深藍的谷裡
-      const farWall = (x0, x1, top, col, lit) => {
-        const p = [x0, -14, x0, top]; let x = x0;
-        while (Math.abs(x - x1) > 1.2) { x += Math.sign(x1 - x0) * (0.8 + R() * 1.2); p.push(x, top + (R() - 0.5) * 0.5 - (Math.abs(x - x0) > Math.abs(x1 - x0) * 0.7 ? R() * 1.4 : 0)); }
-        for (let y = top - 1; y > -14; y -= 1 + R() * 1.6) p.push(x1 + (R() - 0.5) * 0.9, y);
-        wpath(c, p); c.fillStyle = vg(c, top, -9, [0, col, 0.55, mix(col, '#7088a8', 0.5), 1, '#4c6186']); c.fill();
-        if (lit) { c.strokeStyle = vg(c, top, -6, [0, lit, 1, rgba(lit, 0)]); c.lineWidth = s * 0.9; c.beginPath(); for (let i = p.length - 2; i > 4 && p[i + 1] < top - 0.5; i -= 2) c.lineTo(X(p[i] + 0.35), Y(p[i + 1])); c.stroke(); }
+      // ===== 深谷：兩道崖面之間，霧一層層往下沉，越深越藍、越暗 =====
+      const ga = FL - 1, gb = FR + 1, gw = X(gb) - X(ga);
+      const gs = []; for (let i = 0; i < 12; i += 2) gs.push((9 - GORGE[i]) / 18, i ? GORGE[i + 1] : rgba(GORGE[1], 0));
+      c.fillStyle = vg(c, 9, -9, gs); c.fillRect(X(ga), Y(9), gw, V.H);
+      R = mkRand(808); falls = [];
+      // 谷的盡頭：兩邊的山脊從霧裡冒出來、往中間低下去，一層比一層近、一層比一層低；遠的很淡，近的藍一點，脊上一排小樹
+      const spur = (xa, xb, top, bot, col, lit, fu) => {
+        const d = Math.sign(xb - xa), L = Math.abs(xb - xa), env = (u) => Math.sin(Math.PI * Math.pow(clamp(u, 0, 1), 0.55)), p = [xa - d * 1.5, bot - 4], H = top - bot;
+        // 稜線：大致是一座往中間低下去的山脊，沿路幾個小岩峰、幾處斷崖
+        for (let u = 0; u <= 1;) {
+          const e = env(u); let y = bot + H * e;
+          if (u > 0.04 && u < 0.96) y += (R() - 0.5) * 0.18 * H + (R() < 0.18 ? H * (0.1 + R() * 0.16) * e : 0);
+          p.push(xa + d * u * L, y); u += (0.5 + R() * 0.9) / L;
+        }
+        p.push(xb, bot, xb + d * 1.2, bot - 2, xb + d * 1.6, bot - 4);
+        const hAt = (u) => { const x = xa + d * u * L; for (let i = 4; i < p.length - 6; i += 2) if ((p[i] - x) * d >= 0) return lerp(p[i - 1], p[i + 1], clamp((x - p[i - 2]) / ((p[i] - p[i - 2]) || 1), 0, 1)); return bot; };
+        wpath(c, p); c.fillStyle = vg(c, top + H * 0.2, bot - 4, [0, col, 0.5, mix(col, gorgeAt(bot - 1), 0.5), 0.75, rgba(gorgeAt(bot - 1.5), 0.75), 1, rgba(gorgeAt(bot - 4), 0)]); c.fill();   // 山腳化進霧裡（透明），沒有硬邊
+        if (lit) { c.strokeStyle = lit; c.lineWidth = lw(0.2); c.lineJoin = 'round'; c.beginPath(); for (let i = 2; i < p.length - 6; i += 2) { const u = Math.abs(p[i] - xa) / L; if (u > 0.06 && u < 0.62) c.lineTo(X(p[i]), Y(p[i + 1])); } c.stroke(); }
+        // 稜線上的松林：一排高高低低的小三角
+        c.fillStyle = mix(col, '#35565e', 0.3); c.beginPath();
+        for (let u = 0.08; u < 0.7; u += (0.35 + R() * 0.6) / L) { if (R() < 0.3) continue; const x = X(xa + d * u * L), y = Y(hAt(u)) + 1, h = s * (0.35 + R() * 0.55) * H / 6, w = h * 0.36; c.moveTo(x - w, y); c.lineTo(x, y - h); c.lineTo(x + w, y); c.closePath(); }
+        c.fill();
+        if (fu) { const x = xa + d * fu * L, y0 = hAt(fu) - 0.3, y1 = bot - 1.6; c.fillStyle = vg(c, y0, y1, [0, 'rgba(250,253,255,.9)', 0.7, 'rgba(240,248,255,.5)', 1, 'rgba(240,248,255,0)']); c.fillRect(X(x) - lw(0.13), Y(y0), lw(0.26), (y0 - y1) * s); falls.push([x, y0, y1]); }
       };
-      farWall(FL - 1, 68.5, 4.4, '#b4c6d8', null);
-      farWall(FR + 1, 77.6, 15.5, '#a9bdd2', '#cddcea');
-      band(c, FL - 1.5, FR + 1.5, 2.6, 2.4, '232,241,248', 0.85);
-      farWall(FL - 1, 66.4, 1.8, '#98aec6', null);
-      farWall(FR + 1, 79.8, 8, '#93a9c2', '#bccddd');
-      band(c, FL - 1.5, FR + 1.5, -0.8, 2.6, '206,221,235', 0.7);
-      // 谷底的河：一線亮光，往遠處越細越淡
+      spur(32, 56.5, 7.6, 2.4, '#c4d4e3', null, 0); spur(80, 55.5, 8.4, 2.8, '#bccddd', 'rgba(246,251,255,.85)', 0.5);
+      band(c, ga, gb, 2.8, 2.2, '236,244,250', 0.8);
+      spur(17, 52, 3.8, -3, '#a2b6cc', null, 0.44); spur(95, 60, 4.6, -2.6, '#9cb1c8', 'rgba(222,236,248,.75)', 0);
+      band(c, ga, gb, -1.8, 2.4, '206,221,235', 0.66);
+      // 谷底的河：一線亮光，從霧裡彎彎曲曲往遠處退，越遠越細
       c.lineCap = 'round';
-      for (let y = -10.4; y < -2.6; y += 0.3) {
-        const u = (y + 10.4) / 7.8, f = (yy) => GC + 1.2 + Math.sin(yy * 1.1) * 1.4 * (1 - u * 0.6);
-        c.strokeStyle = 'rgba(226,244,255,' + (0.9 * (1 - u)).toFixed(3) + ')'; c.lineWidth = lw(0.75 - u * 0.6); c.beginPath(); c.moveTo(X(f(y)), Y(y)); c.lineTo(X(f(y + 0.3)), Y(y + 0.3)); c.stroke();
+      for (let y = -10; y < 2.2; y += 0.25) {
+        const u = (y + 10) / 12.2, f = (yy) => VX + 0.6 + (Math.sin(yy * 0.8 + 0.6) * 1.5 + Math.sin(yy * 2.1) * 0.35) * (1 - u * 0.8);
+        c.strokeStyle = 'rgba(228,244,255,' + (0.8 * (1 - u * 0.7) * ss((y + 10) / 3)).toFixed(3) + ')'; c.lineWidth = lw(0.56 - u * 0.44); c.beginPath(); c.moveTo(X(f(y)), Y(y)); c.lineTo(X(f(y + 0.25)), Y(y + 0.25)); c.stroke();
       }
-      // 岩縫：暗線左邊貼一道亮線（k 小 = 遠、細）
-      const crack = (x, y0, len, k, dark, lit) => {
-        const p = []; for (let y = y0; y > y0 - len; y -= 0.8 + R() * 0.8) p.push(x + (R() - 0.5) * 0.25 * k, y);
-        c.lineWidth = lw(0.3 * k); c.strokeStyle = lit; c.beginPath(); for (let i = 0; i < p.length; i += 2) c.lineTo(X(p[i] - 0.3 * k), Y(p[i + 1])); c.stroke();
-        c.lineWidth = lw(0.16 * k); c.strokeStyle = dark; c.beginPath(); for (let i = 0; i < p.length; i += 2) c.lineTo(X(p[i]), Y(p[i + 1])); c.stroke();
-      };
-      // 左崖面（背光）往遠處退：崖頂沿透視往上收，岩層往消失點聚
-      const rimL = [GL, -3]; for (let x = GL + 0.6; x < FL; x += 0.5 + R() * 0.7) rimL.push(x, persp(x, GL, -3) + (R() < 0.3 ? 0.25 + R() * 0.3 : R() * 0.12));
-      rimL.push(FL, persp(FL, GL, -3));
-      const lp = [GL - 2, -14, GL - 2, -3].concat(rimL);
-      for (let y = persp(FL, GL, -3) - 0.6; y > -14; y -= 0.9 + R() * 1.3) lp.push(FL + (R() - 0.6) * 0.9, y);
-      wpath(c, lp); c.fillStyle = vg(c, 3, -10, [0, '#6f84a0', 0.5, '#566b8c', 1, '#3b4d70']); c.fill();
-      c.save(); c.clip();
-      c.lineWidth = lw(0.14);
-      for (let y = -4.4; y > -40; y -= 2 + R() * 2) { c.strokeStyle = 'rgba(30,42,68,' + (0.18 + R() * 0.16).toFixed(2) + ')'; c.beginPath(); c.moveTo(X(GL), Y(y)); c.lineTo(X(FL + 1), Y(persp(FL + 1, GL, y))); c.stroke(); }
-      for (let k = 0; k < 9; k++) { const u = R(), x = GC - (GC - GL) / (1 + u * 1.05), y0 = persp(x, GL, -3) - 0.4 - R() * 2; crack(x, y0, 2 + R() * 5, (GC - x) / (GC - GL), 'rgba(30,40,64,.4)', 'rgba(150,170,196,.3)'); }
-      c.fillStyle = lg(c, X(GL), 0, X(FL), 0, [0, 'rgba(190,207,226,0)', 1, 'rgba(190,207,226,.5)']); c.fillRect(X(GL - 2), Y(4), X(FL + 1) - X(GL - 2), 18 * s);
-      c.restore();
-      c.beginPath(); for (let i = 0; i < rimL.length; i += 2) c.lineTo(X(rimL[i]), Y(rimL[i + 1])); c.strokeStyle = 'rgba(206,232,196,.75)'; c.lineWidth = lw(0.18); c.lineJoin = 'round'; c.stroke();
-      // 崖頂一路往遠處的小樹叢
-      c.fillStyle = '#5d8a86'; c.beginPath();
-      for (let i = 2; i < rimL.length - 2; i += 2) { if (R() < 0.45) continue; const k = (GC - rimL[i]) / (GC - GL), r = s * (0.3 + R() * 0.3) * k, px = X(rimL[i]), py = Y(rimL[i + 1]) - r * 0.35; c.moveTo(px + r, py); c.arc(px, py, r, 0, TAU); }
-      c.fill();
-      // 右崖面（朝太陽）：岩層往消失點聚，岩縫越遠越密，幾叢小樹
-      const rp = [GR + 2, -14, GR + 2, 39, FR, 39];
-      for (let y = 37.6; y > -14; y -= 0.9 + R() * 1.5) rp.push(FR + (R() - 0.4) * 0.9 - (y > 30 ? (y - 30) * 0.05 : 0), y);
-      wpath(c, rp); c.fillStyle = vg(c, 38, -10, [0, '#b9ad99', 0.35, '#a59b8c', 0.7, '#838593', 1, '#4f6088']); c.fill();
-      c.save(); c.clip();
-      for (let y = 35.5; y > -30; y -= 2.8 + R() * 3.2) {
-        const y2 = persp(FR - 1, GR, y), a = (0.18 + R() * 0.16).toFixed(2);
-        c.lineWidth = lw(0.16);
-        c.strokeStyle = 'rgba(248,240,222,' + a + ')'; c.beginPath(); c.moveTo(X(GR + 1), Y(y + 0.16)); c.lineTo(X(FR - 1), Y(y2 + 0.08)); c.stroke();
-        c.strokeStyle = 'rgba(66,58,54,' + a + ')'; c.beginPath(); c.moveTo(X(GR + 1), Y(y)); c.lineTo(X(FR - 1), Y(y2)); c.stroke();
+      // 兩道崖面往深處退的那一小段：貼著崖腳往消失點收，越遠越沒進霧裡（左崖背光、右崖受光）
+      for (let side = 0; side < 2; side++) {
+        const F = side ? FR : FL, k = 0.085, fx = F + (VX - F) * k, q = (y) => y + (VPY - y) * k, ty = 0.3, by = -12;
+        c.beginPath(); c.moveTo(X(F), Y(ty)); c.lineTo(X(fx), Y(q(ty))); c.lineTo(X(fx), Y(q(by))); c.lineTo(X(F), Y(by)); c.closePath();
+        c.fillStyle = lg(c, X(F), 0, X(fx), 0, side ? [0, 'rgba(150,140,124,.95)', 0.55, 'rgba(126,140,162,.5)', 1, 'rgba(126,152,184,0)'] : [0, 'rgba(66,66,80,.95)', 0.55, 'rgba(84,98,128,.5)', 1, 'rgba(110,134,170,0)']); c.fill();
+        c.save(); c.clip(); c.strokeStyle = side ? 'rgba(250,240,220,.22)' : 'rgba(30,34,52,.3)'; c.lineWidth = lw(0.14);
+        for (let y = -0.8; y > -11; y -= 1.6 + R() * 1.4) { c.beginPath(); c.moveTo(X(F), Y(y)); c.lineTo(X(fx), Y(q(y))); c.stroke(); }
+        c.restore();
       }
-      for (let k = 0; k < 22; k++) { const u = R(), x = GC + (GR - GC) / (1 + u * 1.1), y0 = -4 + R() * 42; crack(x, y0, 2.5 + R() * 8, (x - GC) / (GR - GC), 'rgba(62,54,50,.42)', 'rgba(250,242,224,.32)'); }
-      c.fillStyle = '#6f8f5a';
-      for (const [x, y] of [[93.6, 31.4], [90.4, 18.6], [92.2, 3.6], [87.6, 26.2], [88.6, 12.4]]) { const k = (x - GC) / (GR - GC), r = s * 0.55 * k; c.beginPath(); for (let j = 0; j < 4; j++) { const px = X(x - j * 0.5 * k), py = Y(y + Math.sin(j * 2.3) * 0.15) - r * 0.3; c.moveTo(px + r, py); c.arc(px, py, r * (0.7 + 0.3 * Math.sin(j * 1.7)), 0, TAU); } c.fill(); }
-      c.fillStyle = lg(c, X(GR), 0, X(FR), 0, [0, 'rgba(192,208,228,0)', 1, 'rgba(192,208,228,.5)']); c.fillRect(X(FR - 1), Y(40), X(GR + 2) - X(FR - 1), 55 * s);
-      c.restore();
-      // 一層層的霧，越上面越白；谷底最深處暗藍
-      band(c, ga, gb, -3.4, 2.4, '170,192,216', 0.5);
-      band(c, ga, gb, -7, 2.2, '112,136,172', 0.4);
-      c.fillStyle = vg(c, -1.5, -10, [0, 'rgba(36,52,90,0)', 1, 'rgba(30,44,80,.62)']); c.fillRect(X(ga), Y(-1.5), gw, 9 * s);
+      // 再往下就只剩越來越濃的霧和暗處
+      band(c, ga, gb, -4.8, 2.2, '150,172,202', 0.45);
+      c.fillStyle = vg(c, -3, -10, [0, 'rgba(40,56,92,0)', 1, 'rgba(34,48,84,.55)']); c.fillRect(X(ga), Y(-3), gw, 8 * s);
+      // ===== 崖頂後面的山頭（左右各一座，岩柱就是它朝深谷的那一面） =====
+      massif(c, 0, mkRand(809)); massif(c, 1, mkRand(810));
     },
     terrain(c) {
-      const s = V.s; let R = mkRand(811);
-      // ===== 右邊的大山壁（在城的岩柱後面） =====
-      const P = [WX1 + 4, -14, 97, -14, 97, 37.6, 72, 37.6].concat(MT);
-      wpath(c, P); c.fillStyle = vg(c, 72, 0, [0, '#c1b5a0', 0.4, '#afa592', 0.75, '#9a907f', 1, '#888071']); c.fill();
-      c.save(); c.clip();
-      // 幾道大的暗溝，讓山壁有前後
-      for (const [x, w] of [[88, 5], [101, 4], [112.5, 3.5], [127, 5], [141, 4], [154, 5]]) { c.fillStyle = lg(c, X(x - w), 0, X(x + w), 0, [0, 'rgba(70,62,60,0)', 0.6, 'rgba(70,62,60,.2)', 1, 'rgba(70,62,60,0)']); c.fillRect(X(x - w), 0, 2 * w * s, V.H); }
-      // 直立的岩柱：左邊受光、右邊一道深縫
-      for (let x = 70 + R() * 2; x < WX1; x += 2.6 + R() * 3.8) {
-        const yt = 78 - R() * 20, yb = R() < 0.4 ? -2 : 8 + R() * 36, pts = [];
-        for (let y = yt; y > yb; y -= 1.5 + R() * 2) pts.push(x + Math.sin(y * 0.21 + x) * 0.45 + (R() - 0.5) * 0.3, y);
-        c.beginPath(); for (let i = 0; i < pts.length; i += 2) c.lineTo(X(pts[i] + 0.35), Y(pts[i + 1]));
-        c.strokeStyle = 'rgba(240,232,212,' + (0.25 + R() * 0.25).toFixed(2) + ')'; c.lineWidth = s * (0.5 + R() * 0.7); c.stroke();
-        c.beginPath(); for (let i = 0; i < pts.length; i += 2) c.lineTo(X(pts[i] - 0.2), Y(pts[i + 1]));
-        c.strokeStyle = 'rgba(70,60,52,' + (0.3 + R() * 0.2).toFixed(2) + ')'; c.lineWidth = lw(0.2); c.stroke();
-      }
-      // 岩棚：上緣亮、底下影子、棚上長草
-      const ledges = [[74, 82, 45.6], [79, 90, 51.4], [84, 97, 57.6], [88, 104, 63.4], [108.8, 116, 9.6], [111, 124, 19.5], [109, 115, 31], [118.5, 132, 36], [113, 128, 47], [124, 140, 55], [130, 146, 13], [138, 152, 27], [144, 160, 42]];
-      for (const [xa, xb, y] of ledges) {
-        const edge = () => { c.beginPath(); c.moveTo(X(xa), Y(y)); c.quadraticCurveTo(X((xa + xb) / 2), Y(y + 0.25), X(xb), Y(y - 0.2)); };
-        c.fillStyle = vg(c, y, y - 1.8, [0, 'rgba(64,54,46,.42)', 1, 'rgba(64,54,46,0)']);
-        edge(); c.lineTo(X(xb - 1), Y(y - 1.8)); c.lineTo(X(xa + 1), Y(y - 1.8)); c.closePath(); c.fill();
-        edge(); c.strokeStyle = '#efe5ce'; c.lineWidth = lw(0.24); c.stroke();
-        c.fillStyle = '#7fae5a'; c.beginPath();
-        for (let x = xa + R(); x < xb - 0.5; x += 0.6 + R() * 1.4) { const r = s * (0.25 + R() * 0.3); c.moveTo(X(x) + r, Y(y + 0.1)); c.ellipse(X(x), Y(y + 0.1), r, r * 0.6, 0, Math.PI, TAU); }
-        c.fill();
-      }
-      // 瀑布：從岩縫流出來，落到半山腰化成霧
-      c.fillStyle = 'rgba(58,50,44,.6)'; wpath(c, [FALLX - 0.8, 53, FALLX + 1, 52.6, FALLX + 0.55, 49.6, FALLX - 0.45, 49.8], 1); c.fill();
-      c.fillStyle = vg(c, 51, 6, [0, 'rgba(250,253,255,.95)', 0.75, 'rgba(236,246,255,.75)', 1, 'rgba(230,242,252,0)']);
-      c.beginPath(); c.moveTo(X(FALLX - 0.3), Y(51)); c.lineTo(X(FALLX + 0.4), Y(51)); c.lineTo(X(FALLX + 0.8), Y(6)); c.lineTo(X(FALLX - 0.7), Y(6)); c.closePath(); c.fill();
-      // 棧道：釘在山壁上的木板路（從瀑布前過），底下斜撐、外側欄杆
-      const BY = 23.5;
-      c.strokeStyle = '#5a4030'; c.lineWidth = lw(0.16); c.beginPath();
-      for (let x = 110; x <= 140; x += 2.4) { c.moveTo(X(x), Y(BY)); c.lineTo(X(x + 1.1), Y(BY - 1.8)); c.moveTo(X(x), Y(BY)); c.lineTo(X(x), Y(BY + 1.3)); }
-      c.moveTo(X(110), Y(BY + 1.25)); c.lineTo(X(140), Y(BY + 1.25)); c.stroke();
-      c.fillStyle = '#8a6444'; c.fillRect(X(109.4), Y(BY + 0.2), (140.6 - 109.4) * s, lw(0.36, 2));
-      c.fillStyle = 'rgba(255,236,200,.5)'; c.fillRect(X(109.4), Y(BY + 0.2), (140.6 - 109.4) * s, lw(0.09));
-      // 谷底的霧把山腳染淡；離太陽越遠越暗
-      c.fillStyle = vg(c, -2, 22, [0, 'rgba(214,230,244,.65)', 0.45, 'rgba(214,230,244,.22)', 1, 'rgba(214,230,244,0)']); c.fillRect(X(70), Y(22), X(WX1) - X(70), 24 * s);
-      c.fillStyle = lg(c, X(80), 0, X(150), 0, [0, 'rgba(60,56,84,0)', 1, 'rgba(60,56,84,.22)']); c.fillRect(X(80), 0, X(WX1) - X(80), V.H);
-      c.restore();
-      // 山壁左緣朝太陽的那一道亮邊
-      c.beginPath(); c.moveTo(X(MT[2]), Y(MT[3])); for (let i = 4; i < 30; i += 2) c.lineTo(X(MT[i]), Y(MT[i + 1]));
-      c.strokeStyle = 'rgba(255,248,226,.85)'; c.lineWidth = s * 0.36; c.lineJoin = 'round'; c.stroke();
-      // 長在岩縫裡的松
-      for (const [x, y, h] of [[73.6, 44.2, 3.4], [77.2, 49.5, 2.6], [81, 55.7, 3.2], [84.6, 62.3, 2.8], [112, 19.6, 2.6], [121, 36.1, 3], [128, 55.1, 2.6], [133, 13.1, 3.2], [119.5, 47.1, 2.2], [146, 27.1, 2.8], [152, 42.1, 2.6]]) pine(c, R, X(x), Y(y), h * s, x === 119.5 ? 1 : -1, '#5a4636', '#3e6a4c', '#7aa564');
-
-      // ===== 地面：左邊台地、右邊山腳 =====
-      const runs = groundRuns(), bot = V.H + 4;
-      for (const [xa, xb] of runs) {
-        const left = xb < GR;
-        c.beginPath(); traceGround(c, xa, xb, 0, true);
-        if (left) { for (let y = -3.8; y > -11; y -= 1.1) c.lineTo(X(xb - 0.12 - ((y * 7.3) % 1 + 1) % 1 * 0.55), Y(y)); c.lineTo(X(xb - 0.3), bot); }
-        else c.lineTo(X(xb), bot);
-        c.lineTo(X(xa), bot); c.closePath();
-        c.fillStyle = left ? lg(c, 0, Y(0), 0, V.H, [0, '#a09683', 0.5, '#7d7466', 1, '#5c5a62']) : lg(c, 0, Y(0), 0, V.H, [0, '#8a8173', 0.5, '#6d665b', 1, '#4f5164']); c.fill();
-        if (left) { c.strokeStyle = '#3e3932'; c.lineWidth = lw(0.26, 1.5); c.lineJoin = 'round'; c.stroke(); }
-      }
-      // 岩層的橫紋（台地）、直的岩縫（山腳）
-      c.strokeStyle = 'rgba(62,56,48,.28)'; c.lineWidth = lw(0.2); c.lineCap = 'round';
-      for (let k = 0; k < 16; k++) { const x = WX0 + R() * (GL - 8 - WX0), y = -2.4 - R() * 6.4, w = 4 + R() * 8; c.beginPath(); c.moveTo(X(x), Y(y)); c.quadraticCurveTo(X(x + w * 0.5), Y(y - 0.4), X(x + w), Y(y + 0.1)); c.stroke(); }
-      c.strokeStyle = 'rgba(50,44,40,.3)';
-      for (let x = 97 + R() * 2; x < WX1; x += 2 + R() * 3) { c.beginPath(); c.moveTo(X(x), Y(-0.6)); c.lineTo(X(x + (R() - 0.5) * 0.6), Y(-3 - R() * 3)); c.lineTo(X(x + (R() - 0.5) * 0.8), Y(-6 - R() * 4)); c.stroke(); }
-      // 左崖口的背光面
-      c.fillStyle = 'rgba(50,46,58,.32)'; wpath(c, [GL - 1.6, -3.4, GL, -3, GL - 0.4, -11, GL - 1.8, -11]); c.fill();
-      // 右崖：岩柱下的凹縫暗，崖面朝太陽亮一條
-      c.fillStyle = '#3a342e'; wpath(c, [95, 0, 97, 0, 96, -3, 95.2, -3]); c.fill();
-      c.fillStyle = lg(c, X(95.2), 0, X(97.5), 0, [0, 'rgba(236,226,206,.5)', 1, 'rgba(236,226,206,0)']); c.fillRect(X(95.2), Y(-3), s * 2.3, s * 9);
-      c.beginPath(); c.moveTo(X(95.2), Y(-3)); c.lineTo(X(95.2), Y(-11)); c.strokeStyle = '#3e3932'; c.lineWidth = lw(0.26, 1.5); c.stroke();
-      c.fillStyle = vg(c, -5, -10, [0, 'rgba(56,72,108,0)', 1, 'rgba(56,72,108,.4)']); c.fillRect(X(GR), Y(-5), X(WX1) - X(GR), 6 * s);
-      // 草皮
-      for (const [xa, xb] of runs) {
-        if (xa > GR - 1) {
-          c.beginPath(); traceGround(c, Math.max(xa, 97), xb, 0, true); c.strokeStyle = '#3e3932'; c.lineWidth = lw(0.26, 1.5); c.stroke();
-          c.beginPath(); traceGround(c, Math.max(xa, 97), xb, -0.25, true); c.strokeStyle = '#7fae5a'; c.lineWidth = lw(0.3, 1.5); c.stroke();
-          continue;
-        }
-        c.beginPath(); traceGround(c, xa, xb, 0, true); traceGroundBack(c, xa, xb, -0.9); c.closePath(); c.fillStyle = '#86c85c'; c.fill();
-        c.beginPath(); traceGround(c, xa, xb, 0, true); c.strokeStyle = '#3c7a34'; c.lineWidth = lw(0.2, 1.5); c.lineJoin = 'round'; c.stroke();
-        for (let x = xa + R(); x < xb - 0.4; x += 0.6 + R()) {
+      const s = V.s, bot = V.H + 4;
+      // ===== 兩道懸崖：地面以下的崖身一路落到畫面底，朝深谷的崖面跟岩柱的內緣對齊 =====
+      for (let side = 0; side < 2; side++) {
+        const R = mkRand(811 + side), d = side ? -1 : 1, F = side ? FR : FL;
+        // 崖面：由地面往下，參差地往岩石裡縮（不伸進深谷）
+        const face = [];
+        for (let y = 0, k = 0; y > -12; y -= 0.9 + R() * 1.1, k++) face.push(F - d * (k % 3 === 1 ? 0.35 + R() * 0.35 : R() * 0.2), y);
+        const shape = () => {
+          c.beginPath();
+          if (side) { c.moveTo(X(F + 0.1), Y(0)); traceGround(c, F + 0.1, V.x1 + 8, 0, false); c.lineTo(X(V.x1 + 8), bot); }
+          else { c.moveTo(X(V.x0 - 8), bot); traceGround(c, V.x0 - 8, F - 0.1, 0, false); c.lineTo(X(F - 0.1), Y(0)); }
+          if (side) { c.lineTo(X(face[face.length - 2]), bot); for (let i = face.length - 2; i >= 0; i -= 2) c.lineTo(X(face[i]), Y(face[i + 1])); }
+          else { for (let i = 0; i < face.length; i += 2) c.lineTo(X(face[i]), Y(face[i + 1])); c.lineTo(X(face[face.length - 2]), bot); }
+          c.closePath();
+        };
+        shape(); c.fillStyle = vg(c, 1, -9, [0, '#8a8174', 0.45, '#6d665c', 1, '#4c5062']); c.fill();
+        c.save(); shape(); c.clip();
+        // 花崗岩的直紋、幾道橫的岩層
+        for (let x = F - d * (1.4 + R()); side ? x < WX1 : x > WX0; x -= d * (1.2 + R() * 3.4)) { const y0 = -0.5 - R() * 2.5; joint(c, R, x, y0, y0 - 2.5 - R() * 7, 0.5 + R() * 0.6, 'rgba(46,40,36,' + (0.22 + R() * 0.22).toFixed(2) + ')', 'rgba(214,204,186,' + (0.08 + R() * 0.16).toFixed(2) + ')'); }
+        c.strokeStyle = 'rgba(46,40,36,.25)'; c.lineWidth = lw(0.16);
+        for (let k = 0; k < 7; k++) { const x = side ? F + 1 + R() * 26 : F - 1 - R() * 26, y = -1.6 - R() * 6.6, w = (3 + R() * 6) * d; c.beginPath(); c.moveTo(X(x), Y(y)); c.quadraticCurveTo(X(x - w * 0.5), Y(y - 0.35), X(x - w), Y(y + 0.1)); c.stroke(); }
+        // 崖面那一側：左崖朝右、背著太陽，暗；右崖朝左、迎著太陽，亮一道
+        c.fillStyle = lg(c, X(F), 0, X(F - d * 2.6), 0, side ? [0, 'rgba(244,236,214,.5)', 1, 'rgba(244,236,214,0)'] : [0, 'rgba(30,34,52,.42)', 1, 'rgba(30,34,52,0)']); c.fillRect(Math.min(X(F), X(F - d * 2.6)), Y(0.5), 2.6 * s, V.H);
+        // 越往下越沒進谷裡的霧
+        c.fillStyle = vg(c, -2.5, -9.5, [0, 'rgba(150,172,204,0)', 1, 'rgba(120,144,182,.55)']); c.fillRect(0, Y(-2.5), V.W, 8 * s);
+        c.restore();
+        // 崖面的描邊（跟岩柱的描邊同色，岩柱的內緣一路接下來）；右崖迎著太陽，描邊裡面再貼一道亮線
+        const edge = (dx) => { c.beginPath(); for (let i = 0; i < face.length; i += 2) c.lineTo(X(face[i] + dx), Y(face[i + 1] - (i ? 0 : 0.05))); };
+        if (side) { edge(0.32); c.strokeStyle = 'rgba(255,244,218,.6)'; c.lineWidth = lw(0.16); c.lineJoin = 'round'; c.stroke(); }
+        edge(0); c.strokeStyle = '#3e3932'; c.lineWidth = lw(0.26, 1.5); c.lineJoin = 'round'; c.stroke();
+        // 崖頂：一道深色的描線；岩柱外面那一段再鋪一層草皮（岩柱底下是岩石，不長草，岩柱和崖面才接得起來）
+        const xa = side ? FR + 0.1 : WX0, xb = side ? WX1 : FL - 0.1;
+        c.beginPath(); traceGround(c, xa, xb, 0, true); c.strokeStyle = '#3e3932'; c.lineWidth = lw(0.26, 1.5); c.stroke();
+        const ga = side ? 108.4 : WX0, gb = side ? WX1 : 3.6;
+        c.beginPath(); traceGround(c, ga, gb, 0, true); traceGroundBack(c, ga, gb, -0.7); c.closePath(); c.fillStyle = '#7fae5a'; c.fill();
+        c.beginPath(); traceGround(c, ga, gb, -0.08, true); c.strokeStyle = 'rgba(214,240,170,.6)'; c.lineWidth = lw(0.14); c.stroke();
+        for (let x = ga + R(); x < gb - 0.4; x += 0.6 + R()) {
           const px = X(x), py = Y(groundYRaw(x)), h = s * (0.4 + R() * 0.8);
           c.fillStyle = R() < 0.5 ? '#a2e070' : '#6cbc4e';
           c.beginPath(); c.moveTo(px - s * 0.24, py + 1); c.lineTo(px - s * 0.08, py - h); c.lineTo(px + s * 0.05, py + 1); c.lineTo(px + s * 0.2, py - h * 0.7); c.lineTo(px + s * 0.32, py + 1); c.closePath(); c.fill();
-          if (R() < 0.12) { c.fillStyle = R() < 0.6 ? '#ffffff' : '#ffd0e4'; c.beginPath(); c.arc(px + s * 0.45, py + s * 0.35, lw(0.18), 0, TAU); c.fill(); }
+          if (R() < 0.1) { c.fillStyle = R() < 0.6 ? '#ffffff' : '#ffd0e4'; c.beginPath(); c.arc(px + s * 0.45, py + s * 0.35, lw(0.18), 0, TAU); c.fill(); }
         }
+        // 崖面的岩縫裡長出一棵松，斜斜地伸向深谷
+        pine(c, R, X(F - d * 0.2), Y(-2.4), s * 3.4, d, '#4e3a2c', '#2d6046', '#6aa45a', 1);
+        // 崖頂外面那片台地上的松
+        for (const [x, h] of [[-13.4, 4.2], [-19.5, 3.4]]) { const px = side ? 112 - x : x; pine(c, R, X(px), Y(groundYRaw(px)) + 2, s * h, side ? 1 : -1, '#4e3a2c', '#2d6046', '#6aa45a', 1); }
       }
-      // 懸崖邊的迎客松，往峽谷伸出去
-      pine(c, mkRand(812), X(51.2), Y(groundYRaw(51.2)) + 2, s * 9, 1, '#4e3a2c', '#2d6046', '#6aa45a', 1);
     },
     init() {
       const s = V.s;
@@ -303,18 +295,20 @@ THEMES[8] = (function () {
         fogCv.push(cv);
       }
       fog = [];
-      for (let k = 0; k < 5; k++) { const y = [-7.4, -4.4, -1.6, -6, 1][k]; fog.push({ cv: fogCv[y < -4 ? 2 : k & 1], y, w: 26 + k * 3, h: 3.2 + (k % 3) * 0.6, v: (0.45 + k * 0.12) * (k & 1 ? -1 : 1), o: k * 13, a: [0.5, 0.42, 0.5, 0.4, 0.5][k] }); }
-      wisps = [{ cv: 2, y: -6, w: 30, h: 3.4, v: 1.1, o: 0, a: 0.34 }, { cv: 0, y: -1.2, w: 22, h: 2.6, v: -0.8, o: 20, a: 0.24 }];
+      for (let k = 0; k < 6; k++) { const y = [-7.4, -4.6, -1.8, -6.2, 0.8, 3.4][k]; fog.push({ cv: fogCv[y < -4 ? 2 : k & 1], y, w: 30 + k * 4, h: 3.2 + (k % 3) * 0.6, v: (0.5 + k * 0.12) * (k & 1 ? -1 : 1), o: k * 17, a: [0.5, 0.42, 0.5, 0.42, 0.45, 0.38][k] }); }
+      wisps = [{ cv: 2, y: -5.6, w: 34, h: 3.4, v: 1.1, o: 0, a: 0.36 }, { cv: 0, y: -1.2, w: 24, h: 2.6, v: -0.8, o: 30, a: 0.22 }];
+      // 深谷最底下蓋在所有東西前面的一層暗霧：掉下去的殿、兵慢慢沒進去
+      veil = mkCanvas(1, 64); const vc = veil.getContext('2d'); vc.fillStyle = lg(vc, 0, 0, 0, 64, [0, 'rgba(44,60,96,0)', 0.5, 'rgba(44,60,96,.2)', 1, 'rgba(36,50,86,.55)']); vc.fillRect(0, 0, 1, 64);
       const R = mkRand(822);
       needles = []; for (let k = 0; k < 12; k++) needles.push({ x: V.x0 + R() * (V.x1 - V.x0), y: R() * 40, v: 0.8 + R() * 0.9, p: R() * TAU, w: 1.5 + R() * 2.5 });
-      birds = [{ cx: 66, cy: -3.2, rx: 6.5, ry: 1.6, w: 0.36, p: 0 }, { cx: 79, cy: -1.2, rx: 5.5, ry: 1.3, w: -0.3, p: 2 }];
+      birds = [{ cx: 44, cy: -2.6, rx: 8, ry: 1.8, w: 0.34, p: 0 }, { cx: 69, cy: -0.6, rx: 6.5, ry: 1.4, w: -0.29, p: 2 }];
     },
     back(c, t, dt) {
       const s = V.s;
-      c.save(); c.beginPath(); c.rect(X(GL), Y(6), X(GR) - X(GL), V.H); c.clip();
-      // 霧在峽谷裡慢慢地飄
+      c.save(); c.beginPath(); c.rect(X(FL), Y(8), X(FR) - X(FL), V.H); c.clip();
+      // 霧在深谷裡慢慢地飄
       for (const f of fog) {
-        const span = GR - GL + f.w, x = GL - f.w + (((f.o + t * f.v) % span) + span) % span;
+        const span = FR - FL + f.w, x = FL - f.w + (((f.o + t * f.v) % span) + span) % span;
         c.globalAlpha = f.a; c.drawImage(f.cv, X(x), Y(f.y + f.h / 2), f.w * s, f.h * s);
       }
       c.globalAlpha = 1;
@@ -325,13 +319,14 @@ THEMES[8] = (function () {
         c.beginPath(); c.moveTo(px - w, py - w * (0.2 + f)); c.quadraticCurveTo(px - w * 0.4, py - w * 0.15, px, py); c.quadraticCurveTo(px + w * 0.4, py - w * 0.15, px + w, py - w * (0.2 + f)); c.quadraticCurveTo(px + w * 0.4, py + w * 0.12, px, py + w * 0.15); c.quadraticCurveTo(px - w * 0.4, py + w * 0.12, px - w, py - w * (0.2 + f)); c.fill();
       }
       c.restore();
-      // 瀑布上往下流的白紋
-      c.fillStyle = 'rgba(255,255,255,.8)';
-      for (let k = 0; k < 4; k++) { const y = 50 - ((t * 7 + k * 11) % 44); c.fillRect(X(FALLX - 0.15 + (k & 1) * 0.3 + (50 - y) * 0.009), Y(y), lw(0.14), s * 1.4); }
+      // 遠處瀑布上往下流的白紋
+      c.fillStyle = 'rgba(255,255,255,.7)';
+      for (const [x, y0, y1] of falls) for (let k = 0; k < 2; k++) { const L = y0 - y1, y = y0 - ((t * 1.6 + k * L / 2) % L); c.fillRect(X(x - 0.08), Y(y), lw(0.16), s * 0.7); }
     },
     front(c, t, dt) {
       const s = V.s;
-      // 貼著鏡頭飄過峽谷的薄霧
+      // 深谷最底下的暗霧（只在兩道崖面之間），再貼著鏡頭飄過幾片薄霧
+      const vy = Math.floor(Y(-2.4)); if (vy < V.H) c.drawImage(veil, X(FL), vy, X(FR) - X(FL), V.H - vy);
       for (const k of wisps) { const span = V.x1 - V.x0 + k.w + 30, x = V.x0 - k.w + (((k.o + t * k.v) % span) + span) % span; c.globalAlpha = k.a; c.drawImage(fogCv[k.cv], X(x), Y(k.y + k.h / 2), k.w * s, k.h * s); }
       c.globalAlpha = 1;
       // 松針：一小截一小截轉著飄落
