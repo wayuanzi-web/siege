@@ -89,8 +89,11 @@ function mkHang(st, h) {
   if (h.hp) { b.hp = b.hm = h.hp * (st.hpMul || 1); }
   return mkRope(st, { b: top, x: P.x, y: P.y }, { b, x: P.x, y: y + hh / 2 }, { kind: h.chain ? 'chain' : 'rope', hp: h.rhp, aw: h.aw, tag: h.tag || h.t, hang: b });
 }
+// 第一回合（敵軍的第一輪）：我方的機關（繩索、鐵鍊、氣球、船艙、引信、擋滾石的木樁）還有護符護著，敵軍打不壞。
+// 第二回合起就沒有了（開場不會還沒打就先被敵軍一輪打斷要害）
+function guard1(victim, side) { return S.round <= 1 && victim === 0 && side === 1 && !!S.lv.foe.open; }
 function ropeHurt(r, d, kind, side) {
-  if (r.cut || d <= 0) return;
+  if (r.cut || d <= 0 || guard1(r.side, side)) return;
   d *= (r.kind === 'chain' ? CHAIN_DM : ROPE_DM)[kind] || 0; if (d <= 0) return;
   const before = r.hp; r.hp -= d; r.flash = 1;
   if (side < 2 && r.side < 2 && side !== r.side) { const T = S.team[side]; T.ult.c = Math.min(T.ult.need, T.ult.c + Math.min(d, before) * T.ult.gain * 0.8 * ultK(side)); }
@@ -168,7 +171,8 @@ function ropesBlast(x, y, rad, dmg, kind, side, fire) {
 /* ---------- 天秤的支點：一塊磚被釘在世界上的一點，只能繞著它轉（有角度上限，轉軸有摩擦） ---------- */
 // 支點釘在這座城自己的岩柱上（大樑跟岩柱之間不碰撞：轉起來不會卡在柱頂的角上）。
 // 開場先秤一下：大樑上所有東西（磚、兵、兩籃配重）對支點的力矩加起來，差多少就加在標了 bal 的那一籃上，讓它剛好平衡。
-// 轉軸的摩擦（hold）是「前面那籃配重的力矩」的幾成：少一籃配重一定會翻；死一兩個兵、掉幾塊磚還撐得住，掉多了就翻
+// 轉軸的摩擦（hold）是「比較重的那籃配重的力矩」的幾倍：hold 比 1 大的話，少一籃配重還差一點點（嘎——一聲、晃一下），
+// 那一頭再掉幾塊磚、死一個兵就翻；hold 比 1 小，少一籃就翻
 function mkPivot(st, pv) {
   const P = cellPt(st, pv.at), b = anchorAt(st, P); if (!b) return null;
   const lo = st.mirror ? -pv.hi : pv.lo, hi = st.mirror ? -pv.lo : pv.hi;
@@ -189,6 +193,7 @@ function pivotBalance(o) {
   if (bal) {
     const c = bal.body.getWorldCenter(), arm = c.x - o.x, m = bal.mass - T / arm;
     const f = bal.body.getFixtureList(); f.setDensity(f.getDensity() * Math.max(0.2, m / bal.mass)); bal.body.resetMassData(); bal.mass = bal.body.getMass();
+    ref = Math.max(ref, bal.mass * Math.abs(arm));            // 兩籃配重哪一籃比較重，摩擦就照那一籃算：少了任何一籃都還差一點才會翻
   }
   o.tq = Math.max(ref, 1) * GRAV * o.hold;
   o.j.setMaxMotorTorque(o.tq);
@@ -572,7 +577,7 @@ function platForces() {
 }
 // 船艙被打到：船身很厚，可是打穿了就會一直進水
 function hullHurt(c, d, kind, side) {
-  if (side === c.side || c.hp <= 0) return;
+  if (side === c.side || c.hp <= 0 || guard1(c.side, side)) return;
   d *= DM[kind][M_WOOD] * 0.85; if (d <= 0) return;
   const before = c.hp; c.hp = Math.max(0, c.hp - d); c.flash = 1;
   if (side < 2) { const T = S.team[side]; T.dealt += before - c.hp; T.ult.c = Math.min(T.ult.need, T.ult.c + (before - c.hp) * T.ult.gain * ultK(side)); }
@@ -581,6 +586,7 @@ function hullHurt(c, d, kind, side) {
 // 浮島氣球被打破
 function tetherPop(o, side) {
   if (o.hp > 0 && o.cutT > 0) return;
+  if (guard1(o.side, side)) { o.hp = Math.max(o.hp, o.hm * 0.2); return; }
   o.hp = 0; o.cutT = S.time; o.by = side;
   const P = o.plat; if (P && !P.dead) P.body.setAwake(true);
   ev('tpop', o.x, o.y, o.side);
@@ -607,13 +613,14 @@ function platStep(dt, act) {
 /* ---------- 引信（第四關）：一條從塔頂窗口垂到外面的繩子，一路串著每一層的火藥桶 ----------
    火燒到露在外面的那一截（火油兵的火、穿過地火的砲彈），或是火藥桶在旁邊炸開，引信就點著了：
    火從點著的地方往兩頭燒，燒到哪一桶火藥，那一桶就爆 */
+const FUSE_R = 1.2;            // 火要燒到離引信頭這麼近才點得著（要瞄得準）
 const FUSE_V = 8.5;            // 引信一秒燒多長
 function mkFuse(st, d) {
   const xs = [], ys = [], s = [0];
   for (const a of d.pts) { const P = cellPt(st, a); xs.push(P.x); ys.push(P.y); }
   for (let i = 1; i < xs.length; i++) s.push(s[i - 1] + Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]));
   const len = s[s.length - 1], F = { st, side: st.side, x: xs, y: ys, s, len, open: d.open || 1, fronts: [], bin: new Uint8Array(Math.ceil(len / 0.25) + 1), kegs: [], by: 2, done: false, lit: 0 };
-  for (const b of st.blocks) if (b.mat === M_KEG && !b.prop) { const q = fuseNear(F, b.x0, b.y0, 0); if (q.d < 1.8) F.kegs.push({ b, s: q.s }); }
+  for (const b of st.blocks) if (b.mat === M_KEG && !b.prop) { const q = fuseNear(F, b.x0, b.y0, 0); if (q.d < 1.8) { F.kegs.push({ b, s: q.s }); b.fuseKeg = 1; } }
   st.fuse = F;
   return F;
 }
@@ -632,7 +639,7 @@ function fusePt(F, s) {
   const u = clamp((s - F.s[i]) / Math.max(1e-6, F.s[i + 1] - F.s[i]), 0, 1); _pl.x = lerp(F.x[i], F.x[i + 1], u); _pl.y = lerp(F.y[i], F.y[i + 1], u); return _pl;
 }
 function fuseIgnite(F, s, by) {
-  if (F.done) return;
+  if (F.done || guard1(F.side, by)) return;
   const k = clamp(Math.round(s / 0.25), 0, F.bin.length - 1); if (F.bin[k]) return;
   for (const f of F.fronts) if (Math.abs(f.s - s) < 0.6) return;
   F.fronts.push({ s, d: 1 }, { s, d: -1 }); F.by = by; F.lit++;
@@ -644,7 +651,7 @@ function fuseBlast(x, y, r, fire, keg, side) {
   for (let k = 0; k < 2; k++) {
     const F = S.st[k] && S.st[k].fuse; if (!F || F.done) continue;
     if (keg) { const q = fuseNear(F, x, y, 0); if (q.d < Math.min(4.5, r * 0.7)) fuseIgnite(F, q.s, F.by !== 2 && F.fronts.length ? F.by : side); }
-    else if (fire && side !== F.side) { const q = fuseNear(F, x, y, F.open); if (q.d < r * 0.75 + 0.6) fuseIgnite(F, q.s, side); }
+    else if (fire && side !== F.side) { const q = fuseNear(F, x, y, F.open); if (q.d < FUSE_R) fuseIgnite(F, q.s, side); }
   }
 }
 function fusesBurning() { for (let k = 0; k < 2; k++) { const F = S.st[k] && S.st[k].fuse; if (F && F.fronts.length) return true; } return false; }
@@ -723,7 +730,7 @@ function bellInit(d) {
   const j = PH.world.createJoint(new PL.DistanceJoint({ frequencyHz: 0, dampingRatio: 0 }, PH.ground, b.body, { x: d.x, y: d.y }, top));
   S.bell = { b, j, ax: d.x, ay: d.y, len: d.len, lb: b.body.getLocalPoint(top), damp: false, by: 2, peak: 0, ang: 0 };
 }
-function bellPush(side) { const B = S.bell; if (!B) return; B.by = side; B.b.smashBy = side; if (B.damp) { B.damp = false; B.b.body.setLinearDamping(0.04); B.b.body.setAngularDamping(3); } }
+function bellPush(side) { const B = S.bell; if (!B) return; B.round1 = S.round <= 1 && side === 1 && !!S.lv.foe.open; B.by = side; B.b.smashBy = side; if (B.damp) { B.damp = false; B.b.body.setLinearDamping(0.04); B.b.body.setAngularDamping(3); } }
 function bellStep(dt, act) {
   const B = S.bell; if (!B || !B.b.body) return;
   const body = B.b.body, top = body.getWorldPoint(B.lb), v = body.getLinearVelocity(), dx = top.x - B.ax, dy = B.ay - top.y;

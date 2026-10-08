@@ -457,7 +457,7 @@ function shotsStep(dt) {
           if (o.side === side || o.hp <= 0) break;
           const dx = nx - o.x, dy = ny - o.y;
           if (dx * dx + dy * dy > o.r * o.r) break;
-          const w = WL[SH.w[i]], d = w.dmg * SH.mass[i] * (side < 2 ? team[side].dmg : 1);
+          const w = WL[SH.w[i]], d = o.t === 'tether' && guard1(o.side, side) ? 0 : w.dmg * SH.mass[i] * (side < 2 ? team[side].dmg : 1);
           o.hp -= d; o.flash = 1;
           if (w.r > 0) physExplode(nx, ny, w, side, SH.mass[i], SH.flag[i], null, vx, vy); else ev('tick', nx, ny, side);
           if (o.t === 'tether' && o.hp <= 0) tetherPop(o, side);

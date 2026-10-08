@@ -158,6 +158,12 @@ function uiEvent(t, a, b, c, d, e) {
     case 'freeze': if (c === 0) once('frz', '兵被凍住了，下一輪不能開火；開護罩可以立刻解凍', 1); break;
     case 'udie': if (c === 0) once('lost', '有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住', 1); else if (S.idx === 0 && S.team[1].alive > 0) once('kill', '打倒一個守軍！守軍全倒，城就破了'); break;
     case 'chain': if (b === 0 && a >= 10) once('chain', '漂亮的坍塌！一次垮得越多，「連珠」集得越快'); break;
+    // 新的機關：第一次發生的時候講一句
+    case 'tpop': if (c === 0) once('tp0', '我方浮島的氣球破了！同一頭兩顆都破，浮島就會歪下去', 1); else once('tp1', '打破一顆了！再打同一頭的另一顆，浮島就歪下去', 0, () => tethersLeft(1) >= 3); break;
+    case 'leak': if (c === 0) once('lk0', '我方的船艙進水了，那一頭會往下沉', 1); else once('lk1', '敵船進水了！繼續打同一頭，兩個船艙都進水，那一頭就栽進海裡'); break;
+    case 'fuse': if (c === 0) once('fz0', '我方的引信著火了！火會一路燒到每一層的火藥桶', 1); else once('fz1', '敵塔的引信點著了：火順著引信一層一層往下炸'); break;
+    case 'roll': if (c === 0) once('rl0', '滾石往我方衝過來了！', 1); else once('rl1', '滾石衝下去了！'); break;
+    case 'reroll': once('rr', '山坡上又架好一顆新的滾石：木樁打斷了就往那一邊滾'); break;
   }
 }
 

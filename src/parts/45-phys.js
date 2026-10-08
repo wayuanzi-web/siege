@@ -217,7 +217,7 @@ function blockKill(b, side, kind, clean) {
   ev('cell', b.x, b.y, b.mat, b.side, kind, b);
   if (b.side === 1 && side === 0) S.stat.cells++;
   b.st.ver++;
-  if (b.mat === M_KEG) S.pend.push({ t: S.time + 0.1 + rnd() * 0.1, x: b.x, y: b.y, w: WPN.keg, side: side === 0 || side === 1 ? side : 2 });
+  if (b.mat === M_KEG) S.pend.push({ t: S.time + 0.1 + rnd() * 0.1, x: b.x, y: b.y, w: b.fuseKeg ? WPN.powder : WPN.keg, side: side === 0 || side === 1 ? side : 2 });
   if (PH.inStep) PH.kill.push(b.body); else PH.world.destroyBody(b.body);
   b.body = null;
 }
@@ -309,7 +309,8 @@ function segSplit(b, side, kind) {
 // x, y：打在哪裡（長樑、樓板分段算耐久，要知道打到哪一段；沒給就是整塊一起，例如著火）
 function blockHurt(b, dmg, kind, side, x, y) {
   if (b.dead || dmg <= 0) return;
-  if (b.stake && side !== 1 - b.stake.to) return;          // 擋滾石的木樁：只有「石頭滾下去會砸到對方」的那一邊打得斷
+  if (b.fuseKeg) return;                                     // 接著引信的火藥桶：砲彈、火都打不爆，只有引信燒到才會爆
+  if (b.stake && (side !== 1 - b.stake.to || guard1(b.stake.to, side))) return;          // 擋滾石的木樁：只有「石頭滾下去會砸到對方」的那一邊打得斷（第一回合敵軍打不斷我方這邊的）
   let d = dmg * DM[kind][b.mat]; if (b.brit > 0) d *= 1.6;
   if (d <= 0) return;
   if (b.seg) {
@@ -326,7 +327,7 @@ function blockHurt(b, dmg, kind, side, x, y) {
 }
 // by：誰放的火（延燒出去、燒到火藥桶，功勞都算他的）
 function ignite(b, dur, by) {
-  if (b.dead || !MAT[b.mat].burn) return;
+  if (b.dead || !MAT[b.mat].burn || b.fuseKeg) return;          // 接著引信的火藥桶封得很緊：只有引信燒到才會爆
   if (by === undefined || by === b.side) by = 2;
   if (b.mat === M_KEG) { blockKill(b, by, K_FIRE); return; }
   if (b.burn <= 0) { S.nburn++; b.burnBy = by; const p = b.body.getPosition(); ev('ignite', p.x, p.y); }
@@ -392,7 +393,8 @@ function physStep(dt) {
     { const a = r.a, b = r.b, sm = a && a.smash && !a.dead ? a : b && b.smash && !b.dead ? b : null, o = sm === a ? b : a;
       if (sm && o && !o.smash && r.vn > 4.5) {
         const by = sm.smashBy === undefined ? 2 : sm.smashBy;
-        if (o.isBlock && !o.dead && o.st !== S.mech && !(S.time < (o.smCd || 0))) { o.smCd = S.time + 0.25; blockHurt(o, sm.mass * r.vn * SMASH_K, K_CRUSH, by === o.side ? 2 : by, r.x, r.y); if (!o.dead) ev('thud', r.x, r.y, r.J, r.vn); }
+        const k1 = sm.bigBell && S.bell.round1 && o.side === 0 ? 0.25 : 1;          // 第一回合敵軍推過來的大鐘：撞得輕一點
+        if (o.isBlock && !o.dead && o.st !== S.mech && !(S.time < (o.smCd || 0))) { o.smCd = S.time + 0.25; blockHurt(o, sm.mass * r.vn * SMASH_K * k1, K_CRUSH, by === o.side ? 2 : by, r.x, r.y); if (!o.dead) ev('thud', r.x, r.y, r.J, r.vn); }
         else if (o.isUnit && o.alive && !(S.time < (o.smCd || 0))) { o.smCd = S.time + 0.6; ev('bonk', r.x, r.y, sm.bigBell ? 'bell' : 'rock'); hurtUnit(o, Math.min(o.def.big ? o.hpMax * 0.12 : 160, sm.mass * r.vn * 0.22), by === o.side ? 2 : by, K_CRUSH); }
       } }
     // 吊鐘、吊燈砸下來（吊它的繩子斷了、掛它的那塊垮了，或它自己正往下掉）砸在兵頭上：重的東西整個砸在頭上，特別痛。
@@ -410,7 +412,7 @@ function physStep(dt) {
         if (o.dead) continue;
         // 還在原位的磚，不會被同一座城裡「也還在原位」的磚撞壞：樓板被震得彈一下，不該把撐著它的牆和柱子壓碎
         const oth = k ? r.a : r.b; if (o.inPlace && oth && oth.isBlock && oth.inPlace && oth.st === o.st) continue;
-        if (o.mat === M_KEG) { if (dv > KEG_V) blockKill(o, o.side === credit ? 2 : credit, K_CRUSH); continue; }      // 火藥桶摔得太重、被重的東西砸到：爆
+        if (o.mat === M_KEG) { if (dv > KEG_V && !o.fuseKeg) blockKill(o, o.side === credit ? 2 : credit, K_CRUSH); continue; }      // 火藥桶摔得太重、被重的東西砸到：爆（接著引信的那幾桶包著鐵箍，只有火點得著）
         // 倒下來的石碑砸進城裡：整塊石碑的重量砸上去（石碑之間、石碑砸地面不算）
         { const oth = k ? r.a : r.b; if (oth && oth.isBlock && oth.dom && !oth.dead && !o.dom && o.side < 2 && r.vn > 3 && !(S.time < (o.domCd || 0))) { o.domCd = S.time + 0.5; blockHurt(o, oth.mass * r.vn * 0.5, K_CRUSH, credit === o.side ? 2 : credit, r.x, r.y); if (o.dead) continue; } }
         // 吊鐘、吊燈掉下來砸到東西：整個重量砸上去，屋頂、樓板一砸就穿
@@ -504,7 +506,7 @@ function rockPass(ball, dmg, kind, side) {
 function bigBlock(o) { return o.inPlace && !o.frag && !o.prop && !o.dom && (o.cw >= 4 || o.ch >= 3); }
 // hit: 直接打中的東西（磚或兵），vx/vy: 砲彈當時的方向
 function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
-  const T = side < 2 ? S.team[side] : null, kind = w.kind, keg = w.id === 'keg';
+  const T = side < 2 ? S.team[side] : null, kind = w.kind, keg = w.id === 'keg' || w.id === 'powder';
   const fire = kind === K_FIRE || (flag & F_FIRE) !== 0;
   // S.rage：拖太久之後雙方的砲火加重。火藥桶炸開不吃誰的火力加成（點著它的是誰都一樣痛）
   const mul = (T ? (keg ? 1 : T.dmg) * S.rage : 1) * mass * ((flag & F_FIRE) && kind !== K_FIRE ? 1.5 : 1);
@@ -550,7 +552,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
       const big = bigBlock(o), cap = o.mat === M_KEG ? 10 : o.mat === M_ROCK ? DV_ROCK : big ? DV_BIG : o.bigBell ? DV_BELL : DV_MAX, j = Math.min(Jw * f, o.mass * cap);
       const jx = nx / nl * j, jy = ny / nl * j + j * 0.22, k = pushScale(o.body, o.mass, jx, jy, cap);
       if (k > 0) o.body.applyLinearImpulse({ x: jx * k, y: jy * k }, big || o.bigBell ? o.body.getWorldCenter() : { x: _cp.x, y: _cp.y }, true);
-      if (o.mat === M_KEG && w.id === 'keg') { blockKill(o, side, kind); continue; }           // 火藥桶被另一桶炸到：一定跟著爆
+      if (o.mat === M_KEG && w.id === 'keg' && !o.fuseKeg) { blockKill(o, side, kind); continue; }           // 火藥桶被另一桶炸到：一定跟著爆
       if (fire && MAT[o.mat].burn && (o === hit || f > 0.5) && (o.mat === M_KEG || rnd() < 0.3 + 0.6 * f)) ignite(o, 3 + rnd() * 2, side);       // 要直接打中或炸在旁邊才點得著（隔著一道牆、一片鐵甲點不到）
       const sootK = kind === K_ICE || kind === K_ZAP || o.mat === M_ICE ? 0 : (fire ? 0.6 : 0.4) * Math.min(1, mass + 0.3);        // 冰不會被燻黑
       if (kind === K_ICE) o.brit = 2; else if (sootK > 0 && !o.seg && o.soot < 1) o.soot = Math.min(1, o.soot + f * sootK);
@@ -569,11 +571,11 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
   }
   PH.ek = 0;
   if (S.ropes.length) ropesBlast(x, y, r, dmg, kind, side, fire);
-  if (fire || keg) fuseBlast(x, y, r, fire, keg, side);
+  if (kind === K_FIRE || keg) fuseBlast(x, y, r, kind === K_FIRE, keg, side);          // 引信只有火油兵的火點得著（穿過地火的砲彈不算）
   // 飛在天上的東西（氣球、光球、吊著浮島的氣球）
   for (const o of S.objs) {
     if ((o.t !== 'balloon' && o.t !== 'orb' && o.t !== 'tether') || o.side === side || o.hp <= 0) continue;
-    const dx = o.x - x, dy = o.y - y; if (dx * dx + dy * dy < (r + o.r) * (r + o.r)) { o.hp -= dmg * 0.6; o.flash = 1; if (o.t === 'tether' && o.hp <= 0) tetherPop(o, side); }
+    const dx = o.x - x, dy = o.y - y; if (dx * dx + dy * dy < (r + o.r) * (r + o.r) && !(o.t === 'tether' && guard1(o.side, side))) { o.hp -= dmg * 0.6; o.flash = 1; if (o.t === 'tether' && o.hp <= 0) tetherPop(o, side); }
   }
   if (kind === K_ZAP) lightning(x, y, mul, side);
   ev('boom', x, y, r, w.i, side, mass + ((flag & F_FIRE) ? 100 : 0));

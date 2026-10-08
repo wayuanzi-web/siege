@@ -106,7 +106,8 @@ function aiBegin(T) {
   {
     // 城身：火藥桶，再隨便挑幾塊還在原位的磚。兵腳下、身邊那一層的牆和柱子最值得打（打掉了人會跟著掉下去）；城基太厚，不打
     const cand = [];
-    for (const b of fst.blocks) { if (b.dead) continue; if (b.mat === M_KEG) tg.push({ x: b.body.getPosition().x, y: b.body.getPosition().y, w: 1.35 }); else if (b.inPlace && !b.prop && !b.base && !b.beam) cand.push(b); }
+    const r1 = side === 1 && S.round <= 1 && S.lv.foe.open;          // 第一回合：不去瞄火藥桶
+    for (const b of fst.blocks) { if (b.dead) continue; if (b.mat === M_KEG) { if (!r1) tg.push({ x: b.body.getPosition().x, y: b.body.getPosition().y, w: 1.35 }); } else if (b.inPlace && !b.prop && !b.base && !b.beam) cand.push(b); }
     if (rnd() < A.sap) for (let k = 0; k < 5 && cand.length; k++) {
       const b = cand[ri(cand.length)]; let w = 0.5;
       for (const u of foeT.units) if (u.alive && Math.abs(u.x - b.x0) < CS * 2.2 && u.y - b.y0 > -CS * 0.5 && u.y - b.y0 < CS * 2.6) { w = 0.8; break; }
@@ -114,6 +115,8 @@ function aiBegin(T) {
     }
   }
   if (A.hate > 0 && rnd() < A.hate) for (const g of S.gates) if (!g.dead && g.owner === 1 - side) tg.push({ x: g.x, y: g.y, w: 0.45 + 0.12 * g.mult, hg: g });
+  // 第一回合敵軍還在試射：只瞄兵（我方的機關第一回合有護符，打了也沒用）
+  if (side === 1 && S.round <= 1 && S.lv.foe.open) { A.mx = mx; A.my = my; for (const t of tg) for (let tau = 0.7; tau <= 3.41; tau += 0.1) { aimFor(mx, my, t.x, t.y, tau, wind, _av); if (aimOk(_av[0], _av[1], dir)) A.cand.push({ vx: _av[0], vy: _av[1], tau, t }); } return; }
   // 第二篇的要害：吊著重物的繩子、鐵鍊（打斷了會砸下去），關卡自己指定的弱點（石碑、天秤的配重、塔腳……）
   for (const r of S.ropes) if (!r.cut && r.aw > 0 && r.side !== side && rnd() < A.sap + 0.25) { const e = ropeEnds(r); tg.push({ x: (e[0] + e[2]) / 2, y: (e[1] + e[3]) / 2, w: r.aw, rope: r }); }
   if (S.lv.weak && rnd() < A.sap + 0.25) for (const t of S.lv.weak(side)) tg.push(t);

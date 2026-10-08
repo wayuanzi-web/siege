@@ -120,7 +120,7 @@ const LEVELS = [
       { r: 3, t: '火藥桶直接被炸到也會爆，順便點著引信', ok: () => kegsLeft(1) }],
     ground: [[-40, 5], [0, 0], [38, 0], [41, -3.5], [71, -3.5], [74, 0], [112, 0], [152, 5]],
     me: { crew: ['fire', 'rocket', 'bomb', 'ice'] },
-    foe: { crew: ['fire', 'bomb', 'rocket', 'fire'], hp: 1.15, dmg: 1.1, open: 0.55, ai: { err: 5.2, think: 1.1, gate: 0.65, hate: 0.2, skill: 0.5, sap: 0.45, warm: 1.7 } },
+    foe: { crew: ['fire', 'bomb', 'rocket', 'fire'], hp: 1.15, dmg: 1.1, open: 0.55, ai: { err: 5.2, think: 1.1, gate: 0.65, hate: 0.2, skill: 0.5, sap: 0.45, warm: 2.2 } },
     objs: [
       { t: 'geyser', x: 46, w: 2.8, hgt: 45 },
       { t: 'geyser', x: 56, w: 2.8, hgt: 48 },
@@ -227,7 +227,7 @@ const LEVELS = [
     wind: { max: 6, at: 3 },
     me: { crew: ['rocket', 'bolt', 'stone', 'bomb'] },
     foe: { crew: ['bomb', 'rocket', 'ice', 'bolt'], hp: 1.25, dmg: 1.3, open: 0.55, ai: { err: 3.6, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 1.8 } },
-    weak: (side) => tgC(side, [[10, 3], [8, 3], [10, 1], [8, 1]], 0.9),
+    weak: (side) => tgC(side, [[10, 3], [8, 3], [2, 3], [0, 3]], 0.9),
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[47, 40]], move: { t: 'bob', a: 4, per: 8 } },
       { owner: 0, mult: 5, h: 5.5, spots: [[56, 47], [53, 32]], at: 2, hop: true },
