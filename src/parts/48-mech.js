@@ -29,6 +29,8 @@ function ropeEnds(r) {
   if (r.b && r.b.body) { const p = r.b.body.getWorldPoint(r.lb); e[2] = p.x; e[3] = p.y; } else if (!r.b) { e[2] = r.lb.x; e[3] = r.lb.y; }
   return e;
 }
+// 繩子現在被拉得多緊（兩頭都在睡、還沒被解算過的繩子算 0）
+function ropeTension(j, inv) { return j.m_u ? Math.abs(j.m_impulse || 0) * inv : 0; }
 function ropeJoint(r) {
   const ga = r.a ? r.a.body : PH.ground, gb = r.b ? r.b.body : PH.ground;
   r.j = PH.world.createJoint(new PL.RopeJoint({ maxLength: r.len, localAnchorA: r.la, localAnchorB: r.lb, collideConnected: true }, ga, gb));
@@ -61,9 +63,9 @@ function mkHang(st, h) {
   const kind = h.t === 'bell' ? 'bell' : h.t === 'lamp' ? 'lamp' : h.t === 'basket' ? 'basket' : 'box';
   const mat = h.mat !== undefined ? h.mat : h.t === 'bell' ? M_IRON : h.t === 'lamp' ? M_GLASS : M_STONE;
   const b = mkBlock(st, { mat, kind, x: P.x, y, w, h: hh, prop: 1, den: h.den, il: kind === 'bell' ? w * 0.24 : 0, ir: kind === 'bell' ? w * 0.24 : 0 });
-  b.hang = h.t; b.cx = P.cx; b.cy = P.cy; b.cw = 1; b.ch = 1;
+  b.hang = h.t; b.cx = P.cx; b.cy = P.cy; b.cw = 1; b.ch = 1; if (h.bal) b.bal = 1;
   if (h.hp) { b.hp = b.hm = h.hp * (st.hpMul || 1); }
-  return mkRope(st, { b: top, x: P.x, y: P.y }, { b, x: P.x, y: y + hh / 2 }, { kind: h.chain ? 'chain' : 'rope', hp: h.rhp, aw: h.aw, tag: h.t, hang: b });
+  return mkRope(st, { b: top, x: P.x, y: P.y }, { b, x: P.x, y: y + hh / 2 }, { kind: h.chain ? 'chain' : 'rope', hp: h.rhp, aw: h.aw, tag: h.tag || h.t, hang: b });
 }
 function ropeHurt(r, d, kind, side) {
   if (r.cut || d <= 0) return;
@@ -78,6 +80,7 @@ function ropeCut(r, side, kind, quiet) {
   if (r.cut) return;
   const e = ropeEnds(r); r.cx[0] = e[0]; r.cx[1] = e[1]; r.cx[2] = e[2]; r.cx[3] = e[3];
   r.cut = true; r.hp = 0; r.cutT = S.time; r.burn = 0;
+  if (r.hang && !r.hang.dead) { r.hang.hangFree = 1; if (!quiet && side < 2 && side !== r.side) r.hang.hitBy = side; }
   if (r.j) { if (PH.inStep) PH.killJ.push(r.j); else PH.world.destroyJoint(r.j); r.j = null; }
   if (quiet) return;
   ev('snap', (e[0] + e[2]) / 2, (e[1] + e[3]) / 2, r.kind === 'chain' ? 1 : 0, r.side, r.tag);
@@ -131,13 +134,102 @@ function ropesBlast(x, y, rad, dmg, kind, side, fire) {
 }
 
 /* ---------- 天秤的支點：一塊磚被釘在世界上的一點，只能繞著它轉（有角度上限，轉軸有摩擦） ---------- */
+// 支點釘在這座城自己的岩柱上（大樑跟岩柱之間不碰撞：轉起來不會卡在柱頂的角上）。
+// 開場先秤一下：大樑上所有東西（磚、兵、兩籃配重）對支點的力矩加起來，差多少就加在標了 bal 的那一籃上，讓它剛好平衡。
+// 轉軸的摩擦（hold）是「前面那籃配重的力矩」的幾成：少一籃配重一定會翻；死一兩個兵、掉幾塊磚還撐得住，掉多了就翻
 function mkPivot(st, pv) {
   const P = cellPt(st, pv.at), b = anchorAt(st, P); if (!b) return null;
   const lo = st.mirror ? -pv.hi : pv.lo, hi = st.mirror ? -pv.lo : pv.hi;
-  const j = PH.world.createJoint(new PL.RevoluteJoint({ enableLimit: true, lowerAngle: lo, upperAngle: hi, enableMotor: true, motorSpeed: 0, maxMotorTorque: pv.fric }, PH.ground, b.body, { x: P.x, y: P.y }));
-  const o = { st, b, j, x: P.x, y: P.y, ang: 0 };
+  const j = PH.world.createJoint(new PL.RevoluteJoint({ enableLimit: true, lowerAngle: lo, upperAngle: hi, enableMotor: true, motorSpeed: 0, maxMotorTorque: 1e9, collideConnected: false }, st.rockBody || PH.ground, b.body, { x: P.x, y: P.y }));
+  const o = { st, b, j, x: P.x, y: P.y, ang: 0, hold: pv.hold || 0.8, tq: 0, tip: 0 };
   b.pivot = o; S.pivots.push(o);
   return o;
+}
+// 等兵都放上去之後才秤（simInit 裡呼叫）
+function pivotBalance(o) {
+  const st = o.st; let T = 0, bal = null, ref = 0;
+  for (const b of st.blocks) {
+    if (b.dead || b === o.b) continue;
+    const c = b.body.getWorldCenter(); T += b.mass * (c.x - o.x);
+    if (b.hang === 'basket') { if (b.bal) bal = b; else ref = Math.max(ref, b.mass * Math.abs(c.x - o.x)); }
+  }
+  for (const u of st.units) if (u.alive && u.body) T += u.mass * (u.body.getWorldCenter().x - o.x);
+  if (bal) {
+    const c = bal.body.getWorldCenter(), arm = c.x - o.x, m = bal.mass - T / arm;
+    const f = bal.body.getFixtureList(); f.setDensity(f.getDensity() * Math.max(0.2, m / bal.mass)); bal.body.resetMassData(); bal.mass = bal.body.getMass();
+  }
+  o.tq = Math.max(ref, 1) * GRAV * o.hold;
+  o.j.setMaxMotorTorque(o.tq);
+}
+
+/* ---------- 懸臂樑的榫頭：樑的內端用一根插銷釘在岩壁上（只能往下轉），外端靠鐵鍊吊著 ----------
+   插銷有摩擦：鐵鍊還在的時候，整間殿的重量大半由鐵鍊吊著，插銷只出一點力。鐵鍊斷了，整間殿的力矩全壓在插銷上，
+   超過它撐得住的（hold：全部重量的幾成），樑就嘎吱嘎吱、一點一點往下垂；垂到 brk（弧度）插銷就斷，整間殿掉下去。
+   插銷釘在樑內端的「上緣」：往下垂的時候樑的內端是往外離開岩壁，不會卡進岩石裡。
+   樑跟這座城的岩壁之間不碰撞（插銷斷了之後也不會，免得一歪就卡在岩壁上） */
+function mkPin(st, pd) {
+  const P = cellPt(st, pd.at), Q = cellPt(st, pd.on), b = anchorAt(st, Q); if (!b || !st.rockBody) return null;
+  const droop = st.mirror ? 1 : -1;
+  const o = { st, b, j: null, x: P.x, y: P.y, droop, hold: pd.hold || 0.5, brk: pd.brk || 0.2, tq: 1e9, lp: null, broke: false, creak: 0, tag: pd.tag || '' };
+  o.lp = b.body.getLocalPoint({ x: P.x, y: P.y }); o.lp = { x: o.lp.x, y: o.lp.y };
+  pinJoint(o);
+  (b.pins || (b.pins = [])).push(o); S.pins.push(o);
+  noRock(b, st);
+  return o;
+}
+function pinJoint(o) {
+  const lo = o.droop > 0 ? 0 : -0.8, hi = o.droop > 0 ? 0.8 : 0, a0 = o.b.body.getAngle();
+  o.j = PH.world.createJoint(new PL.RevoluteJoint({ enableLimit: true, lowerAngle: lo, upperAngle: hi, enableMotor: true, motorSpeed: 0, maxMotorTorque: o.tq, collideConnected: false, referenceAngle: o.a0 === undefined ? a0 : o.a0 }, o.st.rockBody, o.b.body, o.b.body.getWorldPoint(o.lp)));
+  if (o.a0 === undefined) o.a0 = a0;
+}
+// 這塊磚不再跟這座城的岩壁碰撞
+function noRock(b, st) { b.noRock = st; }
+// 開場：先把吊著這根樑的鐵鍊拿掉，量插銷要出多少力才撐得住整間殿，再把鐵鍊裝回去（simInit 裡、量超載之前呼叫）
+function pinBalance() {
+  if (!S.pins.length) return;
+  const off = [];
+  for (const r of S.ropes) for (const o of S.pins) if (r.j && (r.a === o.b || r.b === o.b)) { PH.world.destroyJoint(r.j); r.j = null; off.push(r); }
+  for (const b of S.blocks) b.body.setAwake(true);
+  for (const u of S.units) if (u.body) u.body.setAwake(true);
+  const T = S.pins.map(() => 0);
+  for (let i = 0; i < 10; i++) { PH.world.step(STEP, 8, 3); S.pins.forEach((o, k) => { if (o.j) T[k] = Math.max(T[k], Math.abs(o.j.getMotorTorque(1 / STEP))); }); }
+  S.pins.forEach((o, k) => { o.full = T[k]; o.tq = Math.max(500, T[k] * o.hold); if (o.j) o.j.setMaxMotorTorque(o.tq); });
+  for (const r of off) ropeJoint(r);
+  for (const b of S.blocks) { b.body.setTransform({ x: b.x0, y: b.y0 }, 0); b.body.setLinearVelocity({ x: 0, y: 0 }); b.body.setAngularVelocity(0); }
+  for (const u of S.units) if (u.body) { u.body.setTransform({ x: u.hx, y: u.hy + u.bh / 2 }, 0); u.body.setLinearVelocity({ x: 0, y: 0 }); }
+}
+// 樑斷成幾截：插銷跟著插銷那一頭的那一截走；整根碎掉就沒了
+function pinsOff(b, pieces) {
+  if (!b.pins) return;
+  for (const o of b.pins) {
+    if (o.broke) continue;
+    if (o.j) { if (PH.inStep) PH.killJ.push(o.j); else PH.world.destroyJoint(o.j); o.j = null; }
+    const wp = b.body.getWorldPoint(o.lp); let nb = null;
+    if (pieces) for (const c of pieces) { if (!c.body) continue; const q = c.body.getLocalPoint(wp); if (Math.abs(q.x) <= c.w / 2 + 0.3 && Math.abs(q.y) <= c.h / 2 + 0.3) { nb = c; break; } }
+    if (!nb) { o.broke = true; continue; }
+    o.b = nb; const q = nb.body.getLocalPoint(wp); o.lp = { x: q.x, y: q.y }; nb.noRock = b.noRock;
+    (nb.pins || (nb.pins = [])).push(o);
+    if (!PH.inStep) pinJoint(o); else PH.rePin.push(o);
+  }
+  b.pins = null;
+}
+function pinStep(dt, act) {
+  for (const o of S.pins) {
+    if (o.broke || !o.j || !o.b || o.b.dead) continue;
+    // 瞄準的時候插銷完全卡死（不會在別人瞄準時慢慢垂下去）
+    o.j.setMaxMotorTorque(act ? o.tq : 1e9);
+    const a = (o.b.body.getAngle() - o.a0) * o.droop, w = o.b.body.getAngularVelocity() * o.droop;
+    if (act && w > 0.02) {
+      S.chainT = S.time;
+      o.creak -= dt; if (o.creak <= 0) { o.creak = 0.38; ev('creak', o.x, o.y, M_WOOD, 1.5 + a * 6); }
+    }
+    if (a > o.brk) {
+      // 插銷斷了：整根樑連上面的殿掉下去
+      PH.world.destroyJoint(o.j); o.j = null; o.broke = true;
+      ev('snap', o.x, o.y, 1, o.st.side, 'pin'); S.chainT = S.time;
+      if (o.st.side < 2 && o.st.side !== S.turn && S.phase !== 'hazard' && S.state === 'play') S.chain += 2;
+    }
+  }
 }
 
 /* ---------- 河水：浮起來、被沖走 ---------- */
@@ -183,30 +275,37 @@ function stressCalib(k) {
   for (let i = 0; i < k; i++) {
     PH.world.step(STEP, 8, 3);
     for (const b of S.blocks) { if (b.dead) continue; b.sAcc += b.sJ / STEP; b.sJ = 0; }
-    for (const r of S.ropes) if (r.j) { const f = r.j.getReactionForce(1 / STEP); r.t0 = Math.max(r.t0, Math.hypot(f.x, f.y)); }
+    for (const r of S.ropes) if (r.j) r.t0 = Math.max(r.t0, ropeTension(r.j, 1 / STEP));
   }
   for (const b of S.blocks) {
-    b.sL = 0; b.sT = 0; b.sJ = 0;
+    b.sL = 0; b.sT = 0; b.sJ = 0; b.sX = 0; b.sY = 0; b.sW = 0;
     const m = MAT[b.mat]; b.cap = 0;
-    if (S.lv.stress && m.stress && !b.prop && !b.frag && !b.base && !b.beam) b.cap = Math.max(b.sAcc / k * m.stress, b.mass * GRAV * 1.2 + 60);
+    if (S.lv.stress && m.stress && !b.prop && !b.frag && !b.base && !b.beam && !b.deco) b.cap = Math.max(b.sAcc / k * (b.sk || m.stress), b.mass * GRAV * 1.2 + 60);
     b.sAcc = 0;
   }
-  for (const r of S.ropes) r.tmax = Math.max(r.t0 * (r.kind === 'chain' ? 4.2 : 3.0), r.kind === 'chain' ? 1800 : 700);
+  // 吊殿的鐵鍊（stay）餘裕少：上面那間殿砸下來壓在這間上，它就繃斷
+  for (const r of S.ropes) r.tmax = Math.max(r.t0 * (r.tag === 'stay' ? 2.6 : r.kind === 'chain' ? 4.2 : 3.0), r.kind === 'chain' ? 1800 : 700);
 }
 function stressStep(dt, act) {
   const credit = S.phase === 'hazard' ? 2 : S.turn;
   for (const b of S.blocks) {
     if (b.dead) continue;
-    if (!b.cap) { b.sJ = 0; continue; }
-    if (b.body.isAwake()) b.sL += (b.sJ / dt - b.sL) * 0.25;
-    b.sJ = 0;
+    if (!b.cap) { b.sJ = 0; b.sW = 0; continue; }
+    if (b.body.isAwake()) {
+      b.sL += (b.sJ / dt - b.sL) * 0.25;
+      if (b.seg && b.sW > 0) { const k = b.sPx ? 0.25 : 1; b.sPx += (b.sX / b.sW - b.sPx) * k; b.sPy += (b.sY / b.sW - b.sPy) * k; }
+    }
+    b.sJ = 0; b.sX = 0; b.sY = 0; b.sW = 0;
     if (!act) continue;
-    const cap = b.cap * (0.35 + 0.65 * Math.max(0, b.hp / b.hm));
+    // 已經裂了的撐得比較少（長樑、樓板看最弱的那一段）
+    const cap = b.cap * (0.35 + 0.65 * Math.max(0, b.seg ? (b.low === undefined ? 1 : b.low) : b.hp / b.hm));
     if (b.sL > cap) {
       b.sT += dt;
       if (b.sT > 0.22) {
-        blockHurt(b, b.hm * 0.55 * Math.min(2.5, b.sL / cap - 0.8) * dt, K_CRUSH, b.side === credit ? 2 : credit);
-        b.creak = (b.creak || 0) - dt; if (b.creak <= 0 && !b.dead) { b.creak = 0.45; const p = b.body.getPosition(); ev('creak', p.x, p.y + b.h * 0.3, b.mat, b.sL / cap); }
+        const k = Math.min(2.5, b.sL / cap - 0.8) * dt, by = b.side === credit ? 2 : credit;
+        // 長樑、樓板：從受力最集中的那一段斷（懸臂樑插進岩壁的那一截、只剩一根柱子撐著的那一頭），不是整根一起碎
+        if (b.seg) blockHurt(b, b.segM * 1.3 * k, K_CRUSH, by, b.sPx, b.sPy); else blockHurt(b, b.hm * 0.55 * k, K_CRUSH, by);
+        b.creak = (b.creak || 0) - dt; if (b.creak <= 0 && !b.dead) { b.creak = 0.45; const p = b.seg ? { x: b.sPx, y: b.sPy } : b.body.getPosition(); ev('creak', p.x, p.y + (b.seg ? 0 : b.h * 0.3), b.mat, b.sL / cap); }
       }
     } else if (b.sT > 0) b.sT = Math.max(0, b.sT - dt * 2);
   }
@@ -243,7 +342,7 @@ function mechStep(dt) {
       if (r.cut) continue;
       ropeEnds(r);
       if (r.flash > 0) r.flash = Math.max(0, r.flash - dt * 5);
-      if (r.j) { const f = r.j.getReactionForce(1 / dt); r.tens = Math.hypot(f.x, f.y); if (act && r.tens > r.tmax) { r.over += dt; if (r.over > 0.12) { ropeCut(r, S.phase === 'hazard' ? 2 : S.turn, K_CRUSH, false); continue; } } else r.over = Math.max(0, r.over - dt); }
+      if (r.j) { r.tens = ropeTension(r.j, 1 / dt); if (act && r.tens > r.tmax) { r.over += dt; if (r.over > (r.tag === 'stay' ? 0.35 : 0.12)) { ropeCut(r, S.phase === 'hazard' ? 2 : S.turn, K_CRUSH, false); continue; } } else r.over = Math.max(0, r.over - dt); }
       if (r.burn > 0 && act) { r.burn -= dt; r.hp -= 7 * dt; if (r.hp <= 0) ropeCut(r, S.turn === r.side ? 2 : S.turn, K_FIRE, false); }
     }
   }
@@ -251,7 +350,18 @@ function mechStep(dt) {
   boulderStep(dt);
   // 琉璃碎片：一會兒就化成亮晶晶的粉，不會滿地都是
   for (const b of S.blocks) if (!b.dead && b.frag && b.mat === M_GLASS) { b.age = (b.age || 0) + dt; if (b.age > 2.2) { const p = b.body.getPosition(); ev('glint', p.x, p.y); blockKill(b, 2, K_CRUSH, true); } }
-  for (const o of S.pivots) if (o.b && !o.b.dead) o.ang = o.b.body.getAngle();
+  if (S.pins.length) pinStep(dt, act);
+  for (const o of S.pivots) if (o.b && !o.b.dead) {
+    if (o.tq) o.j.setMaxMotorTorque(act ? o.tq : 1e9);          // 瞄準的時候天秤卡死
+    const a = o.b.body.getAngle(), w = o.b.body.getAngularVelocity();
+    // 大樑開始翻：嘎——的一聲（一次翻動只響一次）
+    if (Math.abs(w) > 0.05 && act) S.chainT = S.time;          // 還在翻：回合先別結束
+    if (Math.abs(w) > 0.25 && !o.tip && act) { o.tip = 1; ev('tilt', o.x, o.y, w); }
+    else if (Math.abs(w) < 0.05) o.tip = 0;
+    o.ang = a;
+  }
+  // 吊著的東西：吊它的那塊垮了（屋頂、樓板掉下來），它也是砸下去的
+  for (const r of S.ropes) if (!r.cut && r.hang && !r.hang.dead && !r.hang.hangFree) { const top = r.a; if (top && (top.dead || !top.inPlace)) r.hang.hangFree = 1; }
 }
 // 共鳴晶柱被打到：整座宮殿的琉璃一起震出裂痕（一個圈一個圈傳出去）
 function resonate(b, side) {

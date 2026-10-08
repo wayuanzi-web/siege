@@ -228,8 +228,22 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'snap': {
       // 繩子斷了（c：1 鐵鍊；d 哪一邊的；e 吊著什麼）
       burst(c ? P_SPARK : P_DEBRIS, a, b, c ? 10 : 6, 22, 0.5, 0.5, c ? C_WHITEHOT : C_TAN); ring(a, b, 0.4, 4, 0.22, '#ffffff', 0.35);
-      if (S.state === 'play') pop(a, b + 3, c ? '鐵鍊斷了！' : '繩子斷了！', d === 1 ? '#ffe14a' : '#ff8a7a', 2.8, 1.0);
-      sfx(c ? 'chainsnap' : 'snap'); shake(0.15);
+      if (S.state === 'play') pop(a, b + 3, e === 'pin' ? '樑斷了！' : c ? '鐵鍊斷了！' : '繩子斷了！', d === 1 ? '#ffe14a' : '#ff8a7a', 2.8, 1.0);
+      if (e === 'pin') { burst(P_DEBRIS, a, b, 10, 20, 0.8, 0.6, C_TAN); sfx('crash'); shake(0.4); } else { sfx(c ? 'chainsnap' : 'snap'); shake(0.15); }
+      break;
+    }
+    case 'bonk': {
+      // 吊鐘、吊燈砸在兵頭上（c：bell / lamp）
+      if (c === 'bell') { ring(a, b, 1, 12, 0.6, '#ffe08a', 0.7); ring(a, b, 1, 20, 0.9, '#ffe08a', 0.4); sfx('bong'); shake(0.6); }
+      else { burst(P_SHARD, a, b, 18, 28, 0.7, 0.6, C_ICE, 6); sfx('glass'); shake(0.4); }
+      if (S.state === 'play') pop(a, b + 3, c === 'bell' ? '噹——！' : '砸中了！', '#ffe14a', 3.4, 1.2);
+      vibrate(60);
+      break;
+    }
+    case 'tilt': {
+      // 天秤開始翻
+      burst(P_DUST, a, b, 6, 10, 0.7, 2.0, C_SAND); sfx('groan'); shake(0.3);
+      if (S.state === 'play') pop(a, b + 6, '失去平衡！', '#ffe14a', 3.6, 1.3);
       break;
     }
     case 'rhit': burst(c ? P_SPARK : P_DEBRIS, a, b, 2, 10, 0.3, 0.4, c ? C_WHITEHOT : C_TAN); break;

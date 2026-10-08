@@ -27,6 +27,16 @@ const foeCell = (cx, cy) => { const st = S.st[1], b = st.cellB[cy * st.cols + (s
 // 戰場中間的牆（中立的那一座）還剩幾塊在原位
 const wallLeft = () => { let n = 0; for (const q of S.structs) if (q.side === 2 && !q.loose) for (const b of q.blocks) if (!b.dead && b.inPlace) n++; return n; };
 const foeKegs = () => S.st[1].blocks.some((b) => !b.dead && b.mat === M_KEG);
+// 敵城藍圖上第 cx 欄（照藍圖寫的方向）、由上往下第 row 列的那塊磚（還在原位才算）
+const foeB = (cx, row) => { const st = S.st[1], b = st.cellB[(st.rows - 1 - row) * st.cols + (st.cols - 1 - cx)]; return b && !b.dead && b.inPlace ? b : null; };
+// 自動玩家（我方）想打的要害：直接打中那一塊最好
+const tgB = (cells, w) => { const out = []; for (const [cx, row] of cells) { const b = foeB(cx, row); if (b) { const p = b.body.getPosition(); out.push({ x: p.x, y: p.y + (b.seg ? 0 : b.h * 0.25), w, blk: b }); } } return out; };
+// 第七關：戰場中間還站著的石碑（由左到右）
+const steles = () => { const out = []; for (const q of S.structs) if (q.side === 2 && !q.loose) for (const b of q.blocks) if (!b.dead && b.dom && b.inPlace) out.push(b); return out.sort((a, b) => a.x0 - b.x0); };
+// 第八關：鐵鍊還在不在（tag）
+const ropeLeft = (tag) => S.ropes.some((r) => !r.cut && r.side === 1 && r.tag === tag);
+// 第九關：天秤歪了沒有
+const tilted = () => S.pivots.some((o) => Math.abs(o.ang) > 0.15);
 const LEVELS = [
   {
     name: '青丘試砲', tag: '基本玩法', theme: 0,
@@ -132,9 +142,106 @@ const LEVELS = [
     lantern: { at: 3, every: 3, spots: [[52, 47], [57, 25]] }
   },
   {
-    name: '魔王城', tag: '魔王三階段', theme: 5,
-    tip: '打倒魔王就贏。打斷大殿的木柱讓屋頂砸他，打穿腳下的樓板讓他摔。毀滅光球打爆了會掉頭砸回去',
-    hints: [{ r: 1, t: '打倒魔王就贏：打斷大殿的木柱，屋頂會砸在他頭上；掀開了再把砲彈吊進去' }, { r: 2, t: '把魔王腳下的樓板打穿，他摔一層就痛一次；轟出城外也會摔掉一截血' }],
+    name: '石林骨牌', tag: '石碑骨牌・投石兵', theme: 7, stress: 1,
+    tip: '戰場中間一排石碑，往敵城那邊一塊比一塊高：推倒最矮的那塊，一路倒過去砸進敵城。投石兵丟的大石頭最會推',
+    hints: [{ r: 1, t: '投石兵丟的是一顆真的大石頭：砸中最左邊那塊矮石碑的上半截，整排石碑一路倒過去，最高的那塊砸進敵城', ok: () => steles().length >= 3 },
+      { r: 2, t: '中間那根石柱頂上只靠兩根細石頸撐著：打斷前面那根，整棟屋子往前倒，砸在前面那間小屋上', ok: () => foeHome(2) || foeHome(4) },
+      { r: 3, t: '石柱頂的小屋只有一根石頸撐著，炸到一邊就翻：站在上面的兵會從十幾格高摔下來', ok: () => foeHome(1) || foeHome(3) }],
+    ground: [[-40, 3], [0, 0], [112, 0], [152, 3]],
+    me: { castle: 'P3', crew: ['stone', 'rocket', 'bolt', 'bomb'] },
+    foe: { castle: 'E8', crew: ['rocket', 'bomb', 'stone', 'bolt'], hp: 1.4, dmg: 1.8, ai: { err: 3.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
+    extra: [{ castle: 'DOM', x: 50.8, y: 0, hp: 1 }],
+    weak: (side) => {
+      if (side !== 0) return [];
+      const out = tgB([[6, 5], [5, 5], [10, 8], [1, 7]], 0.7), st = steles();
+      // 最左邊（最矮）那塊石碑的上半截、偏左一點：往右推倒
+      if (st.length >= 3 && st[0].x0 < 44) { const b = st[0], p = b.body.getPosition(); out.push({ x: p.x - b.w * 0.5, y: p.y + b.h * 0.3, w: 1.1, blk: b }); }
+      return out;
+    },
+    gates: [
+      { owner: 0, mult: 3, h: 5.5, spots: [[46, 37]], move: { t: 'bob', a: 4, per: 8 } },
+      { owner: 0, mult: 5, h: 5.5, spots: [[56, 45], [52, 30]], at: 2, hop: true },
+      { owner: 1, mult: 2, h: 5.5, spots: [[64, 38]], at: 3, regap: 2 }
+    ],
+    lantern: { at: 3, every: 3, spots: [[51, 48], [58, 27]] }
+  },
+  {
+    name: '懸空寺', tag: '懸臂・鐵鍊・銅鐘', theme: 8, stress: 1,
+    tip: '兩間殿從懸崖伸出來，外端各用一條鐵鍊吊著。打斷鐵鍊，整間殿的重量壓在插進岩壁的樑上，撐不住就連人掉進深谷',
+    hints: [{ r: 1, t: '每間殿的外端吊著一條鐵鍊：轟天砲、雷法師才打得斷。斷了之後樑會嘎吱嘎吱響，撐不了多久', ok: () => ropeLeft('stay') },
+      { r: 2, t: '岩簷底下吊著一口大銅鐘，正下方就是上面那間殿的兵：打斷吊鐘的鐵鍊，鐘砸穿屋頂', ok: () => ropeLeft('bell') },
+      { r: 3, t: '上面那間殿掉下來會砸在下面那間上：兩間一起壓垮、一起掉進深谷', ok: () => foeHome(3) && (foeHome(1) || foeHome(2)) }],
+    ground: [[-40, 3], [0, 0], [49, 0], [53, -3], [96, -3], [97, 0], [152, 0]],
+    voids: [[53.5, 95.2]],
+    me: { castle: 'P3', crew: ['rocket', 'zap', 'bolt', 'bomb'] },
+    foe: { castle: 'E9', crew: ['fire', 'bomb', 'zap', 'bolt'], hp: 1.45, dmg: 1.85, ai: { err: 3.6, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
+    weak: (side) => side === 0 ? tgB([[4, 11], [4, 7], [9, 10], [5, 6]], 0.6) : [],
+    gates: [
+      { owner: 0, mult: 3, h: 5.5, spots: [[47, 38]], move: { t: 'bob', a: 4, per: 8 } },
+      { owner: 0, mult: 5, h: 5.5, spots: [[57, 46], [55, 30]], at: 2, hop: true },
+      { owner: 1, mult: 2, h: 5.5, spots: [[63, 40]], at: 3, regap: 2 }
+    ],
+    lantern: { at: 3, every: 3, spots: [[52, 49], [60, 26]] }
+  },
+  {
+    name: '天秤寨', tag: '天秤・配重・深谷', theme: 9, stress: 1,
+    tip: '整座寨子架在一根會轉的大樑上，兩頭各吊一籃配重。哪一頭變輕，大樑就往另一頭翻，上面的東西全滑下去',
+    hints: [{ r: 1, t: '前面那籃配重只用麻繩吊著，一箭就斷：配重沒了，大樑往後翻，後面那座樓滑下去', ok: () => !tilted() },
+      { r: 2, t: '後面那籃是鐵鍊吊的（要轟天砲、投石）：它斷了，大樑往前翻，前面那座樓連人滑進深谷', ok: () => !tilted() },
+      { r: 3, t: '把一頭的兵和磚打掉，那一頭變輕，打掉夠多大樑也會翻', ok: () => !tilted() }],
+    ground: [[-40, 4], [0, 0], [56, 0], [58, -3], [80, -3], [82, 0], [152, 4]],
+    voids: [[58.5, 81.5]],
+    wind: { max: 6, at: 3 },
+    me: { castle: 'P3', crew: ['rocket', 'bolt', 'stone', 'bomb'] },
+    foe: { castle: 'E10', crew: ['bomb', 'rocket', 'ice', 'bolt'], hp: 1.45, dmg: 1.85, ai: { err: 3.5, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
+    weak: (side) => side === 0 ? tgB([[12, 3], [9, 3], [12, 1], [9, 1]], 0.55) : [],
+    gates: [
+      { owner: 0, mult: 3, h: 5.5, spots: [[46, 39]], move: { t: 'bob', a: 4, per: 8 } },
+      { owner: 0, mult: 5, h: 5.5, spots: [[56, 46], [53, 31]], at: 2, hop: true },
+      { owner: 1, mult: 2, h: 5.5, spots: [[61, 40]], at: 3, regap: 2 }
+    ],
+    lantern: { at: 3, every: 3, spots: [[51, 49], [58, 27]] }
+  },
+  {
+    name: '琉璃宮', tag: '琉璃・共鳴晶柱・吊燈', theme: 10, stress: 1,
+    tip: '整座宮殿是琉璃，一撞就碎。上層正中間的紫色晶柱被重重打中，整座宮殿的琉璃會一圈一圈震碎',
+    hints: [{ r: 1, t: '先把上層的琉璃牆打開，再瞄準正中間的紫色共鳴晶柱：一下打掉它一半，整座宮殿一起震碎', ok: () => !!foeB(5, 3) },
+      { r: 2, t: '大廳天花板吊著一盞水晶吊燈，正下方就是一個兵：把天花板打穿，吊燈砸下來', ok: () => foeHome(1) },
+      { r: 3, t: '琉璃碎片砸到下面的琉璃也會碎：從上往下打，一層壓垮一層' }],
+    ground: [[-40, 3], [0, 0], [38, 0], [42, -3.5], [70, -3.5], [74, 0], [112, 0], [152, 3]],
+    me: { castle: 'P3', crew: ['rocket', 'stone', 'zap', 'bomb'] },
+    foe: { castle: 'E11', crew: ['bomb', 'ice', 'zap', 'rocket'], hp: 1.5, dmg: 1.9, ai: { err: 3.4, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
+    weak: (side) => side === 0 ? tgB([[5, 3]], 1.25).concat(tgB([[5, 4]], 0.6)) : [],
+    gates: [
+      { owner: 0, mult: 3, h: 5.5, spots: [[46, 37]], move: { t: 'bob', a: 4, per: 8 } },
+      { owner: 0, mult: 5, h: 5.5, spots: [[56, 45], [52, 30]], at: 2, hop: true },
+      { owner: 0, mult: 10, h: 5.5, spots: [[51, 47]], at: 4, life: 1, gap: 2 },
+      { owner: 1, mult: 2, h: 5.5, spots: [[63, 38], [61, 46]], at: 3, hop: true, regap: 2 }
+    ],
+    lantern: { at: 3, every: 3, spots: [[50, 49], [59, 26]] }
+  },
+  {
+    name: '五重塔', tag: '高塔・連層崩塌・火', theme: 11, stress: 1,
+    tip: '五層木塔，一層的柱子斷了一根，另一根撐不住，上面整疊一層一層壓下來。全是木頭和瓦，火會往上燒',
+    hints: [{ r: 1, t: '每一層只有兩根柱子：打斷一根，另一根會嘎吱嘎吱響，撐不了多久，上面幾層一起壓下來', ok: () => foeHome(1) || foeHome(2) },
+      { r: 2, t: '火油兵點著的柱子會越燒越細：燒到撐不住就斷，整座塔一層壓一層垮下來' },
+      { r: 3, t: '塔頂的兵最高：底下任何一層垮了，他都會一路摔下來', ok: () => foeHome(4) }],
+    ground: [[-40, 3], [0, 0], [112, 0], [152, 3]],
+    wind: { max: 5, at: 3 },
+    me: { castle: 'P3', crew: ['fire', 'rocket', 'stone', 'bomb'] },
+    foe: { castle: 'E12', crew: ['bomb', 'fire', 'rocket', 'bolt'], hp: 1.5, dmg: 1.95, ai: { err: 3.3, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
+    weak: (side) => side === 0 ? tgB([[3, 10], [9, 10], [4, 8], [8, 8]], 0.65) : [],
+    gates: [
+      { owner: 0, mult: 3, h: 5.5, spots: [[46, 38]], move: { t: 'bob', a: 4, per: 8 } },
+      { owner: 0, mult: 5, h: 5.5, spots: [[55, 46], [52, 30]], at: 2, hop: true },
+      { owner: 1, mult: 2, h: 5.5, spots: [[62, 40]], at: 3, regap: 2 }
+    ],
+    lantern: { at: 3, every: 3, spots: [[50, 49], [58, 26]] }
+  },
+  {
+    name: '魔王城', tag: '魔王三階段・鐵吊燈', theme: 5,
+    tip: '打倒魔王就贏。大殿屋頂吊著一盞鐵吊燈，正好在他頭頂：打斷鐵鍊或木柱，砸下來。毀滅光球打爆了會掉頭砸回去',
+    hints: [{ r: 1, t: '打倒魔王就贏：鐵吊燈就吊在他頭頂，打斷鐵鍊（轟天砲、雷法師），或打斷大殿的木柱讓屋頂連燈一起砸下來' }, { r: 2, t: '把魔王腳下的樓板打穿，他摔一層就痛一次；轟出城外也會摔掉一截血' }],
     voids: [[36, 69.5]],
     me: { castle: 'P3', crew: ['rocket', 'zap', 'bomb', 'fire'] },
     foe: { castle: 'E6', crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 1.1, dmg: 1.9, ai: { err: 4.6, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },

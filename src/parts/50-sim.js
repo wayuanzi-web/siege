@@ -52,7 +52,7 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
     if (ex) { o.deco = ex.deco || 0; if (kind === 'roof') { o.il = (mirror ? ex.ir : ex.il) * CS; o.ir = (mirror ? ex.il : ex.ir) * CS; } if (kind === 'ball') { o.r = ex.r; o.y = y0 + cy * CS + ex.r; } if (ex.bw) { o.w = ex.bw; o.h = ex.bh; o.y = y0 + cy * CS + ex.bh / 2; } if (ex.sw) o.w = cw * CS * ex.sw; if (ex.den) o.den = ex.den; }
     const b = mkBlock(st, o);
     b.cx = mx; b.cy = cy; b.cw = cw; b.ch = ch;
-    if (ex) { if (ex.dom) b.dom = 1; if (ex.reso) b.reso = 1; if (ex.beam) { b.beam = 1; b.hp *= 12; b.hm *= 12; } }
+    if (ex) { if (ex.dom) { b.dom = 1; b.body.getFixtureList().setFriction(0.3); } if (ex.reso) b.reso = 1; if (ex.sk) b.sk = ex.sk; if (ex.beam) { b.beam = 1; b.hp *= 12; b.hm *= 12; b.body.getFixtureList().setFriction(0.22); } }      // 天秤的大樑很滑：一歪，上面的東西就往下滑
     if (kind === 'box' && ch === 1 && cw >= 3 && !(ex && (ex.deco || ex.beam)) && (mat === M_STONE || mat === M_WOOD || mat === M_ICE || mat === M_BAMBOO || mat === M_GLASS)) segInit(b);        // 長樑、樓板：分段算耐久
     for (let a = 0; a < cw; a++) for (let bb = 0; bb < ch; bb++) { const i = (cy + bb) * cols + mx + a; st.cellB[i] = b; st.cellK[i] = 1; }
     return b;
@@ -84,7 +84,7 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
       case '_': put(M_STONE, 'box', cx, cy, hrun(cx, cy, ch), 1); break;
       case 'L': put(M_ICE, 'box', cx, cy, hrun(cx, cy, ch), 1); break;
       case '=': case '-': put(M_WOOD, 'box', cx, cy, hrun(cx, cy, ch), 1); break;
-      case '|': put(M_WOOD, 'box', cx, cy, 1, vrun(cx, cy, ch), { sw: 0.62 }); break;       // 柱子比一格窄一點
+      case '|': put(M_WOOD, 'box', cx, cy, 1, vrun(cx, cy, ch), { sw: 0.62, sk: def.sk }); break;       // 柱子比一格窄一點
       case 'H': put(M_STONE, 'box', cx, cy, 1, vrun(cx, cy, ch), { sw: 0.74 }); break;
       case 'x': prop(M_WOOD, 'box', cx, cy, 0, 0, 0.56 * CS, 0.56 * CS); break;
       case 'X': prop(M_WOOD, 'box', cx, cy, -0.05, 0, 0.58 * CS, 0.56 * CS); prop(M_WOOD, 'box', cx, cy, 0.05, 0.565, 0.46 * CS, 0.42 * CS); break;
@@ -93,11 +93,11 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
       case 'O': prop(M_ROCK, 'ball', cx, cy, 0, 0, 0, 0, 0.47 * CS, 4); break;
       case 'm': prop(M_STONE, 'box', cx, cy, -0.3, 0, 0.32 * CS, 0.5 * CS); prop(M_STONE, 'box', cx, cy, 0.3, 0, 0.32 * CS, 0.5 * CS); break;
       case 'I': put(M_IRON, 'box', cx, cy, 1, vrun(cx, cy, ch)); break;
-      case '^': case '~': {
+      case '^': case '~': case 'n': {
         const k = hrun(cx, cy, ch); let above = false;
         for (let a = 0; a < k; a++) if (at(cx + a, cy + 1) !== ' ') above = true;
         const ins = above ? 0.5 : Math.min(1.4, k / 2 - 0.25);
-        put(M_ROOF, 'roof', cx, cy, k, 1, { il: ins, ir: ins });
+        put(ch === 'n' ? M_GLASS : M_ROOF, 'roof', cx, cy, k, 1, { il: ins, ir: ins });          // n：琉璃屋頂
         break;
       }
       case 'D': { const w = hrun(cx, cy, ch), h = vrun(cx, cy, ch); put(M_WOOD, 'box', cx, cy, w, h, { deco: 1 }); break; }
@@ -153,6 +153,7 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
   if (def.hangs) for (const h of def.hangs) mkHang(st, h);
   if (def.ropes) for (const r of def.ropes) mkRopeDef(st, r);
   if (def.pivot) mkPivot(st, def.pivot);
+  if (def.pins) for (const pd of def.pins) mkPin(st, pd);
   return st;
 }
 // 每隔幾步檢查：哪些磚還在原位（算城防）、哪些格子後面還看得到屋內的暗色背景
@@ -978,7 +979,7 @@ function simInit(idx, up, seed, diff, opts) {
   S.structs = []; S.blocks = []; S.balls = []; S.units = []; S.gates = []; S.gsp = []; S.objs = []; S.marks = []; S.pend = []; S.bitUse.fill(0);
   S.wind = 0; S.rage = 1; S.sudden = false; S.nburn = 0; S.burnT = 0; S.chain = 0; S.chainT = -99; S.vol = 0; S.nfrag = 0; S.bid = 0; S.hz = 0; S.endBar[0] = S.endBar[1] = 0;
   S.gpts = lv.ground || null; S.voids = lv.voids || null;
-  S.ropes = []; S.pivots = []; S.water = lv.water ? Object.assign({ rho: 0.85, cur: 2.2 }, lv.water) : null;
+  S.ropes = []; S.pivots = []; S.pins = []; S.water = lv.water ? Object.assign({ rho: 0.85, cur: 2.2 }, lv.water) : null;
   S.stat = { fired: 0, peak: 0, swarm: 1, cells: 0, kills: 0, gates: 0, lost: 0, chain: 0 };
   physNew();
   const A = S.team[0] = mkTeam(0), B = S.team[1] = mkTeam(1);
@@ -997,6 +998,8 @@ function simInit(idx, up, seed, diff, opts) {
   sA.slots.forEach((sl, k) => { const t = lv.me.crew[k]; if (t) mkUnit(0, t, sA, sl, A.hpMul); });
   sB.slots.forEach((sl, k) => { const t = lv.foe.crew[k]; if (t) mkUnit(1, t, sB, sl, B.hpMul); });
   A.alive = A.units.length; B.alive = B.units.length;
+  for (const o of S.pivots) pivotBalance(o);          // 天秤：兵都站上去了，秤一下、把配重調到剛好平衡
+  pinBalance();                                       // 懸臂樑：量插銷要撐多重
   // 一開始的砲口：大概往對面，但不準，要自己調
   A.aim = clampAim(Math.cos(0.95) * 46, Math.sin(0.95) * 46, 1);
   B.aim = clampAim(-Math.cos(0.9) * 50, Math.sin(0.9) * 50, -1);

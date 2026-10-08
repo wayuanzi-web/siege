@@ -71,6 +71,8 @@ function sfx(name, arg) {
       case 'splash': if (gap('splash', 120)) return; noise(0.45, 0.22, 'bandpass', 900 + r * 500, 2600, 0.8); noise(0.6, 0.08, 'highpass', 3000, 1500, 0.8, 0.05); break;
       case 'chime': for (let i = 0; i < 5; i++) tone(NOTE(84 + [0, 4, 7, 12, 16][i]), 1.2, 'sine', 0.06, 0, i * 0.07); break;
       case 'thunk': if (gap('thunk', 120)) return; tone(70 + r * 20, 0.35, 'sine', 0.45, 30); noise(0.28, 0.24, 'lowpass', 700, 90, 1); break;
+      case 'bong': if (gap('bong', 300)) return; [1, 2.76, 5.4, 8.9].forEach((k, i) => tone(98 * k, 2.6 / (1 + i * 0.6), 'sine', [0.34, 0.14, 0.07, 0.035][i], 0, 0, null, 0.004)); noise(0.12, 0.2, 'lowpass', 900, 200, 1); break;
+      case 'groan': if (gap('groan', 600)) return; tone(70, 1.4, 'sawtooth', 0.08, 44, 0, null, 0.2); tone(105, 1.2, 'sawtooth', 0.04, 70, 0.1, null, 0.2); noise(1.2, 0.07, 'bandpass', 260, 120, 4); break;
       // 倍增符
       case 'gate': {
         if (gap('gate' + (arg || 0), 38)) return;

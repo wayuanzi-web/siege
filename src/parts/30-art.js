@@ -256,6 +256,15 @@ function paintSpecial(c, b, w, h, u, P, R) {
     c.fillStyle = '#4a3008'; c.fillRect(0, h - u * 0.22, w, u * 0.22);
     return true;
   }
+  if (b.kind === 'lamp' && b.mat === M_IRON) {
+    // 魔王城的鐵吊燈：一圈黑鐵、尖刺、幾根燒著紫火的蠟燭
+    c.fillStyle = 'rgba(40,20,50,.35)'; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#2a2433'; c.fillRect(0, h * 0.42, w, Math.max(3, u * 0.24)); c.fillRect(w * 0.46, 0, w * 0.08, h * 0.5);
+    c.fillStyle = '#5a5068'; c.fillRect(0, h * 0.42, w, Math.max(1, u * 0.06));
+    for (let k = 0; k < 6; k++) { const x = w * (0.09 + k * 0.164); c.fillStyle = '#2a2433'; poly(c, [x - u * 0.1, h * 0.55, x + u * 0.1, h * 0.55, x, h * 0.98]); c.fill(); }
+    for (let k = 0; k < 4; k++) { const x = w * (0.16 + k * 0.227); c.fillStyle = '#e8dcc8'; c.fillRect(x - u * 0.07, h * 0.18, u * 0.14, h * 0.25); c.fillStyle = '#d08aff'; c.beginPath(); c.arc(x, h * 0.13, u * 0.11, 0, TAU); c.fill(); }
+    return true;
+  }
   if (b.kind === 'lamp') {
     // 水晶吊燈：金色的圈、一串一串的水晶、中間一團光
     c.fillStyle = 'rgba(255,240,190,.25)'; c.fillRect(0, 0, w, h);

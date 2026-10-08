@@ -166,7 +166,7 @@ function drawBlocks(c, t, rdt) {
     // 被冰術士打到、變脆的磚：罩一層淡淡的冰藍（不是整塊變白）
     if (b.brit > 0 && !b.frag) { const fr = frostSprite(sp); c.globalAlpha = 0.34; c.drawImage(fr, -sp.ax, -sp.ay); c.globalAlpha = 1; }
     // 共鳴晶柱：一閃一閃的紫光；吊燈：一團暖光
-    if ((b.reso && !b.resoDone) || b.kind === 'lamp') { c.globalCompositeOperation = 'lighter'; c.globalAlpha = b.reso ? 0.35 + 0.25 * Math.sin(t * 3.4) : 0.45; const g = glowSprite(b.reso ? C_PURPLE : C_GOLD), r = V.T * (b.reso ? 1.1 : 1.3); c.drawImage(g, -r, -r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
+    if ((b.reso && !b.resoDone) || b.kind === 'lamp') { c.globalCompositeOperation = 'lighter'; c.globalAlpha = b.reso ? 0.35 + 0.25 * Math.sin(t * 3.4) : 0.45; const g = glowSprite(b.reso || b.mat === M_IRON ? C_PURPLE : C_GOLD), r = V.T * (b.reso ? 1.1 : 1.3); c.drawImage(g, -r, -r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
     if (b.burn > 0) burn.push(b);
   }
   c.setTransform(1, 0, 0, 1, sx, sy);
