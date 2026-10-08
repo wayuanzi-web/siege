@@ -1,4 +1,4 @@
-/* ===== 60-levels: 六個關卡 =====
+/* ===== 60-levels: 十二個關卡（第一篇 1–6、第二篇 7–12；魔王城在最後） =====
    ground  地面起伏 [x, y]…（城腳一定在 y=0）；voids 沒有地面的區間（東西掉下去就沒了）
    me/foe  castle 用哪張藍圖、crew 依兵位 1、2、3… 放什麼兵
    foe.ai  err 落點誤差、think 想多久才開火、gate 這一輪會去找倍增符的機率、hate 會打我方倍增符的機率、lob 偏好吊高、
@@ -113,6 +113,23 @@ const LEVELS = [
       { owner: 1, mult: 2, h: 5.5, spots: [[69, 33], [66, 22]], at: 3, hop: true, regap: 2 }
     ],
     lantern: { at: 3, every: 3, spots: [[56, 24], [52, 47], [60, 30]] }
+  },
+  {
+    name: '竹海吊樓', tag: '竹樁・索橋・河水', theme: 6, stress: 1,
+    tip: '吊腳樓蓋在細細的竹樁上：打斷竹樁，樓子一歪，連人滑進河裡被沖走。竹子一點就著，繩子一箭就斷',
+    hints: [{ r: 1, t: '吊腳樓只靠兩三根細竹樁撐著：打斷一根，剩下的撐不住，會嘎吱嘎吱一根接一根斷' },
+      { r: 2, t: '掉進河裡的兵會被水沖走：把樓子打歪，讓它整間滑進河裡' },
+      { r: 3, t: '望樓用兩條繩子拉著前後兩棟樓：前面那棟倒進河裡，會把望樓一起拖下去', ok: () => foeHome(2) }],
+    ground: [[-40, 3], [0, 0], [37, 0], [41, -1.5], [46, -7], [170, -7]],
+    water: { x0: 42, x1: 175, y: -1.6, cur: 2.4 },
+    me: { castle: 'P3', crew: ['rocket', 'fire', 'bolt', 'bomb'] },
+    foe: { castle: 'E7', y0: -7, crew: ['bolt', 'rocket', 'bomb', 'fire'], hp: 1.4, dmg: 1.8, ai: { err: 3.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
+    gates: [
+      { owner: 0, mult: 3, h: 5.5, spots: [[47, 36]], move: { t: 'bob', a: 4, per: 8 } },
+      { owner: 0, mult: 5, h: 5.5, spots: [[55, 44], [53, 29]], at: 2, hop: true },
+      { owner: 1, mult: 2, h: 5.5, spots: [[60, 36]], at: 3, regap: 2 }
+    ],
+    lantern: { at: 3, every: 3, spots: [[52, 47], [57, 25]] }
   },
   {
     name: '魔王城', tag: '魔王三階段', theme: 5,

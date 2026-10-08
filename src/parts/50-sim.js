@@ -15,6 +15,7 @@ const S = {
   gates: [], gsp: [], bitUse: new Float64Array(30),
   objs: [], marks: [], pend: [],
   wind: 0, rage: 1, sudden: false, gpts: null, voids: null, boss: null, nburn: 0, burnT: 0, chain: 0, vol: 0, nfrag: 0, bid: 0, balls: [], hz: 0, endBar: [0, 0],
+  ropes: [], pivots: [], water: null,
   stat: { fired: 0, peak: 0, swarm: 1, cells: 0, kills: 0, gates: 0, lost: 0, chain: 0 },
   on: null
 };
@@ -48,10 +49,11 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
     for (let a = 0; a < cw; a++) for (let b = 0; b < ch; b++) used[(cy + b) * cols + cx + a] = 1;
     const mx = mirror ? cols - cx - cw : cx;
     const o = { mat, kind, x: x0 + (mx + cw / 2) * CS, y: y0 + (cy + ch / 2) * CS, w: cw * CS, h: ch * CS };
-    if (ex) { o.deco = ex.deco || 0; if (kind === 'roof') { o.il = (mirror ? ex.ir : ex.il) * CS; o.ir = (mirror ? ex.il : ex.ir) * CS; } if (kind === 'ball') { o.r = ex.r; o.y = y0 + cy * CS + ex.r; } if (ex.bw) { o.w = ex.bw; o.h = ex.bh; o.y = y0 + cy * CS + ex.bh / 2; } if (ex.sw) o.w = cw * CS * ex.sw; }
+    if (ex) { o.deco = ex.deco || 0; if (kind === 'roof') { o.il = (mirror ? ex.ir : ex.il) * CS; o.ir = (mirror ? ex.il : ex.ir) * CS; } if (kind === 'ball') { o.r = ex.r; o.y = y0 + cy * CS + ex.r; } if (ex.bw) { o.w = ex.bw; o.h = ex.bh; o.y = y0 + cy * CS + ex.bh / 2; } if (ex.sw) o.w = cw * CS * ex.sw; if (ex.den) o.den = ex.den; }
     const b = mkBlock(st, o);
     b.cx = mx; b.cy = cy; b.cw = cw; b.ch = ch;
-    if (kind === 'box' && ch === 1 && cw >= 3 && !(ex && ex.deco) && (mat === M_STONE || mat === M_WOOD || mat === M_ICE)) segInit(b);        // 長樑、樓板：分段算耐久
+    if (ex) { if (ex.dom) b.dom = 1; if (ex.reso) b.reso = 1; if (ex.beam) { b.beam = 1; b.hp *= 12; b.hm *= 12; } }
+    if (kind === 'box' && ch === 1 && cw >= 3 && !(ex && (ex.deco || ex.beam)) && (mat === M_STONE || mat === M_WOOD || mat === M_ICE || mat === M_BAMBOO || mat === M_GLASS)) segInit(b);        // 長樑、樓板：分段算耐久
     for (let a = 0; a < cw; a++) for (let bb = 0; bb < ch; bb++) { const i = (cy + bb) * cols + mx + a; st.cellB[i] = b; st.cellK[i] = 1; }
     return b;
   };
@@ -63,6 +65,7 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
     b.cx = mx; b.cy = cy; b.cw = 1; b.ch = 1; st.cellK[cy * cols + mx] = 2;
     return b;
   };
+  const rock = [];
   const hrun = (cx, cy, ch) => { let k = 1; while (at(cx + k, cy) === ch) k++; return k; };
   const vrun = (cx, cy, ch) => { let k = 1; while (at(cx, cy + k) === ch) k++; return k; };
   for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
@@ -99,6 +102,17 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
       }
       case 'D': { const w = hrun(cx, cy, ch), h = vrun(cx, cy, ch); put(M_WOOD, 'box', cx, cy, w, h, { deco: 1 }); break; }
       case 'K': put(M_KEG, 'box', cx, cy, 1, 1, { bw: CS * 0.78, bh: CS * 0.88 }); break;
+      // 第二篇的新東西
+      case 'A': { used[cy * cols + cx] = 1; rock.push(cx); rock.push(cy); break; }                 // 岩壁（不會動、打不壞，跟地面一樣）
+      case '!': put(M_BAMBOO, 'box', cx, cy, 1, vrun(cx, cy, ch), { sw: 0.42 }); break;          // 竹樁、竹竿（細）
+      case 'y': put(M_BAMBOO, 'box', cx, cy, hrun(cx, cy, ch), 1); break;                         // 竹排（同一列連著的算一整片）
+      case 'g': put(M_GLASS, 'box', cx, cy, hrun(cx, cy, ch), 1); break;                          // 琉璃板
+      case 'G': put(M_GLASS, 'box', cx, cy, 1, vrun(cx, cy, ch), { sw: 0.56 }); break;           // 琉璃柱
+      case 'q': put(M_GLASS, 'box', cx, cy, 1, 1); break;                                         // 單塊琉璃
+      case 'Q': put(M_GLASS, 'box', cx, cy, 1, 1, { reso: 1, sw: 0.5, den: 1.2 }); break;        // 共鳴晶柱
+      case 'Z': put(M_WOOD, 'box', cx, cy, hrun(cx, cy, ch), 1, { beam: 1, den: 0.9 }); break;   // 天秤的大樑（打不斷）
+      case 'P': put(M_STONE, 'box', cx, cy, 1, vrun(cx, cy, ch), { sw: 0.42, dom: 1 }); break;   // 石碑（骨牌）
+      case 'h': put(M_WOOD, 'box', cx, cy, 1, 1, { sw: 0.3 }); break;                            // 短短的木樁（斜撐、欄杆）
       case ' ': break;
       default: {
         const mx = mirror ? cols - 1 - cx : cx; st.cellK[cy * cols + mx] = 2;
@@ -108,19 +122,37 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
   }
   // 火藥桶那一格也算屋內
   for (const b of st.blocks) if (b.mat === M_KEG && !b.prop) { st.cellK[b.cy * cols + b.cx] = 2; st.cellB[b.cy * cols + b.cx] = null; }
+  // 岩壁：一列一列併成長方形，掛在一個不會動的物體上（跟地面同一類，砲彈打到就跟打到地面一樣）
+  if (rock.length) {
+    const rb = PH.world.createBody({ type: 'static' }); st.rock = []; st.rockBody = rb;
+    const isR = (cx, cy) => { for (let i = 0; i < rock.length; i += 2) if (rock[i] === cx && rock[i + 1] === cy) return true; return false; };
+    for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
+      if (!isR(cx, cy) || (cx > 0 && isR(cx - 1, cy))) continue;
+      let k = 1; while (isR(cx + k, cy)) k++;
+      const mx = mirror ? cols - cx - k : cx;
+      rb.createFixture({ shape: new PL.Box(k * CS / 2, CS / 2, { x: x0 + (mx + k / 2) * CS, y: y0 + (cy + 0.5) * CS }, 0), friction: 0.85, restitution: 0, filterCategoryBits: CAT_TERR });
+      for (let a = 0; a < k; a++) { const ix = mirror ? cols - 1 - (cx + a) : cx + a; st.cellK[cy * cols + ix] = 3; st.rock.push(ix, cy); }
+    }
+  }
   // 城基：從最底下往上數，整列都沒有房間的那幾列
   let base = 0; while (base < rows) { let room = false; for (let cx = 0; cx < cols; cx++) if (st.cellK[base * cols + cx] === 2) room = true; if (room) break; base++; }
-  if (base >= rows) base = 0;
+  if (base >= rows || def.nobase) base = 0;
   st.base = base;
   for (const b of st.blocks) {
     const low = b.cy + b.ch <= base;
-    if (low && !b.prop && b.mat !== M_WOOD) { b.hp *= BASE_HP; b.hm *= BASE_HP; b.base = true; if (b.seg) { b.segM *= BASE_HP; for (let k = 0; k < b.cw; k++) b.seg[k] *= BASE_HP; } }
-    b.wt = b.mat === M_KEG || b.prop ? 0 : low ? BASE_WT : 1; st.hp0 += b.hm * b.wt;
+    if (low && !b.prop && b.mat !== M_WOOD && b.mat !== M_BAMBOO && b.mat !== M_GLASS) { b.hp *= BASE_HP; b.hm *= BASE_HP; b.base = true; if (b.seg) { b.segM *= BASE_HP; for (let k = 0; k < b.cw; k++) b.seg[k] *= BASE_HP; } }
+    b.wt = b.mat === M_KEG || b.prop || b.beam ? 0 : low ? BASE_WT : 1; st.hp0 += b.hm * b.wt;
   }
   st.hpNow = st.hp0; st.slots.sort((a, b) => a.slot - b.slot);
   // 城基實際佔的範圍（最底下一列有磚的地方）：露台之類伸出去的部分底下沒有地基
-  { let c0 = cols, c1 = -1; for (let cx = 0; cx < cols; cx++) if (st.cellK[cx]) { if (cx < c0) c0 = cx; if (cx > c1) c1 = cx; } st.fx0 = c1 < 0 ? x0 : x0 + c0 * CS; st.fx1 = c1 < 0 ? st.x1 : x0 + (c1 + 1) * CS; }
-  for (let i = 0; i < n; i++) { st.backTo[i] = st.cellK[i] ? 1 : 0; st.back[i] = st.backTo[i]; }
+  { let c0 = cols, c1 = -1; for (let cx = 0; cx < cols; cx++) if (st.cellK[cx] && st.cellK[cx] !== 3) { if (cx < c0) c0 = cx; if (cx > c1) c1 = cx; } st.fx0 = c1 < 0 ? x0 : x0 + c0 * CS; st.fx1 = c1 < 0 ? st.x1 : x0 + (c1 + 1) * CS; }
+  st.nofound = !!def.nofound;
+  for (let i = 0; i < n; i++) { st.backTo[i] = st.cellK[i] === 1 || st.cellK[i] === 2 ? 1 : 0; st.back[i] = st.backTo[i]; }
+  // 繩索、鐵鍊、吊著的東西、天秤的支點（座標照藍圖寫的：第幾欄、由上往下第幾列、格子裡的位置 0..1）
+  st.def = def; st.mirror = mirror;
+  if (def.hangs) for (const h of def.hangs) mkHang(st, h);
+  if (def.ropes) for (const r of def.ropes) mkRopeDef(st, r);
+  if (def.pivot) mkPivot(st, def.pivot);
   return st;
 }
 // 每隔幾步檢查：哪些磚還在原位（算城防）、哪些格子後面還看得到屋內的暗色背景
@@ -142,8 +174,8 @@ function castleScan(st) {
     let above = false;
     for (let cy = rows - 1; cy >= 0; cy--) {
       const i = cy * cols + cx, k = cellK[i];
-      backTo[i] = k && above ? 1 : 0;
-      if (k === 1) { const b = cellB[i]; if (b && !b.dead && b.snug) above = true; } else if (k === 0) above = false;
+      backTo[i] = (k === 1 || k === 2) && above ? 1 : 0;
+      if (k === 1) { const b = cellB[i]; if (b && !b.dead && b.snug) above = true; } else if (k === 3) above = true; else if (k === 0) above = false;
     }
   }
 }
@@ -190,10 +222,10 @@ function hurtUnit(u, d, side, kind) {
   }
   u.hp -= d; u.hurtT = 0.25;
   if (boss && u.hp > 0) bossPhase(u);
-  if (side < 2 && side !== u.side) { const T = S.team[side]; T.ult.c = Math.min(T.ult.need, T.ult.c + d * T.ult.gain * 0.6); }
+  if (side < 2 && side !== u.side) { const T = S.team[side]; T.ult.c = Math.min(T.ult.need, T.ult.c + d * T.ult.gain * 0.6 * ultK(side)); }
   if (u.hp <= 0) killUnit(u, side, kind === K_CRUSH ? 1 : kind === K_FIRE ? 3 : 0);
 }
-// how: 0 被打倒、1 被砸到或摔到、3 燒到、4 掉下深淵、5 被轟出自己的城、6 被轟飛出戰場
+// how: 0 被打倒、1 被砸到或摔到、3 燒到、4 掉下深淵、5 被轟出自己的城、6 被轟飛出戰場、7 掉進河裡被沖走
 function killUnit(u, side, how) {
   if (!u.alive) return;
   u.alive = false; u.hp = 0;
@@ -205,6 +237,12 @@ function killUnit(u, side, how) {
 // ax, ay：按下發射那一刻的角度和力道（開火之後再改瞄準，不會影響已經排好的這一輪）
 function unitFire(u, T, w, ax, ay) {
   const dir = T.dir, big = u.def.big ? MUZ_BIG : 1, mx = u.x + dir * 1.3 * big, my = u.y + 2.3 * big;
+  if (w.phys) {
+    spawnBoulder(u, T, w, ax * (1 + gauss() * 0.008), ay * (1 + gauss() * 0.008));
+    T.fired += 1; if (u.side === 0) S.stat.fired += 1;
+    u.recoil = 1; ev('fire', mx, my, u.side, w.i, u.slot);
+    return;
+  }
   const n = w.fan || 1;
   for (let k = 0; k < n; k++) {
     const a = (n > 1 ? (k - (n - 1) / 2) * 0.085 : 0) + gauss() * 0.01, c = Math.cos(a), s = Math.sin(a), sp = 1 + gauss() * 0.008;
@@ -263,6 +301,8 @@ function unitsStep(dt) {
     } else if (!act) u.edge = 0;
     // 掉下深淵、飛出戰場兩邊：出局
     if (u.y < -26 || u.x < -GUT + 1.5 || u.x > VIEW_W + GUT - 1.5) { if (u.def.big) bossReturn(u); else killUnit(u, 1 - u.side, u.y < -26 ? 4 : 6); continue; }
+    // 掉進河裡：被水沖走（身體一半泡進水裡、泡了一下子）
+    if (u.wet > 0.45) { u.wetT = (u.wetT || 0) + dt; if (u.wetT > 0.5) { if (u.def.big) bossReturn(u); else killUnit(u, 1 - u.side, 7); continue; } } else if (u.wetT) u.wetT = 0;
     // 被轟出自己的城、落地站定了：也算出局（守不了城了）。魔王會自己飛回去
     const st = u.st;
     if ((u.x < st.x0 - OUT_M || u.x > st.x1 + OUT_M) && !u.air) { u.outT += dt; if (u.outT > 0.6) { if (u.def.big) bossReturn(u); else killUnit(u, 1 - u.side, 5); } } else u.outT = 0;
@@ -426,6 +466,16 @@ function shotsStep(dt) {
     }
     if (dead) { killShot(i); i--; continue; }
 
+    // 繩索、鐵鍊：箭射到就斷一點、繼續不了；會爆的砲彈在繩子上炸開
+    if (S.ropes.length && side < 2) {
+      const rc = ropeCross(x, y, nx, ny, side);
+      if (rc) {
+        const r = rc.r, hx = x + (nx - x) * rc.t, hy = y + (ny - y) * rc.t, w = WL[SH.w[i]];
+        if (w.r <= 0) { ropeHurt(r, w.dmg * SH.mass[i] * team[side].dmg * S.rage, w.kind, side); ev('boom', hx, hy, 0, w.i, side, SH.mass[i]); }
+        else physExplode(hx, hy, w, side, SH.mass[i], SH.flag[i], null, vx, vy);
+        killShot(i); i--; continue;
+      }
+    }
     // 護城罩
     if (side !== 0 && sh0 && inBubble(sh0, nx, ny)) { ev('shieldhit', nx, ny, 0); killShot(i); i--; continue; }
     if (side !== 1 && sh1 && inBubble(sh1, nx, ny)) { ev('shieldhit', nx, ny, 1); killShot(i); i--; continue; }
@@ -439,9 +489,16 @@ function shotsStep(dt) {
     }
     // 磚、兵、地面
     const hit = rayShot(x, y, nx, ny, side, own);
-    if (hit) {
+    const wt = S.water ? waterCross(x, y, nx, ny) : -1;
+    if (hit && !(wt >= 0 && wt < RAY.f)) {
       physExplode(RAY.x, RAY.y, WL[SH.w[i]], side, SH.mass[i], flag, RAY.o, vx, vy);
       if (hit === 1) ev('dirt', RAY.x, RAY.y);
+      killShot(i); i--; continue;
+    }
+    if (wt >= 0) {
+      const hx = x + (nx - x) * wt;
+      physExplode(hx, S.water.y, WL[SH.w[i]], side, SH.mass[i], flag, null, vx, vy);
+      ev('splash', hx, S.water.y, 1, 2);
       killShot(i); i--; continue;
     }
     SH.x[i] = nx; SH.y[i] = ny; SH.vx[i] = vx; SH.vy[i] = vy;
@@ -765,6 +822,7 @@ function worldQuiet() {
     if (!b.isDynamic() || !b.isAwake()) continue;
     const p = b.getPosition(); if (p.x < -GUT - 2 || p.x > VIEW_W + GUT + 2 || p.y < -10) continue;
     const v = b.getLinearVelocity(), s2 = v.x * v.x + v.y * v.y, om = Math.abs(b.getAngularVelocity()), o = b.getUserData();
+    if (o && o.wet && !o.inPlace) continue;                       // 泡在河裡漂走的碎木頭、快被沖走的兵：不等
     if (s2 > 3.2 || om > 0.7) return false;
     if (o && (o.isUnit || (o.isBlock && !o.frag && !o.prop && !o.st.loose)) && (s2 > 0.5 || om > 0.16)) return false;
   }
@@ -796,7 +854,7 @@ function headClear() {
 }
 function chainNote() {
   if (S.turn === 0 && S.chain > S.stat.chain) S.stat.chain = S.chain;
-  if (S.chain >= 6) { const T = S.team[S.turn]; T.ult.c = Math.min(T.ult.need, T.ult.c + Math.min(30, S.chain)); ev('chain', S.chain, S.turn); }
+  if (S.chain >= 6) { const T = S.team[S.turn]; T.ult.c = Math.min(T.ult.need, T.ult.c + Math.min(30, S.chain) * ultK(S.turn)); ev('chain', S.chain, S.turn); }
 }
 function endTurn() {
   chainNote();
@@ -806,6 +864,7 @@ function endTurn() {
 // 回合結束：場上的碎塊太多就把最舊的清掉；預告過的落石砸下來
 function roundEnd() {
   let wait = false;
+  mechRoundEnd();
   if (S.nfrag > FRAG_KEEP) { for (const b of S.blocks) { if (S.nfrag <= FRAG_KEEP) break; if (b.frag && !b.dead) { blockKill(b, 2, K_CRUSH, true); wait = true; } } }
   S.hz = 0;
   if (S.marks.length) { for (const m of S.marks) dropRock(m.x, m.big); S.marks.length = 0; wait = true; S.hz = 1; ev('rumble'); }
@@ -919,6 +978,7 @@ function simInit(idx, up, seed, diff, opts) {
   S.structs = []; S.blocks = []; S.balls = []; S.units = []; S.gates = []; S.gsp = []; S.objs = []; S.marks = []; S.pend = []; S.bitUse.fill(0);
   S.wind = 0; S.rage = 1; S.sudden = false; S.nburn = 0; S.burnT = 0; S.chain = 0; S.chainT = -99; S.vol = 0; S.nfrag = 0; S.bid = 0; S.hz = 0; S.endBar[0] = S.endBar[1] = 0;
   S.gpts = lv.ground || null; S.voids = lv.voids || null;
+  S.ropes = []; S.pivots = []; S.water = lv.water ? Object.assign({ rho: 0.85, cur: 2.2 }, lv.water) : null;
   S.stat = { fired: 0, peak: 0, swarm: 1, cells: 0, kills: 0, gates: 0, lost: 0, chain: 0 };
   physNew();
   const A = S.team[0] = mkTeam(0), B = S.team[1] = mkTeam(1);
@@ -927,8 +987,8 @@ function simInit(idx, up, seed, diff, opts) {
   A.ult.gain = 0.16 * (1 + 0.14 * (up.ult || 0));
   B.dmg = (lv.foe.dmg || 1) * D.foeDmg; B.hpMul = (lv.foe.hp || 1) * D.foeHp;
   const dA = CASTLES[lv.me.castle], dB = CASTLES[lv.foe.castle];
-  const sA = S.st[0] = mkCastle(0, dA, CASTLE_L, 0, A.hpMul, false);
-  const sB = S.st[1] = mkCastle(1, dB, CASTLE_R - castleCols(dB) * CS, 0, B.hpMul, true);
+  const sA = S.st[0] = mkCastle(0, dA, CASTLE_L, lv.me.y0 || 0, A.hpMul, false);
+  const sB = S.st[1] = mkCastle(1, dB, CASTLE_R - castleCols(dB) * CS, lv.foe.y0 || 0, B.hpMul, true);
   S.structs.push(sA, sB);
   if (lv.extra) for (const e of lv.extra) { const d = CASTLES[e.castle]; S.structs.push(mkCastle(2, d, e.x - castleCols(d) * CS / 2, e.y || 0, e.hp || 1, false)); }
   // 落石放在一個看不見的「建築」裡，跟磚用同一套邏輯
@@ -952,8 +1012,9 @@ function simInit(idx, up, seed, diff, opts) {
   aiInit(B, lv.foe.ai || {}, D);
   if (opts && opts.botA) aiInit(A, opts.botA, { aiErr: 1 });
   if (opts && opts.mute !== undefined) S.team[opts.mute].mute = true;
-  // 先走一步讓每一塊磚跟鄰居「接上」，再全部擺回原位、設成靜止：開場時整座城紋風不動，被打到才會醒
-  physStep(STEP);
+  // 先走一步讓每一塊磚跟鄰居「接上」，再全部擺回原位、設成靜止：開場時整座城紋風不動，被打到才會醒。
+  // 第二篇（有超載、繩索的關卡）多走幾步，順便量每一塊磚撐著多重、每一條繩子吊著多重
+  if (lv.stress || S.ropes.length) stressCalib(12); else physStep(STEP);
   for (const b of S.blocks) { b.body.setTransform({ x: b.x0, y: b.y0 }, 0); b.body.setLinearVelocity({ x: 0, y: 0 }); b.body.setAngularVelocity(0); b.body.setAwake(false); }
   for (const u of S.units) { u.body.setTransform({ x: u.hx, y: u.hy + u.bh / 2 }, 0); u.body.setLinearVelocity({ x: 0, y: 0 }); u.body.setAwake(false); }
   for (const st of S.structs) if (!st.loose) { castleScan(st); for (let i = 0; i < st.n; i++) st.back[i] = st.backTo[i]; }
@@ -979,7 +1040,7 @@ function simStep(dt) {
         break;
       }
       case 'resolve': case 'hazard': {
-        const busy = SH.n > 0 || S.pend.length > 0 || flyersBusy() || (S.nburn > 0 && S.phaseT < 6);
+        const busy = SH.n > 0 || S.pend.length > 0 || flyersBusy() || ((S.nburn > 0 || ropesBurning()) && S.phaseT < 6);
         if (!busy && worldQuiet()) { if (headClear()) S.quietT = 0; else S.quietT += dt; } else S.quietT = 0;
         // 最多等 9 秒；還在一塊接一塊垮的時候多等一下（等最後一塊垮完再過 1.5 秒），最久 14 秒
         if (S.quietT >= 0.5 || S.phaseT > (S.time - S.chainT < 1.5 ? 14 : 9)) { if (S.phase === 'hazard') roundStart(); else endTurn(); }
@@ -987,11 +1048,17 @@ function simStep(dt) {
       }
     }
   }
-  for (let i = S.pend.length - 1; i >= 0; i--) { const p = S.pend[i]; if (p.t <= S.time) { S.pend.splice(i, 1); physExplode(p.x, p.y, p.w, p.side, 1, 0, null, 0, 1); } }
+  for (let i = S.pend.length - 1; i >= 0; i--) {
+    const p = S.pend[i]; if (p.t > S.time) continue;
+    S.pend.splice(i, 1);
+    if (p.reso) { const o = p.reso; if (!o.dead) { const q = o.body.getPosition(); ev('resohit', q.x, q.y); blockHurt(o, (o.seg ? o.segM : o.hm) * 0.42, K_CRUSH, p.side); } }       // 共鳴：一圈一圈傳過去，每一塊琉璃都震出裂痕
+    else physExplode(p.x, p.y, p.w, p.side, 1, 0, null, 0, 1);
+  }
   gatesStep(dt);
   shotsStep(dt);
   objsStep(dt);
   physStep(dt);
+  mechStep(dt);
   if (S.phase === 'hazard') rocksVsShields();
   unitsStep(dt);
   burnStep(dt);

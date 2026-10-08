@@ -19,7 +19,7 @@ const FRAG_SHR = typeof process !== 'undefined' && process.env && process.env.FR
 const SEG_K = typeof process !== 'undefined' && process.env && process.env.SEG_K ? +process.env.SEG_K : 1.25;            // 長樑、樓板每一段的耐久，是同材質單塊磚的幾倍
 const FRAG_MAX = 56;         // 場上最多留幾塊碎塊（超過就直接碎成粉）
 const FRAG_KEEP = 34;        // 每回合結束時，最舊的碎塊清到剩這麼多
-const PH = { world: null, ground: null, stamp: 0, stepId: 0, imp: [], impN: 0, inStep: false, kill: [], found: [], wm: null, ek: 0, ex: 0, ey: 0 };
+const PH = { world: null, ground: null, stamp: 0, stepId: 0, imp: [], impN: 0, inStep: false, kill: [], killJ: [], reJ: [], found: [], wm: null, ek: 0, ex: 0, ey: 0 };
 
 /* ---------- 地面 ---------- */
 // 不管有沒有地面的高度（畫圖也用這個）
@@ -47,7 +47,7 @@ function terrainRuns() {
 /* ---------- 建立世界 ---------- */
 function physNew() {
   const world = new PL.World({ gravity: { x: 0, y: -GRAV }, allowSleep: true });
-  PH.world = world; PH.imp.length = 0; PH.impN = 0; PH.kill.length = 0; PH.stepId = 0; PH.inStep = false;
+  PH.world = world; PH.imp.length = 0; PH.impN = 0; PH.kill.length = 0; PH.killJ.length = 0; PH.reJ.length = 0; PH.stepId = 0; PH.inStep = false;
   const g = world.createBody({ type: 'static' }); PH.ground = g;
   for (const [xa, xb] of terrainRuns()) {
     const pts = [{ x: xa, y: -120 }, { x: xa, y: groundYRaw(xa) }];
@@ -59,6 +59,10 @@ function physNew() {
   world.on('pre-solve', (c) => {
     const m = c.getManifold(); if (!m.pointCount) return;
     const A = c.getFixtureA().getBody(), B = c.getFixtureB().getBody(), va = A.getLinearVelocity(), vb = B.getLinearVelocity();
+    // 投石兵的大石頭還在自己城裡：穿過自己的牆和自己的兵（跟砲彈一樣，飛出城才會撞東西）
+    { const oa = A.getUserData(), ob = B.getUserData();
+      if (oa && oa.bIn && ob && ob.side === oa.bSide && (ob.isUnit || ob.st === S.st[oa.bSide])) { c.setEnabled(false); return; }
+      if (ob && ob.bIn && oa && oa.side === ob.bSide && (oa.isUnit || oa.st === S.st[ob.bSide])) { c.setEnabled(false); return; } }
     const dvx = va.x - vb.x, dvy = va.y - vb.y, wa = A.getAngularVelocity(), wb = B.getAngularVelocity();
     if (dvx * dvx + dvy * dvy < IMP_GATE * IMP_GATE && Math.abs(wa) + Math.abs(wb) < 0.6) return;
     const wm = c.getWorldManifold(PH.wm); if (!wm) return; PH.wm = wm;
@@ -71,6 +75,12 @@ function physNew() {
     /* 壓在兵身上的重量：每一步把磚「往下壓」的力道記在那個兵身上（撐太重、撐太久會被壓扁）。
        只算磚和石球，只算垂直往下的分量：從旁邊橫著擠過來的不算（頭上明明沒東西卻被判壓扁），地面往上頂的當然也不算 */
     const ua = c.getFixtureA().getUserData(), ub = c.getFixtureB().getUserData();
+    // 超載（第二篇）：每一塊磚身上所有接觸點的受力加起來（上面壓下來的、下面頂上來的、插在岩壁裡被岩石夾住的）。
+    // 跟開場時比：柱子旁邊少了一根，受力變一倍半；懸臂樑外端的鐵鍊斷了，插在岩壁裡的那一頭被夾得特別緊
+    if (S.lv && S.lv.stress && ((ua && ua.isBlock) || (ub && ub.isBlock))) {
+      const ni = imp.normalImpulses; let J = 0; for (let k = 0; k < ni.length; k++) J += ni[k] || 0;
+      if (J > 0) { if (ua && ua.isBlock) ua.sJ += J; if (ub && ub.isBlock) ub.sJ += J; }
+    }
     if ((ua && ua.isUnit) || (ub && ub.isUnit)) {
       const ni = imp.normalImpulses; let J = 0; for (let k = 0; k < ni.length; k++) J += ni[k] || 0;
       if (J > 0) { const wm = c.getWorldManifold(PH.wm); if (wm) { PH.wm = wm; const ny = wm.normal.y;        // 法線由 A 指向 B
@@ -100,12 +110,13 @@ function mkBlock(st, o) {
     isBlock: true, id: S.bid++, st, side: st.side, skin: st.skin, mat: o.mat, kind: o.kind, w: o.w || o.r * 2, h: o.h || o.r * 2, r: o.r || 0, il: o.il || 0, ir: o.ir || 0,
     x0: o.x, y0: o.y, x: o.x, y: o.y, a: o.a || 0, hp: hm, hm, burn: 0, brit: 0, flash: 0, dead: false, inPlace: !o.frag, deco: o.deco || 0,
     vr: ((o.x * 7.3 + o.y * 3.1) | 0) & 255, body: null, mass: 0, stamp: 0, hot: 0, frag: o.frag ? 1 : 0, pts: o.pts || null, par: o.par || null, pcx: o.pcx || 0, pcy: o.pcy || 0, fragged: 0,
-    prop: o.prop ? 1 : 0, wt: 1, soot: 0
+    prop: o.prop ? 1 : 0, wt: 1, soot: 0, sJ: 0, sL: 0, cap: 0, wet: 0
   };
   const body = PH.world.createBody({ type: 'dynamic', position: { x: o.x, y: o.y }, angle: o.a || 0, awake: !!o.awake, angularDamping: o.frag ? 0.3 : o.kind === 'ball' ? 0.7 : 0.08, userData: b });
   let shape;
   if (o.kind === 'ball') shape = new PL.Circle(o.r);
   else if (o.kind === 'roof') { const hw = o.w / 2, hh = o.h / 2; shape = new PL.Polygon([{ x: -hw, y: -hh }, { x: hw, y: -hh }, { x: hw - b.ir, y: hh }, { x: -hw + b.il, y: hh }]); }
+  else if (o.kind === 'bell') { const hw = o.w / 2, hh = o.h / 2; shape = new PL.Polygon([{ x: -hw, y: -hh }, { x: hw, y: -hh }, { x: hw * 0.62, y: hh * 0.55 }, { x: hw * 0.3, y: hh }, { x: -hw * 0.3, y: hh }, { x: -hw * 0.62, y: hh * 0.55 }]); }
   else if (poly) { const v = []; for (let i = 0; i < o.pts.length; i += 2) v.push({ x: o.pts[i], y: o.pts[i + 1] }); shape = new PL.Polygon(v); }
   else shape = new PL.Box(Math.max(0.2, o.w / 2 - BOX_GAP), o.h / 2);        // 比格子窄一點點：並排的磚才不會角頂著角卡住，該掉的就掉
   body.createFixture({ shape, density: o.den || M.den, friction: M.fr, restitution: 0.02, filterCategoryBits: CAT_BLOCK, userData: b });
@@ -186,6 +197,8 @@ function fracture(b, p, ang, vel, om, sec) {
 function blockKill(b, side, kind, clean) {
   if (b.dead) return;
   if (b.inPlace) chainCount(b);
+  if (b.ropes) ropesOff(b, null);
+  if (b.pivot) { b.pivot.b = null; b.pivot = null; }
   b.dead = true; b.inPlace = false; b.hp = 0;
   const p = b.body.getPosition(); b.x = p.x; b.y = p.y; b.a = b.body.getAngle();
   if (b.burn > 0) S.nburn--;
@@ -222,7 +235,7 @@ function segAt(b, x, y) {
 function segDmg(b, k, d, side) {
   const before = b.seg[k]; if (before <= 0) return;
   b.seg[k] = before - d; b.flash = 1; b.flashM |= 1 << k;          // flashM：這一下打在哪幾段（畫面上只閃那幾段）
-  if (side < 2 && b.side < 2 && b.side !== side) { const T = S.team[side]; T.dealt += Math.min(d, before); T.ult.c = Math.min(T.ult.need, T.ult.c + Math.min(d, before) * T.ult.gain * (b.base ? 0.25 : 1)); }
+  if (side < 2 && b.side < 2 && b.side !== side) { const T = S.team[side]; T.dealt += Math.min(d, before); T.ult.c = Math.min(T.ult.need, T.ult.c + Math.min(d, before) * T.ult.gain * (b.base ? 0.25 : 1) * ultK(side)); }
 }
 // 爆炸：每一段照自己離爆炸中心多遠算傷害（direct：這一塊是被直接打中的，最近的那一段吃全額）
 function segBlast(b, x, y, r, dmg, kind, side, direct, sootK) {
@@ -252,7 +265,7 @@ function segSplit(b, side, kind) {
   const p0 = body.getPosition(), px = p0.x, py = p0.y, ang = body.getAngle(), cs = Math.cos(ang), sn = Math.sin(ang);
   const v0 = body.getLinearVelocity(), vx = v0.x, vy = v0.y, om = body.getAngularVelocity();
   if (was) chainCount(b);
-  let j = 0;
+  let j = 0; const pieces = b.ropes ? [] : null;
   while (j < n) {
     let e = j; const alive = seg[j] > 0; while (e + 1 < n && (seg[e + 1] > 0) === alive) e++;
     const m = e - j + 1, lx = -b.w / 2 + (j + m / 2) * cw, wx = px + lx * cs, wy = py + lx * sn;
@@ -265,6 +278,7 @@ function segSplit(b, side, kind) {
       if (b.burn > 0) { c.burn = b.burn; c.burnBy = b.burnBy; S.nburn++; }
       c.body.setLinearVelocity({ x: vx - om * lx * sn, y: vy + om * lx * cs }); c.body.setAngularVelocity(om);
       if (st.cellB) for (let k = 0; k < m; k++) { const i = c.cy * st.cols + c.cx + k; if (st.cellB[i] === b) st.cellB[i] = c; }
+      if (pieces) pieces.push(c);
     } else {
       // 打穿的那一段：碎成幾塊
       const x0 = -b.w / 2 + j * cw, x1 = x0 + m * cw;
@@ -275,6 +289,8 @@ function segSplit(b, side, kind) {
     }
     j = e + 1;
   }
+  if (pieces) ropesOff(b, pieces);
+  if (b.pivot) { b.pivot.b = null; b.pivot = null; }
   b.dead = true; b.inPlace = false; b.hp = 0; b.x = px; b.y = py; b.a = ang;
   if (b.burn > 0) S.nburn--;
   st.ver++;
@@ -291,8 +307,9 @@ function blockHurt(b, dmg, kind, side, x, y) {
     segSettle(b, side, kind);
     return;
   }
+  if (b.reso && side < 2 && side !== b.side) resonate(b, side);
   const before = b.hp; b.hp -= d; b.flash = 1;
-  if (side < 2 && b.side < 2 && b.side !== side && !b.frag) { const T = S.team[side]; T.dealt += Math.min(d, before); T.ult.c = Math.min(T.ult.need, T.ult.c + Math.min(d, before) * T.ult.gain * (b.base ? 0.25 : 1)); }      // 打城基集得慢（城基很厚，不然光打牆腳就能一直放連珠）
+  if (side < 2 && b.side < 2 && b.side !== side && !b.frag) { const T = S.team[side]; T.dealt += Math.min(d, before); T.ult.c = Math.min(T.ult.need, T.ult.c + Math.min(d, before) * T.ult.gain * (b.base ? 0.25 : 1) * ultK(side)); }      // 打城基集得慢（城基很厚，不然光打牆腳就能一直放連珠）
   if (b.hp <= 0) blockKill(b, side, kind, -b.hp > b.hm * 0.9);          // 傷害遠遠超過它撐得住的：直接炸成粉
   else if (((before / b.hm) * 3 | 0) !== ((b.hp / b.hm) * 3 | 0)) ev('crack', b.body.getPosition().x, b.body.getPosition().y, b.mat);
 }
@@ -329,10 +346,14 @@ function mkUnitBody(u) {
 
 /* ---------- 每一步 ---------- */
 function physStep(dt) {
-  const w = PH.world; PH.stepId++; PH.impN = 0; PH.inStep = true;
+  const w = PH.world; PH.stepId++; PH.impN = 0;
+  if (S.water) waterForces();
+  PH.inStep = true;
   w.step(dt, 8, 3);
   PH.inStep = false;
+  for (const j of PH.killJ) w.destroyJoint(j); PH.killJ.length = 0;
   for (const b of PH.kill) w.destroyBody(b); PH.kill.length = 0;
+  for (const r of PH.reJ) if (!r.cut && !r.j && (!r.a || r.a.body) && (!r.b || r.b.body)) ropeJoint(r); PH.reJ.length = 0;
   // 圓的東西（木桶、石球）：快要停的時候讓它真的停下來，不然會一直慢慢滾
   for (const b of S.balls) {
     if (b.dead || !b.body.isAwake()) continue;
@@ -362,7 +383,8 @@ function physStep(dt) {
         // 還在原位的磚，不會被同一座城裡「也還在原位」的磚撞壞：樓板被震得彈一下，不該把撐著它的牆和柱子壓碎
         const oth = k ? r.a : r.b; if (o.inPlace && oth && oth.isBlock && oth.inPlace && oth.st === o.st) continue;
         if (o.mat === M_KEG) { if (dv > KEG_V) blockKill(o, o.side === credit ? 2 : credit, K_CRUSH); continue; }      // 火藥桶摔得太重、被重的東西砸到：爆
-        const d = (dv - IMP_V0) * IMP_K * MAT[o.mat].frag;
+        if (o.boulder) { if (!o.bHit && o.bFly && !o.bIn) { o.bHit = 1; const oth = k ? r.a : r.b; ev('thunk', r.x, r.y, r.J); if (oth && oth.isBlock && !oth.dead && oth !== o) blockHurt(oth, o.bW.dmg * o.bMul, K_HEAVY, o.bSide, r.x, r.y); else if (oth && oth.isUnit && oth.alive && oth.side !== o.bSide) hurtUnit(oth, o.bW.ud * o.bMul, o.bSide, K_CRUSH); } continue; }
+        const d = (dv - (MAT[o.mat].imp || IMP_V0)) * IMP_K * MAT[o.mat].frag;
         if (d > 0) blockHurt(o, Math.min(d, (o.seg ? o.segM : o.hm) * 0.9 + 6), K_CRUSH, o.side === credit ? 2 : credit, r.x, r.y);
       } else if (o.alive) {
         // 屋瓦砸在兵（或魔王）頭上：瓦是脆的，當場碎掉、順著頭兩邊滑下去。該痛的照痛（下面照撞擊的力道算），
@@ -444,7 +466,7 @@ function rockPass(ball, dmg, kind, side) {
   if (under) blockHurt(under, dmg, kind, side, x, uy - 0.1);
 }
 // 一塊磚算不算「大塊」：橫跨四格以上的樓板和樑、三格高的鐵甲和柱子
-function bigBlock(o) { return o.inPlace && !o.frag && !o.prop && (o.cw >= 4 || o.ch >= 3); }
+function bigBlock(o) { return o.inPlace && !o.frag && !o.prop && !o.dom && (o.cw >= 4 || o.ch >= 3); }
 // hit: 直接打中的東西（磚或兵），vx/vy: 砲彈當時的方向
 function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
   const T = side < 2 ? S.team[side] : null, kind = w.kind;
@@ -500,6 +522,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
     }
   }
   PH.ek = 0;
+  if (S.ropes.length) ropesBlast(x, y, r, dmg, kind, side, fire);
   // 飛在天上的東西（氣球、光球）
   for (const o of S.objs) {
     if ((o.t !== 'balloon' && o.t !== 'orb') || o.side === side || o.hp <= 0) continue;
@@ -517,5 +540,7 @@ function lightning(x, y, mul, side) {
   let low = y, n = 0;
   for (const h of _lz) { if (n >= 3) break; if (h.o.dead) continue; n++; low = Math.min(low, h.y); blockHurt(h.o, 15 * mul, K_ZAP, side, x, h.y); if (h.o.mat === M_IRON) ev('spark', x, h.y); }
   for (const u of S.units) if (u.alive && u.side !== side && Math.abs(u.x - x) < 2.6 && u.y + 3 > low - 4) { hurtUnit(u, 9 * mul, side, K_ZAP); if (u.alive && !u.immune) { u.stun = Math.max(u.stun, 1); u.dazed = 1; } }
+  // 雷劈過鐵鍊：鐵會導電
+  for (const r of S.ropes) { if (r.cut || r.side === side) continue; const e = r.e, lo2 = Math.min(e[1], e[3]); if (lo2 < low - 1) continue; if ((e[0] - x) * (e[2] - x) <= 0 || Math.abs(e[0] - x) < 1.2 || Math.abs(e[2] - x) < 1.2) ropeHurt(r, 15 * mul, K_ZAP, side); }
   ev('zap', x, n ? low : groundY(x) > -100 ? groundY(x) : -9, 78, n ? 1 : 0);
 }

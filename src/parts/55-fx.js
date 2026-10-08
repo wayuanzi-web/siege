@@ -118,11 +118,12 @@ function fxOn(t, a, b, c, d, e, f) {
       const n = Math.round(clamp(area * 3.5, 3, 12) * (FX.low ? 0.5 : 1) * (f.fragged ? 0.45 : 1));       // 已經裂成幾大塊的，小碎屑少一點
       for (let k = 0; k < n; k++) {
         const lx = rndS() * f.w * 0.9, ly = rndS() * f.h * 0.9;
-        part(c === M_ICE || c === M_CLAY ? P_SHARD : P_DEBRIS, a + lx * cs - ly * sn, b + lx * sn + ly * cs, rndS() * 34, 8 + Math.random() * 26, 1.0 + Math.random() * 0.9, 0.7 + Math.random() * 0.7, col);
+        part(c === M_ICE || c === M_CLAY || c === M_GLASS ? P_SHARD : P_DEBRIS, a + lx * cs - ly * sn, b + lx * sn + ly * cs, rndS() * (c === M_GLASS ? 44 : 34), 8 + Math.random() * 26, 1.0 + Math.random() * 0.9, 0.7 + Math.random() * 0.7, c === M_GLASS ? (k & 1 ? C_ICE : C_WHITE) : col);
       }
       // 城破（整座自己垮下來）：不是炸開的，碎屑不往上噴；多的是往兩邊滾開的塵土
       for (let k = 0; k < (fin ? 3 : Math.min(3, 1 + area | 0)); k++) part(P_DUST, a + rndS() * f.w * 0.6, b + rndS() * f.h * 0.6, rndS() * (fin ? 22 : 8), 2 + Math.random() * (fin ? 7 : 4), fin ? 1.1 : 0.6, fin ? 3.4 : 2.4, c === M_ICE ? C_WHITE : C_SAND);
-      sfx(c === M_ICE || c === M_CLAY ? 'shatter' : c === M_WOOD || c === M_ROOF || c === M_KEG ? 'crack' : c === M_IRON ? 'clang' : 'crumble'); FX.heat = Math.min(1, FX.heat + 0.03);
+      if (c === M_GLASS) { burst(P_SPARK, a, b, 5, 26, 0.4, 0.45, C_ICE); }
+      sfx(c === M_GLASS ? 'glass' : c === M_ICE || c === M_CLAY ? 'shatter' : c === M_WOOD || c === M_ROOF || c === M_KEG || c === M_BAMBOO ? 'crack' : c === M_IRON ? 'clang' : 'crumble'); FX.heat = Math.min(1, FX.heat + 0.03);
       if (fin) shake(0.35);
       break;
     }
@@ -158,7 +159,7 @@ function fxOn(t, a, b, c, d, e, f) {
       burst(P_SPARK, a, b, 8, 22, 0.5, 0.6, c === 0 ? C_SKY : C_SALMON); ring(a, b, 0.5, 5, 0.3, '#ffffff', 0.4);
       // 剛才那一聲「哇！」不用留著跟這一句疊在一起；整座城垮掉時順便倒下的不再一個一個報
       for (let i = FX.pops.length - 1; i >= 0; i--) { const q = FX.pops[i]; if (q.yelp && Math.abs(q.x - a) < 9 && Math.abs(q.y - b) < 12) FX.pops.splice(i, 1); }
-      if (S.state === 'play') pop(a, b + 3.5, c === 1 ? (e === 1 ? '砸扁！' : e === 4 ? '摔下去了！' : e === 5 ? '轟出城外！' : e === 6 ? '轟飛了！' : e === 3 ? '燒到了！' : '擊倒！') : (e === 5 ? '被轟出城' : e === 4 ? '摔下去了' : e === 6 ? '被轟飛了' : e === 1 ? '被砸扁了' : '陣亡'), c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.1);
+      if (S.state === 'play') pop(a, b + 3.5, c === 1 ? (e === 1 ? '砸扁！' : e === 4 ? '摔下去了！' : e === 5 ? '轟出城外！' : e === 6 ? '轟飛了！' : e === 3 ? '燒到了！' : e === 7 ? '沖走了！' : '擊倒！') : (e === 5 ? '被轟出城' : e === 4 ? '摔下去了' : e === 6 ? '被轟飛了' : e === 1 ? '被砸扁了' : e === 7 ? '被沖走了' : '陣亡'), c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.1);
       sfx(c === 1 ? 'kill' : 'lostunit'); if (c === 0) { shake(0.4); vibrate(60); }
       if (e === 1 && S.state === 'play') slowmo(0.5, 0.7);
       break;
@@ -223,6 +224,46 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'rumble': shake(0.5); sfx('rumble'); break;
     case 'dirt': burst(P_DUST, a, b + 0.5, 3, 10, 0.5, 1.6, C_SAND, 4); break;
     case 'tick': burst(P_SPARK, a, b, 2, 12, 0.2, 0.4, C_WHITEHOT); sfx('tick'); break;
+    // 第二篇
+    case 'snap': {
+      // 繩子斷了（c：1 鐵鍊；d 哪一邊的；e 吊著什麼）
+      burst(c ? P_SPARK : P_DEBRIS, a, b, c ? 10 : 6, 22, 0.5, 0.5, c ? C_WHITEHOT : C_TAN); ring(a, b, 0.4, 4, 0.22, '#ffffff', 0.35);
+      if (S.state === 'play') pop(a, b + 3, c ? '鐵鍊斷了！' : '繩子斷了！', d === 1 ? '#ffe14a' : '#ff8a7a', 2.8, 1.0);
+      sfx(c ? 'chainsnap' : 'snap'); shake(0.15);
+      break;
+    }
+    case 'rhit': burst(c ? P_SPARK : P_DEBRIS, a, b, 2, 10, 0.3, 0.4, c ? C_WHITEHOT : C_TAN); break;
+    case 'creak': {
+      // 撐不住了：掉灰、嘎吱一聲（d：超載的程度）
+      for (let k = 0; k < 2 + (d > 1.6 ? 2 : 0); k++) part(P_DUST, a + rndS() * 1.4, b, rndS() * 2, -2 - Math.random() * 3, 0.9, 0.9 + Math.random() * 0.6, c === M_GLASS ? C_WHITE : C_SAND);
+      if (Math.random() < 0.5) part(P_DEBRIS, a + rndS(), b, rndS() * 4, 2, 0.8, 0.3, C_SAND);
+      sfx(c === M_GLASS ? 'tink' : 'creak');
+      break;
+    }
+    case 'splash': {
+      // 掉進水裡（c 大小；d 0 磚 1 兵 2 砲彈）
+      const n = d === 2 ? 4 : 6 + Math.min(8, c * 3 | 0);
+      for (let k = 0; k < n; k++) part(P_SHARD, a + rndS() * (1 + c), b, rndS() * (8 + c * 4), 14 + Math.random() * (10 + c * 6), 0.6 + Math.random() * 0.3, 0.45 + Math.random() * 0.4, k & 1 ? C_WHITE : C_SKY);
+      ring(a, b, 0.6, 3 + c * 1.6, 0.4, '#e8fbff', 0.35);
+      if (d !== 2) sfx('splash');
+      break;
+    }
+    case 'reso': {
+      // 共鳴晶柱被打到：一圈一圈的紫光往外傳
+      for (let k = 0; k < 4; k++) ring(a, b, 1 + k * 2, 30, 0.6 + k * 0.18, '#d8b8ff', 0.6);
+      burst(P_SPARK, a, b, 18, 36, 0.8, 0.7, C_PURPLE); flash(0.18, '#e8d8ff');
+      if (S.state === 'play') pop(a, b + 5, '共鳴！', '#e0c8ff', 4, 1.4);
+      sfx('chime'); shake(0.3);
+      break;
+    }
+    case 'resohit': part(P_FLASH, a, b, 0, 0, 0.14, 2.4, C_PURPLE); burst(P_SHARD, a, b, 3, 12, 0.4, 0.4, C_ICE); if (Math.random() < 0.4) sfx('tink'); break;
+    case 'glint': part(P_FLASH, a, b, 0, 0, 0.18, 1.4, C_ICE); burst(P_SPARK, a, b, 3, 6, 0.5, 0.35, C_WHITE); break;
+    case 'thunk': {
+      const k = Math.min(1, c / 900);
+      burst(P_DUST, a, b, 3 + (k * 4 | 0), 10 + k * 14, 0.6, 1.6 + k * 1.6, C_SAND); burst(P_DEBRIS, a, b, 4, 18, 0.7, 0.5, C_GRAY);
+      shake(0.2 + k * 0.5); sfx('thunk');
+      break;
+    }
     case 'end': {
       slowmo(0.3, 1.8, true); shake(2.0); flash(0.3, '#fff6d8'); sfx('collapse'); vibrate(200);
       ring(a, b, 2, 16, 0.6, '#fff0b0', 0.7);         // 只留一圈小的，別把整座城垮下來的樣子蓋住

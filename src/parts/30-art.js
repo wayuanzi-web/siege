@@ -7,15 +7,24 @@ const SKINS = {
   frost: { stone: ['#e4eef8', '#b9cde0', '#8399b5', '#617899'], wood: ['#a7b8cc', '#8092ab', '#54657f'], roof: ['#9bbcf0', '#6088cc', '#385a98'], iron: ['#b1c6da', '#7f97b0', '#4e647e'], panel: ['#313f5c', '#25314b'], ink: '#1d2b46', trim: '#e2f6ff', flag: '#dc3a2e', flagDk: '#8f1418' },
   ember: { stone: ['#917979', '#6e585a', '#47373a', '#2c2023'], wood: ['#9e6640', '#784829', '#492813'], roof: ['#cf4a32', '#983220', '#5e1b10'], iron: ['#9197a3', '#5f6571', '#353941'], panel: ['#37262d', '#291c22'], ink: '#1b0f13', trim: '#ffb347', flag: '#ff7a2e', flagDk: '#a83c0c' },
   jade: { stone: ['#f4f7f0', '#d3ddd0', '#9eb1a0', '#778b7a'], wood: ['#d0aa70', '#aa844c', '#6f542a'], roof: ['#6ce0b2', '#2fa87c', '#167353'], iron: ['#f6d985', '#cda640', '#8d6d1c'], panel: ['#31504a', '#253e39'], ink: '#1a2f2b', trim: '#ffe9a0', flag: '#dc3a2e', flagDk: '#8f1418' },
-  demon: { stone: ['#8474a0', '#5e4e77', '#3c3050', '#221932'], wood: ['#77505f', '#563642', '#331e26'], roof: ['#bf3774', '#882250', '#50112e'], iron: ['#67607a', '#423c50', '#24202e'], panel: ['#2c1933', '#1f1126'], ink: '#110916', trim: '#ff5aa0', flag: '#c0164a', flagDk: '#5a0a24' }
+  demon: { stone: ['#8474a0', '#5e4e77', '#3c3050', '#221932'], wood: ['#77505f', '#563642', '#331e26'], roof: ['#bf3774', '#882250', '#50112e'], iron: ['#67607a', '#423c50', '#24202e'], panel: ['#2c1933', '#1f1126'], ink: '#110916', trim: '#ff5aa0', flag: '#c0164a', flagDk: '#5a0a24' },
+  // 第二篇
+  bamboo: { stone: ['#c9d3c0', '#a3b098', '#748469', '#56644d'], wood: ['#c9a46a', '#a17c45', '#6b5028'], roof: ['#e8c978', '#c39a44', '#86662a'], iron: ['#a9b0a2', '#7b8274', '#4c5246'], panel: ['#33422c', '#263221'], ink: '#1d2616', trim: '#f2e3a0', flag: '#dc3a2e', flagDk: '#8f1418' },
+  karst: { stone: ['#dfe0d8', '#b8bab0', '#888b82', '#62655e'], wood: ['#c79763', '#9f7140', '#674621'], roof: ['#7f95a8', '#566b80', '#344456'], iron: ['#aab0b8', '#7c838c', '#4b5058'], panel: ['#3c3f3a', '#2d302b'], ink: '#1f221e', trim: '#ffd88a', flag: '#dc3a2e', flagDk: '#8f1418' },
+  temple: { stone: ['#d4cfc6', '#aaa397', '#7a7368', '#575147'], wood: ['#d0563f', '#a8382a', '#6c2018'], roof: ['#7c8590', '#545c68', '#323842'], iron: ['#c9a65a', '#9a7a32', '#5e4718'], panel: ['#4a2620', '#381b16'], ink: '#24100c', trim: '#ffd36a', flag: '#dc3a2e', flagDk: '#8f1418' },
+  canyon: { stone: ['#e8a47e', '#c97a52', '#9a5433', '#6e3720'], wood: ['#8f6a4a', '#6c4c32', '#43301e'], roof: ['#d9644a', '#a94330', '#6c2618'], iron: ['#a59a8e', '#776c61', '#4a423a'], panel: ['#4a2a1e', '#371f16'], ink: '#26140c', trim: '#ffcf7a', flag: '#dc3a2e', flagDk: '#8f1418' },
+  crystal: { stone: ['#ece6f6', '#c8bfe0', '#958bb6', '#6a6190'], wood: ['#b8c4dc', '#8d9bba', '#5d6a88'], roof: ['#8fe6f0', '#46b6c8', '#22788a'], iron: ['#d8d2f0', '#a69ec8', '#6c6494'], panel: ['#1f2550', '#161b3e'], ink: '#10133a', trim: '#b9f6ff', flag: '#dc3a2e', flagDk: '#8f1418' },
+  maple: { stone: ['#d8d2c8', '#b0a89b', '#80786c', '#5a5348'], wood: ['#b85a34', '#8c3e22', '#5a2412'], roof: ['#6f8a7e', '#4b6559', '#2e423a'], iron: ['#c4a45e', '#957732', '#5c4618'], panel: ['#3e2418', '#2f1a11'], ink: '#1e0f08', trim: '#ffcf6a', flag: '#dc3a2e', flagDk: '#8f1418' }
 };
+const PAL_GLASS = ['#e9fdff', '#a5eef6', '#5ccbdc', '#2a8fa6'];
+const PAL_BAMBOO = ['#cfe58c', '#9cc457', '#6b9a33', '#40651c'];
 const PAL_ICE = ['#e6f8ff', '#a8e0f8', '#62b6e4', '#3c8cc0'];
 const PAL_ROCK = ['#8e8794', '#665f70', '#403a49', '#2a2532'];
 
 /* ---------- 磚塊：每一塊一張貼圖（依外觀、材質、形狀、大小、破損程度），第一次用到時才畫 ---------- */
 const BSPR = {};
 function blockSprite(b, ds) {
-  const key = b.skin + ':' + b.mat + ':' + b.kind + ':' + Math.round(b.w * 10) + ':' + Math.round(b.h * 10) + ':' + Math.round(b.il * 10) + ':' + Math.round(b.ir * 10) + ':' + b.deco + ':' + ds + ':' + (b.vr & 1) + (b.hot ? 'h' : '') + (b.prop ? 'p' : '') + (b.seg ? 's' : '');
+  const key = b.skin + ':' + b.mat + ':' + b.kind + ':' + Math.round(b.w * 10) + ':' + Math.round(b.h * 10) + ':' + Math.round(b.il * 10) + ':' + Math.round(b.ir * 10) + ':' + b.deco + ':' + ds + ':' + (b.vr & 1) + (b.hot ? 'h' : '') + (b.prop ? 'p' : '') + (b.seg ? 's' : '') + (b.dom ? 'd' : '') + (b.beam ? 'b' : '') + (b.reso ? 'r' : '');
   let s = BSPR[key]; if (s) return s;
   const sc = V.s, w = b.w * sc, h = b.h * sc, roof = b.kind === 'roof';
   const padX = Math.ceil((roof ? 0.62 : 0.14) * CS * sc), padY = Math.ceil((roof ? 0.5 : 0.14) * CS * sc);
@@ -54,10 +63,13 @@ function paintBlock(c, b, ds, w, h, sc) {
       c.beginPath(); c.moveTo(w * 0.26, 0); c.lineTo(w * 0.74, 0); c.lineTo(w * 0.7, h * 0.1); c.quadraticCurveTo(w * 0.62, h * 0.2, w * 0.86, h * 0.34);
       c.quadraticCurveTo(w * 1.06, h * 0.62, w * 0.72, h); c.lineTo(w * 0.28, h); c.quadraticCurveTo(w * -0.06, h * 0.62, w * 0.14, h * 0.34); c.quadraticCurveTo(w * 0.38, h * 0.2, w * 0.3, h * 0.1); c.closePath();
     }
+    else if (b.kind === 'bell') { c.beginPath(); c.moveTo(0, h); c.lineTo(w, h); c.quadraticCurveTo(w * 0.86, h * 0.62, w * 0.81, h * 0.36); c.quadraticCurveTo(w * 0.76, 0, w * 0.5, 0); c.quadraticCurveTo(w * 0.24, 0, w * 0.19, h * 0.36); c.quadraticCurveTo(w * 0.14, h * 0.62, 0, h); c.closePath(); }
+    else if (b.reso) { c.beginPath(); c.moveTo(w * 0.5, 0); c.lineTo(w * 0.95, h * 0.2); c.lineTo(w * 0.95, h * 0.86); c.lineTo(w * 0.5, h); c.lineTo(w * 0.05, h * 0.86); c.lineTo(w * 0.05, h * 0.2); c.closePath(); }
     else rrect(c, 0, 0, w, h, Math.min(w, h) * 0.09);
   };
   c.save(); path(); c.clip();
-  if (ds !== 3) switch (b.mat) {
+  if (ds !== 3 && paintSpecial(c, b, w, h, u, P, R)) { /* 吊鐘、吊燈、石籃、共鳴晶柱：自己畫 */ }
+  else if (ds !== 3) switch (b.mat) {
     case M_STONE: {
       const p = P.stone;
       c.fillStyle = lg(c, 0, 0, 0, h, [0, mix(p[1], p[0], 0.55), 0.6, p[1], 1, mix(p[1], p[2], 0.45)]); c.fillRect(0, 0, w, h);
@@ -66,6 +78,12 @@ function paintBlock(c, b, ds, w, h, sc) {
         c.fillStyle = rgba(p[2], 0.55); c.fillRect(0, h * 0.62, w, h * 0.38);
         c.fillStyle = mix(p[1], p[0], 0.3); for (let x = u * 0.2; x < w - u * 0.3; x += u * 0.5) c.fillRect(x, h * 0.66, u * 0.26, h * 0.22);
         c.fillStyle = rgba(p[3], 0.5); c.fillRect(0, h * 0.54, w, Math.max(1, h * 0.07));
+      } else if (b.dom) {
+        // 石碑：上面一塊碑首，碑身刻了一行字
+        c.fillStyle = rgba(p[3], 0.55); c.fillRect(0, 0, w, u * 0.5);
+        c.fillStyle = rgba(p[0], 0.5); c.fillRect(0, u * 0.5, w, Math.max(1, u * 0.06));
+        c.fillStyle = rgba(p[3], 0.7);
+        for (let y = u * 0.9; y < h - u * 0.6; y += u * 0.62) { const gx = w * 0.5; c.fillRect(gx - w * 0.22, y, w * 0.44, Math.max(1, u * 0.06)); c.fillRect(gx - Math.max(1, u * 0.03), y - u * 0.16, Math.max(1, u * 0.06), u * 0.38); if (R() < 0.6) c.fillRect(gx - w * 0.18, y + u * 0.18, w * 0.36, Math.max(1, u * 0.05)); }
       } else if (h > u * 1.6) {
         c.fillStyle = rgba(p[2], 0.45); c.fillRect(w * 0.3, 0, Math.max(1, w * 0.07), h); c.fillRect(w * 0.64, 0, Math.max(1, w * 0.07), h);
       } else {
@@ -97,7 +115,10 @@ function paintBlock(c, b, ds, w, h, sc) {
         for (let x = 0; x <= L; x += u * 0.45) { const tt = t0 + Math.sin(x / u * 2.1 + k * 2 + (b.vr & 7)) * T * 0.045; if (vert) (x ? c.lineTo(tt, x) : c.moveTo(tt, x)); else (x ? c.lineTo(x, tt) : c.moveTo(x, tt)); }
         c.stroke();
       }
-      if (b.deco === 1) {
+      if (b.beam) {
+        // 天秤的大樑：一條一條鐵箍、大鉚釘
+        for (let x = u * 0.6; x < w - u * 0.3; x += u * 1.5) { c.fillStyle = '#3a3340'; c.fillRect(x, 0, u * 0.28, h); c.fillStyle = '#8d8496'; c.fillRect(x, 0, u * 0.28, Math.max(1, u * 0.06)); c.fillStyle = '#ffc93c'; c.beginPath(); c.arc(x + u * 0.14, h * 0.5, Math.max(1, u * 0.08), 0, TAU); c.fill(); }
+      } else if (b.deco === 1) {
         // 城門：兩扇門板、鐵條、門釘
         c.fillStyle = rgba(p[2], 0.75); c.fillRect(w / 2 - Math.max(1, u * 0.05), 0, Math.max(2, u * 0.1), h);
         c.fillStyle = '#3a3340'; c.fillRect(0, h * 0.22, w, u * 0.16); c.fillRect(0, h * 0.7, w, u * 0.16);
@@ -149,6 +170,31 @@ function paintBlock(c, b, ds, w, h, sc) {
       c.fillStyle = rgba(p[3], 0.35); c.fillRect(0, h - Math.max(1, u * 0.09), w, Math.max(1, u * 0.09));
       break;
     }
+    case M_BAMBOO: {
+      // 竹子：一節一節，節上一圈深色、上面一道亮；竹排是好幾根橫放綁在一起
+      const p = PAL_BAMBOO, vert = h > w * 1.2;
+      const tube = (x, y, L, T, ver) => {
+        c.fillStyle = ver ? lg(c, x, 0, x + T, 0, [0, p[2], 0.35, p[0], 0.6, p[1], 1, p[3]]) : lg(c, 0, y, 0, y + T, [0, p[0], 0.4, p[1], 1, p[3]]); c.fillRect(x, y, ver ? T : L, ver ? L : T);
+        const step = u * 0.95, off = ((b.vr & 3) * 0.23) * step;
+        for (let k = off + step * 0.5; k < L - u * 0.15; k += step) {
+          c.fillStyle = rgba(p[3], 0.85); if (ver) c.fillRect(x, y + k, T, Math.max(1, u * 0.07)); else c.fillRect(x + k, y, Math.max(1, u * 0.07), T);
+          c.fillStyle = 'rgba(255,255,230,.45)'; if (ver) c.fillRect(x, y + k - Math.max(1, u * 0.05), T, Math.max(1, u * 0.04)); else c.fillRect(x + k + Math.max(1, u * 0.07), y, Math.max(1, u * 0.04), T);
+        }
+      };
+      if (vert) tube(0, 0, h, w, true);
+      else { const n = h > u * 0.7 ? 3 : 1, t = h / n; for (let k = 0; k < n; k++) tube(0, k * t, w, t, false); if (n > 1) { c.fillStyle = '#7a5a2a'; for (let x = u * 0.45; x < w - u * 0.2; x += u * 1.1) c.fillRect(x, 0, Math.max(1.5, u * 0.12), h); } }
+      break;
+    }
+    case M_GLASS: {
+      // 琉璃：半透明，邊上亮、斜著兩道反光
+      const p = PAL_GLASS;
+      c.fillStyle = lg(c, 0, 0, w, h, [0, rgba(p[0], 0.75), 0.45, rgba(p[1], 0.55), 1, rgba(p[2], 0.7)]); c.fillRect(0, 0, w, h);
+      c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineCap = 'round';
+      for (let x = -h + u * (0.2 + (b.vr & 1) * 0.3); x < w; x += u * 1.4) { c.lineWidth = Math.max(1, u * 0.09); c.beginPath(); c.moveTo(x, h); c.lineTo(x + h * 0.7, h * 0.3); c.stroke(); c.lineWidth = Math.max(1, u * 0.04); c.beginPath(); c.moveTo(x + u * 0.25, h); c.lineTo(x + u * 0.25 + h * 0.5, h * 0.5); c.stroke(); }
+      c.strokeStyle = rgba(p[3], 0.6); c.lineWidth = Math.max(1, u * 0.05); c.strokeRect(u * 0.12, u * 0.12, w - u * 0.24, h - u * 0.24);
+      c.fillStyle = 'rgba(255,255,255,.7)'; c.fillRect(0, 0, w, Math.max(1, u * 0.08));
+      break;
+    }
     case M_ROCK: {
       const p = PAL_ROCK, r = w / 2;
       c.fillStyle = rg(c, r * 0.75, r * 0.65, r * 0.1, r * 1.15, [0, p[0], 0.6, p[1], 1, p[2]]); c.fillRect(0, 0, w, h);
@@ -174,7 +220,7 @@ function paintBlock(c, b, ds, w, h, sc) {
   }
   if (ds > 0 && b.mat !== M_KEG) {
     // 裂痕；第二級更多、整塊變暗
-    c.strokeStyle = b.mat === M_ICE ? 'rgba(40,90,140,.85)' : 'rgba(10,6,14,.75)'; c.lineWidth = Math.max(1, u * 0.06); c.lineCap = 'round';
+    c.strokeStyle = b.mat === M_ICE ? 'rgba(40,90,140,.85)' : b.mat === M_GLASS ? 'rgba(255,255,255,.95)' : 'rgba(10,6,14,.75)'; c.lineWidth = Math.max(1, u * 0.06); c.lineCap = 'round';
     const crack = (x, y, a, len, n) => { c.beginPath(); c.moveTo(x, y); for (let k = 0; k < n; k++) { a += (R() - 0.5) * 1.3; x += Math.cos(a) * len; y += Math.sin(a) * len; c.lineTo(x, y); } c.stroke(); };
     if (ds === 3) {
       // 只有裂紋的透明貼圖（長樑、樓板一段一段蓋上去用）：每一格各畫各的，裂紋不跨到隔壁那一格
@@ -199,6 +245,43 @@ function paintBlock(c, b, ds, w, h, sc) {
       c.fillStyle = p[1]; c.fill(); c.strokeStyle = P.ink; c.lineWidth = lw * 0.85; c.stroke();
     }
   }
+}
+
+// 吊鐘、水晶吊燈、配重石籃、共鳴晶柱：自己畫（回傳 true 表示畫過了）
+function paintSpecial(c, b, w, h, u, P, R) {
+  if (b.kind === 'bell') {
+    c.fillStyle = lg(c, 0, 0, w, 0, [0, '#6b4a14', 0.25, '#c9962e', 0.5, '#ffe08a', 0.7, '#c9962e', 1, '#5e3f10']); c.fillRect(0, 0, w, h);
+    c.fillStyle = 'rgba(70,45,10,.6)'; c.fillRect(0, h * 0.32, w, Math.max(1, u * 0.1)); c.fillRect(0, h * 0.72, w, Math.max(1.5, u * 0.14));
+    c.fillStyle = 'rgba(255,240,180,.55)'; for (let k = 0; k < 6; k++) { c.beginPath(); c.arc(w * (0.28 + 0.088 * k), h * 0.5, Math.max(1, u * 0.07), 0, TAU); c.fill(); }
+    c.fillStyle = '#4a3008'; c.fillRect(0, h - u * 0.22, w, u * 0.22);
+    return true;
+  }
+  if (b.kind === 'lamp') {
+    // 水晶吊燈：金色的圈、一串一串的水晶、中間一團光
+    c.fillStyle = 'rgba(255,240,190,.25)'; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#c9962e'; c.fillRect(0, h * 0.18, w, Math.max(2, u * 0.16)); c.fillRect(w * 0.47, 0, w * 0.06, h * 0.3);
+    for (let k = 0; k < 7; k++) { const x = w * (0.08 + k * 0.14), L = h * (0.45 + (k % 3) * 0.14); c.fillStyle = lg(c, x - u * 0.12, 0, x + u * 0.12, 0, [0, '#9feef6', 0.5, '#ffffff', 1, '#4cc0d4']); poly(c, [x - u * 0.13, h * 0.24, x + u * 0.13, h * 0.24, x + u * 0.08, h * 0.24 + L, x, h * 0.3 + L, x - u * 0.08, h * 0.24 + L]); c.fill(); }
+    c.fillStyle = 'rgba(255,250,210,.9)'; c.beginPath(); c.arc(w * 0.5, h * 0.42, u * 0.3, 0, TAU); c.fill();
+    return true;
+  }
+  if (b.kind === 'basket') {
+    // 配重石籃：竹編的籃子，上面露出一堆石頭
+    c.fillStyle = '#8a6a3a'; c.fillRect(0, 0, w, h);
+    c.strokeStyle = 'rgba(60,40,15,.75)'; c.lineWidth = Math.max(1, u * 0.07);
+    for (let x = -h; x < w; x += u * 0.45) { c.beginPath(); c.moveTo(x, h); c.lineTo(x + h, 0); c.stroke(); c.beginPath(); c.moveTo(x, 0); c.lineTo(x + h, h); c.stroke(); }
+    const p = PAL_ROCK; for (let k = 0; k < 5; k++) { c.fillStyle = k & 1 ? p[1] : p[0]; c.beginPath(); c.arc(w * (0.15 + 0.17 * k), h * 0.12, u * (0.32 + R() * 0.12), 0, TAU); c.fill(); }
+    c.fillStyle = '#5a4020'; c.fillRect(0, 0, w, Math.max(2, u * 0.14)); c.fillRect(0, h - u * 0.14, w, u * 0.14);
+    return true;
+  }
+  if (b.reso) {
+    // 共鳴晶柱：紫藍色的六角晶體，裡面一道一道光紋
+    c.fillStyle = lg(c, 0, 0, w, h, [0, '#f2e8ff', 0.4, '#b48cff', 0.7, '#6a6cff', 1, '#3a2c9a']); c.fillRect(0, 0, w, h);
+    c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = Math.max(1, u * 0.06);
+    c.beginPath(); c.moveTo(w * 0.5, 0); c.lineTo(w * 0.5, h); c.moveTo(w * 0.05, h * 0.2); c.lineTo(w * 0.5, h * 0.4); c.lineTo(w * 0.95, h * 0.2); c.stroke();
+    c.fillStyle = 'rgba(255,255,255,.5)'; c.fillRect(w * 0.18, h * 0.3, Math.max(1, w * 0.1), h * 0.5);
+    return true;
+  }
+  return false;
 }
 
 /* ---------- 兵（設計座標 64×64，腳底在 y=58，面向右） ---------- */
@@ -284,6 +367,15 @@ const UNIT_ART = {
     c.fillStyle = '#3a2203'; c.fillRect(-1, -7.5, 2.6, 15); c.fillRect(9, -7.5, 2.6, 15);
     ell(c, 18.5, 0, 3, 6.6); fs(c, '#1a1008', '#3a2203', 1.4);
     c.restore();
+  },
+  stone(c, side, P) {
+    // 投石兵：兩手把一顆大石頭舉過肩，頭上綁一條頭巾
+    uShadow(c); uLegs(c, P); uBody(c, P); uHead(c, side, P, side === 0);
+    if (side === 0) { c.fillStyle = '#e8b04a'; rrect(c, 22, 9, 21, 5.5, 2.4); c.fill(); c.strokeStyle = P.ink; c.lineWidth = 1.6; c.stroke(); c.fillStyle = '#e8b04a'; poly(c, [22, 11, 14, 8, 15, 15]); c.fill(); }
+    uArm(c, P, 25, 31); uArm(c, P, 41, 30);
+    ell(c, 38, 20, 11.5, 10.5); fs(c, rg(c, 34, 15, 1, 13, [0, '#bdb6c4', 0.55, '#8e8796', 1, '#5c5566']), '#2a2532', 2);
+    c.fillStyle = 'rgba(40,34,48,.45)'; poly(c, [33, 22, 37, 18, 42, 21, 40, 26, 35, 26]); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.45)'; ell(c, 33, 15, 3.4, 2.2, -0.5); c.fill();
   },
   fire(c, side, P) {
     uShadow(c); uLegs(c, P); uBody(c, P); uArm(c, P, 21, 38);

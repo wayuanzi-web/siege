@@ -63,6 +63,14 @@ function sfx(name, arg) {
       case 'thud': if (gap('thud', 120)) return; tone(84, 0.3, 'sine', 0.4, 30); noise(0.22, 0.2, 'lowpass', 600, 90, 1); break;
       case 'crash': if (gap('crash', 200)) return; tone(70, 0.6, 'sine', 0.5, 24); noise(0.7, 0.36, 'lowpass', 1100, 70, 0.8); for (let i = 0; i < 4; i++) noise(0.18, 0.12, 'bandpass', 900 + Math.random() * 900, 300, 1.2, 0.08 + i * 0.09); break;
       case 'collapse': noise(2.0, 0.55, 'lowpass', 1500, 55, 0.7); tone(92, 1.6, 'sine', 0.5, 22); for (let i = 0; i < 9; i++) noise(0.3, 0.2, 'lowpass', 1000, 100, 1, 0.12 + i * 0.17); break;
+      // 第二篇
+      case 'glass': if (gap('glass', 70)) return; noise(0.3, 0.16, 'highpass', 6000, 3000, 1.4); for (let i = 0; i < 3; i++) tone(2600 + Math.random() * 2400, 0.16 + Math.random() * 0.12, 'sine', 0.035, 0, i * 0.03); break;
+      case 'tink': if (gap('tink', 90)) return; tone(3200 + r * 1600, 0.12, 'sine', 0.03, 0); break;
+      case 'snap': if (gap('snap', 80)) return; noise(0.06, 0.28, 'bandpass', 2400, 900, 2); tone(300, 0.08, 'triangle', 0.08, 120); noise(0.3, 0.06, 'bandpass', 600, 200, 3, 0.04); break;
+      case 'chainsnap': if (gap('chainsnap', 120)) return; tone(1180 + r * 200, 0.3, 'square', 0.05, 900); tone(1760, 0.2, 'square', 0.03, 0, 0.02); noise(0.12, 0.14, 'highpass', 3000, 0, 1); break;
+      case 'splash': if (gap('splash', 120)) return; noise(0.45, 0.22, 'bandpass', 900 + r * 500, 2600, 0.8); noise(0.6, 0.08, 'highpass', 3000, 1500, 0.8, 0.05); break;
+      case 'chime': for (let i = 0; i < 5; i++) tone(NOTE(84 + [0, 4, 7, 12, 16][i]), 1.2, 'sine', 0.06, 0, i * 0.07); break;
+      case 'thunk': if (gap('thunk', 120)) return; tone(70 + r * 20, 0.35, 'sine', 0.45, 30); noise(0.28, 0.24, 'lowpass', 700, 90, 1); break;
       // 倍增符
       case 'gate': {
         if (gap('gate' + (arg || 0), 38)) return;

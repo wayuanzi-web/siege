@@ -33,10 +33,10 @@ function gatePosAt(g, t, out) {
   return out;
 }
 /* 試射一發（不影響戰局）：t0 是預計開火的時間（會動的符和結界要用那時候的位置）。
-   R.hit: 0 沒中、1 地面、2 磚、3 兵、4 氣球／光球／天燈、5 被擋（對方的符、鏡子、結界、護城罩）；R.port 進了傳送門 */
-const _tr = { hit: 0, x: 0, y: 0, t: 0, mult: 1, gm: 0, o: null, obj: null, lan: null, gate: null, port: false };
+   R.hit: 0 沒中、1 地面（含水面）、2 磚、3 兵、4 氣球／光球／天燈、5 被擋（對方的符、鏡子、結界、護城罩）、6 繩索／鐵鍊（R.rope）；R.port 進了傳送門 */
+const _tr = { hit: 0, x: 0, y: 0, t: 0, mult: 1, gm: 0, o: null, obj: null, lan: null, gate: null, port: false, rope: null };
 function simTrace(side, mx, my, vx, vy, wind, t0, kmax) {
-  const R = _tr; R.hit = 0; R.mult = 1; R.gm = 0; R.o = null; R.obj = null; R.lan = null; R.gate = null; R.port = false;
+  const R = _tr; R.hit = 0; R.mult = 1; R.gm = 0; R.o = null; R.obj = null; R.lan = null; R.gate = null; R.port = false; R.rope = null;
   const dt = 1 / 30, own = S.st[side], foeT = S.team[1 - side], fst = S.st[1 - side], lag = t0 - S.time;
   // 這裡一步走 1/30 秒，戰局是 1/60 秒；補上兩者每一步差的那一點，落點才會跟真的打出去一樣
   const cy = GRAV * STEP * STEP, cx = -wind * STEP * STEP;
@@ -73,8 +73,11 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax) {
         if (d0 > o.R && d1 <= o.R && barrierSeg(o, nx, ny)) { R.hit = 5; R.x = nx; R.y = ny; R.t = t; return R; }
       }
     }
+    if (S.ropes.length) { const rc = ropeCross(x, y, nx, ny, side); if (rc) { R.hit = 6; R.rope = rc.r; R.x = x + (nx - x) * rc.t; R.y = y + (ny - y) * rc.t; R.t = t; return R; } }
     if (foeT.shield.on && inBubble(fst, nx, ny)) { R.hit = 5; R.x = nx; R.y = ny; R.t = t; return R; }
     const h = rayShot(x, y, nx, ny, side, inOwn);
+    const wt = S.water ? waterCross(x, y, nx, ny) : -1;
+    if (wt >= 0 && (!h || wt < RAY.f)) { R.hit = 1; R.x = x + (nx - x) * wt; R.y = S.water.y; R.t = t; return R; }
     if (h) { R.hit = h; R.o = RAY.o; R.x = RAY.x; R.y = RAY.y; R.t = t; return R; }
     if (inOwn && t > 0.3 && (nx < own.x0 - 1 || nx > own.x1 + 1 || ny > own.y1 + 4)) inOwn = false;
     if (nx < -40 || nx > VIEW_W + 40 || ny < -30) { R.x = nx; R.y = ny; R.t = t; return R; }
@@ -102,7 +105,7 @@ function aiBegin(T) {
   {
     // 城身：火藥桶，再隨便挑幾塊還在原位的磚。兵腳下、身邊那一層的牆和柱子最值得打（打掉了人會跟著掉下去）；城基太厚，不打
     const cand = [];
-    for (const b of fst.blocks) { if (b.dead) continue; if (b.mat === M_KEG) tg.push({ x: b.body.getPosition().x, y: b.body.getPosition().y, w: 1.35 }); else if (b.inPlace && !b.prop && !b.base) cand.push(b); }
+    for (const b of fst.blocks) { if (b.dead) continue; if (b.mat === M_KEG) tg.push({ x: b.body.getPosition().x, y: b.body.getPosition().y, w: 1.35 }); else if (b.inPlace && !b.prop && !b.base && !b.beam) cand.push(b); }
     if (rnd() < A.sap) for (let k = 0; k < 5 && cand.length; k++) {
       const b = cand[ri(cand.length)]; let w = 0.5;
       for (const u of foeT.units) if (u.alive && Math.abs(u.x - b.x0) < CS * 2.2 && u.y - b.y0 > -CS * 0.5 && u.y - b.y0 < CS * 2.6) { w = 0.8; break; }
@@ -110,6 +113,9 @@ function aiBegin(T) {
     }
   }
   if (A.hate > 0 && rnd() < A.hate) for (const g of S.gates) if (!g.dead && g.owner === 1 - side) tg.push({ x: g.x, y: g.y, w: 0.45 + 0.12 * g.mult, hg: g });
+  // 第二篇的要害：吊著重物的繩子、鐵鍊（打斷了會砸下去），關卡自己指定的弱點（石碑、天秤的配重、塔腳……）
+  for (const r of S.ropes) if (!r.cut && r.aw > 0 && r.side !== side && rnd() < A.sap + 0.25) { const e = ropeEnds(r); tg.push({ x: (e[0] + e[2]) / 2, y: (e[1] + e[3]) / 2, w: r.aw, rope: r }); }
+  if (S.lv.weak && rnd() < A.sap + 0.25) for (const t of S.lv.weak(side)) tg.push(t);
   for (const t of tg) for (let tau = 0.7; tau <= 3.41; tau += 0.1) {
     aimFor(mx, my, t.x, t.y, tau, wind, _av);
     if (aimOk(_av[0], _av[1], dir)) A.cand.push({ vx: _av[0], vy: _av[1], tau, t });
@@ -124,6 +130,9 @@ function aiEval(T, budget) {
     let sc = 0;
     if (t.obj) sc = (R.hit === 4 && R.obj === t.obj) || R.lan === t.obj ? 1 : 0;
     else if (t.hg) sc = R.hit === 5 && R.gate === t.hg ? 1 : 0;
+    else if (t.rope) sc = R.hit === 6 && R.rope === t.rope ? 1 : t.rope.cut ? 0 : Math.max(0, 0.7 - segDist(R.x, R.y, t.rope.e[0], t.rope.e[1], t.rope.e[2], t.rope.e[3]) / 4);
+    else if (t.blk) sc = (R.hit === 2 && R.o === t.blk) ? 1 : Math.max(0, 0.6 - Math.hypot(R.x - t.x, R.y - t.y) / 5);
+    else if (R.hit === 6) sc = 0.1;
     else if (R.port) sc = 0.85;
     else if (R.hit === 3) sc = 1.3;
     else if (R.hit === 2 && R.o && R.o.side === 1 - side) sc = (R.o.mat === M_KEG ? 1.0 : 0.72) / (1 + Math.hypot(R.x - t.x, R.y - t.y) / 7);

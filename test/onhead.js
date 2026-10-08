@@ -3,7 +3,7 @@
 const fs = require('fs'), path = require('path');
 const planck = require('../src/vendor/planck.min.js');
 const dir = process.env.SIEGE_SRC || path.join(__dirname, '..', 'src', 'parts');
-const src = fs.readdirSync(dir).filter((f) => /^(10|40|45|50|52|60|65)-.*\.js$/.test(f)).sort().map((f) => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
+const src = fs.readdirSync(dir).filter((f) => /^(10|40|45|48|50|52|60|65)-.*\.js$/.test(f)).sort().map((f) => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
 const G = new Function('planck', src + '\nreturn { S, PH, simInit, simStep, BOTS, LEVELS };')(planck);
 const { S, PH, simInit, simStep, BOTS } = G;
 const N = +(process.argv[2] || 6), bot = process.argv[3] || 'casual';

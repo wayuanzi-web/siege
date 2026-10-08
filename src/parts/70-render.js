@@ -33,8 +33,9 @@ function flameSprite() {
 /* ---------- 城樓 ---------- */
 // 城基：畫進靜態的佈景裡（不會動、打不壞）
 function drawFoundations(c) {
+  for (const st of S.structs) if (st.rock && st.rock.length) drawRock(c, st);
   for (const st of S.structs) {
-    if (st.side > 1) continue;
+    if (st.side > 1 || st.nofound) continue;
     const P = SKINS[st.skin], x0 = X(st.fx0 - CS * 0.45), x1 = X(st.fx1 + CS * 0.45), y0 = Y(st.y0), h = V.s * 2.1, s = V.s;
     c.fillStyle = lg(c, 0, y0, 0, y0 + h, [0, P.stone[1], 1, P.stone[2]]); rrect(c, x0, y0 - s * 0.05, x1 - x0, h, s * 0.5); c.fill();
     c.fillStyle = P.stone[0]; c.fillRect(x0 + s * 0.3, y0 - s * 0.05, x1 - x0 - s * 0.6, Math.max(1, s * 0.3));
@@ -42,12 +43,35 @@ function drawFoundations(c) {
     c.fillStyle = rgba(P.stone[3], 0.6); for (let x = x0 + s * 2.4; x < x1 - s; x += s * 3.4) c.fillRect(x, y0 + s * 0.5, Math.max(1, s * 0.2), h - s * 1.0);
   }
 }
+// 岩壁（藍圖裡的 A）：一格一格的岩石，跟旁邊不是岩壁的地方畫一道深色的邊，上緣長一點苔
+function drawRock(c, st) {
+  const T = V.T, s = V.s, R = mkRand(st.x0 * 13 + 7), cells = st.rock, has = new Set();
+  for (let i = 0; i < cells.length; i += 2) has.add(cells[i] + ',' + cells[i + 1]);
+  const pal = st.skin === 'canyon' ? ['#d98c62', '#b4643e', '#83432a', '#5a2a18'] : st.skin === 'karst' ? ['#c9cbc2', '#a2a49b', '#76786f', '#52544c'] : ['#a39a8c', '#81786b', '#5c554b', '#3e3932'];
+  for (let i = 0; i < cells.length; i += 2) {
+    const cx = cells[i], cy = cells[i + 1], x = X(st.x0 + cx * CS), y = Y(st.y0 + (cy + 1) * CS);
+    c.fillStyle = lg(c, x, y, x + T, y + T, [0, pal[1], 0.6, pal[2], 1, pal[3]]); c.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
+    c.fillStyle = rgba(pal[0], 0.35); for (let k = 0; k < 3; k++) c.fillRect(x + R() * T * 0.8, y + R() * T * 0.8, T * (0.12 + R() * 0.2), Math.max(1, s * 0.25));
+    c.strokeStyle = rgba(pal[3], 0.6); c.lineWidth = Math.max(1, s * 0.2); c.beginPath(); c.moveTo(x + R() * T, y + R() * T * 0.3); c.lineTo(x + R() * T, y + T * (0.5 + R() * 0.5)); c.stroke();
+  }
+  c.strokeStyle = pal[3]; c.lineWidth = Math.max(1.5, s * 0.32); c.lineCap = 'round';
+  for (let i = 0; i < cells.length; i += 2) {
+    const cx = cells[i], cy = cells[i + 1], x = X(st.x0 + cx * CS), y = Y(st.y0 + (cy + 1) * CS);
+    c.beginPath();
+    if (!has.has(cx + ',' + (cy + 1))) { c.moveTo(x, y); c.lineTo(x + T, y); }
+    if (!has.has(cx + ',' + (cy - 1))) { c.moveTo(x, y + T); c.lineTo(x + T, y + T); }
+    if (!has.has((cx - 1) + ',' + cy)) { c.moveTo(x, y); c.lineTo(x, y + T); }
+    if (!has.has((cx + 1) + ',' + cy)) { c.moveTo(x + T, y); c.lineTo(x + T, y + T); }
+    c.stroke();
+    if (!has.has(cx + ',' + (cy + 1)) && st.skin !== 'canyon') { c.fillStyle = 'rgba(110,160,80,.75)'; c.fillRect(x, y - s * 0.25, T, Math.max(1.5, s * 0.45)); }
+  }
+}
 // 屋內的暗色背景：整座城畫成一張圖，之後每一幀只貼還看得到的那幾格
 function backSprite(st) {
   const T = V.T; if (st._bk && st._bkT === T) return st._bk;
   const { cols, rows, cellK } = st, cv = mkCanvas(cols * T, rows * T), c = cv.getContext('2d'), P = SKINS[st.skin] || SKINS.blue, lw = Math.max(1, T * 0.04);
   for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
-    const k = cellK[cy * cols + cx]; if (!k) continue;
+    const k = cellK[cy * cols + cx]; if (!k || k === 3) continue;
     const x = cx * T, y = (rows - 1 - cy) * T;
     c.fillStyle = lg(c, 0, y, 0, y + T, [0, P.panel[0], 1, P.panel[1]]); c.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
     // 內牆的磚縫
@@ -141,6 +165,8 @@ function drawBlocks(c, t, rdt) {
     }
     // 被冰術士打到、變脆的磚：罩一層淡淡的冰藍（不是整塊變白）
     if (b.brit > 0 && !b.frag) { const fr = frostSprite(sp); c.globalAlpha = 0.34; c.drawImage(fr, -sp.ax, -sp.ay); c.globalAlpha = 1; }
+    // 共鳴晶柱：一閃一閃的紫光；吊燈：一團暖光
+    if ((b.reso && !b.resoDone) || b.kind === 'lamp') { c.globalCompositeOperation = 'lighter'; c.globalAlpha = b.reso ? 0.35 + 0.25 * Math.sin(t * 3.4) : 0.45; const g = glowSprite(b.reso ? C_PURPLE : C_GOLD), r = V.T * (b.reso ? 1.1 : 1.3); c.drawImage(g, -r, -r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
     if (b.burn > 0) burn.push(b);
   }
   c.setTransform(1, 0, 0, 1, sx, sy);
@@ -158,6 +184,72 @@ function drawBlocks(c, t, rdt) {
     if (!FX.low && ((RD.frame + b.id) & 15) === 0) part(P_SMOKE, p.x + rndS() * hw, p.y + hh, rndS() * 2, 6, 0.9, 1.3, C_DARK);
   }
   c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+}
+/* ---------- 繩索、鐵鍊 ---------- */
+function ropeLine(c, x0, y0, x1, y1, sag, kind, hurt, flash) {
+  const s = V.s, mx = (x0 + x1) / 2, my = (y0 + y1) / 2 + sag * 2;
+  if (kind === 'chain') {
+    const L = Math.hypot(x1 - x0, y1 - y0) + Math.abs(sag), n = Math.max(2, Math.round(L / (s * 0.9)));
+    for (let k = 0; k <= n; k++) {
+      const u = k / n, a = 1 - u, px = a * a * x0 + 2 * a * u * mx + u * u * x1, py = a * a * y0 + 2 * a * u * my + u * u * y1;
+      const tx = 2 * a * (mx - x0) + 2 * u * (x1 - mx), ty = 2 * a * (my - y0) + 2 * u * (y1 - my), ang = Math.atan2(ty, tx);
+      ell(c, px, py, s * 0.5, k & 1 ? s * 0.16 : s * 0.3, ang); c.strokeStyle = hurt > 0.5 ? '#8a4a3a' : '#3a3f48'; c.lineWidth = Math.max(1.5, s * 0.3); c.stroke();
+      c.strokeStyle = flash > 0 ? '#ffffff' : '#9aa3b0'; c.lineWidth = Math.max(1, s * 0.12); c.stroke();
+    }
+    return;
+  }
+  c.lineCap = 'round';
+  c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(mx, my, x1, y1);
+  c.strokeStyle = '#3a2a16'; c.lineWidth = Math.max(2, s * 0.46); c.stroke();
+  c.strokeStyle = flash > 0 ? '#fff6d0' : hurt > 0.5 ? '#d8b98a' : '#c9a05e'; c.lineWidth = Math.max(1.2, s * 0.26); c.stroke();
+  c.setLineDash([s * 0.35, s * 0.45]); c.strokeStyle = 'rgba(90,60,25,.6)'; c.lineWidth = Math.max(1, s * 0.12); c.stroke(); c.setLineDash([]);
+  if (hurt > 0.5) { c.strokeStyle = '#e8d2a6'; c.lineWidth = Math.max(1, s * 0.1); for (let k = -1; k <= 1; k++) { c.beginPath(); c.moveTo(mx, (y0 + y1) / 2 + sag); c.lineTo(mx + k * s * 0.6, (y0 + y1) / 2 + sag + s * 0.5); c.stroke(); } }
+}
+function drawRopes(c, t) {
+  if (!S.ropes.length) return;
+  const s = V.s;
+  for (const r of S.ropes) {
+    if (r.cut) {
+      // 斷掉的繩子：兩頭各剩一截，先甩一下再垂下來；吊點還在的話，留一小截掛著
+      const dt = S.time - r.cutT, L = Math.min(r.len * 0.5, 9);
+      for (let k = 0; k < 2; k++) {
+        const o = k ? r.b : r.a; if (o && o.dead) continue;
+        let ax, ay; if (!o) { ax = k ? r.lb.x : r.la.x; ay = k ? r.lb.y : r.la.y; } else if (o.body) { const p = o.body.getWorldPoint(k ? r.lb : r.la); ax = p.x; ay = p.y; } else continue;
+        const ox = k ? r.cx[0] - r.cx[2] : r.cx[2] - r.cx[0], oy = k ? r.cx[1] - r.cx[3] : r.cx[3] - r.cx[1], a0 = Math.atan2(ox, -oy);
+        const len = dt < 1.6 ? L : Math.min(L, 1.8), th = a0 * Math.exp(-dt * 2.4) * Math.cos(dt * 7);
+        const ex = ax + Math.sin(th) * len, ey = ay - Math.cos(th) * len;
+        if (o && o.hang && !o.dead) continue;          // 吊著的東西已經掉了：它身上那一截不畫
+        ropeLine(c, X(ax), Y(ay), X(ex), Y(ey), 0, r.kind, 0, 0);
+      }
+      continue;
+    }
+    const e = r.e, d = Math.hypot(e[2] - e[0], e[3] - e[1]), slack = r.len - d;
+    const sag = slack > 0.05 ? Math.min(r.len * 0.5, Math.sqrt(Math.max(0, r.len * r.len - d * d)) * 0.5) * s * 0.5 : 0;
+    ropeLine(c, X(e[0]), Y(e[1]), X(e[2]), Y(e[3]), sag, r.kind, 1 - r.hp / r.hm, r.flash);
+    if (r.burn > 0) {
+      const fl = flameSprite(); c.globalCompositeOperation = 'lighter';
+      for (let k = 0; k < 3; k++) { const u = (k + 0.5) / 3, ph = t * 9 + k * 2.1, fw = V.T * (0.55 + 0.15 * Math.sin(ph)), x = X(lerp(e[0], e[2], u)), y = Y(lerp(e[1], e[3], u)); c.globalAlpha = 0.8; c.drawImage(fl, x - fw / 2, y - fw * 1.4, fw, fw * 1.5); }
+      c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+    }
+  }
+}
+/* ---------- 河水：畫在東西前面（半透明），泡在水裡的看起來在水面下 ---------- */
+function drawWater(c, t) {
+  const W = S.water; if (!W) return;
+  const s = V.s, x0 = X(Math.max(W.x0, V.x0 - 2)), x1 = X(Math.min(W.x1, V.x1 + 2)), y = Y(W.y), yb = V.H + 2;
+  c.fillStyle = lg(c, 0, y, 0, yb, [0, 'rgba(70,160,170,.42)', 0.35, 'rgba(30,100,120,.62)', 1, 'rgba(10,40,60,.85)']);
+  c.beginPath(); c.moveTo(x0, yb);
+  for (let x = x0; x <= x1 + 1; x += 6) c.lineTo(x, y + Math.sin(x * 0.045 + t * 2.2) * s * 0.18 + Math.sin(x * 0.11 - t * 1.4) * s * 0.1);
+  c.lineTo(x1, yb); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(220,250,255,.75)'; c.lineWidth = Math.max(1, s * 0.22); c.beginPath();
+  for (let x = x0; x <= x1 + 1; x += 6) { const yy = y + Math.sin(x * 0.045 + t * 2.2) * s * 0.18 + Math.sin(x * 0.11 - t * 1.4) * s * 0.1; if (x === x0) c.moveTo(x, yy); else c.lineTo(x, yy); }
+  c.stroke();
+  // 水流的白紋
+  c.strokeStyle = 'rgba(220,250,255,.28)'; c.lineWidth = Math.max(1, s * 0.16);
+  for (let k = 0; k < 9; k++) { const u = ((k * 0.137 + t * W.cur * 0.012) % 1), xx = lerp(x0, x1, u), yy = y + s * (1 + (k % 3) * 1.4); c.beginPath(); c.moveTo(xx, yy); c.lineTo(xx + s * (2 + (k % 2)), yy); c.stroke(); }
+  // 浮在水面上的東西旁邊一圈白沫
+  c.fillStyle = 'rgba(240,255,255,.55)';
+  for (const b of S.blocks) if (!b.dead && b.wet > 0.05 && b.wet < 0.95) { const p = b.body.getPosition(); ell(c, X(p.x), y, Math.max(2, b.w * s * 0.45), Math.max(1, s * 0.3)); c.fill(); }
 }
 function drawUnits(c, t) {
   const s = V.s, sx = FX.shx, sy = FX.shy, us = S.units;
@@ -526,8 +618,10 @@ function renderFrame(dt, rdt) {
   drawObjs(c, t);
   for (const st of S.structs) drawBackdrop(c, st, rdt);
   drawBlocks(c, t, rdt);
+  drawRopes(c, t);
   drawGates(c, t);
   drawUnits(c, t);
+  drawWater(c, t);
   drawFlyers(c, t);
   drawShots(c);
   fxDraw(c);
