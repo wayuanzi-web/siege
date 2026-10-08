@@ -350,23 +350,93 @@ function drawRopes(c, t) {
     }
   }
 }
-/* ---------- 河水：畫在東西前面（半透明），泡在水裡的看起來在水面下 ---------- */
+/* ---------- 河水、海水：畫在東西前面（半透明），泡在水裡的看起來在水面下 ---------- */
 function drawWater(c, t) {
   const W = S.water; if (!W) return;
   const s = V.s, x0 = X(Math.max(W.x0, V.x0 - 2)), x1 = X(Math.min(W.x1, V.x1 + 2)), y = Y(W.y), yb = V.H + 2;
-  c.fillStyle = lg(c, 0, y, 0, yb, [0, 'rgba(70,160,170,.42)', 0.35, 'rgba(30,100,120,.62)', 1, 'rgba(10,40,60,.85)']);
-  c.beginPath(); c.moveTo(x0, yb);
-  for (let x = x0; x <= x1 + 1; x += 6) c.lineTo(x, y + Math.sin(x * 0.045 + t * 2.2) * s * 0.18 + Math.sin(x * 0.11 - t * 1.4) * s * 0.1);
-  c.lineTo(x1, yb); c.closePath(); c.fill();
-  c.strokeStyle = 'rgba(220,250,255,.75)'; c.lineWidth = Math.max(1, s * 0.22); c.beginPath();
-  for (let x = x0; x <= x1 + 1; x += 6) { const yy = y + Math.sin(x * 0.045 + t * 2.2) * s * 0.18 + Math.sin(x * 0.11 - t * 1.4) * s * 0.1; if (x === x0) c.moveTo(x, yy); else c.lineTo(x, yy); }
-  c.stroke();
-  // 水流的白紋
-  c.strokeStyle = 'rgba(220,250,255,.28)'; c.lineWidth = Math.max(1, s * 0.16);
-  for (let k = 0; k < 9; k++) { const u = ((k * 0.137 + t * W.cur * 0.012) % 1), xx = lerp(x0, x1, u), yy = y + s * (1 + (k % 3) * 1.4); c.beginPath(); c.moveTo(xx, yy); c.lineTo(xx + s * (2 + (k % 2)), yy); c.stroke(); }
+  let surf = null;          // 外海：戰場 x 那裡畫出來的水面高度（河面是平的，不用）
+  if (W.sea) {
+    /* 外海：一道道湧浪往右推，浪頭碎成白沫。只是畫出來的 —— 物理的水面一直平平地在 W.y，
+       所以船身附近的起伏壓在 ±0.4 以內（船才不會看起來浮在半空或沉下去），兩船之間、畫面兩頭的開闊海面才湧得高 */
+    const D = drawWater.sea || (drawWater.sea = { key: '', g: null, cap: null, wash: null, p: new Float32Array(0), sp: [0, 0, 0, 0] });
+    const key = V.W + '|' + V.H + '|' + s + '|' + W.y;
+    if (D.key !== key) {
+      D.key = key;
+      D.g = lg(c, 0, Y(W.y + 1), 0, yb, [0, 'rgba(78,168,170,.3)', 0.07, 'rgba(44,134,148,.42)', 0.32, 'rgba(16,84,112,.62)', 1, 'rgba(6,30,58,.86)']);
+      // 浪頭的白沫：沿著浪峰一串大小不一的泡沫，往前坡（右邊）淌下去一點，底下帶幾顆氣泡。(D.cx, D.cy) 是浪峰
+      const R = mkRand(29), cw = Math.ceil(s * 4.2), ch = Math.ceil(s * 1.9), cap = mkCanvas(cw, ch), g = cap.getContext('2d');
+      D.cx = cw * 0.42; D.cy = ch * 0.34;
+      for (let k = 0; k < 16; k++) {
+        const u = k / 15, dx = (u - 0.42) * 3.6, x = D.cx + dx * s, yy = D.cy + (0.16 * dx * dx + (dx > 0 ? dx * 0.1 : 0)) * s, r = s * (0.1 + 0.2 * Math.sin(Math.min(1, u * 1.15) * Math.PI)) * (0.7 + R() * 0.6);
+        g.fillStyle = 'rgba(255,255,255,' + (0.75 + R() * 0.25).toFixed(2) + ')'; g.beginPath(); g.arc(x, yy - r * 0.3, r, 0, TAU); g.fill();
+      }
+      g.fillStyle = 'rgba(236,252,250,.55)';
+      for (let k = 0; k < 9; k++) { const dx = (R() - 0.25) * 2.4, r = Math.max(0.7, s * (0.04 + R() * 0.06)); g.beginPath(); g.arc(D.cx + dx * s, D.cy + (0.16 * dx * dx + 0.25 + R() * 0.5) * s, r, 0, TAU); g.fill(); }
+      D.cap = cap;
+      // 船身兩頭被浪拍出來的一團白沫（往外散開；原點在船身跟水面相交的地方，往右是船外）
+      const ww = Math.ceil(s * 3.8), wh = Math.ceil(s * 2), wash = mkCanvas(ww, wh), q = wash.getContext('2d');
+      D.wx = s * 0.5; D.wy = wh * 0.55;
+      for (let k = 0; k < 18; k++) { const u = R(), x = D.wx + u * u * s * 3, r = s * (0.38 - 0.26 * u) * (0.6 + R() * 0.6); q.fillStyle = 'rgba(250,255,255,' + (0.95 - u * 0.5).toFixed(2) + ')'; q.beginPath(); q.arc(x, D.wy + (R() - 0.65) * s * 0.7 * (1 - u), r, 0, TAU); q.fill(); }
+      D.wash = wash;
+    }
+    // 兩艘船現在的位置：浪在船邊收小
+    const sp = D.sp; let ns = 0;
+    for (const pl of S.plats) if (pl.kind === 'ship' && !pl.dead && pl.body && ns < sp.length) { const dx = pl.body.getPosition().x - pl.x0; sp[ns++] = pl.xa + dx; sp[ns++] = pl.xb + dx; }
+    const amp = (wx) => { let d = 99; for (let i = 0; i < ns; i += 2) d = Math.min(d, Math.max(sp[i] - wx, wx - sp[i + 1], 0)); return 0.34 + 0.2 * smooth(clamp((d - 1.5) / 8, 0, 1)) + 0.3 * smooth(clamp((d - 14) / 14, 0, 1)); };
+    // 主浪（浪峰尖、浪谷平）疊上第二道浪，兩道湊在一起的地方湧得特別高；再加一點碎浪。最高約 1.06、最低約 −0.66
+    const hgt = (wx) => { const a = Math.cos(0.48 * wx - 1.05 * t), b = Math.cos(0.83 * wx - 1.32 * t + 1.7); return (0.62 * a + 0.17 * (2 * a * a - 1) + 0.3 * b + 0.06 * (2 * b * b - 1) + 0.07 * Math.sin(2.1 * wx + 2.4 * t)) * 0.87; };
+    surf = (wx) => W.y + amp(wx) * hgt(wx);
+    const n = Math.ceil((x1 - x0) / 6) + 3; if (D.p.length < n * 2) D.p = new Float32Array(n * 2 + 64);
+    const P = D.p; let m = 0;
+    for (let px = x0; ; px += 6) { const q = Math.min(px, x1); P[m++] = q; P[m++] = Y(surf(WX(q))); if (q >= x1) break; }
+    const trace = (dy) => { c.moveTo(P[0], P[1] + dy); for (let i = 2; i < m; i += 2) c.lineTo(P[i], P[i + 1] + dy); };
+    c.save();
+    c.beginPath(); c.moveTo(x0, yb); for (let i = 0; i < m; i += 2) c.lineTo(P[i], P[i + 1]); c.lineTo(x1, yb); c.closePath(); c.fillStyle = D.g; c.fill();
+    c.lineJoin = 'round'; c.lineCap = 'round';
+    // 浪頭底下透光的那一層、水面的亮線、貼著水面一串跟著海流漂的泡沫
+    c.beginPath(); trace(s * 0.55); c.strokeStyle = 'rgba(120,206,200,.16)'; c.lineWidth = s; c.stroke();
+    c.beginPath(); trace(0); c.strokeStyle = 'rgba(228,248,244,.8)'; c.lineWidth = Math.max(1.2, s * 0.2); c.stroke();
+    c.setLineDash([s * 0.6, s * 1.5, s * 0.25, s * 0.9]); c.lineDashOffset = -t * s * 1.6;
+    c.beginPath(); trace(s * 0.36); c.strokeStyle = 'rgba(236,252,248,.42)'; c.lineWidth = Math.max(1, s * 0.15); c.stroke(); c.setLineDash([]); c.lineDashOffset = 0;
+    // 浪頭碎成白沫：主浪的每一個浪峰，疊上第二道浪而湧得特別高的時候才碎（貼著船身的浪小，不碎）
+    const n0 = Math.floor((0.48 * (V.x0 - 3) - 1.05 * t) / TAU), n1 = Math.ceil((0.48 * (V.x1 + 3) - 1.05 * t) / TAU);
+    for (let k = n0; k <= n1; k++) {
+      const wx = (k * TAU + 1.05 * t) / 0.48, h = hgt(wx), a = smooth(clamp((h - 0.62) / 0.36, 0, 1)) * smooth(clamp((amp(wx) - 0.35) / 0.1, 0, 1));
+      if (a < 0.03) continue;
+      c.globalAlpha = a; c.drawImage(D.cap, X(wx) - D.cx, Y(W.y + amp(wx) * h) - D.cy);
+    }
+    c.globalAlpha = 1;
+    // 船身跟水面相交的兩頭：浪拍上來的白沫
+    for (const Pl of S.plats) {
+      if (Pl.kind !== 'ship' || Pl.dead || !Pl.body) continue;
+      const p = Pl.body.getPosition(), a = Pl.body.getAngle(), ca = Math.cos(a), sa = Math.sin(a), H = Pl.hull, nh = H.length; let lo = 1e9, hi = -1e9;
+      for (let i = 0; i < nh; i += 2) {
+        const j = (i + 2) % nh, ay = p.y + H[i] * sa + H[i + 1] * ca, by = p.y + H[j] * sa + H[j + 1] * ca;
+        if ((ay - W.y) * (by - W.y) > 0 || ay === by) continue;
+        const ax = p.x + H[i] * ca - H[i + 1] * sa, bx = p.x + H[j] * ca - H[j + 1] * sa, x = ax + (bx - ax) * (W.y - ay) / (by - ay); lo = Math.min(lo, x); hi = Math.max(hi, x);
+      }
+      if (lo > hi) continue;
+      for (let e = 0; e < 2; e++) {
+        const ex = e ? hi : lo, sg = e ? 1 : -1, k = 0.85 + 0.2 * Math.sin(t * 2.3 + ex);
+        c.save(); c.translate(X(ex), Y(surf(ex))); c.scale(sg * k, k); c.globalAlpha = 0.9; c.drawImage(D.wash, -D.wx, -D.wy); c.restore();
+      }
+    }
+    c.restore();
+  } else {
+    c.fillStyle = lg(c, 0, y, 0, yb, [0, 'rgba(70,160,170,.42)', 0.35, 'rgba(30,100,120,.62)', 1, 'rgba(10,40,60,.85)']);
+    c.beginPath(); c.moveTo(x0, yb);
+    for (let x = x0; x <= x1 + 1; x += 6) c.lineTo(x, y + Math.sin(x * 0.045 + t * 2.2) * s * 0.18 + Math.sin(x * 0.11 - t * 1.4) * s * 0.1);
+    c.lineTo(x1, yb); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(220,250,255,.75)'; c.lineWidth = Math.max(1, s * 0.22); c.beginPath();
+    for (let x = x0; x <= x1 + 1; x += 6) { const yy = y + Math.sin(x * 0.045 + t * 2.2) * s * 0.18 + Math.sin(x * 0.11 - t * 1.4) * s * 0.1; if (x === x0) c.moveTo(x, yy); else c.lineTo(x, yy); }
+    c.stroke();
+    // 水流的白紋
+    c.strokeStyle = 'rgba(220,250,255,.28)'; c.lineWidth = Math.max(1, s * 0.16);
+    for (let k = 0; k < 9; k++) { const u = ((k * 0.137 + t * W.cur * 0.012) % 1), xx = lerp(x0, x1, u), yy = y + s * (1 + (k % 3) * 1.4); c.beginPath(); c.moveTo(xx, yy); c.lineTo(xx + s * (2 + (k % 2)), yy); c.stroke(); }
+  }
   // 浮在水面上的東西旁邊一圈白沫
   c.fillStyle = 'rgba(240,255,255,.55)';
-  for (const b of S.blocks) if (!b.dead && b.wet > 0.05 && b.wet < 0.95) { const p = b.body.getPosition(); ell(c, X(p.x), y, Math.max(2, b.w * s * 0.45), Math.max(1, s * 0.3)); c.fill(); }
+  for (const b of S.blocks) if (!b.dead && b.wet > 0.05 && b.wet < 0.95) { const p = b.body.getPosition(); ell(c, X(p.x), surf ? Y(surf(p.x)) : y, Math.max(2, b.w * s * 0.45), Math.max(1, s * 0.3)); c.fill(); }
 }
 function drawUnits(c, t) {
   const s = V.s, sx = FX.shx, sy = FX.shy, us = S.units;
