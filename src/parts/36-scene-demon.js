@@ -247,8 +247,11 @@ THEMES[5] = (function () {
       strikes = [[39.47, 9.6], [114.3, 19.5]]; for (const k in tips) { const [x, y] = tips[k]; if (y > 11.4 && (x < 2 || (x > 36.5 && x < 69) || x > 110.5)) strikes.push([x, y]); }      // 閃電會劈到的塔尖
       chain(c, tips[-11.4][0] - 0.5, tips[-11.4][1] - 3.5, tips[-1.2][0], tips[-1.2][1] - 1.5, 4.5, 'rgba(34,22,66,.95)', 0.2);
       chain(c, tips[115.2][0], tips[115.2][1] - 2, tips[125][0] + 0.7, tips[125][1] - 4.5, 5, 'rgba(34,22,66,.95)', 0.22);
+      // 沒有地面的區間（深淵）：裂谷裡的東西都照著它的兩緣擺
+      const pits = []; { const runs = groundRuns(); for (let i = 1; i < runs.length; i++) pits.push([runs[i - 1][1], runs[i][0]]); }
+      const gc = pits.length ? (pits[0][0] + pits[0][1]) / 2 : MID;
       // 霧隔開前後兩層：裂谷上方一片洋紅的霧氣
-      glow(c, X(53), Y(-3), s * 38, s * 15, [0, 'rgba(160,46,112,.44)', 0.5, 'rgba(130,40,104,.2)', 1, 'rgba(110,36,96,0)']);
+      glow(c, X(gc), Y(-3), s * 38, s * 15, [0, 'rgba(160,46,112,.44)', 0.5, 'rgba(130,40,104,.2)', 1, 'rgba(110,36,96,0)']);
       c.fillStyle = lg(c, 0, Y(10), 0, Y(0), [0, 'rgba(112,44,104,0)', 1, 'rgba(120,46,106,.3)']); c.fillRect(0, Y(10), W, Y(-1) - Y(10));
       // 中景：更暗的尖塔、塔和斷橋
       const fb = lg(c, 0, Y(26), 0, Y(-1), [0, '#180e30', 1, '#28163d']), lb = 0.36, win = 'rgba(255,150,110,.62)';
@@ -265,14 +268,19 @@ THEMES[5] = (function () {
       for (const [x, y, r] of [[112.8, 33.6, 0.34], [110.4, 37.8, 0.26], [112, 41.6, 0.3], [108.6, 44.4, 0.2], [113.6, 30.6, 0.2], [120.6, 43.2, 0.24], [-0.8, 33.4, 0.26], [2.2, 28.6, 0.2], [-12.4, 38.6, 0.3], [-10.6, 41, 0.2]]) chip(c, X(x), Y(y), r * s, R, mix('#3a2b58', skyAt(y), 0.35));
       // 裂谷對岸的岩壁，往下沉進黑裡
       fillDown(c, jag(R, -50, 164, 0.5, 3.8, 0.6, 2.4, 0.17), lg(c, 0, Y(4), 0, Y(-9), [0, '#1a102e', 0.3, '#130a22', 0.7, '#0a0512', 1, '#07030c']));
-      // 谷底的紅光先墊在後面，深處幾根石柱擋在光前面，最後再蓋一層貼著底的霧
+      // 谷底的紅光先墊在後面，深處幾根石柱擋在光前面（照著深淵的寬窄排開），最後再蓋一層貼著底的霧
       c.fillStyle = lg(c, 0, Y(-2.2), 0, Y(-9.2), [0, 'rgba(176,26,74,0)', 0.6, 'rgba(190,32,82,.34)', 1, 'rgba(226,50,92,.6)']); c.fillRect(0, Y(-2.2), W, H - Y(-2.2));
-      for (const [x, ty, w] of [[41.6, -3.4, 3.4], [47.8, -5.6, 2.6], [53.4, -6.6, 2.2], [59.4, -4.4, 3.6], [65.2, -2.9, 2.8]]) {
-        wpoly(c, [x - w / 2, -10, x - w * 0.3, ty - 2.2, x - w * 0.12, ty - 0.9, x + w * 0.04, ty, x + w * 0.2, ty - 1.5, x + w * 0.34, ty - 2.1, x + w / 2, -10]);
-        c.fillStyle = lg(c, 0, Y(ty), 0, Y(-9.4), [0, '#10081c', 0.6, '#1a0a22', 1, '#3a1030']); c.fill();
+      for (const [a, b] of pits) {
+        const k = (b - a) / 33.5;
+        for (const [u, ty, w] of [[0.167, -3.4, 3.4], [0.352, -5.6, 2.6], [0.519, -6.6, 2.2], [0.699, -4.4, 3.6], [0.872, -2.9, 2.8]]) {
+          const x = a + u * (b - a), ww = w * Math.min(1.2, k);
+          wpoly(c, [x - ww / 2, -10, x - ww * 0.3, ty - 2.2, x - ww * 0.12, ty - 0.9, x + ww * 0.04, ty, x + ww * 0.2, ty - 1.5, x + ww * 0.34, ty - 2.1, x + ww / 2, -10]);
+          c.fillStyle = lg(c, 0, Y(ty), 0, Y(-9.4), [0, '#10081c', 0.6, '#1a0a22', 1, '#3a1030']); c.fill();
+        }
       }
       c.fillStyle = lg(c, 0, Y(-6.4), 0, Y(-9.3), [0, 'rgba(226,50,92,0)', 0.6, 'rgba(236,60,96,.3)', 1, 'rgba(255,110,116,.7)']); c.fillRect(0, Y(-6.4), W, H - Y(-6.4));
-      for (let k = 0; k < 7; k++) { const x = 36 + R() * 34, r = 4 + R() * 5; glow(c, X(x), Y(-8.5 - R() * 1.2), s * r, s * r * 0.36, [0, 'rgba(255,100,120,.24)', 1, 'rgba(255,70,110,0)']); }
+      const ga = pits.length ? pits[0][0] : gc - 17, gb = pits.length ? pits[pits.length - 1][1] : gc + 17;
+      for (let k = 0; k < 7; k++) { const x = ga + R() * (gb - ga), r = 4 + R() * 5; glow(c, X(x), Y(-8.5 - R() * 1.2), s * r, s * r * 0.36, [0, 'rgba(255,100,120,.24)', 1, 'rgba(255,70,110,0)']); }
 
       // 閃電亮起來時要貼的那一層：只留雲底被照亮的邊（半解析度）
       rimH = Math.max(2, Math.ceil(Y(40))); sRim = mkCanvas(W * 0.5, rimH * 0.5); const rc = sRim.getContext('2d'); rc.scale(0.5, 0.5);
@@ -334,9 +342,9 @@ THEMES[5] = (function () {
         // 崖頂：一層比較亮、底緣崩得參差的岩皮
         const cp = jag(R, xa, xb + 3, -1.25, -0.5, 0.8, 2.4);
         c.beginPath(); traceGround(c, xa, xb, 0, true); for (let i = cp.length - 2; i >= 0; i -= 2) c.lineTo(X(cp[i]), Y(cp[i + 1])); c.closePath(); c.fillStyle = lg(c, 0, Y(0), 0, Y(-1.25), [0, warm ? '#90609a' : '#7c64aa', 1, warm ? '#573262' : '#4a3970']); c.fill();
-        // 城基底下的陰影
+        // 城基底下的陰影（照兩座城實際的寬度）
         c.fillStyle = lg(c, 0, Y(-1.85), 0, Y(-3.2), [0, 'rgba(4,2,8,.5)', 1, 'rgba(4,2,8,0)']);
-        for (const [a, b] of [[1.9, 35.5], [69.7, 110.1]]) c.fillRect(X(a), Y(-1.85), X(b) - X(a), s * 1.35);
+        for (const q of S.structs) if (q.side < 2 && q.x1 > q.x0) c.fillRect(X(q.x0 - 1.5), Y(-1.85), (q.x1 - q.x0 + 3) * s, s * 1.35);
         c.restore();
         c.beginPath(); traceGround(c, xa, xb, 0, true); c.strokeStyle = warm ? 'rgba(236,176,216,.85)' : 'rgba(200,176,232,.85)'; c.lineWidth = Math.max(1.5, s * 0.16); c.stroke();
         // 崖面的輪廓光：越往下越紅

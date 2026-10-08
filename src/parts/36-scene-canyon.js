@@ -1,10 +1,10 @@
 /* ===== 36-scene-canyon: 第九關「天秤寨」— 紅岩峽谷的黃昏：天頂深紫，往下轉玫瑰紅、橘、金；又大又低的夕陽半沉在遠方的平頂山後，
-   逆光的石柱鑲著金邊，一塊平衡石剪影立在夕陽前，長長的影子拖過台地；敵寨前一道又窄又深的裂谷，越往下越暗。
+   逆光的石柱鑲著金邊，一塊平衡石剪影立在夕陽前，長長的影子拖過台地；兩座寨子中間一道又寬又深的裂谷（照這一關的 voids 畫），越往下越暗。
    鳥群掠過天邊；起風時紅沙和風滾草順風跑，跑到裂谷就掉下去 ===== */
 THEMES[9] = (function () {
   const WX0 = -46, WX1 = 162;                       // 佈景一律在這段戰場座標上生成（畫面寬窄不同，看到同一幅）
-  const CL = 58.5, CR = 81.5, CX = 70, VPY = 3.2;   // 裂谷的左右緣（跟這一關的 voids 一致）、往遠處退的消失點
   const SX = 48, SY = 7.4, SR = 9.6;                // 夕陽：在兩城之間、倍增符的下面
+  const inGap = (x) => (S.voids || []).some((v) => x > v[0] && x < v[1]);      // 這裡是不是裂谷（沒有地面）
   const SKY = [86, '#22174a', 72, '#2f1d5c', 61, '#47286f', 51, '#69337e', 42, '#924282', 34, '#bb557f', 27, '#dc6d72', 20, '#f28c60', 14, '#fcad5c', 9, '#ffcd72', 4, '#ffe29a', -10, '#ffe7a8'];
   const ss = (t) => smooth(clamp(t, 0, 1));
   const lw = (k, m) => Math.max(m || 1, V.s * k);
@@ -134,7 +134,10 @@ THEMES[9] = (function () {
       c.restore();
       c.strokeStyle = 'rgba(255,214,150,.7)'; c.lineWidth = lw(0.16); c.beginPath(); for (let x = V.x0 - 4; x <= V.x1 + 4; x += 1) c.lineTo(X(x), Y(top(x))); c.stroke();
       // ===== 裂谷：裡面是背光的岩壁，上緣被夕陽鑲一道金邊；兩邊的岩壁一層層往外凸，朝夕陽的（右邊）暖、背光的（左邊）暗，越往下越黑 =====
-      const ca = CL - 1, cb = CR + 1, bt = (x) => 1 + 0.22 * Math.sin(x * 0.9) + 0.12 * Math.sin(x * 2.3);
+      // 左右緣照這一關的 voids：取兩座寨子中間的那一道（沒有就不畫裂谷）
+      const gap = (S.voids || []).filter((v) => v[1] > 12 && v[0] < 100).sort((a, b) => (b[1] - b[0]) - (a[1] - a[0]))[0];
+      if (!gap) return;
+      const CL = gap[0], CR = gap[1], ca = CL - 1, cb = CR + 1, bt = (x) => 1 + 0.22 * Math.sin(x * 0.9) + 0.12 * Math.sin(x * 2.3), kw = 0.6 + 0.4 * (CR - CL) / 23;      // kw：裂谷比原本的寬多少，兩邊的岩壁就凸多少
       c.beginPath(); c.moveTo(X(ca), V.H + 2); for (let x = ca; x <= cb; x += 0.5) c.lineTo(X(x), Y(bt(x))); c.lineTo(X(cb), V.H + 2); c.closePath();
       c.fillStyle = vg(c, 1.3, -10, [0, '#b85a3e', 0.1, '#8e3e3a', 0.32, '#5e2434', 0.62, '#2e1020', 1, '#12060c']); c.fill();
       c.save(); c.clip(); c.fillStyle = 'rgba(30,8,20,.2)';
@@ -154,9 +157,9 @@ THEMES[9] = (function () {
         c.beginPath(); c.moveTo(X(x0), Y(ty)); c.lineTo(X(p[4]), Y(p[5])); for (let i = 0; i < e.length && e[i + 1] > ty - (lit ? 4 : 0.6); i += 2) c.lineTo(X(e[i]), Y(e[i + 1]));
         c.strokeStyle = lit ? 'rgba(255,190,120,.85)' : 'rgba(255,170,120,.4)'; c.lineWidth = lw(0.22); c.lineJoin = 'round'; c.stroke();
       };
-      fin(-1, 7, 0.5, 0); fin(1, 6.4, 0.9, 1);
+      fin(-1, 7 * kw, 0.5, 0); fin(1, 6.4 * kw, 0.9, 1);
       c.fillStyle = vg(c, 1, -3.5, [0, 'rgba(240,140,90,0)', 0.5, 'rgba(240,140,90,.2)', 1, 'rgba(240,140,90,0)']); c.fillRect(X(ca), Y(1), X(cb) - X(ca), 4.5 * s);
-      fin(-1, 3.8, -1.2, 0); fin(1, 3.4, -0.2, 1);
+      fin(-1, 3.8 * kw, -1.2, 0); fin(1, 3.4 * kw, -0.2, 1);
       // 縫裡飄著一層被照亮的沙塵，最底下全黑
       c.fillStyle = vg(c, -1, -5, [0, 'rgba(230,120,80,0)', 0.5, 'rgba(230,120,80,.16)', 1, 'rgba(230,120,80,0)']); c.fillRect(X(ca), Y(-1), X(cb) - X(ca), 4 * s);
       c.fillStyle = vg(c, -3, -10, [0, 'rgba(16,6,12,0)', 1, 'rgba(16,6,12,.72)']); c.fillRect(X(ca), Y(-3), X(cb) - X(ca), 8 * s);
@@ -166,10 +169,16 @@ THEMES[9] = (function () {
       // 紅砂岩：一層一層的色帶，靠地面的幾層順著地形起伏，越深越平、越暗
       const BAND = [[0.9, '#c5603a'], [1.9, '#dd8250'], [3.1, '#b24c33'], [4.4, '#cf7346'], [6, '#9a3d2e'], [7.4, '#b9583a'], [9.2, '#7c2f2a']];
       const by = (x, k) => groundYRaw(x) * (1 - 0.14 * k) - BAND[k][0] + 0.25 * Math.sin(x * 0.11 + k * 1.7) + 0.12 * Math.sin(x * 0.37 + k);
+      // 沿著地面走：每逢半格取一點，地形的轉折點也一定取到（崖口那一小段斜角不在半格上），畫出來的地面才跟碰撞一致
+      const kx = (S.gpts || []).map((p) => p[0]);
+      const gxs = (xa, xb) => { const o = [xa]; for (let x = Math.floor(xa * 2 + 1) / 2; x < xb; x += 0.5) o.push(x); for (const k of kx) if (k > xa && k < xb) o.push(k); o.push(xb); return o.sort((a, b) => a - b); };
+      const tg = (xa, xb, dy) => { gxs(xa, xb).forEach((x, i) => { const px = X(x), py = Y(groundYRaw(x) + dy); if (i) c.lineTo(px, py); else c.moveTo(px, py); }); };
+      const tgb = (xa, xb, dy) => { const xs = gxs(xa, xb); for (let i = xs.length - 1; i >= 0; i--) c.lineTo(X(xs[i]), Y(groundYRaw(xs[i]) + dy)); };
       for (const [xa, xb] of runs) {
         // 外形：沿著地面走，到了裂谷那一邊沿著參差的崖口往下（只往岩石裡縮，不伸進裂谷）
         const jag = (x, sd, rev) => { const q = []; for (let y = groundYRaw(x) - 0.7, k = 0; y > -11; y -= 1 + (k % 3) * 0.4, k++) q.push([X(x - sd * (0.1 + ((k * 0.37) % 1) * 0.5)), Y(y)]); if (rev) q.reverse(); for (const [a, b] of q) c.lineTo(a, b); };
-        const shape = () => { c.beginPath(); traceGround(c, xa, xb, 0, true); if (xb < CR) jag(xb, 1, 0); c.lineTo(X(xb), bot); c.lineTo(X(xa), bot); if (xa > CL) jag(xa, -1, 1); c.closePath(); };
+        const cr = xb < V.x1 + 7.9, cl = xa > V.x0 - 7.9;      // 這一段地的右端／左端是不是裂谷的崖口（不是畫面外面）
+        const shape = () => { c.beginPath(); tg(xa, xb, 0); if (cr) jag(xb, 1, 0); c.lineTo(X(xb), bot); c.lineTo(X(xa), bot); if (cl) jag(xa, -1, 1); c.closePath(); };
         shape(); c.fillStyle = '#d97b47'; c.fill();
         c.save(); shape(); c.clip();
         for (let k = 0; k < BAND.length; k++) { c.beginPath(); c.moveTo(X(xa - 1), bot); for (let x = xa - 1; x <= xb + 1; x += 0.8) c.lineTo(X(x), Y(by(x, k))); c.lineTo(X(xb + 1), bot); c.closePath(); c.fillStyle = BAND[k][1]; c.fill(); }
@@ -177,16 +186,16 @@ THEMES[9] = (function () {
         c.strokeStyle = 'rgba(120,40,30,.28)'; c.lineWidth = lw(0.12);
         for (let x = WX0 + R() * 6; x < WX1; x += 5 + R() * 9) { const k = (R() * 4) | 0; if (x < xa || x > xb - 3) continue; const y0 = by(x, k) - 0.15, y1 = by(x, k + 1) + 0.15; for (let j = 0; j < 3; j++) { c.beginPath(); c.moveTo(X(x + j * 0.7), Y(y0)); c.quadraticCurveTo(X(x + j * 0.7 + 1.2), Y(y1 + 0.2), X(x + j * 0.7 + 3), Y(y1)); c.stroke(); } }
         // 裂谷那一邊的崖面：一道暗邊
-        c.fillStyle = 'rgba(40,12,20,.35)'; if (xb < CR) c.fillRect(X(CL - 0.9), Y(groundYRaw(CL)), 0.9 * s, V.H); else if (xa > CL) c.fillRect(X(CR), Y(groundYRaw(CR)), 0.6 * s, V.H);
+        c.fillStyle = 'rgba(40,12,20,.35)'; if (cr) c.fillRect(X(xb - 0.9), Y(groundYRaw(xb)), 0.9 * s, V.H); if (cl) c.fillRect(X(xa), Y(groundYRaw(xa)), 0.6 * s, V.H);
         // 越往下越暗
         c.fillStyle = vg(c, -4, -10, [0, 'rgba(40,10,20,0)', 1, 'rgba(40,10,20,.45)']); c.fillRect(X(xa), Y(-4), X(xb) - X(xa), 7 * s);
         c.restore();
         // 地面：一道被夕陽照亮的邊，外面一圈深色描線
-        c.beginPath(); traceGround(c, xa, xb, 0, true); traceGroundBack(c, xa, xb, -0.38); c.closePath(); c.fillStyle = '#ffb27a'; c.fill();
+        c.beginPath(); tg(xa, xb, 0); tgb(xa, xb, -0.38); c.closePath(); c.fillStyle = '#ffb27a'; c.fill();
         shape(); c.strokeStyle = '#5a2418'; c.lineWidth = lw(0.22, 1.5); c.lineJoin = 'round'; c.stroke();
       }
-      // 地面上的東西：每樣都往背著夕陽的那一邊拖一道長影子
-      const things = [[-30, 2], [-21, 0], [-13.5, 3], [-5.5, 1], [-1.5, 0], [36.6, 0], [41.5, 2], [44.8, 0], [50.6, 4], [53.6, 0], [55.6, 5], [84.5, 0], [96, 2], [99, 0], [112.5, 1], [117, 0], [124, 3], [130, 0], [136, 2], [142, 1], [149, 0], [156, 3]];
+      // 地面上的東西：每樣都往背著夕陽的那一邊拖一道長影子（裂谷裡、寨子石柱腳下不放；左邊崖口一棵枯樹，枝上停著烏鴉）
+      const things = [[-30, 2], [-21, 0], [-13.5, 3], [-5.5, 1], [-1.5, 0], [12.6, 0], [28.4, 0], [30.6, 4], [32.4, 5], [80.4, 2], [83, 4], [84.5, 0], [96, 2], [99, 0], [112.5, 1], [117, 0], [124, 3], [130, 0], [136, 2], [142, 1], [149, 0], [156, 3]].filter(([x]) => !inGap(x - 0.8) && !inGap(x + 0.8));
       for (const [x, kind] of things) {
         if (x < V.x0 - 4 || x > V.x1 + 4) continue;
         const gy = groundYRaw(x), d = x < SX ? -1 : 1, len = 2.5 + Math.abs(x - SX) * 0.06 + (kind === 1 || kind === 5 ? 3 : 0);
@@ -209,9 +218,12 @@ THEMES[9] = (function () {
           poly(c, [bx + k * 0.13, by - k * 0.09, bx + k * 0.2, by - k * 0.07, bx + k * 0.13, by - k * 0.05]); c.fill(); poly(c, [bx - k * 0.1, by, bx - k * 0.22, by + k * 0.05, bx - k * 0.1, by + k * 0.04]); c.fill();
         }
       }
-      // 敵寨石柱拖在地上的長影子
-      c.fillStyle = lg(c, X(90), 0, X(112), 0, [0, 'rgba(90,24,30,.4)', 1, 'rgba(90,24,30,0)']);
-      c.beginPath(); c.moveTo(X(91.6), Y(groundYRaw(91.6))); c.lineTo(X(112), Y(groundYRaw(112) - 0.25)); c.lineTo(X(110), Y(groundYRaw(110) - 0.5)); c.lineTo(X(91.6), Y(groundYRaw(91.6) - 0.45)); c.closePath(); c.fill();
+      // 兩座寨子的石柱（天秤的轉軸底下）拖在地上的長影子：背著夕陽往外拖
+      for (const o of S.pivots) {
+        const d = o.x < SX ? -1 : 1, xa = o.x + d * 1.7, xb = o.x + d * 22.1;
+        c.fillStyle = lg(c, X(o.x), 0, X(xb), 0, [0, 'rgba(90,24,30,.4)', 1, 'rgba(90,24,30,0)']);
+        c.beginPath(); c.moveTo(X(xa), Y(groundYRaw(xa))); c.lineTo(X(xb), Y(groundYRaw(xb) - 0.25)); c.lineTo(X(xb - d * 2), Y(groundYRaw(xb - d * 2) - 0.5)); c.lineTo(X(xa), Y(groundYRaw(xa) - 0.45)); c.closePath(); c.fill();
+      }
     },
     init() {
       const s = V.s, R = mkRand(921);
@@ -256,7 +268,7 @@ THEMES[9] = (function () {
         c.fillStyle = pass ? 'rgba(120,40,30,.55)' : 'rgba(255,216,168,.8)'; c.beginPath();
         for (let k = 0; k < dust.length; k++) {
           if ((k % 3 === 0) !== (pass === 1) || k / dust.length > 0.25 + u * 0.75) continue;
-          const d = dust[k], gy = groundYRaw(d.x), y = (d.x > CL && d.x < CR ? Math.max(gy, -1) : gy) + d.h + Math.sin(t * 2 + d.p + d.x * 0.3) * 0.3, r = d.r * s, l = r * (1 + u * 3);
+          const d = dust[k], gy = groundYRaw(d.x), y = (inGap(d.x) ? Math.max(gy, -1) : gy) + d.h + Math.sin(t * 2 + d.p + d.x * 0.3) * 0.3, r = d.r * s, l = r * (1 + u * 3);
           c.moveTo(X(d.x) + l, Y(y)); c.ellipse(X(d.x), Y(y), l, r * 0.7, 0, 0, TAU);
         }
         c.fill();
@@ -269,7 +281,7 @@ THEMES[9] = (function () {
         wd.v += (w * 0.85 - wd.v) * Math.min(1, dt * 1.3); const nx = wd.x + wd.v * dt;
         wd.rot += (nx - wd.x) / wd.r; wd.hop += Math.abs(nx - wd.x) * 0.5; wd.x = nx;
         wd.y = groundYRaw(nx) + wd.r * 0.85 + Math.abs(Math.sin(wd.hop)) * Math.min(1.3, Math.abs(wd.v) * 0.15);
-        if (nx > CL + 0.3 && nx < CR - 0.3) { wd.fall = true; wd.vy = 2; }
+        if (inGap(nx - 0.3) && inGap(nx + 0.3)) { wd.fall = true; wd.vy = 2; }
         if (nx > V.x1 + 4 || nx < V.x0 - 4) wd.wait = 3 + Math.random() * 5;
         c.fillStyle = 'rgba(70,20,24,.25)'; ell(c, X(nx), Y(groundYRaw(nx)) - 1, wd.r * s * 0.9, wd.r * s * 0.22); c.fill();
       }

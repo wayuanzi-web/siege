@@ -1,10 +1,12 @@
-/* ===== 36-scene-desert: 第二關「黃沙風口」— 黃昏的峽谷：半沉的落日、三層平頂山、紅砂岩石柱，飛沙跟著風向橫掃 ===== */
+/* ===== 36-scene-desert: 第二關「滾石坡」— 黃昏的峽谷：半沉的落日、三層平頂山；中間一座紅砂岩丘，兩層岩棚上各擱著一顆大滾石，
+   坡上留著石頭滾下去的溝痕；飛沙跟著風向橫掃 ===== */
 THEMES[1] = (function () {
-  const SX = 44, SY = 14, SR = 6.8;      // 落日（戰場座標）：夾在我方城樓和中間的石柱之間，不在任何一座城的正後方
-  const XA = 49, XB = 63;                // 石柱從沙裡冒出來的範圍（配合這一關的地形）
+  const SX = 44, SY = 14, SR = 6.8;      // 落日（戰場座標）：夾在我方城樓和中間的岩丘之間，不在任何一座城的正後方
+  const XA = 42, XB = 70, PK = 56;       // 岩丘露出岩石的範圍、岩頂（配合這一關的地形：坡腳 41／71、岩棚 47–50.6／61.4–65）
+  const WL = 43.5, WR = 68.5;            // 風滾草滾到這裡就卡住：陡坡腳下、木樁前面
   let haze = [], grit = [], wisps = [], birds = [], weed = null, wispCv = null, weedCv = null, skyPts = null;
-  // 石柱腳下的沙線：兩邊堆得高、中間低
-  const drift = (x) => { const u = clamp((x - XA) / (XB - XA), 0, 1); return 2 - 1.3 * Math.pow(Math.sin(Math.PI * u), 0.75) + 0.24 * Math.sin(TAU * u + 0.5) - 0.12; };
+  // 岩丘腳下的沙線：兩邊的坡腳被沙埋到兩格高左右，中間岩頂底下被風掏低一點（比地面高的地方就是整片沙坡）
+  const drift = (x) => 2.15 - 1.45 * Math.exp(-Math.pow((x - PK) / 6.2, 2)) + 0.22 * Math.sin(x * 0.9 + 0.4) + 0.1 * Math.sin(x * 2.3);
   const sandY = (x) => (x > XA && x < XB ? Math.min(groundYRaw(x), drift(x)) : groundYRaw(x));
 
   // 把 [x, y, x, y, …]（戰場座標）接成一個封閉的子路徑
@@ -186,16 +188,19 @@ THEMES[1] = (function () {
       // 背光的沙丘和仙人掌的剪影
       c.fillStyle = '#b06250'; c.fillRect(0, Y(1.6), W, H);
       for (const k of [[-10, 4.2, 12], [12, 3.6, 13], [33, 4.0, 11], [69, 3.7, 10], [88, 4.2, 13], [108, 3.7, 12], [127, 4.2, 12]]) dune(c, k[0], 1.2, k[2], k[1] - 1.2, k[0] < SX ? 1 : -1, '#b06250', '#dc956a');
-      for (const k of [[-12.6, 3.1, 0], [37.6, 2.5, 2], [45.6, 3.2, 1], [65.6, 3.1, 0], [75.4, 2.3, 3], [115.6, 3.0, 1], [122.5, 2.4, 2]]) cactus(c, X(k[0]), Y(1.5), s * k[1], '#6a3744', 'rgba(255,186,128,.7)', k[0] < SX ? 1 : -1, k[2]);
+      for (const k of [[-12.6, 3.1, 0], [37.6, 2.5, 2], [75.4, 2.3, 3], [115.6, 3.0, 1], [122.5, 2.4, 2]]) cactus(c, X(k[0]), Y(1.5), s * k[1], '#6a3744', 'rgba(255,186,128,.7)', k[0] < SX ? 1 : -1, k[2]);
       for (const k of [[-2, 2.6, 10], [22, 2.3, 12], [40.5, 1.7, 9], [74.5, 1.9, 9], [95, 2.4, 12], [117, 2.5, 11]]) dune(c, k[0], 0, k[2], k[1], k[0] < SX ? 1 : -1, '#96504a', '#c98060');
       // 背著太陽的那一邊天色暗、偏紫（敵城在這一邊，淺色的城牆才跳得出來）
       c.fillStyle = lg(c, X(46), 0, X(128), 0, [0, 'rgba(70,40,104,0)', 0.3, 'rgba(70,40,104,.21)', 1, 'rgba(60,34,98,.46)']); c.fillRect(X(46), 0, W, H);
     },
     terrain(c) {
       const R = mkRand(1202), s = V.s, bot = V.H + 4;
-      // 沿著 f(x) 走：從 a 到 b，中間每逢半格取一點——地形的轉折都在整數格上，所以畫出來的地面跟碰撞一致
-      const fwd = (f, a, b, dy, mv) => { for (let x = a; ; x = Math.min(b, Math.floor(x * 2 + 1 + 1e-9) / 2)) { const px = X(x), py = Y(f(x) + dy); if (mv && x === a) c.moveTo(px, py); else c.lineTo(px, py); if (x >= b) break; } };
-      const rev = (f, a, b, dy) => { for (let x = b; ; x = Math.max(a, Math.ceil(x * 2 - 1 - 1e-9) / 2)) { c.lineTo(X(x), Y(f(x) + dy)); if (x <= a) break; } };
+      // 沿著 f(x) 走：從 a 到 b，每逢半格取一點，地形的每個轉折點也一定取到（岩棚的轉折不在半格上），畫出來的地面才跟碰撞一致
+      const kx = (S.gpts || []).map((p) => p[0]);
+      const nextK = (x) => { let n = Math.floor(x * 2 + 1 + 1e-9) / 2; for (const k of kx) if (k > x + 1e-6 && k < n) n = k; return n; };
+      const prevK = (x) => { let n = Math.ceil(x * 2 - 1 - 1e-9) / 2; for (const k of kx) if (k < x - 1e-6 && k > n) n = k; return n; };
+      const fwd = (f, a, b, dy, mv) => { for (let x = a; ; x = Math.min(b, nextK(x))) { const px = X(x), py = Y(f(x) + dy); if (mv && x === a) c.moveTo(px, py); else c.lineTo(px, py); if (x >= b) break; } };
+      const rev = (f, a, b, dy) => { for (let x = b; ; x = Math.max(a, prevK(x))) { c.lineTo(X(x), Y(f(x) + dy)); if (x <= a) break; } };
       const runs = groundRuns();
       for (const [a, b] of runs) {
         // 沙：上亮下暗，裡面兩道更深的沙層
@@ -207,43 +212,77 @@ THEMES[1] = (function () {
           c.beginPath(); fwd(wv, a, b, 0, true); c.strokeStyle = 'rgba(255,206,140,.3)'; c.lineWidth = Math.max(1, s * 0.12); c.stroke();
         }
       }
-      // 中間那根紅砂岩石柱：沿著地面的輪廓剪下來，裡面一層一層的岩層
-      c.save(); c.beginPath(); fwd(groundYRaw, XA, XB, 0, true); rev(drift, XA, XB, 0); c.closePath(); c.clip();
-      const x0 = X(XA) - 2, x1 = X(XB) + 2, top = Y(14), ys = [], ar = [];
-      const BD = [0.3, '#b24a2e', 1.9, '#c85e35', 3.0, '#a5402b', 3.5, '#d67440', 5.2, '#eaa870', 5.9, '#c5582f', 7.4, '#ae472d', 8.2, '#dc7c44', 9.6, '#bd5230', 10.6, '#e39258', 11.1, '#a9432d', 11.9, '#873427'];
-      c.fillStyle = BD[1]; c.fillRect(x0, top, x1 - x0, 16 * s);
-      for (let i = 0; i < BD.length; i += 2) { const y = BD[i], ph = R() * TAU, f = (x) => y + 0.03 * (x - 56) + 0.07 * Math.sin(x * 1.2 + ph); ys.push(f); c.beginPath(); fwd(f, XA, XB, 0, true); c.lineTo(x1, top); c.lineTo(x0, top); c.closePath(); c.fillStyle = BD[i + 1]; c.fill(); }
+      // 中間的紅砂岩丘：沿著地面的輪廓剪下來（坡腳埋在沙裡），裡面一層一層水平的岩層；
+      // 兩層岩棚是比較硬、顏色深的那一層露出來的地方，大滾石就擱在上面
+      const PY = groundYRaw(PK), RL = (S.lv && S.lv.rollers) || [];
+      c.save(); c.beginPath(); fwd(groundYRaw, XA, XB, 0, true); rev(sandY, XA, XB, 0); c.closePath(); c.clip();
+      const x0 = X(XA) - 2, x1 = X(XB) + 2, top = Y(PY + 2), ys = [], ar = [];
+      const BD = [0.3, '#b24a2e', 1.6, '#c85e35', 2.6, '#a5402b', 3.2, '#d67440', 4.05, '#9a3b2a', 5.5, '#eaa870', 6.1, '#c5582f', 7.4, '#ae472d', 8.2, '#dc7c44', 9.6, '#bd5230', 10.6, '#e39258', 11.1, '#a9432d', 11.9, '#873427'];
+      c.fillStyle = BD[1]; c.fillRect(x0, top, x1 - x0, (PY + 4) * s);
+      for (let i = 0; i < BD.length; i += 2) { const y = BD[i], ph = R() * TAU, p2 = R() * TAU, f = (x) => y + 0.08 * Math.sin(x * 1.2 + ph) + 0.1 * Math.sin(x * 0.45 + p2) + 0.05 * Math.sin(x * 2.9 + ph * 2); ys.push(f); c.beginPath(); fwd(f, XA, XB, 0, true); c.lineTo(x1, top); c.lineTo(x0, top); c.closePath(); c.fillStyle = BD[i + 1]; c.fill(); }
       // 厚的岩層上幾道直的溝
-      c.strokeStyle = 'rgba(80,24,30,.16)'; c.lineWidth = Math.max(1, s * 0.09); c.beginPath();
+      c.strokeStyle = 'rgba(80,24,30,.1)'; c.lineWidth = Math.max(1, s * 0.09); c.beginPath();
       for (let i = 0; i < ys.length - 1; i++) { const h = BD[i * 2 + 2] - BD[i * 2]; if (h < 1.1) continue; for (let x = XA + R() * 3; x < XB; x += 1.8 + R() * 3) { c.moveTo(X(x), Y(ys[i + 1](x) - 0.14)); c.lineTo(X(x + (R() - 0.5) * 0.2), Y(ys[i](x) + 0.1 + R() * h * 0.45)); } }
       c.stroke();
-      // 背光面：從柱頂往下一條鋸齒狀的稜線，右邊暗；最左邊那一面再亮一點
-      let ex = 56.3;
-      c.beginPath(); c.moveTo(X(56), Y(13.3));
+      // 背光面：從岩頂往下一條鋸齒狀的稜線，右邊（連右邊那層岩棚）都在岩頂的影子裡；左邊向陽的那一面亮一點
+      let ex = PK + 0.3;
+      c.beginPath(); c.moveTo(X(PK), Y(PY + 0.9));
       for (let i = ys.length - 1; i >= 0; i--) { const y = ys[i](ex); c.lineTo(X(ex), Y(y)); ex += (R() - 0.3) * 0.7; c.lineTo(X(ex), Y(y - 0.06)); ar[i] = ex; }
       c.lineTo(X(ex + 0.3), Y(-1)); c.lineTo(x1, Y(-1)); c.lineTo(x1, top); c.closePath(); c.fillStyle = 'rgba(70,20,58,.5)'; c.fill();
-      ex = 55.6; c.beginPath(); c.moveTo(X(56), Y(13.3));
+      ex = PK - 0.4; c.beginPath(); c.moveTo(X(PK), Y(PY + 0.9));
       for (let i = ys.length - 1; i >= 0; i--) { const y = ys[i](ex); c.lineTo(X(ex), Y(y)); ex -= 0.15 + R() * 0.55; c.lineTo(X(ex), Y(y - 0.06)); }
       c.lineTo(X(ex - 0.3), Y(-1)); c.lineTo(x0, Y(-1)); c.lineTo(x0, top); c.closePath(); c.fillStyle = 'rgba(255,200,124,.22)'; c.fill();
-      // 岩層之間的陰影線，受光面的岩棚上緣一條亮線
+      // 岩層之間的陰影線，受光面的岩層上緣一條亮線
       for (let i = 0; i < ys.length; i++) {
         c.beginPath(); fwd(ys[i], XA, XB, 0, true); rev(ys[i], XA, XB, -0.14); c.closePath(); c.fillStyle = 'rgba(64,16,26,.32)'; c.fill();
         if (i % 2 === 1) { c.beginPath(); fwd(ys[i], XA, ar[i], 0.1, true); rev(ys[i], XA, ar[i], 0); c.closePath(); c.fillStyle = 'rgba(255,220,168,.4)'; c.fill(); }
       }
-      // 沙地反射上來的暖光、向陽那一側的亮邊、幾道裂縫
+      // 岩漆：從岩棚邊、岩頂往下流的深色水痕（一條一條、長短不一），讓岩面看起來是風吹雨打出來的，不是一階一階砌的
+      for (let x = XA + 1 + R(); x < XB - 1; x += 0.9 + R() * 1.4) {
+        const gy = groundYRaw(x), len = 1 + R() * R() * 5, w = 0.3 + R() * 0.55;
+        c.fillStyle = lg(c, 0, Y(gy), 0, Y(gy - len), [0, 'rgba(58,16,30,' + (0.1 + R() * 0.14).toFixed(2) + ')', 1, 'rgba(58,16,30,0)']); c.fillRect(X(x), Y(gy + 0.2), w * s, (len + 0.2) * s);
+      }
+      // 粗的節理：幾道直直劈開好幾層岩層的大裂縫，一邊暗、一邊亮
+      for (const [x, ya, yb] of [[51.6, 6.4, 1.6], [53.9, 10.6, 3.4], [58.7, 10.4, 2.6], [60.6, 6.2, 1.4], [55.1, 7.6, 0.8]]) {
+        let xx = x; c.beginPath(); c.moveTo(X(xx), Y(ya)); for (let y = ya - 0.7; y > yb; y -= 0.7) { xx += (R() - 0.5) * 0.3; c.lineTo(X(xx), Y(y)); }
+        c.strokeStyle = 'rgba(58,14,26,.5)'; c.lineWidth = Math.max(1, s * 0.16); c.stroke();
+        c.save(); c.translate(-Math.max(1, s * 0.14), 0); c.strokeStyle = 'rgba(255,214,160,.26)'; c.lineWidth = Math.max(1, s * 0.07); c.stroke(); c.restore();
+      }
+      // 岩緣崩掉的小缺口：沿著輪廓底下幾個暗暗的小凹
+      for (let x = XA + 1.5 + R(); x < XB - 1.5; x += 0.9 + R() * 1.6) { const gy = groundYRaw(x), r = 0.14 + R() * 0.2; c.fillStyle = 'rgba(70,20,30,.32)'; ell(c, X(x), Y(gy - r * 0.9 - 0.12), r * s * 1.4, r * s * 0.8, (R() - 0.5) * 0.6); c.fill(); c.fillStyle = 'rgba(255,220,170,.22)'; ell(c, X(x - r * 0.4), Y(gy - r * 0.5 - 0.12), r * s * 0.8, r * s * 0.35); c.fill(); }
+      // 沙地反射上來的暖光
       c.fillStyle = lg(c, 0, Y(4), 0, Y(0.5), [0, 'rgba(255,170,96,0)', 1, 'rgba(255,170,96,.34)']); c.fillRect(x0, Y(4), x1 - x0, 4 * s);
-      c.beginPath(); fwd(groundYRaw, XA, 56, 0, true); c.strokeStyle = 'rgba(255,226,170,.8)'; c.lineWidth = s * 0.5; c.lineJoin = 'round'; c.stroke();
+      // 岩棚的頂面（平平的、往裡退一點，看得到一條面）；大滾石擱的地方磨出一個淺窩
+      const kn = (S.gpts || []).map((p) => p[0]), shelf = (d) => [Math.max(...kn.filter((k) => k <= d.x)), Math.min(...kn.filter((k) => k >= d.x))];
+      for (const d of RL) {
+        const [la, lb] = shelf(d), lit = d.x < PK;
+        c.beginPath(); fwd(groundYRaw, la, lb, 0, true); rev(groundYRaw, la, lb, -0.55); c.closePath(); c.fillStyle = lit ? 'rgba(255,214,150,.5)' : 'rgba(255,190,150,.16)'; c.fill();
+        c.fillStyle = 'rgba(70,16,30,.34)'; ell(c, X(d.x), Y(groundYRaw(d.x) - 0.12), d.r * s * 0.95, s * 0.42); c.fill();
+      }
+      // 向陽那一側的亮邊（左半邊一路到岩頂）、右邊背光的淡邊
+      c.beginPath(); fwd(groundYRaw, XA, PK, 0, true); c.strokeStyle = 'rgba(255,226,170,.8)'; c.lineWidth = s * 0.5; c.lineJoin = 'round'; c.stroke();
+      c.beginPath(); fwd(groundYRaw, PK, XB, 0, true); c.strokeStyle = 'rgba(255,196,150,.22)'; c.lineWidth = s * 0.4; c.stroke();
+      // 大石頭從岩棚邊滾下去的時候在岩坡上刮出來的擦痕：順著坡、深淺幾道（木樁後面那一段被木樁擋住）
+      c.lineCap = 'round';
+      for (const d of RL) {
+        const [la, lb] = shelf(d), a = d.to === 0 ? d.stake - 3 : lb, b = d.to === 0 ? la : d.stake + 3;
+        for (let k = 0; k < 4; k++) {
+          const f = (x) => groundYRaw(x) - 0.28 - k * 0.3 + 0.05 * Math.sin(x * 3.1 + k * 2.3);
+          c.beginPath(); fwd(f, a, b, 0, true); c.strokeStyle = k & 1 ? 'rgba(255,222,176,.32)' : 'rgba(84,26,30,.3)'; c.lineWidth = Math.max(1, s * (k & 1 ? 0.13 : 0.08)); c.stroke();
+        }
+      }
+      // 幾道裂縫
       c.strokeStyle = 'rgba(70,18,28,.42)'; c.lineWidth = Math.max(1, s * 0.11); c.beginPath();
-      for (const k of [[52.7, 8.6, 4.2], [54.9, 11, 6.6], [59.3, 8.6, 4.4], [57.4, 6, 2.2]]) { c.moveTo(X(k[0]), Y(k[1])); c.lineTo(X(k[0] + 0.25), Y((k[1] + k[2]) / 2 + 0.3)); c.lineTo(X(k[0] - 0.15), Y((k[1] + k[2]) / 2)); c.lineTo(X(k[0] + 0.2), Y(k[2])); }
+      for (const k of [[52.7, 8.6, 4.2], [54.9, 11, 6.6], [59.3, 8.6, 4.4], [57.4, 6, 2.2], [48.1, 4.3, 2.6], [64.1, 4.1, 2.5]]) { c.moveTo(X(k[0]), Y(k[1])); c.lineTo(X(k[0] + 0.25), Y((k[1] + k[2]) / 2 + 0.3)); c.lineTo(X(k[0] - 0.15), Y((k[1] + k[2]) / 2)); c.lineTo(X(k[0] + 0.2), Y(k[2])); }
       c.stroke();
       c.restore();
       for (const [a, b] of runs) {
         // 沙面的亮邊
         c.beginPath(); fwd(sandY, a, b, 0, true); rev(sandY, a, b, -0.8); c.closePath(); c.fillStyle = '#ffd28a'; c.fill();
-        // 落日映在沙面上的一片暖光；石柱往右拖的長影
+        // 落日映在沙面上的一片暖光；岩丘往右拖的長影
         c.save(); c.beginPath(); fwd(sandY, a, b, 0, true); c.lineTo(X(b), bot); c.lineTo(X(a), bot); c.closePath(); c.clip();
         c.fillStyle = rg(c, X(SX), Y(0), 0, s * 24, [0, 'rgba(255,240,180,.36)', 1, 'rgba(255,240,180,0)']); c.fillRect(X(SX - 24), Y(4), s * 48, s * 14);
-        c.beginPath(); fwd(sandY, 56, 88, 0, true); rev(sandY, 56, 88, -0.8); c.closePath(); c.fillStyle = lg(c, X(56), 0, X(88), 0, [0, 'rgba(120,44,60,0)', 0.07, 'rgba(120,44,60,.5)', 0.45, 'rgba(120,44,60,.26)', 1, 'rgba(120,44,60,0)']); c.fill();
+        c.beginPath(); fwd(sandY, PK - 2, 90, 0, true); rev(sandY, PK - 2, 90, -0.8); c.closePath(); c.fillStyle = lg(c, X(PK - 2), 0, X(90), 0, [0, 'rgba(120,44,60,0)', 0.17, 'rgba(120,44,60,.44)', 0.5, 'rgba(120,44,60,.24)', 1, 'rgba(120,44,60,0)']); c.fill();
         c.restore();
         // 風紋：順著沙面的細線，一段一段
         c.lineCap = 'round';
@@ -256,16 +295,33 @@ THEMES[1] = (function () {
         c.beginPath(); fwd(groundYRaw, a, b, 0, true); c.strokeStyle = '#96501f'; c.lineWidth = Math.max(1.5, s * 0.2); c.lineJoin = 'round'; c.stroke();
       }
       c.beginPath(); fwd(groundYRaw, XA, XB, 0, true); c.strokeStyle = '#5c2318'; c.lineWidth = Math.max(1.5, s * 0.24); c.stroke();
-      // 石柱腳下的落石，和散在沙地上的幾顆小石頭
-      for (const k of [[47.4, 0.85, 1], [45.9, 0.5, 1], [64.7, 0.9, -1], [66.4, 0.55, 1], [41, 0.45, 1], [-5.6, 0.5, 1], [37.2, 0.4, 1], [75.2, 0.42, -1], [110.6, 0.5, -1], [116.3, 0.36, 1]]) boulder(c, k[0], k[1], k[2]);
-      // 乾草叢
+      // 滾石從坡上衝下去、一路犁到城門口的溝：沙面上一道壓下去的淺溝（上緣背光、下緣受光），兩邊翻起來的沙粒
+      for (const d of RL) {
+        const dir = d.to === 0 ? -1 : 1, st = S.st[d.to], end = st ? (d.to === 0 ? st.x1 + 0.3 : st.x0 - 0.3) : d.stake + dir * 8;
+        let xs = d.stake; while ((end - xs) * dir > 0.1 && groundYRaw(xs) > drift(xs) + 0.05) xs += dir * 0.1;      // 從沙蓋住岩坡的地方開始（上面那段刮在岩石上）
+        const a = Math.min(end, xs), b = Math.max(end, xs), fade = (x) => clamp(1 - Math.abs(x - xs) / Math.abs(end - xs), 0, 1) * 0.6 + 0.4;
+        c.save(); c.beginPath(); c.rect(X(a), 0, (b - a) * s, V.H); c.clip();
+        c.fillStyle = lg(c, X(xs), 0, X(end), 0, [0, 'rgba(170,84,38,.6)', 1, 'rgba(170,84,38,.18)']); c.beginPath(); fwd(sandY, a, b, -0.12, true); rev(sandY, a, b, -0.58); c.closePath(); c.fill();
+        c.fillStyle = lg(c, X(xs), 0, X(end), 0, [0, 'rgba(96,36,20,.42)', 1, 'rgba(96,36,20,.1)']); c.beginPath(); fwd(sandY, a, b, -0.12, true); rev(sandY, a, b, -0.3); c.closePath(); c.fill();      // 溝的上半邊背光
+        c.lineCap = 'round'; c.lineWidth = Math.max(1, s * 0.1);
+        c.strokeStyle = lg(c, X(xs), 0, X(end), 0, [0, 'rgba(255,242,206,.9)', 1, 'rgba(255,242,206,.25)']); c.beginPath(); fwd(sandY, a, b, -0.6, true); c.stroke();
+        // 石頭表面壓出來的一節一節的印子
+        c.strokeStyle = lg(c, X(xs), 0, X(end), 0, [0, 'rgba(92,34,18,.5)', 1, 'rgba(92,34,18,.08)']); c.lineWidth = Math.max(1, s * 0.07); c.beginPath();
+        for (let x = a + 0.3; x < b; x += 0.55 + R() * 0.35) { const y = sandY(x); c.moveTo(X(x), Y(y - 0.2)); c.lineTo(X(x + 0.22), Y(y - 0.5)); }
+        c.stroke();
+        c.restore();
+        for (let x = a + R() * 0.8; x < b; x += 0.5 + R() * 0.9) { const y = sandY(x) - (R() < 0.45 ? 0.04 : 0.66) - R() * 0.1; c.fillStyle = R() < 0.5 ? 'rgba(122,54,30,' + (0.5 * fade(x)).toFixed(2) + ')' : 'rgba(255,230,176,' + (0.7 * fade(x)).toFixed(2) + ')'; ell(c, X(x), Y(y), s * (0.08 + R() * 0.1), s * (0.05 + R() * 0.06)); c.fill(); }
+      }
+      // 坡腳和城門口的碎石（滾石撞碎的），和散在沙地上的幾顆小石頭；岩棚、木樁那裡留空，不跟遊戲畫的大石頭、木樁打架
+      for (const k of [[42.5, 0.42, -1], [43.6, 0.28, 1], [69.5, 0.44, 1], [68.4, 0.28, -1], [40.2, 0.34, 1], [71.8, 0.36, -1], [38.3, 0.3, -1], [74, 0.3, 1], [-5.6, 0.5, 1], [110.6, 0.5, -1], [116.3, 0.36, 1]]) boulder(c, k[0], k[1], k[2]);
+      // 乾草叢（岩丘上、滾石滾過的路上不長）
       for (const [a, b] of runs) for (let x = a + R() * 3; x < b; x += 2.4 + R() * 5) {
-        if (x > XA - 2.5 && x < XB + 2.5) continue;
+        if (x > 37 && x < 75) continue;
         const px = X(x), py = Y(groundYRaw(x)) + 1, h = s * (0.6 + R() * 0.75); c.lineWidth = Math.max(1, s * 0.1);
         for (let pass = 0; pass < 2; pass++) { c.strokeStyle = pass ? '#d9ae58' : '#8f6426'; c.beginPath(); for (let j = -3 + pass; j <= 3; j += 2) { const an = j * 0.27 + (R() - 0.5) * 0.2, hh = h * (0.7 + R() * 0.4); c.moveTo(px, py); c.quadraticCurveTo(px + Math.sin(an) * hh * 0.35, py - hh * 0.6, px + Math.sin(an) * hh, py - Math.cos(an) * hh); } c.stroke(); }
       }
-      // 近處的仙人掌
-      for (const k of [[-8.4, 3.3, 0], [39.4, 1.8, 3], [73.6, 2.2, 2], [112.4, 3.0, 1]]) cactus(c, X(k[0]), Y(groundYRaw(k[0])) + 1, s * k[1], '#58774a', '#b9cc7c', k[0] < SX ? 1 : -1, k[2]);
+      // 近處的仙人掌（滾石會衝過的兩城之間不放）
+      for (const k of [[-8.4, 3.3, 0], [112.4, 3.0, 1]]) cactus(c, X(k[0]), Y(groundYRaw(k[0])) + 1, s * k[1], '#58774a', '#b9cc7c', k[0] < SX ? 1 : -1, k[2]);
     },
     init() {
       const R = mkRand(1203), s = V.s;
@@ -277,9 +333,10 @@ THEMES[1] = (function () {
         for (let j = 0; j < 5; j++) { const ox = (R() - 0.5) * 1.1, rr = 0.35 + R() * 0.3; hc.fillStyle = rg(hc, ox, 0, 0, rr, [0, 'rgba(247,186,138,.42)', 1, 'rgba(247,186,138,0)']); hc.fillRect(-1, -1, 2, 2); }
         haze.push({ cv, w, h, x: V.x0 + R() * (V.x1 - V.x0), y: 3 + R() * 5, v: 0.5 + R() * 0.6, a: 0.45 + R() * 0.35 });
       }
-      // 天空的範圍（沙塵只畫在地面以上）
-      skyPts = []; const a0 = Math.floor(V.x0 - 3), a1 = Math.ceil(V.x1 + 3);
-      for (let x = a0; x <= a1; x += 0.5) { const y = groundYRaw(x); if (x === a0 || x === a1 || Math.abs(groundYRaw(x - 0.5) + groundYRaw(x + 0.5) - 2 * y) > 1e-6) skyPts.push(X(x), Y(y)); }
+      // 天空的範圍（沙塵只畫在地面以上）：地面是折線，兩端加上每個轉折點就是整條
+      const a0 = Math.floor(V.x0 - 3), a1 = Math.ceil(V.x1 + 3); skyPts = [X(a0), Y(groundYRaw(a0))];
+      for (const p of S.gpts || []) if (p[0] > a0 && p[0] < a1) skyPts.push(X(p[0]), Y(p[1]));
+      skyPts.push(X(a1), Y(groundYRaw(a1)));
       // 飛沙：四分之三貼著地面，其餘散在半空；thr 是風要多大這一粒才出現
       grit = [];
       for (let k = 0; k < 78; k++) grit.push({ x: V.x0 - 10 + R() * (V.x1 - V.x0 + 20), h: k % 4 ? 0.4 + R() * R() * 8 : 7 + R() * 38, v: 0.7 + R() * 0.7, thr: 0.04 + 0.9 * (k / 78), len: 2 + R() * 4.5, b: k % 4 ? (R() < 0.5 ? 0 : 1) : 2, p: R() * TAU });
@@ -320,8 +377,8 @@ THEMES[1] = (function () {
         const k = clamp((u - g.thr) * 4, 0, 1); if (k <= 0) continue;
         c.globalAlpha = g.a * k; c.drawImage(wispCv, X(g.x - g.len / 2), Y(g.h + g.th / 2), g.len * s, g.th * s);
       }
-      // 石柱頂上被風颳起來的一縷沙
-      if (u > 0.15) { const L = 5 + 7 * u; c.globalAlpha = 0.6 * (u - 0.15); c.drawImage(wispCv, X(dir > 0 ? 55.6 : 56.4 - L), Y(13.7), L * s, s * 0.9); }
+      // 岩頂上被風颳起來的一縷沙
+      if (u > 0.15) { const L = 5 + 7 * u; c.globalAlpha = 0.6 * (u - 0.15); c.drawImage(wispCv, X(dir > 0 ? PK - 0.4 : PK + 0.4 - L), Y(groundYRaw(PK) + 1.2), L * s, s * 0.9); }
       c.globalAlpha = 1;
       // 飛沙：順著風向的細長尖梭，頭粗尾細；風越大越多、越長
       for (let b = 0; b < 3; b++) {
@@ -336,12 +393,12 @@ THEMES[1] = (function () {
         c.globalAlpha = 0.55 + 0.45 * u; c.fillStyle = b === 0 ? 'rgba(255,242,210,.8)' : b === 1 ? 'rgba(255,228,176,.58)' : 'rgba(255,242,216,.42)'; c.fill();
       }
       c.globalAlpha = 1;
-      // 風滾草：順風滾，滾到石柱腳下會卡住，等風轉向
+      // 風滾草：順風滾，滾到岩丘的陡坡腳下會卡住（爬不上去），等風轉向
       const wd = weed;
       if (wd.wait > 0) { wd.wait -= dt; if (wd.wait <= 0) { if (Math.abs(w) < 2) wd.wait = 1; else { wd.x = w > 0 ? V.x0 - 3 : V.x1 + 3; wd.v = w * 0.8; } } }
       else {
         wd.v += (w * 0.85 - wd.v) * Math.min(1, dt * 1.3); let nx = wd.x + wd.v * dt;
-        if (wd.x <= 47.8 && nx > 47.8) { nx = 47.8; wd.v = 0; wd.rot += Math.sin(t * 9) * 0.24 * w * dt; } else if (wd.x >= 64.2 && nx < 64.2) { nx = 64.2; wd.v = 0; wd.rot += Math.sin(t * 9) * 0.24 * w * dt; }
+        if (wd.x <= WL && nx > WL) { nx = WL; wd.v = 0; wd.rot += Math.sin(t * 9) * 0.24 * w * dt; } else if (wd.x >= WR && nx < WR) { nx = WR; wd.v = 0; wd.rot += Math.sin(t * 9) * 0.24 * w * dt; }
         wd.rot += (nx - wd.x) / wd.r; wd.hop += Math.abs(nx - wd.x) * 0.5; wd.x = nx;
         if (nx > V.x1 + 4 || nx < V.x0 - 4) wd.wait = 3 + Math.random() * 5;
         const px = X(wd.x), gy = groundYRaw(wd.x), py = Y(gy + wd.r * 0.85 + Math.abs(Math.sin(wd.hop)) * Math.min(1.5, Math.abs(wd.v) * 0.16));

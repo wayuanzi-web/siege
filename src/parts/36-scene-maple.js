@@ -1,11 +1,14 @@
-/* ===== 36-scene-maple: 第十一關「五重塔」— 秋天的山寺：午後金色的陽光、層層紅葉山，谷裡有鳥居、寺院和一道細瀑布；地上碎石步道、落葉、石燈籠 ===== */
+/* ===== 36-scene-maple: 第十一關「古寺撞鐘」— 秋天的山寺：午後金色的陽光、層層紅葉山，谷裡有鳥居、寺院和一道細瀑布；
+   戰場後面立著一座老木頭鐘架，大鐘就吊在它的大樑下；地上碎石步道、落葉、石燈籠 ===== */
 THEMES[11] = (function () {
   const SX = 114, SY = 26, SR = 3.3, HAZE = '#f8dfba';         // 太陽偏西（右邊）、低低的，把五重塔照成剪影
   // 天色（戰場高度 → 顏色）：淡藍 → 紫灰 → 金黃
   const SKY = [76, '#7ca5d8', 60, '#a0bce0', 47, '#c9cde0', 36, '#edd5bd', 24, '#f9d9a8', 12, '#ffe2ae', 0, '#ffeac2', -9, '#ffeac2'];
   const PAL = ['#b8352a', '#d24a2d', '#e46a30', '#ee8c37', '#f3ad42', '#efca56'];      // 紅葉
-  const TX = 49.5, FX = 58.8, HX = 40.6;      // 鳥居、瀑布、寺院（谷裡）
+  const TX = 50.6, FX = 58.8, HX = 43.6;      // 鳥居、瀑布、寺院（谷裡；夾在鐘架的兩根柱子中間）
+  const BL = 18.3, BW = 3.1;                  // 鐘架：柱子的中線離大鐘的吊點多遠、柱子多粗
   let clouds = [], branches = [], flock = null, flockAt = 4, leaves = [], spLeaf = [], mists = [], spMist = null, sparks = [], fallY = 15;
+  let bfTop = null, bfX = 0, bfY = 0, bfCut = 0;      // 鐘架的上半截：雲和雁要從它後面過，所以每一幀再貼一次（bfCut 是切開的那一列像素）
   const sm = (v) => { v = clamp(v, 0, 1); return v * v * (3 - 2 * v); };
   function noise(R, n) { const v = []; for (let i = 0; i < n; i++) v.push(R()); return (x) => { const i = Math.floor(x), f = x - i, a = v[((i % n) + n) % n], b = v[(((i + 1) % n) + n) % n]; return a + (b - a) * f * f * (3 - 2 * f); }; }
   function glow(c, x, y, rx, ry, col, a) { c.save(); c.translate(x, y); c.scale(rx, ry); c.fillStyle = rg(c, 0, 0, 0, 1, [0, rgba(col, a), 0.45, rgba(col, a * 0.42), 1, rgba(col, 0)]); c.fillRect(-1, -1, 2, 2); c.restore(); }
@@ -103,6 +106,139 @@ THEMES[11] = (function () {
     c.fillStyle = 'rgba(118,148,70,.8)';      // 苔
     for (const [u, v, r] of [[-0.7, 3.27, 0.22], [-0.42, 3.45, 0.18], [0.88, 3.18, 0.14], [-0.85, 0.32, 0.2], [0.6, 0.38, 0.16], [-0.3, 2.24, 0.12]]) { c.beginPath(); c.ellipse(px + u * s, py - v * s, r * s * 1.6, r * s * 0.7, 0, 0, TAU); c.fill(); }
   }
+  /* 鐘架（戰場座標）：兩根曬得灰白的老木柱、一根大樑，樑上一排斗栱托著一溜瓦頂；大鐘的鐵鍊吊在大樑底面的正中間 (ax, ay)。
+     它沒有實體，所以整座蒙一層霧、柱腳藏在近景的樹後面，看起來站在戰場後面一點（鐘在柱子前面盪過去）。
+     亂數自己開一個，畫兩次（遠景一次、上半截的小圖一次）才會一模一樣 */
+  function belfry(c, ax, ay) {
+    const s = V.s, R = mkRand(1177), hw = BW / 2, PX = [ax - BL, ax + BL], lw = (k) => Math.max(1, s * k);
+    const hz = (col, x) => haze(col, x === undefined ? ax : x, 0.3);
+    const wp = (p) => { c.beginPath(); c.moveTo(X(p[0]), Y(p[1])); for (let i = 2; i < p.length; i += 2) c.lineTo(X(p[i]), Y(p[i + 1])); c.closePath(); };
+    const yT = ay + 2.0, bx0 = PX[0] - 3.4, bx1 = PX[1] + 3.4, bt = (x) => yT + 0.12 * (1 - Math.pow((x - ax) / (bx1 - ax), 2));      // 大樑頂（中間微微拱起）
+    const E0 = yT + 0.5, ES = bx1 + 2.1 - ax, ye = (x) => { const t = Math.min(1, Math.abs(x - ax) / ES); return E0 + 0.15 * t * t + 0.62 * Math.pow(t, 5); };      // 屋簷的下緣：整條微微彎、兩頭往上翹
+    const RY = E0 + 1.72, RS = BL - 1.6;                                                                                               // 屋脊的高度、半長
+    // --- 柱子：四方的老木頭，兩邊削角（背光那一邊暗、朝太陽那一邊一道亮邊）；曬白、雨水流下來的痕、零碎的木紋、乾裂、節 ---
+    for (const px of PX) {
+      const x0 = X(px - hw), x1 = X(px + hw), y0 = Y(yT), y1 = Y(-2), ch = s * 0.32;
+      c.fillStyle = hz('#665140', px); c.fillRect(x0, y0, x1 - x0, y1 - y0);
+      c.fillStyle = lg(c, x0 + ch, 0, x1 - ch, 0, [0, 'rgba(38,28,22,.26)', 0.45, 'rgba(38,28,22,0)', 0.8, 'rgba(255,232,196,0)', 1, 'rgba(255,232,196,.1)']); c.fillRect(x0 + ch, y0, x1 - x0 - ch * 2, y1 - y0);
+      c.fillStyle = hz('#443529', px); c.fillRect(x0, y0, ch, y1 - y0);
+      c.fillStyle = lg(c, x1 - ch, 0, x1, 0, [0, hz('#9b7e5c', px), 1, hz('#f2c88c', px)]); c.fillRect(x1 - ch, y0, ch, y1 - y0);
+      c.save(); c.beginPath(); c.rect(x0 + ch, y0, x1 - x0 - ch * 2, y1 - y0); c.clip();
+      for (let k = 0; k < 4; k++) { const u = px - hw + 0.4 + R() * (BW - 1.1), ya = 3 + R() * 34, yb = ya + 6 + R() * 12; c.fillStyle = lg(c, 0, Y(yb), 0, Y(ya), [0, 'rgba(228,214,194,0)', 0.3, 'rgba(228,214,194,.14)', 1, 'rgba(228,214,194,0)']); c.fillRect(X(u), Y(yb), s * (0.35 + R() * 0.5), (yb - ya) * s); }
+      for (let k = 0; k < 3; k++) { const u = px - hw + 0.4 + R() * (BW - 1), len = 5 + R() * 14; c.fillStyle = lg(c, 0, Y(yT), 0, Y(yT - len), [0, 'rgba(36,26,22,.3)', 1, 'rgba(36,26,22,0)']); c.fillRect(X(u), Y(yT), s * (0.2 + R() * 0.35), len * s); }      // 雨水從樑上流下來的痕
+      c.strokeStyle = 'rgba(46,34,27,.24)'; c.lineWidth = lw(0.06); c.beginPath();
+      for (let k = 0; k < 12; k++) { let x = px - hw + 0.5 + R() * (BW - 1); const ya = -2 + R() * (yT + 2), len = 3 + R() * 10; c.moveTo(X(x), Y(ya)); for (let y = ya + 1; y < Math.min(yT, ya + len); y += 1) { x += (R() - 0.5) * 0.06; c.lineTo(X(x), Y(y)); } }
+      c.stroke();
+      for (let k = 0; k < 3; k++) {
+        let x = px - hw + 0.55 + R() * (BW - 1.3); const ya = 5 + R() * 30, len = 4 + R() * 10; c.beginPath(); c.moveTo(X(x), Y(ya));
+        for (let y = ya + 0.8; y < ya + len; y += 0.8) { x += (R() - 0.5) * 0.14; c.lineTo(X(x), Y(y)); }
+        c.strokeStyle = 'rgba(32,22,18,.55)'; c.lineWidth = lw(0.13); c.stroke();
+        c.save(); c.translate(lw(0.13), 0); c.strokeStyle = 'rgba(236,212,176,.22)'; c.lineWidth = lw(0.06); c.stroke(); c.restore();
+      }
+      for (let k = 0; k < 2; k++) { const kx = X(px - hw + 0.7 + R() * (BW - 1.4)), ky = Y(8 + R() * 30), r = s * (0.16 + R() * 0.1); c.fillStyle = 'rgba(40,28,22,.45)'; ell(c, kx, ky, r * 0.8, r * 1.5); c.fill(); c.strokeStyle = 'rgba(236,212,176,.18)'; c.lineWidth = lw(0.05); ell(c, kx, ky, r * 1.4, r * 2.4); c.stroke(); }
+      c.restore();
+      // 柱腳一帶：谷裡的霧把它蒙住
+      c.fillStyle = lg(c, 0, Y(13), 0, Y(1), [0, 'rgba(250,232,204,0)', 1, 'rgba(250,232,204,.62)']); c.fillRect(x0, Y(13), x1 - x0, Y(-2) - Y(13));
+      // 柱頭下面一道鐵箍
+      c.fillStyle = hz('#3e3a42', px); c.fillRect(x0 - lw(0.05), Y(ay - 4.6), x1 - x0 + lw(0.1), s * 0.62);
+      c.fillStyle = 'rgba(160,150,165,.35)'; c.fillRect(x0 - lw(0.05), Y(ay - 4.6), x1 - x0 + lw(0.1), lw(0.1));
+      c.fillStyle = hz('#c79a4a', px); for (const u of [-0.75, 0, 0.75]) { c.beginPath(); c.arc(X(px + u), Y(ay - 4.91), s * 0.11, 0, TAU); c.fill(); }
+    }
+    // --- 柱子上的注連繩、紙垂，和幾張貼著的符紙 ---
+    // 紙垂：一條折成閃電形的白紙（d 往哪邊折）
+    const shide = (x, y, h, d) => {
+      c.beginPath(); c.moveTo(X(x), Y(y)); c.lineTo(X(x + d * 0.38), Y(y - h * 0.3)); c.lineTo(X(x - d * 0.02), Y(y - h * 0.52)); c.lineTo(X(x + d * 0.4), Y(y - h * 0.78)); c.lineTo(X(x + d * 0.1), Y(y - h));
+      c.lineJoin = 'miter'; c.lineCap = 'butt'; c.strokeStyle = 'rgba(96,82,70,.4)'; c.lineWidth = s * 0.46; c.stroke(); c.strokeStyle = hz('#f8f4ea', x); c.lineWidth = s * 0.34; c.stroke();
+    };
+    for (const px of PX) {
+      const y = 33.6, xa = px - hw - 0.45, xb = px + hw + 0.45;
+      for (const [x, d] of [[px - 0.75, -1], [px + 0.75, 1]]) shide(x, y - 0.3, 2.9, d);
+      c.beginPath(); c.moveTo(X(xa), Y(y + 0.46)); c.quadraticCurveTo(X(px), Y(y + 0.06), X(xb), Y(y + 0.46)); c.lineTo(X(xb), Y(y - 0.4)); c.quadraticCurveTo(X(px), Y(y - 0.8), X(xa), Y(y - 0.4)); c.closePath();
+      c.fillStyle = lg(c, 0, Y(y + 0.5), 0, Y(y - 0.7), [0, hz('#e8d08c', px), 0.5, hz('#c8a75e', px), 1, hz('#8a6e36', px)]); c.fill();
+      c.strokeStyle = rgba(hz('#765a2a', px), 0.75); c.lineWidth = lw(0.1); c.beginPath();
+      for (let x = xa + 0.25; x < xb - 0.1; x += 0.42) { const k = (x - px) / (xb - xa) * 2, dy = -0.38 * (1 - k * k); c.moveTo(X(x - 0.16), Y(y + 0.4 + dy)); c.lineTo(X(x + 0.2), Y(y - 0.36 + dy)); }
+      c.stroke();
+      c.fillStyle = hz('#6d5a2c', px); for (const x of [xa - 0.1, xb + 0.1]) { c.beginPath(); c.moveTo(X(x - 0.14), Y(y + 0.3)); c.lineTo(X(x + 0.14), Y(y + 0.3)); c.lineTo(X(x + 0.24), Y(y - 1.5)); c.lineTo(X(x - 0.24), Y(y - 1.5)); c.closePath(); c.fill(); }      // 繩頭垂下來的穗
+    }
+    const fuda = (x, y, a, h) => {
+      c.save(); c.translate(X(x), Y(y)); c.rotate(a); const w = 0.78 * s, H = h * s;
+      c.beginPath(); c.moveTo(-w / 2, -H); c.lineTo(w / 2, -H); c.lineTo(w / 2, -H * 0.06); c.lineTo(w * 0.22, 0); c.lineTo(0, -H * 0.08); c.lineTo(-w * 0.28, -H * 0.02); c.lineTo(-w / 2, -H * 0.1); c.closePath();
+      c.fillStyle = hz('#efe3c4', x); c.fill();
+      c.fillStyle = hz('#b8432e', x); c.fillRect(-w * 0.27, -H * 0.92, w * 0.54, w * 0.5);
+      c.strokeStyle = hz('#4a3830', x); c.lineWidth = lw(0.085); c.lineCap = 'round'; c.beginPath();
+      c.moveTo(0, -H * 0.7); c.lineTo(0, -H * 0.18); for (let k = 0; k < 4; k++) { const yy = -H * (0.66 - k * 0.12); c.moveTo(-w * 0.24, yy); c.lineTo(w * 0.24, yy + (k & 1 ? 1 : -1) * s * 0.05); }
+      c.stroke(); c.restore();
+    };
+    fuda(PX[0] - 0.45, 24.2, -0.04, 2.9); fuda(PX[0] + 0.5, 22.8, 0.05, 2.5); fuda(PX[1] - 0.4, 23.6, 0.03, 2.7); fuda(PX[1] + 0.55, 25.6, -0.06, 2.2);
+    // --- 雀替：大樑和柱子接頭底下雕成捲雲的托木 ---
+    const brace = (xp, d, len) => {
+      c.beginPath(); c.moveTo(X(xp), Y(ay + 0.3)); c.lineTo(X(xp + d * len), Y(ay + 0.3)); c.lineTo(X(xp + d * len), Y(ay - 0.34));
+      c.quadraticCurveTo(X(xp + d * len * 0.8), Y(ay - 0.36), X(xp + d * len * 0.66), Y(ay - 0.78));
+      c.quadraticCurveTo(X(xp + d * len * 0.56), Y(ay - 1.12), X(xp + d * len * 0.42), Y(ay - 1.0));
+      c.quadraticCurveTo(X(xp + d * len * 0.2), Y(ay - 1.2), X(xp + d * len * 0.1), Y(ay - 2.2));
+      c.lineTo(X(xp), Y(ay - 2.7)); c.closePath();
+      c.fillStyle = lg(c, 0, Y(ay), 0, Y(ay - 2.7), [0, hz('#6d5747', xp), 1, hz('#54433a', xp)]); c.fill();
+      c.strokeStyle = 'rgba(40,28,24,.35)'; c.lineWidth = lw(0.07); c.beginPath(); c.arc(X(xp + d * len * 0.56), Y(ay - 0.62), s * 0.3, 0, TAU); c.stroke();
+      c.strokeStyle = rgba(hz('#f0cd98', xp), 0.45); c.lineWidth = lw(0.07); c.beginPath(); c.moveTo(X(xp + d * len * 0.66), Y(ay - 0.7)); c.quadraticCurveTo(X(xp + d * len * 0.56), Y(ay - 1.02), X(xp + d * len * 0.42), Y(ay - 0.92)); c.stroke();
+    };
+    for (const px of PX) { brace(px + hw, 1, px < ax ? 4.6 : 2.4); brace(px - hw, -1, px < ax ? 2.4 : 4.6); }
+    // --- 簷下：暗暗的簷底，一排椽子的頭（大樑會蓋住它的下緣） ---
+    const ex0 = ax - ES, ex1 = ax + ES;
+    c.beginPath(); for (let x = ex0; x <= ex1; x += 0.5) c.lineTo(X(x), Y(ye(x) + 0.05)); for (let x = ex1; x >= ex0; x -= 0.5) c.lineTo(X(x), Y(ye(x) - 0.62)); c.closePath();
+    c.fillStyle = hz('#3b3236'); c.fill();
+    c.fillStyle = hz('#b89a72'); for (let x = ex0 + 0.4; x < ex1 - 0.2; x += 0.5) c.fillRect(X(x - 0.11), Y(ye(x) - 0.06), s * 0.22, s * 0.26);
+    // --- 大樑：底面平平的，頂面中間微微拱起；兩頭雕成捲雲的樑頭 ---
+    c.beginPath(); c.moveTo(X(bx0 + 1), Y(ay)); c.lineTo(X(bx1 - 1), Y(ay));
+    c.quadraticCurveTo(X(bx1 - 0.1), Y(ay + 0.05), X(bx1), Y(ay + 1)); c.lineTo(X(bx1), Y(bt(bx1)));
+    for (let x = bx1 - 1; x > bx0; x -= 1) c.lineTo(X(x), Y(bt(x)));
+    c.lineTo(X(bx0), Y(bt(bx0))); c.lineTo(X(bx0), Y(ay + 1)); c.quadraticCurveTo(X(bx0 + 0.1), Y(ay + 0.05), X(bx0 + 1), Y(ay)); c.closePath();
+    c.fillStyle = lg(c, 0, Y(yT + 0.15), 0, Y(ay), [0, hz('#8a7360'), 0.22, hz('#715b49'), 0.75, hz('#5d4a3c'), 1, hz('#45362d')]); c.fill();
+    c.save(); c.clip();
+    c.strokeStyle = 'rgba(44,32,26,.26)'; c.lineWidth = lw(0.07); c.beginPath();
+    for (let k = 0; k < 4; k++) { const y0 = ay + 0.35 + k * 0.42 + R() * 0.1, ph = R() * TAU; for (let x = bx0; x <= bx1 + 1; x += 1.5) { const yy = Y(y0 + Math.sin(x * 0.17 + ph) * 0.05); if (x === bx0) c.moveTo(X(x), yy); else c.lineTo(X(x), yy); } }
+    c.stroke();
+    for (let k = 0; k < 4; k++) { let x = bx0 + 3 + R() * (bx1 - bx0 - 6), y = ay + 0.6 + R() * 1; c.beginPath(); c.moveTo(X(x), Y(y)); for (let j = 0; j < 6; j++) { x += 0.7 + R() * 0.5; y += (R() - 0.5) * 0.12; c.lineTo(X(x), Y(y)); } c.strokeStyle = 'rgba(34,24,20,.45)'; c.lineWidth = lw(0.1); c.stroke(); }
+    c.fillStyle = 'rgba(40,30,26,.35)'; c.fillRect(X(bx0), Y(ay + 0.28), (bx1 - bx0) * s, s * 0.28);
+    c.restore();
+    c.strokeStyle = rgba(hz('#f2cf9a'), 0.55); c.lineWidth = lw(0.12); c.beginPath(); c.moveTo(X(bx0), Y(bt(bx0) - 0.06)); for (let x = bx0 + 1; x < bx1; x += 1) c.lineTo(X(x), Y(bt(x) - 0.06)); c.lineTo(X(bx1), Y(bt(bx1) - 0.06)); c.stroke();
+    for (const [x, d] of [[bx0, 1], [bx1, -1]]) {      // 樑頭的捲雲紋、包著的銅皮
+      c.strokeStyle = 'rgba(40,28,24,.4)'; c.lineWidth = lw(0.08); c.beginPath(); c.arc(X(x + d * 0.62), Y(ay + 0.86), s * 0.34, 0, TAU); c.moveTo(X(x + d * 0.62) + s * 0.15, Y(ay + 0.86)); c.arc(X(x + d * 0.62), Y(ay + 0.86), s * 0.15, 0, TAU); c.stroke();
+      c.fillStyle = hz('#6f8a76', x); c.fillRect(Math.min(X(x), X(x + d * 0.34)), Y(bt(x) + 0.02), s * 0.34, s * (bt(x) - ay - 0.9));
+    }
+    // 吊鐘的鐵箍：鐵鍊就從它底下的吊環掛下來
+    c.fillStyle = lg(c, X(ax - 1.45), 0, X(ax + 1.45), 0, [0, hz('#2f2c34'), 0.6, hz('#46414c'), 0.85, hz('#6b6572'), 1, hz('#3a3640')]); c.fillRect(X(ax - 1.45), Y(bt(ax) + 0.08), s * 2.9, (bt(ax) + 0.08 - ay) * s);
+    c.fillStyle = hz('#c79a4a'); for (const u of [-1.05, 1.05]) for (const v of [0.45, 1.5]) { c.beginPath(); c.arc(X(ax + u), Y(ay + v), s * 0.13, 0, TAU); c.fill(); }
+    // --- 斗栱：大樑頂上一排托木，撐著屋簷（簷下的影子裡） ---
+    for (const x of [PX[0], ax - 9.2, ax, ax + 9.2, PX[1]]) {
+      const y0 = bt(x) - 0.03, big = x === PX[0] || x === PX[1];
+      if (big) { wp([x - 2.1, y0 + 0.32, x + 2.1, y0 + 0.32, x + 2.1, y0 + 0.6, x - 2.1, y0 + 0.6]); c.fillStyle = hz('#5f4c3e', x); c.fill(); }      // 肘木
+      wp([x - 0.5, y0, x + 0.5, y0, x + 0.68, y0 + 0.3, x + 0.68, y0 + 0.36, x - 0.68, y0 + 0.36, x - 0.68, y0 + 0.3]); c.fillStyle = hz('#6a5444', x); c.fill();
+      if (big) for (const u of [-1.6, 1.6]) { wp([x + u - 0.32, y0 + 0.6, x + u + 0.32, y0 + 0.6, x + u + 0.4, y0 + 0.75, x + u - 0.4, y0 + 0.75]); c.fillStyle = hz('#6a5444', x); c.fill(); }
+    }
+    // --- 瓦頂：屋簷兩頭往上翹，一排瓦當、一條條筒瓦，頂上一道屋脊、兩頭的鬼瓦 ---
+    c.beginPath(); c.moveTo(X(ex0), Y(ye(ex0) + 0.42));
+    c.quadraticCurveTo(X(ax - RS - 1.6), Y(RY - 0.2), X(ax - RS), Y(RY)); c.lineTo(X(ax + RS), Y(RY)); c.quadraticCurveTo(X(ax + RS + 1.6), Y(RY - 0.2), X(ex1), Y(ye(ex1) + 0.42));
+    for (let x = ex1; x >= ex0; x -= 0.5) c.lineTo(X(x), Y(ye(x)));
+    c.closePath();
+    c.fillStyle = lg(c, 0, Y(RY), 0, Y(E0), [0, hz('#8a91a0'), 0.6, hz('#6c7381'), 1, hz('#5a606d')]); c.fill();
+    c.save(); c.clip();
+    c.fillStyle = 'rgba(30,26,34,.35)'; c.beginPath(); c.moveTo(X(ex0), Y(ye(ex0) + 0.42)); for (let x = ex0; x <= ex1; x += 0.5) c.lineTo(X(x), Y(ye(x) + 0.42)); for (let x = ex1; x >= ex0; x -= 0.5) c.lineTo(X(x), Y(ye(x) + 0.6)); c.closePath(); c.fill();
+    c.lineCap = 'butt';
+    for (let x = ex0 + 0.3; x < ex1; x += 0.56) { c.fillStyle = 'rgba(28,24,32,.3)'; c.fillRect(X(x - 0.2), Y(RY), s * 0.12, (RY - ye(x)) * s); c.fillStyle = rgba(hz('#b9c0cc', x), 0.6); c.fillRect(X(x - 0.06), Y(RY), s * 0.16, (RY - ye(x) - 0.45) * s); }
+    c.restore();
+    c.fillStyle = hz('#4c525e'); for (let x = ex0 + 0.25; x < ex1; x += 0.56) { c.beginPath(); c.arc(X(x), Y(ye(x) + 0.2), s * 0.2, 0, TAU); c.fill(); }      // 瓦當
+    c.fillStyle = rgba(hz('#c4cad4'), 0.6); for (let x = ex0 + 0.25; x < ex1; x += 0.56) { c.beginPath(); c.arc(X(x + 0.05), Y(ye(x) + 0.26), s * 0.08, 0, TAU); c.fill(); }
+    wp([ax - RS - 0.5, RY - 0.05, ax + RS + 0.5, RY - 0.05, ax + RS + 0.5, RY + 0.42, ax - RS - 0.5, RY + 0.42]); c.fillStyle = hz('#3c414c'); c.fill();
+    c.fillStyle = rgba(hz('#a9b0bd'), 0.5); c.fillRect(X(ax - RS - 0.5), Y(RY + 0.42), (RS * 2 + 1) * s, lw(0.08));
+    for (const d of [-1, 1]) {
+      const x = ax + d * (RS + 0.5);
+      c.beginPath(); c.moveTo(X(x - d * 0.3), Y(RY - 0.1)); c.lineTo(X(x + d * 0.4), Y(RY - 0.1)); c.quadraticCurveTo(X(x + d * 0.78), Y(RY + 0.5), X(x + d * 0.56), Y(RY + 1.12)); c.quadraticCurveTo(X(x + d * 0.36), Y(RY + 0.86), X(x + d * 0.1), Y(RY + 0.82)); c.quadraticCurveTo(X(x - d * 0.2), Y(RY + 0.8), X(x - d * 0.3), Y(RY + 0.5)); c.closePath(); c.fillStyle = hz('#3c414c'); c.fill();      // 鴟尾
+      // 簷角掛的風鐸
+      const tx = ax + d * (ES - 0.25), ty = ye(tx);
+      c.strokeStyle = hz('#3a3640', tx); c.lineWidth = lw(0.06); c.beginPath(); c.moveTo(X(tx), Y(ty)); c.lineTo(X(tx), Y(ty - 0.5)); c.stroke();
+      wp([tx - 0.18, ty - 0.5, tx + 0.18, ty - 0.5, tx + 0.28, ty - 1.15, tx - 0.28, ty - 1.15]); c.fillStyle = hz('#7a8a6e', tx); c.fill();
+    }
+  }
 
   return {
     key: 'maple',
@@ -152,7 +288,7 @@ THEMES[11] = (function () {
       // 中景：紅葉林，寺院從樹梢露出屋頂，鳥居站在谷底
       const h3 = (x) => 8.6 + 2.6 * f3(x) - 4.4 * Math.exp(-Math.pow((x - 51) / 10, 2)) - 1.5 * sm((x - 98) / 20);
       forest(c, R, h3, { r0: 0.55, r1: 0.95, rows: 5, gap: 1, hz: 0.38, k: 0.55, pine: 0.08, cf: 0.09, top: 11, base: '#cf7550', skip: (x, y) => Math.abs(x - TX) < 3.4 && y > h3(TX) - 3 });
-      temple(c, X(HX), Y(h3(HX) - 1.5), s * 7, haze('#5c626e', HX, 0.4), haze('#8e96a2', HX, 0.4), haze('#efe6d6', HX, 0.4), haze('#c9452e', HX, 0.4));
+      temple(c, X(HX), Y(h3(HX) - 1.5), s * 6.6, haze('#5c626e', HX, 0.4), haze('#8e96a2', HX, 0.4), haze('#efe6d6', HX, 0.4), haze('#c9452e', HX, 0.4));
       for (const [dx, dy, r] of [[-4.6, 1.6, 1], [-3, 2, 0.85], [3.1, 2, 0.9], [4.6, 1.5, 1.05], [-1.2, 2.5, 0.8], [1.3, 2.6, 0.75]]) crown(c, X(HX + dx), Y(h3(HX) - 1.5 - dy + 0.9), r * s, haze(PAL[1 + ((R() * 4) | 0)], HX, 0.34), 0.55);
       const ty = h3(TX) - 2.3;
       glow(c, X(TX), Y(ty + 1.6), s * 5.5, s * 3, '#fff3d6', 0.55);
@@ -160,6 +296,9 @@ THEMES[11] = (function () {
       torii(c, X(TX), Y(ty), s * 4.8, haze('#d63f29', TX, 0.12), haze('#3d2a2c', TX, 0.12));
       // 谷裡的霧
       c.fillStyle = lg(c, 0, Y(8.5), 0, Y(1), [0, 'rgba(250,232,204,0)', 0.6, 'rgba(250,232,204,.55)', 1, 'rgba(250,232,204,.38)']); c.fillRect(0, Y(8.5), W, Y(0) - Y(8.5));
+      // 鐘架：先畫它、再畫近景那排樹，柱腳才會被樹擋住。上半截（雲和雁會從後面飛過的那一段）留到每一幀再貼
+      const BD = S.lv && S.lv.bell; bfCut = 0;
+      if (BD) { bfCut = Math.round(Y(BD.y - 6.5)); c.save(); c.beginPath(); c.rect(0, bfCut, W, H); c.clip(); belfry(c, BD.x, BD.y); c.restore(); }
       // 近景：一棵一棵的紅葉樹
       const h4 = (x) => 3.4 + 1.4 * f4(x) - 2.2 * Math.exp(-Math.pow((x - 50) / 9, 2));
       forest(c, R, h4, { r0: 1.15, r1: 1.7, rows: 2, gap: 1.4, hz: 0.1, k: 1, pine: 0.06, cf: 0.12, top: 6, base: '#a8492f', tree: 1 });
@@ -224,6 +363,12 @@ THEMES[11] = (function () {
       leaves = []; for (let k = 0; k < 34; k++) leaves.push({ x: lerp(V.x0 - 4, V.x1 + 4, Math.random()), y: lerp(-9, V.top, Math.random()), v: 1.6 + Math.random() * 1.8, sw: 0.8 + Math.random() * 1.6, w: 0.6 + Math.random() * 1.1, p: Math.random() * TAU, rot: Math.random() * TAU, vr: (Math.random() - 0.5) * 3, fl: 1.5 + Math.random() * 2.5, k: (Math.random() * PAL.length) | 0, r: 0.55 + Math.random() * 0.5 });
       sparks = []; for (let k = 0; k < 5; k++) sparks.push({ u: R(), v: 0.5 + R() * 0.3, dx: (R() - 0.5) * 0.5 });
       flock = null; flockAt = 3 + R() * 4;
+      // 鐘架的上半截：同一個位置、同一套亂數再畫一次成小圖（只畫到 bfCut 那一列為止，下面那段已經在遠景裡）
+      bfTop = null; const BD = S.lv && S.lv.bell;
+      if (BD && bfCut > 0) {
+        const x0 = Math.floor(X(BD.x - BL - 8)), x1 = Math.ceil(X(BD.x + BL + 8)), y0 = Math.max(0, Math.floor(Y(BD.y + 8)));
+        if (bfCut > y0) { bfTop = mkCanvas(x1 - x0, bfCut - y0); const g = bfTop.getContext('2d'); g.translate(-x0, -y0); belfry(g, BD.x, BD.y); bfX = x0; bfY = y0; }
+      }
     },
     back(c, t, dt) {
       const s = V.s;
@@ -250,6 +395,7 @@ THEMES[11] = (function () {
         }
       }
       c.globalAlpha = 1;
+      if (bfTop) c.drawImage(bfTop, bfX, bfY);      // 鐘架的上半截蓋在雲和雁前面
       for (const b of branches) { c.save(); c.translate(X(b.x), Y(b.y)); c.rotate((0.022 * Math.sin(t * 0.7 + b.p) + 0.008 * Math.sin(t * 1.9 + b.p) + S.wind * 0.003) * (b.p ? -1 : 1)); c.drawImage(b.cv, -b.ax, -b.ay); c.restore(); }
     },
     front(c, t, dt) {
