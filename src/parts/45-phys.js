@@ -19,6 +19,7 @@ const FRAG_SHR = typeof process !== 'undefined' && process.env && process.env.FR
 const SEG_K = typeof process !== 'undefined' && process.env && process.env.SEG_K ? +process.env.SEG_K : 1.25;            // 長樑、樓板每一段的耐久，是同材質單塊磚的幾倍
 const FRAG_MAX = 56;         // 場上最多留幾塊碎塊（超過就直接碎成粉）
 const FRAG_KEEP = 34;        // 每回合結束時，最舊的碎塊清到剩這麼多
+const SMASH_K = 0.3;         // 滾石、大鐘撞到磚：質量 × 撞擊速度 × 這個 = 傷害
 const PH = { world: null, ground: null, stamp: 0, stepId: 0, imp: [], impN: 0, inStep: false, kill: [], killJ: [], reJ: [], rePin: [], found: [], wm: null, ek: 0, ex: 0, ey: 0 };
 
 /* ---------- 地面 ---------- */
@@ -202,6 +203,7 @@ function fracture(b, p, ang, vel, om, sec) {
 // kind: 傷害種類（99 = 整座城垮掉時的連環爆）；clean: true 表示直接消失、不留碎塊（掉出戰場、清場、被炸得太徹底）
 function blockKill(b, side, kind, clean) {
   if (b.dead) return;
+  if (b.stake) { const R = b.stake; if (R.stake === b && !R.go) R.pend = side < 2 ? side : 1 - R.to; }          // 木樁斷了：石頭放出去（在這一步物理算完之後）
   if (b.inPlace) chainCount(b);
   if (b.ropes) ropesOff(b, null);
   if (b.pins) pinsOff(b, null);
@@ -306,6 +308,7 @@ function segSplit(b, side, kind) {
 // x, y：打在哪裡（長樑、樓板分段算耐久，要知道打到哪一段；沒給就是整塊一起，例如著火）
 function blockHurt(b, dmg, kind, side, x, y) {
   if (b.dead || dmg <= 0) return;
+  if (b.stake && side !== 1 - b.stake.to) return;          // 擋滾石的木樁：只有「石頭滾下去會砸到對方」的那一邊打得斷
   let d = dmg * DM[kind][b.mat]; if (b.brit > 0) d *= 1.6;
   if (d <= 0) return;
   if (b.seg) {
@@ -355,6 +358,7 @@ function mkUnitBody(u) {
 function physStep(dt) {
   const w = PH.world; PH.stepId++; PH.impN = 0;
   if (S.water) waterForces();
+  if (S.plats.length) platForces();
   PH.inStep = true;
   w.step(dt, 8, 3);
   PH.inStep = false;
@@ -383,6 +387,13 @@ function physStep(dt) {
   const credit = S.phase === 'hazard' ? 2 : S.turn;
   for (let i = 0; i < PH.impN; i++) {
     const r = PH.imp[i];
+    // 滾下坡的大石頭、盪過來的大鐘（smash）：撞到什麼都是整個的重量砸上去。磚被砸碎、兵被砸扁；功勞算推動它的那一邊
+    { const a = r.a, b = r.b, sm = a && a.smash && !a.dead ? a : b && b.smash && !b.dead ? b : null, o = sm === a ? b : a;
+      if (sm && o && !o.smash && r.vn > 4.5) {
+        const by = sm.smashBy === undefined ? 2 : sm.smashBy;
+        if (o.isBlock && !o.dead && o.st !== S.mech && !(S.time < (o.smCd || 0))) { o.smCd = S.time + 0.25; blockHurt(o, sm.mass * r.vn * SMASH_K, K_CRUSH, by === o.side ? 2 : by, r.x, r.y); if (!o.dead) ev('thud', r.x, r.y, r.J, r.vn); }
+        else if (o.isUnit && o.alive && !(S.time < (o.smCd || 0))) { o.smCd = S.time + 0.6; ev('bonk', r.x, r.y, sm.bigBell ? 'bell' : 'rock'); hurtUnit(o, Math.min(o.def.big ? o.hpMax * 0.12 : 160, sm.mass * r.vn * 0.22), by === o.side ? 2 : by, K_CRUSH); }
+      } }
     // 吊鐘、吊燈砸下來（吊它的繩子斷了、掛它的那塊垮了，或它自己正往下掉）砸在兵頭上：重的東西整個砸在頭上，特別痛。
     // 先算這一下（琉璃吊燈撞到東西就碎，碎了就來不及算了）
     { const a = r.a, b = r.b, hb = a && a.isBlock && a.hang && !a.dead ? a : b && b.isBlock && b.hang && !b.dead ? b : null, u = hb === a ? b : a;
@@ -457,7 +468,7 @@ function _rcb(fixture, point, normal, fraction) {
   const o = fixture.getUserData();
   if (o) {
     if (o.isRock) { if (RAY.own && o.side === RAY.side) return -1; }                                // 還沒出城：自己城裡的岩壁也不擋（懸空寺上殿的兵往上打，不會打在頭頂的岩簷上）
-    else if (o.isBlock) { if (RAY.own && (o.side === RAY.side || o.frag || o.st.loose)) return -1; }      // 還沒出城：自己的磚、掉進城裡的碎塊和落石都不擋
+    else if (o.isBlock) { if (RAY.own && (o.side === RAY.side || o.frag || o.st.loose)) return -1; if (o.stake && o.stake.to === RAY.side) return -1; }      // 還沒出城：自己的磚、掉進城裡的碎塊和落石都不擋；會砸向自己的那根木樁也不擋自己的砲
     else { if (!RAY.units || o.side === RAY.side || !o.alive) return -1; }
   }
   RAY.hit = o && !o.isRock ? (o.isBlock ? 2 : 3) : 1; RAY.o = o; RAY.x = point.x; RAY.y = point.y; RAY.f = fraction;
@@ -492,15 +503,18 @@ function rockPass(ball, dmg, kind, side) {
 function bigBlock(o) { return o.inPlace && !o.frag && !o.prop && !o.dom && (o.cw >= 4 || o.ch >= 3); }
 // hit: 直接打中的東西（磚或兵），vx/vy: 砲彈當時的方向
 function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
-  const T = side < 2 ? S.team[side] : null, kind = w.kind;
+  const T = side < 2 ? S.team[side] : null, kind = w.kind, keg = w.id === 'keg';
   const fire = kind === K_FIRE || (flag & F_FIRE) !== 0;
-  const mul = (T ? T.dmg * S.rage : 1) * mass * ((flag & F_FIRE) && kind !== K_FIRE ? 1.5 : 1);        // S.rage：拖太久之後雙方的砲火加重
-  const dmg = w.dmg * mul, ud = w.ud * mul, Jw = w.J * Math.pow(mass, 0.8) * (T ? Math.sqrt(T.dmg) : 1);
+  // S.rage：拖太久之後雙方的砲火加重。火藥桶炸開不吃誰的火力加成（點著它的是誰都一樣痛）
+  const mul = (T ? (keg ? 1 : T.dmg) * S.rage : 1) * mass * ((flag & F_FIRE) && kind !== K_FIRE ? 1.5 : 1);
+  const dmg = w.dmg * mul, ud = w.ud * mul, Jw = w.J * Math.pow(mass, 0.8) * (T && !keg ? Math.sqrt(T.dmg) : 1);
   const r = w.r * (mass > 1 ? Math.min(1.4, Math.sqrt(mass)) : 1);
   const sp = Math.hypot(vx || 0, vy || 0) || 1, ux = (vx || 0) / sp, uy = (vy || -1) / sp;
   if (r <= 0) {
     // 穿刺：只打中的那一個
-    if (hit && hit.isBlock && !hit.dead) {
+    if (hit && hit.isHull) hullHurt(hit, dmg, kind, side);
+    else if (hit && hit.isBlock && !hit.dead) {
+      if (hit.bigBell) bellPush(side);
       const b = hit;
       if (b.body) { const big = bigBlock(b), cap = b.mat === M_KEG ? 10 : b.mat === M_ROCK ? DV_ROCK : big ? DV_BIG : DV_MAX, j = Math.min(Jw, b.mass * Math.min(12, cap)), k = pushScale(b.body, b.mass, ux * j, uy * j, cap); if (k > 0) b.body.applyLinearImpulse({ x: ux * j * k, y: uy * j * k }, big ? b.body.getWorldCenter() : { x, y }, true); }
       if (b.mat === M_ROCK && b.kind === 'ball') rockPass(b, dmg * 0.6, kind, side);
@@ -517,9 +531,17 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
   PH.ek = 1; PH.ex = x; PH.ey = y;
   for (let i = 0; i < n; i++) {
     const o = list[i];
+    if (o.isHull) {
+      // 船身：照離最近的那一點算傷害；船很重，只被推一點點
+      const A = o.fix.getAABB(0), qx = clamp(x, A.lowerBound.x, A.upperBound.x), qy = clamp(y, A.lowerBound.y, A.upperBound.y), d = Math.hypot(x - qx, y - qy);
+      const f = o === hit ? 1 : 1 - d / r; if (f <= 0) continue;
+      hullHurt(o, o === hit ? dmg : dmg * 0.6 * Math.min(1, f), kind, side);
+      continue;
+    }
     if (o.isBlock) {
       if (o.dead) continue;
       const d = blockDist(o, x, y); let f = o === hit ? 1 : 1 - d / r; if (f <= 0) continue; if (f > 1) f = 1;
+      if (o.bigBell) bellPush(side);
       // 推：從爆炸中心往外，作用在最近的那一點（所以磚會轉）
       const p = o.body.getPosition(); let nx = _cp.x - x, ny = _cp.y - y, nl = Math.hypot(nx, ny);
       if (nl < 0.3) { nx = p.x - x; ny = p.y - y; nl = Math.hypot(nx, ny); if (nl < 0.05) { nx = ux; ny = uy; nl = 1; } }
@@ -546,10 +568,11 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
   }
   PH.ek = 0;
   if (S.ropes.length) ropesBlast(x, y, r, dmg, kind, side, fire);
-  // 飛在天上的東西（氣球、光球）
+  if (fire || keg) fuseBlast(x, y, r, fire, keg, side);
+  // 飛在天上的東西（氣球、光球、吊著浮島的氣球）
   for (const o of S.objs) {
-    if ((o.t !== 'balloon' && o.t !== 'orb') || o.side === side || o.hp <= 0) continue;
-    const dx = o.x - x, dy = o.y - y; if (dx * dx + dy * dy < (r + o.r) * (r + o.r)) { o.hp -= dmg * 0.6; o.flash = 1; }
+    if ((o.t !== 'balloon' && o.t !== 'orb' && o.t !== 'tether') || o.side === side || o.hp <= 0) continue;
+    const dx = o.x - x, dy = o.y - y; if (dx * dx + dy * dy < (r + o.r) * (r + o.r)) { o.hp -= dmg * 0.6; o.flash = 1; if (o.t === 'tether' && o.hp <= 0) tetherPop(o, side); }
   }
   if (kind === K_ZAP) lightning(x, y, mul, side);
   ev('boom', x, y, r, w.i, side, mass + ((flag & F_FIRE) ? 100 : 0));

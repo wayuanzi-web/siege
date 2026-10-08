@@ -4,11 +4,31 @@
 
 /* ---------- 藍圖座標 → 戰場座標 ---------- */
 // at：[欄, 由上往下第幾列, 格子裡的位置 fx（0 左、1 右）, fy（0 下、1 上）]，照藍圖寫的方向（敵城會左右鏡射）
+// （蓋在浮島、船上的城：照那一塊現在的位置和角度換算）
 function cellPt(st, at) {
   const col = at[0], row = at[1], fx = at[2] === undefined ? 0.5 : at[2], fy = at[3] === undefined ? 0.5 : at[3];
   const cy = st.rows - 1 - row, mx = st.mirror ? st.cols - 1 - col : col, ux = st.mirror ? 1 - fx : fx;
-  return { x: st.x0 + (mx + ux) * CS, y: st.y0 + (cy + fy) * CS, cx: mx, cy };
+  const x = st.x0 + (mx + ux) * CS, y = st.y0 + (cy + fy) * CS;
+  if (st.plat && st.plat.body) { const q = platWorld(st, x, y); return { x: q.x, y: q.y, cx: mx, cy }; }
+  return { x, y, cx: mx, cy };
 }
+/* ---------- 浮島、船：整座城跟著底下那一塊一起動 ----------
+   城樓的磚記的是蓋好時的位置（那時浮島、船在原位）。之後要比「還在不在原位」、兵「是不是被轟出城」，
+   先把現在的位置換回浮島、船自己的座標（platLocal）；反過來，藍圖上某一格現在在哪裡用 platWorld */
+const _pl = { x: 0, y: 0 };
+function platLocal(st, x, y) {
+  const P = st && st.plat; if (!P || !P.body) { _pl.x = x; _pl.y = y; return _pl; }
+  const p = P.body.getPosition(), a = P.body.getAngle() - P.a0, c = Math.cos(a), s = Math.sin(a), dx = x - p.x, dy = y - p.y;
+  _pl.x = P.x0 + dx * c + dy * s; _pl.y = P.y0 - dx * s + dy * c; return _pl;
+}
+function platWorld(st, x, y) {
+  const P = st && st.plat; if (!P || !P.body) { _pl.x = x; _pl.y = y; return _pl; }
+  const p = P.body.getPosition(), a = P.body.getAngle() - P.a0, c = Math.cos(a), s = Math.sin(a), dx = x - P.x0, dy = y - P.y0;
+  _pl.x = p.x + dx * c - dy * s; _pl.y = p.y + dx * s + dy * c; return _pl;
+}
+// 一座城現在的中心（護城罩、光球瞄準用）
+const _sc = { x: 0, y: 0 };
+function stCenter(st) { const q = platWorld(st, st.cx, st.y0 + st.h * 0.42); _sc.x = q.x; _sc.y = q.y; return _sc; }
 // 某一點掛在什麼上：岩壁（null = 固定點）或一塊磚。找不到就回傳 undefined
 function anchorAt(st, P) {
   const i = P.cy * st.cols + P.cx, k = st.cellK[i];
@@ -285,6 +305,7 @@ function stressCalib(k) {
   for (const b of S.blocks) { b.sJ = 0; b.sAcc = 0; }
   for (const r of S.ropes) r.t0 = 0;
   for (let i = 0; i < k; i++) {
+    if (S.plats.length) platForces();
     PH.world.step(STEP, 8, 3);
     for (const b of S.blocks) { if (b.dead) continue; b.sAcc += b.sJ / STEP; b.sJ = 0; }
     for (const r of S.ropes) if (r.j) r.t0 = Math.max(r.t0, ropeTension(r.j, 1 / STEP));
@@ -365,8 +386,12 @@ function mechStep(dt) {
   }
   if (S.lv.stress) stressStep(dt, act);
   boulderStep(dt);
+  if (S.plats.length) platStep(dt, act);
+  if (S.rollers.length) rollersStep();
+  if (S.bell) bellStep(dt, act);
+  fuseStep(dt, act);
   // 琉璃碎片：一會兒就化成亮晶晶的粉，不會滿地都是
-  for (const b of S.blocks) if (!b.dead && b.frag && b.mat === M_GLASS) { b.age = (b.age || 0) + dt; if (b.age > 2.2) { const p = b.body.getPosition(); ev('glint', p.x, p.y); blockKill(b, 2, K_CRUSH, true); } }
+  for (const b of S.blocks) if (!b.dead && b.frag && (b.mat === M_GLASS || b.mat === M_SNOW)) { b.age = (b.age || 0) + dt; if (b.age > (b.mat === M_SNOW ? 6 : 2.2)) { const p = b.body.getPosition(); ev(b.mat === M_SNOW ? 'snowpuff' : 'glint', p.x, p.y); blockKill(b, 2, K_CRUSH, true); } }
   if (S.pins.length) pinStep(dt, act);
   for (const o of S.pivots) if (o.b && !o.b.dead) {
     const a = o.b.body.getAngle(), w = o.b.body.getAngularVelocity();
@@ -394,6 +419,12 @@ function resonate(b, side) {
 }
 // 第二篇才有的回合結束清場：場中間停住的大石頭清掉（不然整片空地擺滿石頭，平射都被擋）
 function mechRoundEnd() {
+  for (const b of S.mech.blocks) {
+    if (b.dead || !b.roll || !b.roll.go || b.smash) continue;
+    const p = b.body.getPosition(); let inC = false;
+    for (let s = 0; s < 2; s++) { const st = S.st[s]; if (p.x > st.x0 - 1 && p.x < st.x1 + 1) inC = true; }
+    if (!inC) blockKill(b, 2, K_CRUSH, true);
+  }
   for (const b of S.rubble.blocks) {
     if (b.dead || !b.boulder) continue;
     const p = b.body.getPosition(); let inC = false;
@@ -404,3 +435,294 @@ function mechRoundEnd() {
 // 兵比對面少的時候：打出傷害、打出坍塌，連珠集得快一點（給落後的一方翻盤的機會）
 function ultK(side) { const T = S.team[side], F = S.team[1 - side]; return T && F && T.alive < F.alive ? 1.5 : 1; }
 function ropesBurning() { for (const r of S.ropes) if (!r.cut && r.burn > 0) return true; return false; }
+
+/* ---------- 浮島與戰船（藍圖裡的 R、B）：整片連成一個會動的大塊，城樓蓋在上面 ----------
+   浮島：一整塊岩石，用幾顆氣球的繩子吊著（繩子是有彈性的：少一顆氣球，那一頭就往下沉一點；同一頭的都破了，整座島歪下去）。
+   戰船：船身分成幾個船艙，每一艙泡在水裡的部分有浮力（照泡進去的面積算）；船艙被打穿就進水，進了水的那一艙浮力變小，
+   那一頭就往下沉。船用一條看不見的錨鍊拉著，不會漂走 */
+const SHIP_DEN = 1.7;          // 船身的密度（底下壓了石頭當壓艙：重心低，船才不會一歪就翻）
+const ISLE_DEN = 1.1;          // 浮島岩石的密度
+const TETHER_S0 = 2.4;         // 氣球繩子在開場時被拉長了多少（越大，少一顆氣球時那一頭沉得越多）
+function mkPlat(st, cells, ch, def) {
+  const mir = st.mirror, cols = st.cols; let xa = 1e9, xb = -1e9, ya = 1e9, yb = -1e9; const cw = [];
+  for (let i = 0; i < cells.length; i += 2) {
+    const cx = cells[i], cy = cells[i + 1], mx = mir ? cols - 1 - cx : cx;
+    cw.push(mx, cy); st.cellK[cy * cols + mx] = 3;
+    xa = Math.min(xa, st.x0 + mx * CS); xb = Math.max(xb, st.x0 + (mx + 1) * CS); ya = Math.min(ya, st.y0 + cy * CS); yb = Math.max(yb, st.y0 + (cy + 1) * CS);
+  }
+  const ox = (xa + xb) / 2, oy = (ya + yb) / 2, ship = ch === 'B';
+  const body = PH.world.createBody({ type: 'dynamic', position: { x: ox, y: oy }, awake: false, angularDamping: ship ? 0.4 : 0.9, linearDamping: ship ? 0.05 : 0.35 });
+  const P = { st, kind: ship ? 'ship' : 'island', body, x0: ox, y0: oy, a0: 0, cells: cw, comps: null, teth: [], kb: 0, M: 0, dead: false, xa, xb, ya, yb };
+  const has = new Set(); for (let i = 0; i < cw.length; i += 2) has.add(cw[i] + ',' + cw[i + 1]);
+  if (!ship) {
+    P.tag = { isRock: true, isPlat: true, st, side: st.side, plat: P };
+    for (let cy = 0; cy < st.rows; cy++) for (let cx = 0; cx < cols; cx++) {
+      if (!has.has(cx + ',' + cy) || has.has((cx - 1) + ',' + cy)) continue;
+      let k = 1; while (has.has((cx + k) + ',' + cy)) k++;
+      body.createFixture({ shape: new PL.Box(k * CS / 2, CS / 2, { x: st.x0 + (cx + k / 2) * CS - ox, y: st.y0 + (cy + 0.5) * CS - oy }, 0), density: ISLE_DEN, friction: 0.85, restitution: 0, filterCategoryBits: CAT_TERR, userData: P.tag });
+    }
+  } else {
+    // 船身：B 那幾格的外框（凸包）切成幾個船艙
+    const pts = [];
+    for (let i = 0; i < cw.length; i += 2) { const x = st.x0 + cw[i] * CS - ox, y = st.y0 + cw[i + 1] * CS - oy; pts.push([x, y], [x + CS, y], [x, y + CS], [x + CS, y + CS]); }
+    pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], hi = [];
+    for (const q of pts) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+    for (let i = pts.length - 1; i >= 0; i--) { const q = pts[i]; while (hi.length >= 2 && cr(hi[hi.length - 2], hi[hi.length - 1], q) <= 0) hi.pop(); hi.push(q); }
+    const hull = lo.slice(0, -1).concat(hi.slice(0, -1)), flat = []; for (const q of hull) flat.push(q[0], q[1]);
+    P.hull = flat;
+    const n = (def.ship && def.ship.comps) || 3, w = xb - xa; let rest = flat; P.comps = [];
+    for (let k = 0; k < n; k++) {
+      let piece = rest;
+      if (k < n - 1) { const cut = xa - ox + w * (k + 1) / n, two = splitPoly(rest, cut, 0, 1, 0); piece = two[1]; rest = two[0]; }
+      const v = []; for (let i = 0; i < piece.length; i += 2) v.push({ x: piece[i], y: piece[i + 1] });
+      const hm = (def.ship && def.ship.hp || 150) * st.hpMul;
+      const c = { isRock: true, isHull: true, st, side: st.side, plat: P, k, hp: hm, hm, flood: 0, flash: 0, pts: piece, fix: null, area: polyArea(piece), sub: 0, leak: 0 };
+      c.fix = body.createFixture({ shape: new PL.Polygon(v), density: SHIP_DEN, friction: 0.7, restitution: 0, filterCategoryBits: CAT_TERR, userData: c });
+      P.comps.push(c);
+    }
+    // 船頭在哪一邊（正面朝戰場中間）：排在最前面的那一艙
+    if (mir) P.comps.reverse();
+    P.comps.forEach((c, k) => { c.k = k; c.bow = k === P.comps.length - 1; c.stern = k === 0; });
+  }
+  st.plat = P; S.plats.push(P);
+  return P;
+}
+// 氣球：綁在浮島上的一點，繩子往上拉到一顆氣球（氣球固定在天上）
+function mkTether(st, d) {
+  const P = st.plat; if (!P) return null;
+  const A = cellPt(st, d.at), lp = P.body.getLocalPoint({ x: A.x, y: A.y });
+  const o = { t: 'tether', side: st.side, st, plat: P, lp: { x: lp.x, y: lp.y }, ax: A.x, ay: A.y + d.h, x: A.x, y: A.y + d.h + 2.5, r: 3.1, hp: d.hp * st.hpMul, hm: d.hp * st.hpMul, k: 0, L0: 0, c: 0, flash: 0, cutT: -99, ph: (A.x * 0.37) % TAU, by: -1 };
+  P.teth.push(o); S.objs.push(o);
+  return o;
+}
+// 兵都放上去之後才算（simInit 裡呼叫）：整座島（船）連城連兵多重、重心在哪
+function platCalib(P) {
+  const body = P.body, st = P.st;
+  const mass = () => { let M = body.getMass(), mx = M * body.getWorldCenter().x; for (const b of st.blocks) if (!b.dead) { M += b.mass; mx += b.mass * b.body.getWorldCenter().x; } for (const u of st.units) if (u.body) { M += u.mass; mx += u.mass * u.body.getWorldCenter().x; } return [M, mx / M]; };
+  let [M, xc] = mass();
+  if (P.kind === 'island') {
+    // 每顆氣球分到多少重量：照位置分（重心偏哪一邊，那一邊的氣球多吊一點），再把繩子的原長調到剛好撐住
+    const T = P.teth, n = T.length; if (!n) return;
+    const xs = T.map((o) => body.getWorldPoint(o.lp).x), xbar = xs.reduce((a, b) => a + b, 0) / n, sxx = xs.reduce((a, x) => a + (x - xbar) * (x - xbar), 0) || 1;
+    const W = M * GRAV, beta = W * (xc - xbar) / sxx, k = W / n / TETHER_S0;
+    T.forEach((o, i) => { const F = W / n + (xs[i] - xbar) * beta, wp = body.getWorldPoint(o.lp); o.k = k; o.L0 = Math.hypot(o.ax - wp.x, o.ay - wp.y) - F / k; o.c = 2 * 0.9 * Math.sqrt(k * M / n); o.F0 = F; });
+  } else {
+    // 船：先把船頭、船尾壓艙，讓重心跟浮心對齊（船身是平的），再算每一格泡在水裡的面積要給多少浮力
+    for (let it = 0; it < 3; it++) {
+      let A = 0, ax = 0; for (const c of P.comps) { const q = hullSub(P, c); if (q) { A += q.a; ax += q.a * q.x; } }
+      const xb = ax / A, end = xb > xc ? P.comps.reduce((a, c) => (polyCentroidW(P, c) > polyCentroidW(P, a) ? c : a)) : P.comps.reduce((a, c) => (polyCentroidW(P, c) < polyCentroidW(P, a) ? c : a));
+      const xe = polyCentroidW(P, end), dm = M * (xb - xc) / (xe - xb);
+      if (Math.abs(dm) > 0.5) { end.fix.setDensity(end.fix.getDensity() + dm / end.area); body.resetMassData(); }
+      [M, xc] = mass();
+    }
+    let A = 0; for (const c of P.comps) { const q = hullSub(P, c); if (q) A += q.a; }
+    P.kb = M * GRAV / Math.max(1, A);
+  }
+  P.M = M;
+}
+function polyCentroidW(P, c) { const q = polyCentroid(c.pts); return P.body.getWorldPoint({ x: q[0], y: q[1] }).x; }
+// 一個船艙現在泡在水裡的部分：面積、形心（世界座標）
+const _hs = { a: 0, x: 0, y: 0 };
+function hullSub(P, c) {
+  const W = S.water; if (!W) return null;
+  const body = P.body, src = c.pts, n = src.length, w = c.wp || (c.wp = new Array(n));
+  let lo = 1e9, hi = -1e9;
+  for (let i = 0; i < n; i += 2) { const q = body.getWorldPoint({ x: src[i], y: src[i + 1] }); w[i] = q.x; w[i + 1] = q.y; if (q.y < lo) lo = q.y; if (q.y > hi) hi = q.y; }
+  if (lo >= W.y) { c.sub = 0; return null; }
+  const below = hi <= W.y ? w : splitPoly(w, 0, W.y, 0, 1)[1];
+  if (below.length < 6) { c.sub = 0; return null; }
+  const a = polyArea(below), cc = polyCentroid(below);
+  c.sub = a; c.top = hi; _hs.a = a; _hs.x = cc[0]; _hs.y = cc[1];
+  return _hs;
+}
+// 每一步（物理之前）：氣球的拉力、船的浮力和錨鍊
+function platForces() {
+  for (const P of S.plats) {
+    if (P.dead || !P.body.isAwake()) continue;
+    const body = P.body;
+    if (P.kind === 'island') {
+      for (const o of P.teth) {
+        if (o.hp <= 0) continue;
+        const wp = body.getWorldPoint(o.lp), dx = o.ax - wp.x, dy = o.ay - wp.y, d = Math.hypot(dx, dy) || 1;
+        if (d <= o.L0) continue;
+        const v = body.getLinearVelocityFromWorldPoint(wp), rate = -(v.x * dx + v.y * dy) / d;
+        const T = Math.max(0, o.k * (d - o.L0) + o.c * rate);
+        body.applyForce({ x: dx / d * T, y: dy / d * T }, wp, false);
+      }
+    } else {
+      for (const c of P.comps) {
+        const q = hullSub(P, c); if (!q) continue;
+        const pt = { x: q.x, y: q.y }, v = body.getLinearVelocityFromWorldPoint(pt), F = P.kb * q.a * (1 - 0.92 * c.flood), cd = P.kb * 0.022 * q.a;
+        body.applyForce({ x: -v.x * cd * 0.6, y: F - v.y * cd }, pt, false);
+      }
+      // 錨鍊：被炸得往旁邊漂，慢慢拉回原位
+      const p = body.getPosition(), v = body.getLinearVelocity(), m = body.getMass();
+      body.applyForce({ x: -(p.x - P.x0) * m * 0.9 - v.x * m * 1.2, y: 0 }, body.getWorldCenter(), false);
+    }
+  }
+}
+// 船艙被打到：船身很厚，可是打穿了就會一直進水
+function hullHurt(c, d, kind, side) {
+  if (side === c.side || c.hp <= 0) return;
+  d *= DM[kind][M_WOOD] * 0.85; if (d <= 0) return;
+  const before = c.hp; c.hp = Math.max(0, c.hp - d); c.flash = 1;
+  if (side < 2) { const T = S.team[side]; T.dealt += before - c.hp; T.ult.c = Math.min(T.ult.need, T.ult.c + (before - c.hp) * T.ult.gain * ultK(side)); }
+  if (before > c.hm * 0.45 && c.hp <= c.hm * 0.45) { const q = polyCentroid(c.pts), w = c.plat.body.getWorldPoint({ x: q[0], y: q[1] }); ev('leak', w.x, w.y, c.side); S.chainT = S.time; if (side < 2 && side !== c.side && S.state === 'play') S.chain += 2; }
+}
+// 浮島氣球被打破
+function tetherPop(o, side) {
+  if (o.hp > 0 && o.cutT > 0) return;
+  o.hp = 0; o.cutT = S.time; o.by = side;
+  const P = o.plat; if (P && !P.dead) P.body.setAwake(true);
+  ev('tpop', o.x, o.y, o.side);
+  S.chainT = S.time; if (side < 2 && side !== o.side && S.state === 'play') S.chain += 3;
+}
+function platStep(dt, act) {
+  for (const P of S.plats) {
+    if (P.dead) continue;
+    const body = P.body, p = body.getPosition();
+    // 掉出戰場（整座島、整艘船沉下去了）
+    if (p.y < -48) { PH.world.destroyBody(body); P.dead = true; continue; }
+    if (P.kind === 'island') { for (const o of P.teth) { o.flash = Math.max(0, o.flash - dt * 5); if (o.hp <= 0 && o.cutT < 0) tetherPop(o, o.by >= 0 ? o.by : 2); } if (act && body.isAwake() && Math.abs(body.getAngularVelocity()) > 0.02) S.chainT = S.time; continue; }
+    // 船艙進水：船身被打得越破，水進得越多；整艙泡到水面下了，就灌滿
+    for (const c of P.comps) {
+      c.flash = Math.max(0, c.flash - dt * 4);
+      if (!act) continue;
+      const tgt = clamp((1 - c.hp / c.hm) * 1.35 - 0.2, 0, 1), under = c.sub > c.area * 0.97 ? 1 : 0, goal = Math.max(tgt, under);
+      if (c.flood < goal - 0.001) { c.flood = Math.min(goal, c.flood + dt * (under ? 0.35 : 0.2)); body.setAwake(true); S.chainT = S.time; }
+    }
+    if (act && body.isAwake() && (Math.abs(body.getAngularVelocity()) > 0.015 || Math.abs(body.getLinearVelocity().y) > 0.25)) S.chainT = S.time;
+  }
+}
+
+/* ---------- 引信（第四關）：一條從塔頂窗口垂到外面的繩子，一路串著每一層的火藥桶 ----------
+   火燒到露在外面的那一截（火油兵的火、穿過地火的砲彈），或是火藥桶在旁邊炸開，引信就點著了：
+   火從點著的地方往兩頭燒，燒到哪一桶火藥，那一桶就爆 */
+const FUSE_V = 6.5;            // 引信一秒燒多長
+function mkFuse(st, d) {
+  const xs = [], ys = [], s = [0];
+  for (const a of d.pts) { const P = cellPt(st, a); xs.push(P.x); ys.push(P.y); }
+  for (let i = 1; i < xs.length; i++) s.push(s[i - 1] + Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]));
+  const len = s[s.length - 1], F = { st, side: st.side, x: xs, y: ys, s, len, open: d.open || 1, fronts: [], bin: new Uint8Array(Math.ceil(len / 0.25) + 1), kegs: [], by: 2, done: false, lit: 0 };
+  for (const b of st.blocks) if (b.mat === M_KEG && !b.prop) { const q = fuseNear(F, b.x0, b.y0, 0); if (q.d < 1.8) F.kegs.push({ b, s: q.s }); }
+  st.fuse = F;
+  return F;
+}
+// 引信上離 (x, y) 最近的一點；segs 只看前幾段（0 = 整條）
+const _fn = { d: 0, s: 0, x: 0, y: 0 };
+function fuseNear(F, x, y, segs) {
+  _fn.d = 1e9; const n = segs ? Math.min(segs, F.x.length - 1) : F.x.length - 1;
+  for (let i = 0; i < n; i++) {
+    const d = segDist(x, y, F.x[i], F.y[i], F.x[i + 1], F.y[i + 1]);
+    if (d < _fn.d) { _fn.d = d; _fn.x = _sq.x; _fn.y = _sq.y; _fn.s = F.s[i] + Math.hypot(_sq.x - F.x[i], _sq.y - F.y[i]); }
+  }
+  return _fn;
+}
+function fusePt(F, s) {
+  let i = 0; while (i < F.s.length - 2 && F.s[i + 1] < s) i++;
+  const u = clamp((s - F.s[i]) / Math.max(1e-6, F.s[i + 1] - F.s[i]), 0, 1); _pl.x = lerp(F.x[i], F.x[i + 1], u); _pl.y = lerp(F.y[i], F.y[i + 1], u); return _pl;
+}
+function fuseIgnite(F, s, by) {
+  if (F.done) return;
+  const k = clamp(Math.round(s / 0.25), 0, F.bin.length - 1); if (F.bin[k]) return;
+  for (const f of F.fronts) if (Math.abs(f.s - s) < 0.6) return;
+  F.fronts.push({ s, d: 1 }, { s, d: -1 }); F.by = by; F.lit++;
+  const p = fusePt(F, s); ev('fuse', p.x, p.y, F.side, F.lit);
+  S.chainT = S.time;
+}
+// 爆炸碰到引信：火的爆炸只點得著露在外面的那一截；火藥桶炸開，整條哪裡都點得著
+function fuseBlast(x, y, r, fire, keg, side) {
+  for (let k = 0; k < 2; k++) {
+    const F = S.st[k] && S.st[k].fuse; if (!F || F.done) continue;
+    if (keg) { const q = fuseNear(F, x, y, 0); if (q.d < Math.min(4.5, r * 0.7)) fuseIgnite(F, q.s, F.by !== 2 && F.fronts.length ? F.by : side); }
+    else if (fire && side !== F.side) { const q = fuseNear(F, x, y, F.open); if (q.d < r * 0.75 + 0.6) fuseIgnite(F, q.s, side); }
+  }
+}
+function fusesBurning() { for (let k = 0; k < 2; k++) { const F = S.st[k] && S.st[k].fuse; if (F && F.fronts.length) return true; } return false; }
+function fuseStep(dt, act) {
+  for (let k = 0; k < 2; k++) {
+    const F = S.st[k] && S.st[k].fuse; if (!F || !F.fronts.length || !act) continue;
+    S.chainT = S.time;
+    for (const f of F.fronts) {
+      const s0 = f.s; f.s = clamp(f.s + f.d * FUSE_V * dt, 0, F.len);
+      // 這一段燒過了；前面已經燒過的（另一頭燒過來的火）就停
+      const a = Math.round(s0 / 0.25), b = Math.round(f.s / 0.25);
+      for (let i = Math.min(a, b); i <= Math.max(a, b); i++) { if (i < 0 || i >= F.bin.length) continue; if (F.bin[i] && i !== a && Math.abs(i - a) > 1) f.dead = 1; F.bin[i] = 1; }
+      for (const kg of F.kegs) if (!kg.boom && (kg.s - s0) * (kg.s - f.s) <= 0) { kg.boom = 1; if (!kg.b.dead) blockKill(kg.b, F.by, K_FIRE); }
+      if (f.s <= 0 || f.s >= F.len) f.dead = 1;
+    }
+    F.fronts = F.fronts.filter((f) => !f.dead);
+    if (!F.fronts.length) { let all = true; for (let i = 0; i < F.bin.length; i++) if (!F.bin[i]) { all = false; break; } if (all) F.done = true; }
+  }
+}
+
+/* ---------- 滾石坡（第二關）：山坡上的大石頭，靠一根木樁擋著 ----------
+   木樁是釘死在地上的（不會被推走，只會被打斷）；只有「石頭會往對方滾」的那一邊打得斷它（自己的砲不會去打斷會砸向自己的木樁）。
+   木樁一斷，石頭就往下滾，越滾越快，撞上城門、柱子、兵（rolling：撞到什麼都是整顆石頭的重量砸上去）。
+   滾下去之後隔幾回合，山坡上又會架好一顆新的 */
+const STAKE_HP = 58;
+function groundTop(x0, x1) { let y = -999; for (let x = x0; x <= x1 + 1e-6; x += 0.1) y = Math.max(y, groundYRaw(x)); return y; }
+function rollerSpawn(R) {
+  const d = R.d, st = S.mech;
+  let cy = -999; for (let x = d.x - d.r; x <= d.x + d.r + 1e-6; x += 0.05) cy = Math.max(cy, groundYRaw(x) + Math.sqrt(Math.max(0, d.r * d.r - (x - d.x) * (x - d.x))));
+  const ball = mkBlock(st, { mat: M_ROCK, kind: 'ball', x: d.x, y: cy + 0.03, r: d.r, den: 4, prop: 1 });
+  ball.body.setType('static'); ball.roll = R; ball.hp = ball.hm = 1e6; ball.wt = 0;
+  const gw = 1.3, gh = 4.4, gx = d.stake, gy = groundTop(gx - gw / 2, gx + gw / 2);
+  const stake = mkBlock(st, { mat: M_WOOD, kind: 'box', x: gx, y: gy + gh / 2 - 0.6, w: gw, h: gh });
+  stake.body.setType('static'); stake.stake = R; stake.hp = stake.hm = STAKE_HP * S.team[R.to].hpMul; stake.wt = 0;
+  R.ball = ball; R.stake = stake; R.go = false; R.pend = -1; R.n++;
+  if (R.n > 1) ev('reroll', d.x, cy, R.to);
+}
+function rollerRelease(R, by) {
+  const b = R.ball; R.go = true; R.goR = S.round; R.by = by; R.pend = -1;
+  if (!b || b.dead) return;
+  const dir = R.to === 0 ? -1 : 1;
+  b.body.setType('dynamic'); b.body.setAwake(true); b.body.setBullet(true);
+  b.body.setLinearVelocity({ x: dir * 3, y: 0 }); b.body.setAngularVelocity(-dir * 3 / b.r);
+  b.smash = 1; b.smashBy = by; b.inPlace = false;
+  const p = b.body.getPosition(); ev('roll', p.x, p.y, R.to);
+  S.chainT = S.time;
+}
+// 回合開始：滾下去的石頭過了幾回合，山坡上補一顆新的（那個位置要空著）
+function rollersRound() {
+  for (const R of S.rollers) {
+    if (!R.go || S.round - R.goR < (R.d.every || 2)) continue;
+    const d = R.d; let clear = true;
+    for (const o of physQuery(d.x, groundYRaw(d.x) + d.r, d.r + 1.5)) if ((o.isBlock && !o.dead && o !== R.ball) || (o.isUnit && o.alive)) clear = false;
+    if (!clear) continue;
+    if (R.ball && !R.ball.dead) { const p = R.ball.body.getPosition(); if (Math.abs(p.x - d.x) < d.r * 2.5) blockKill(R.ball, 2, K_CRUSH, true); }
+    rollerSpawn(R);
+  }
+}
+function rollersStep() {
+  for (const R of S.rollers) {
+    if (!R.go && R.pend >= 0) rollerRelease(R, R.pend);
+    const b = R.ball; if (!R.go || !b || b.dead || !b.smash) continue;
+    const v = b.body.getLinearVelocity(); if (v.x * v.x + v.y * v.y < 4 && Math.abs(b.body.getAngularVelocity()) < 1) { b.smash = 0; b.body.setBullet(false); }
+  }
+}
+
+/* ---------- 大鐘擺（第十一關）：戰場正中間吊著一口大鐘 ----------
+   砲彈打在鐘上就把它往對面推；盪過去撞到城，整口鐘的重量砸上去（smash）。
+   盪到最高點、開始往回盪的時候阻力變大：回來的那一下很弱，不會反過來撞自己的城，盪幾下就停 */
+function bellInit(d) {
+  const st = S.mech, y = d.y - d.len - d.h / 2;
+  const b = mkBlock(st, { mat: M_IRON, kind: 'bell', x: d.x, y, w: d.w, h: d.h, prop: 1, den: d.den, il: d.w * 0.24, ir: d.w * 0.24 });
+  b.hp = b.hm = 1e7; b.wt = 0; b.bigBell = 1; b.smashBy = 2;
+  b.body.setAngularDamping(3); b.body.setLinearDamping(0.04);
+  const top = { x: d.x, y: y + d.h / 2 - 0.3 };
+  const j = PH.world.createJoint(new PL.DistanceJoint({ frequencyHz: 0, dampingRatio: 0 }, PH.ground, b.body, { x: d.x, y: d.y }, top));
+  S.bell = { b, j, ax: d.x, ay: d.y, len: d.len, lb: b.body.getLocalPoint(top), damp: false, by: 2, peak: 0, ang: 0 };
+}
+function bellPush(side) { const B = S.bell; if (!B) return; B.by = side; B.b.smashBy = side; if (B.damp) { B.damp = false; B.b.body.setLinearDamping(0.04); B.b.body.setAngularDamping(3); } }
+function bellStep(dt, act) {
+  const B = S.bell; if (!B || !B.b.body) return;
+  const body = B.b.body, top = body.getWorldPoint(B.lb), v = body.getLinearVelocity(), dx = top.x - B.ax, dy = B.ay - top.y;
+  const th = Math.atan2(dx, dy), om = (v.x * Math.cos(th) + v.y * Math.sin(th)) / B.len, sp2 = v.x * v.x + v.y * v.y;
+  B.ang = th; B.b.smash = sp2 > 16 ? 1 : 0;
+  if (act && sp2 > 2) S.chainT = S.time;
+  if (!B.damp && Math.abs(th) > 0.1 && th * om < -0.02) { B.damp = true; body.setLinearDamping(1.7); body.setAngularDamping(5); ev('bellpeak', top.x, top.y); }
+  else if (B.damp && sp2 < 0.6 && Math.abs(th) < 0.08) { B.damp = false; body.setLinearDamping(0.04); body.setAngularDamping(3); }
+  if (!act && sp2 > 0.01) { body.setLinearVelocity({ x: v.x * 0.9, y: v.y * 0.9 }); }          // 瞄準的時候還沒停：很快停下來（不會在別人瞄準時撞過去）
+}

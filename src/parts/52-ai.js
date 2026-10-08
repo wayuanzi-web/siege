@@ -66,7 +66,7 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax) {
       } else if (o.t === 'lantern') {
         // 天燈不擋砲彈：打中了照樣往前飛
         if (o.hp > 0 && !R.lan) { const dx = nx - o.x, dy = ny - o.y; if (dx * dx + dy * dy < o.r * o.r) R.lan = o; }
-      } else if (o.t === 'balloon' || o.t === 'orb') {
+      } else if (o.t === 'balloon' || o.t === 'orb' || o.t === 'tether') {
         if (o.side === side || o.hp <= 0) continue;
         const dx = nx - o.x, dy = ny - o.y; if (dx * dx + dy * dy < o.r * o.r) { R.hit = 4; R.obj = o; R.x = nx; R.y = ny; R.t = t; return R; }
       } else if (o.t === 'barrier' && side === 0) {
@@ -117,6 +117,19 @@ function aiBegin(T) {
   // 第二篇的要害：吊著重物的繩子、鐵鍊（打斷了會砸下去），關卡自己指定的弱點（石碑、天秤的配重、塔腳……）
   for (const r of S.ropes) if (!r.cut && r.aw > 0 && r.side !== side && rnd() < A.sap + 0.25) { const e = ropeEnds(r); tg.push({ x: (e[0] + e[2]) / 2, y: (e[1] + e[3]) / 2, w: r.aw, rope: r }); }
   if (S.lv.weak && rnd() < A.sap + 0.25) for (const t of S.lv.weak(side)) tg.push(t);
+  // 對面的機關：浮島的氣球（同一頭已經破了一顆的，另一顆特別值得打）、擋滾石的木樁、中間的大鐘、引信頭、船艙
+  for (const o of S.objs) if (o.t === 'tether' && o.side !== side && o.hp > 0) {
+    const mate = o.plat.teth.find((q) => q !== o && Math.abs(q.ax - o.ax) < CS * 3);
+    tg.push({ x: o.x, y: o.y, w: mate && mate.hp <= 0 ? 1.9 : 1.05, obj: o });
+  }
+  for (const R of S.rollers) if (R.to === 1 - side && !R.go && R.stake && !R.stake.dead) { const p = R.stake.body.getPosition(); tg.push({ x: p.x, y: p.y + R.stake.h * 0.2, w: 1.25, blk: R.stake }); }
+  if (S.bell && S.bell.b.body) { const B = S.bell, p = B.b.body.getPosition(), v = B.b.body.getLinearVelocity(); if (v.x * v.x + v.y * v.y < 2) tg.push({ x: p.x - dir * B.b.w * 0.3, y: p.y, w: 1.0, blk: B.b }); }
+  { const F = fst.fuse; if (F && !F.done && !F.fronts.length && T.units.some((u) => u.alive && u.w && u.w.kind === K_FIRE && u.frozen <= 0 && u.stun <= 0)) tg.push({ x: F.x[0], y: F.y[0] + 0.6, w: 1.5, fuse: F }); }
+  if (fst.plat && fst.plat.comps && rnd() < A.sap + 0.35) for (const c of fst.plat.comps) {
+    if (c.hp <= 0) continue;
+    const q = polyCentroid(c.pts), wp = fst.plat.body.getWorldPoint({ x: q[0], y: q[1] }), wy = S.water ? S.water.y : 0;
+    tg.push({ x: wp.x, y: Math.max(wy + 1.2, wp.y + 1), w: c.bow ? 0.95 : 0.7, hull: c });
+  }
   for (const t of tg) for (let tau = 0.7; tau <= 3.41; tau += 0.1) {
     aimFor(mx, my, t.x, t.y, tau, wind, _av);
     if (aimOk(_av[0], _av[1], dir)) A.cand.push({ vx: _av[0], vy: _av[1], tau, t });
@@ -133,6 +146,8 @@ function aiEval(T, budget) {
     else if (t.hg) sc = R.hit === 5 && R.gate === t.hg ? 1 : 0;
     else if (t.rope) sc = R.hit === 6 && R.rope === t.rope ? 1 : t.rope.cut ? 0 : Math.max(0, 0.7 - segDist(R.x, R.y, t.rope.e[0], t.rope.e[1], t.rope.e[2], t.rope.e[3]) / 4);
     else if (t.blk) sc = (R.hit === 2 && R.o === t.blk) ? 1 : Math.max(0, 0.6 - Math.hypot(R.x - t.x, R.y - t.y) / 5);
+    else if (t.hull) sc = R.o === t.hull ? 1 : Math.max(0, 0.55 - Math.hypot(R.x - t.x, R.y - t.y) / 6);
+    else if (t.fuse) sc = Math.max(0, 1 - Math.hypot(R.x - t.x, R.y - t.y) / 3);
     else if (R.hit === 6) sc = 0.1;
     else if (R.port) sc = 0.85;
     else if (R.hit === 3) sc = 1.3;

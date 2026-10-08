@@ -11,7 +11,7 @@ for (let li = 0; li < LEVELS.length; li++) {
   let slept = -1, tot = 0, worst = 0;
   for (let i = 0; i < 720; i++) {
     const t0 = process.hrtime.bigint(); physStep(1 / 60); const ms = Number(process.hrtime.bigint() - t0) / 1e6; tot += ms; if (ms > worst) worst = ms;
-    let aw = 0; for (const r of rec) if (r.o.body && r.o.body.isAwake()) aw++;
+    let aw = 0; for (const r of rec) if (r.o.body && r.o.body.isDynamic() && r.o.body.isAwake()) aw++;
     if (!aw && slept < 0) { slept = (i + 1) / 60; break; }
   }
   const out = [];

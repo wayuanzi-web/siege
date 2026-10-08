@@ -17,7 +17,7 @@ const DEBRIS_COL = {};
 function debrisCol(skin, m) {
   const key = skin + m; let i = DEBRIS_COL[key]; if (i !== undefined) return i;
   const P = SKINS[skin] || SKINS.blue;
-  const hex = m === M_WOOD ? P.wood[1] : m === M_STONE ? P.stone[1] : m === M_IRON ? P.iron[1] : m === M_ROOF ? P.roof[1] : m === M_ICE ? PAL_ICE[1] : m === M_ROCK ? PAL_ROCK[1] : m === M_KEG ? '#a8672e' : m === M_CLAY ? '#c8743c' : P.panel[0];
+  const hex = m === M_WOOD ? P.wood[1] : m === M_STONE ? P.stone[1] : m === M_IRON ? P.iron[1] : m === M_ROOF ? P.roof[1] : m === M_ICE ? PAL_ICE[1] : m === M_ROCK ? PAL_ROCK[1] : m === M_KEG ? '#a8672e' : m === M_CLAY ? '#c8743c' : m === M_SNOW ? '#f2f8ff' : P.panel[0];
   i = PCOL.length; PCOL.push(hex); DEBRIS_COL[key] = i; return i;
 }
 function fxReset() { FX.n = 0; FX.glare = 0; FX.rings.length = 0; FX.bolts.length = 0; FX.pops.length = 0; FX.flung.length = 0; FX.tracers.length = 0; FX.shake = 0; FX.flash = 0; FX.slow = 1; FX.slowT = 0; FX.slowCd = 0; FX.chainRef = 0; FX.chainT = 0; FX.stop = 0; FX.gpop = {}; FX.heat = 0; }
@@ -123,7 +123,8 @@ function fxOn(t, a, b, c, d, e, f) {
       // 城破（整座自己垮下來）：不是炸開的，碎屑不往上噴；多的是往兩邊滾開的塵土
       for (let k = 0; k < (fin ? 3 : Math.min(3, 1 + area | 0)); k++) part(P_DUST, a + rndS() * f.w * 0.6, b + rndS() * f.h * 0.6, rndS() * (fin ? 22 : 8), 2 + Math.random() * (fin ? 7 : 4), fin ? 1.1 : 0.6, fin ? 3.4 : 2.4, c === M_ICE ? C_WHITE : C_SAND);
       if (c === M_GLASS) { burst(P_SPARK, a, b, 5, 26, 0.4, 0.45, C_ICE); }
-      sfx(c === M_GLASS ? 'glass' : c === M_ICE || c === M_CLAY ? 'shatter' : c === M_WOOD || c === M_ROOF || c === M_KEG || c === M_BAMBOO ? 'crack' : c === M_IRON ? 'clang' : 'crumble'); FX.heat = Math.min(1, FX.heat + 0.03);
+      if (c === M_SNOW) burst(P_DUST, a, b, 4, 9, 0.9, 2.6, C_WHITE, 2);
+      sfx(c === M_GLASS ? 'glass' : c === M_ICE || c === M_CLAY ? 'shatter' : c === M_SNOW ? 'thud' : c === M_WOOD || c === M_ROOF || c === M_KEG || c === M_BAMBOO ? 'crack' : c === M_IRON ? 'clang' : 'crumble'); FX.heat = Math.min(1, FX.heat + 0.03);
       if (fin) shake(0.35);
       break;
     }
@@ -272,6 +273,40 @@ function fxOn(t, a, b, c, d, e, f) {
     }
     case 'resohit': part(P_FLASH, a, b, 0, 0, 0.14, 2.4, C_PURPLE); burst(P_SHARD, a, b, 3, 12, 0.4, 0.4, C_ICE); if (Math.random() < 0.4) sfx('tink'); break;
     case 'glint': part(P_FLASH, a, b, 0, 0, 0.18, 1.4, C_ICE); burst(P_SPARK, a, b, 3, 6, 0.5, 0.35, C_WHITE); break;
+    // 新的機關
+    case 'tpop': {
+      // 吊著浮島的氣球破了（c 哪一邊的）
+      burst(P_CONF, a, b, 22, 34, 1.2, 0.8, c === 1 ? C_RED : C_SKY, 6); burst(P_SMOKE, a, b, 5, 9, 0.7, 2.2, C_WHITE); ring(a, b, 1, 9, 0.35, '#ffffff', 0.5);
+      if (S.state === 'play') pop(a, b + 4.5, c === 1 ? '氣球破了！' : '我方的氣球破了', c === 1 ? '#ffe14a' : '#ff8a7a', 3.3, 1.2);
+      sfx('pop'); sfx('groan'); shake(0.35); vibrate(40);
+      break;
+    }
+    case 'leak': {
+      // 船艙打穿了，開始進水（c 哪一邊的船）
+      for (let k = 0; k < 14; k++) part(P_SHARD, a + rndS() * 3, b + rndS() * 2, rndS() * 16, 6 + Math.random() * 16, 0.8, 0.5, k & 1 ? C_WHITE : C_SKY);
+      ring(a, b, 0.8, 6, 0.35, '#e8fbff', 0.4);
+      if (S.state === 'play') pop(a, b + 4, c === 1 ? '敵船進水了！' : '我方的船進水了', c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.3);
+      sfx('splash'); sfx('crack'); shake(0.3);
+      break;
+    }
+    case 'splinter': burst(P_DEBRIS, a, b, 4, 14, 0.6, 0.45, C_TAN, 4); break;
+    case 'fuse': {
+      // 引信點著了（c 哪一邊的；d 第幾次點著）
+      burst(P_SPARK, a, b, 12, 18, 0.5, 0.5, C_GOLD); burst(P_EMBER, a, b, 4, 6, 0.6, 0.7, C_ORANGE, 3); part(P_FLASH, a, b, 0, 0, 0.16, 2.2, C_ORANGE);
+      if (S.state === 'play' && d === 1) pop(a, b + 3.5, c === 1 ? '引信點著了！' : '我方的引信著火了！', c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.4);
+      sfx('lit'); sfx('fizz');
+      break;
+    }
+    case 'roll': {
+      // 滾石衝下坡（c 往哪一邊的城）
+      burst(P_DUST, a, b - 1.5, 6, 10, 0.9, 2.4, C_SAND, 2); burst(P_DEBRIS, a, b - 1, 6, 14, 0.7, 0.5, C_TAN, 6);
+      if (S.state === 'play') pop(a, b + 4, c === 1 ? '滾石衝下去了！' : '滾石往我方衝過來！', c === 1 ? '#ffe14a' : '#ff8a7a', 3.4, 1.3);
+      sfx('rumble'); shake(0.4); vibrate(30);
+      break;
+    }
+    case 'reroll': burst(P_DUST, a, b, 5, 8, 0.8, 2.2, C_SAND, 3); if (S.state === 'play') pop(a, b + 4, '新的滾石架好了', '#fff0c0', 2.6, 1.1); sfx('thud'); break;
+    case 'bellpeak': sfx('bong'); break;
+    case 'snowpuff': burst(P_DUST, a, b, 2, 4, 0.7, 1.6, C_WHITE, 2); break;
     case 'thunk': {
       const k = Math.min(1, c / 900);
       burst(P_DUST, a, b, 3 + (k * 4 | 0), 10 + k * 14, 0.6, 1.6 + k * 1.6, C_SAND); burst(P_DEBRIS, a, b, 4, 18, 0.7, 0.5, C_GRAY);

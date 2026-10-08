@@ -103,6 +103,7 @@ function sfx(name, arg) {
       case 'lantern': [76, 81, 88].forEach((n, i) => tone(NOTE(n), 0.3, 'sine', 0.06, 0, i * 0.12)); break;
       case 'bonus': [72, 76, 79, 84, 88].forEach((n, i) => tone(NOTE(n), 0.2, 'triangle', 0.09, 0, i * 0.055)); break;
       case 'lit': if (gap('lit', 70)) return; noise(0.14, 0.07, 'bandpass', 700, 1800, 1.4); break;
+      case 'fizz': if (gap('fizz', 400)) return; noise(1.4, 0.06, 'highpass', 3800, 6000, 0.9); noise(1.2, 0.04, 'bandpass', 1600, 2600, 2, 0.1); break;
       case 'orb': tone(60, 1.1, 'sawtooth', 0.18, 110, 0, null, 0.3); for (let i = 0; i < 3; i++) tone(i & 1 ? 415 : 554, 0.2, 'sawtooth', 0.09, 0, i * 0.22, null, 0.03); break;
       case 'erupt': if (gap('erupt', 300)) return; noise(1.1, 0.3, 'lowpass', 400, 1600, 0.8); tone(58, 0.9, 'sine', 0.3, 40, 0, null, 0.1); break;
       case 'warn': if (gap('warn', 500)) return; for (let i = 0; i < 3; i++) tone(i & 1 ? 520 : 700, 0.15, 'sawtooth', 0.09, 0, i * 0.16, null, 0.02); break;

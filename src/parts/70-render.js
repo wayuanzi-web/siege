@@ -55,10 +55,11 @@ function drawRocks(c) {
   }
 }
 // 岩壁（藍圖裡的 A）：一格一格的岩石，跟旁邊不是岩壁的地方畫一道深色的邊，上緣長一點苔
-function drawRock(c, st) {
-  const T = V.T, s = V.s, R = mkRand(st.x0 * 13 + 7), cells = st.rock, has = new Set();
+const ROCK_PAL = { canyon: ['#d98c62', '#b4643e', '#83432a', '#5a2a18'], karst: ['#c9cbc2', '#a2a49b', '#76786f', '#52544c'], frost: ['#c8d6e6', '#9cb0c8', '#6f84a0', '#4c5d78'], jade: ['#b8b0a0', '#968c7a', '#6e6555', '#4a4336'] };
+function drawRock(c, st, cells) {
+  const T = V.T, s = V.s, R = mkRand(st.x0 * 13 + 7), has = new Set(); cells = cells || st.rock;
   for (let i = 0; i < cells.length; i += 2) has.add(cells[i] + ',' + cells[i + 1]);
-  const pal = st.skin === 'canyon' ? ['#d98c62', '#b4643e', '#83432a', '#5a2a18'] : st.skin === 'karst' ? ['#c9cbc2', '#a2a49b', '#76786f', '#52544c'] : ['#a39a8c', '#81786b', '#5c554b', '#3e3932'];
+  const pal = ROCK_PAL[st.skinB] || ['#a39a8c', '#81786b', '#5c554b', '#3e3932'];
   for (let i = 0; i < cells.length; i += 2) {
     const cx = cells[i], cy = cells[i + 1], x = X(st.x0 + cx * CS), y = Y(st.y0 + (cy + 1) * CS);
     c.fillStyle = lg(c, x, y, x + T, y + T, [0, pal[1], 0.6, pal[2], 1, pal[3]]); c.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
@@ -74,7 +75,7 @@ function drawRock(c, st) {
     if (!has.has((cx - 1) + ',' + cy)) { c.moveTo(x, y); c.lineTo(x, y + T); }
     if (!has.has((cx + 1) + ',' + cy)) { c.moveTo(x + T, y); c.lineTo(x + T, y + T); }
     c.stroke();
-    if (!has.has(cx + ',' + (cy + 1)) && st.skin !== 'canyon') { c.fillStyle = 'rgba(110,160,80,.75)'; c.fillRect(x, y - s * 0.25, T, Math.max(1.5, s * 0.45)); }
+    if (!has.has(cx + ',' + (cy + 1)) && st.skinB !== 'canyon') { c.fillStyle = st.skinB === 'frost' ? 'rgba(245,250,255,.9)' : 'rgba(110,160,80,.75)'; c.fillRect(x, y - s * 0.25, T, Math.max(1.5, s * (st.skinB === 'frost' ? 0.7 : 0.45))); }
   }
 }
 // 屋內的暗色背景：整座城畫成一張圖，之後每一幀只貼還看得到的那幾格
@@ -103,6 +104,7 @@ function drawBackdrop(c, st, rdt) {
   let any = false; const k = Math.min(1, rdt * 7);
   for (let i = 0; i < n; i++) { let v = back[i]; const to = backTo[i]; if (v !== to) { v += (to - v) * k; if (Math.abs(v - to) < 0.03) v = to; back[i] = v; } if (v > 0) any = true; }
   if (!any) return;
+  if (st.plat && !platXform(c, st.plat)) return;
   const sp = backSprite(st), T = V.T, bx = X(st.x0), by = Y(st.y1);
   for (let cy = 0; cy < rows; cy++) {
     const sy = (rows - 1 - cy) * T; let cx = 0;
@@ -114,6 +116,94 @@ function drawBackdrop(c, st, rdt) {
     }
   }
   c.globalAlpha = 1;
+  if (st.plat) c.restore();
+}
+/* ---------- 浮島、戰船 ---------- */
+// 畫布換到浮島（船）自己的座標：之後照開場時的位置畫，畫出來就跟著它現在的位置、角度。回傳 false 表示已經不在了
+function platXform(c, P) {
+  if (P.dead || !P.body) return false;
+  const p = P.body.getPosition(), a = P.body.getAngle() - P.a0;
+  c.save(); c.translate(X(p.x), Y(p.y)); c.rotate(-a); c.translate(-X(P.x0), -Y(P.y0));
+  return true;
+}
+function drawPlats(c, t) {
+  const s = V.s;
+  for (const P of S.plats) {
+    if (P.dead) continue;
+    const st = P.st;
+    if (P.kind === 'island') {
+      // 吊著浮島的繩子（畫在島的後面）
+      for (const o of P.teth) {
+        if (o.hp <= 0) continue;
+        const wp = P.body.getWorldPoint(o.lp), by = o.y + Math.sin(t * 1.3 + o.ph) * 0.35 - o.r * 0.92;
+        c.strokeStyle = '#3a2a16'; c.lineWidth = Math.max(1.5, s * 0.36); c.beginPath(); c.moveTo(X(wp.x), Y(wp.y)); c.lineTo(X(o.x), Y(by)); c.stroke();
+        c.strokeStyle = o.flash > 0 ? '#fff6d0' : '#c9a05e'; c.lineWidth = Math.max(1, s * 0.18); c.stroke();
+      }
+      const pad = 6, key = V.T + '|' + V.s;
+      if (!P._rk || P._rkKey !== key) {
+        const x0 = X(P.xa) - pad, y0 = Y(P.yb) - pad, cv = mkCanvas((P.xb - P.xa) * s + pad * 2, (P.yb - P.ya) * s + pad * 2 + s * 4), k = cv.getContext('2d');
+        k.translate(-x0, -y0);
+        // 島底下掛著一些土和樹根
+        const R = mkRand(st.x0 * 7 + 3);
+        drawRock(k, st, P.cells);
+        k.strokeStyle = '#5a4a32'; k.lineWidth = Math.max(1, s * 0.22); k.lineCap = 'round';
+        for (let n = 0; n < 9; n++) { const x = lerp(P.xa + 4, P.xb - 4, R()), y = P.ya + 0.4; k.beginPath(); k.moveTo(X(x), Y(y)); k.quadraticCurveTo(X(x + (R() - 0.5) * 2), Y(y - 1.2), X(x + (R() - 0.5) * 3), Y(y - 1.6 - R() * 2)); k.stroke(); }
+        P._rk = cv; P._rkKey = key; P._rkX = x0; P._rkY = y0;
+      }
+      if (platXform(c, P)) { c.drawImage(P._rk, P._rkX, P._rkY); c.restore(); }
+      continue;
+    }
+    // 戰船：船身一個艙一個艙畫，進水的艙顏色變深、裡面的水越來越高
+    const body = P.body, p = body.getPosition(), a = body.getAngle(), Pk = SKINS[st.skin] || SKINS.blue, wd = Pk.wood;
+    c.save(); c.translate(X(p.x), Y(p.y)); c.rotate(-a);
+    const path = (q) => { c.beginPath(); c.moveTo(q[0] * s, -q[1] * s); for (let i = 2; i < q.length; i += 2) c.lineTo(q[i] * s, -q[i + 1] * s); c.closePath(); };
+    let ylo = 1e9, yhi = -1e9; for (let i = 1; i < P.hull.length; i += 2) { ylo = Math.min(ylo, P.hull[i]); yhi = Math.max(yhi, P.hull[i]); }
+    for (const cp of P.comps) {
+      path(cp.pts); c.fillStyle = lg(c, 0, -yhi * s, 0, -ylo * s, [0, wd[0], 0.18, wd[1], 0.75, wd[2], 1, '#2a160a']); c.fill();
+      c.save(); path(cp.pts); c.clip();
+      // 船板
+      c.strokeStyle = 'rgba(30,14,6,.45)'; c.lineWidth = Math.max(1, s * 0.16);
+      for (let y = ylo + 1.1; y < yhi; y += 1.1) { c.beginPath(); c.moveTo(-60 * s, -y * s); c.lineTo(60 * s, -y * s); c.stroke(); }
+      // 進水：艙裡的水（在船身上畫一片深藍）
+      if (cp.flood > 0.02) { const fy = lerp(ylo, yhi, cp.flood * 0.9); c.fillStyle = 'rgba(20,60,110,.55)'; c.fillRect(-60 * s, -fy * s, 120 * s, (fy - ylo + 1) * s); }
+      // 被打穿的洞
+      const dmg = 1 - cp.hp / cp.hm;
+      if (dmg > 0.3) { const q = polyCentroid(cp.pts), R = mkRand(cp.k * 31 + 5), n = dmg > 0.75 ? 3 : dmg > 0.5 ? 2 : 1; c.fillStyle = '#120804'; for (let k = 0; k < n; k++) { const hx = q[0] + (R() - 0.5) * 6, hy = lerp(ylo, yhi, 0.45 + R() * 0.4); ell(c, hx * s, -hy * s, s * (0.7 + R() * 0.5), s * (0.5 + R() * 0.3)); c.fill(); } }
+      if (cp.flash > 0) { c.fillStyle = 'rgba(255,255,255,' + (cp.flash * 0.45) + ')'; c.fillRect(-60 * s, -yhi * s, 120 * s, (yhi - ylo) * s); }
+      c.restore();
+    }
+    // 船舷的飾帶、外框
+    path(P.hull); c.strokeStyle = Pk.ink; c.lineWidth = Math.max(1.5, s * 0.3); c.stroke();
+    c.fillStyle = Pk.trim; c.fillRect(P.hull.reduce((m, v, i) => (i & 1 ? m : Math.min(m, v)), 1e9) * s, -yhi * s, (P.xb - P.xa) * s, Math.max(2, s * 0.42));
+    c.fillStyle = '#e04a2c'; c.fillRect(P.hull.reduce((m, v, i) => (i & 1 ? m : Math.min(m, v)), 1e9) * s, -(yhi - 0.9) * s, (P.xb - P.xa) * s, Math.max(1.5, s * 0.3));
+    c.restore();
+  }
+}
+/* ---------- 引信 ---------- */
+function drawFuses(c, t) {
+  const s = V.s;
+  for (let k = 0; k < 2; k++) {
+    const F = S.st[k] && S.st[k].fuse; if (!F) continue;
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    // 還沒燒的引信：深色的繩子；燒過的：一條灰白的灰
+    const seg = (i0, i1, col, w) => { c.strokeStyle = col; c.lineWidth = w; c.beginPath(); for (let i = i0; i <= i1; i++) { const p = fusePt(F, i * 0.25); if (i === i0) c.moveTo(X(p.x), Y(p.y)); else c.lineTo(X(p.x), Y(p.y)); } c.stroke(); };
+    let i = 0; const n = F.bin.length;
+    while (i < n - 1) {
+      const b = F.bin[i]; let e = i + 1; while (e < n - 1 && F.bin[e] === b) e++;
+      if (b) { seg(i, e, 'rgba(70,64,60,.8)', Math.max(1, s * 0.22)); }
+      else { seg(i, e, '#2a1a10', Math.max(1.5, s * 0.42)); seg(i, e, '#b98a4a', Math.max(1, s * 0.18)); }
+      i = e;
+    }
+    // 引信頭：露在城外的那一截，閃一點火光提示（還沒點著才閃）
+    if (!F.fronts.length && !F.done && !F.bin[0]) { const g = glowSprite(C_GOLD), r = s * (1.3 + 0.3 * Math.sin(t * 5 + k)); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.5; c.drawImage(g, X(F.x[0]) - r, Y(F.y[0]) - r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
+    // 燒著的火頭
+    for (const f of F.fronts) {
+      const p = fusePt(F, f.s), x = X(p.x), y = Y(p.y), r = s * (1.5 + 0.4 * Math.sin(t * 30 + f.s));
+      c.globalCompositeOperation = 'lighter'; c.drawImage(glowSprite(C_ORANGE), x - r * 1.6, y - r * 1.6, r * 3.2, r * 3.2); c.drawImage(glowSprite(C_WHITEHOT), x - r * 0.6, y - r * 0.6, r * 1.2, r * 1.2); c.globalCompositeOperation = 'source-over';
+      if ((RD.frame & 1) === 0) part(P_SPARK, p.x, p.y, rndS() * 16, 6 + Math.random() * 12, 0.3, 0.4, Math.random() < 0.5 ? C_GOLD : C_WHITEHOT);
+      if ((RD.frame & 7) === 0) part(P_SMOKE, p.x, p.y, rndS() * 2, 4, 0.7, 0.9, C_GRAY);
+    }
+  }
 }
 const _noBlock = { h: 0 };
 // 旗子插在最高的那片屋瓦上，屋瓦歪了、掉了，旗子跟著走
@@ -231,6 +321,8 @@ function drawPins(c) {
 }
 function drawRopes(c, t) {
   if (S.pivots.length || S.pins.length) drawPins(c);
+  // 大鐘的鐵鍊（打不斷）
+  if (S.bell && S.bell.b.body) { const B = S.bell, q = B.b.body.getWorldPoint(B.lb), s = V.s; ropeLine(c, X(B.ax), Y(B.ay), X(q.x), Y(q.y), 0, 'chain', 0, 0); c.fillStyle = '#2c2833'; rrect(c, X(B.ax) - s * 1.2, Y(B.ay) - s * 0.9, s * 2.4, s * 1.5, s * 0.4); c.fill(); c.fillStyle = '#ffc93c'; c.beginPath(); c.arc(X(B.ax), Y(B.ay) - s * 0.15, s * 0.32, 0, TAU); c.fill(); }
   if (!S.ropes.length) return;
   const s = V.s;
   for (const r of S.ropes) {
@@ -420,6 +512,20 @@ function surfaceY(x) { _sy = -999; _syA.x = x; _syB.x = x; PH.world.rayCast(_syA
 function drawFlyers(c, t) {
   const s = V.s;
   for (const o of S.objs) {
+    if (o.t === 'tether') {
+      // 吊著浮島的大氣球：破了就往上飄走、越來越淡
+      const age = o.hp <= 0 ? S.time - o.cutT : -1; if (age > 1.6) continue;
+      const x = X(o.x + (age > 0 ? age * 2 : 0)), y = Y(o.y + Math.sin(t * 1.3 + o.ph) * 0.35 + (age > 0 ? age * age * 9 : 0)), r = o.r * s * (age > 0 ? 1 - age * 0.35 : 1);
+      if (age > 0) c.globalAlpha = Math.max(0, 1 - age / 1.6);
+      ell(c, x, y, r, r * 1.1); c.fillStyle = rg(c, x - r * 0.35, y - r * 0.4, r * 0.1, r * 1.2, o.side === 1 ? [0, '#ffc2a8', 0.5, '#e8503a', 1, '#8f1a14'] : [0, '#d4e8ff', 0.5, '#3f86f0', 1, '#163f9c']); c.fill();
+      c.strokeStyle = 'rgba(255,240,200,.75)'; c.lineWidth = Math.max(1, s * 0.16); for (let k = -1; k <= 1; k++) { c.beginPath(); c.ellipse(x, y, r * (0.35 + 0.3 * Math.abs(k)) * (k ? 1 : 0.15), r * 1.08, 0, 0, TAU); c.stroke(); }
+      c.strokeStyle = INK; c.lineWidth = Math.max(1.2, s * 0.24); ell(c, x, y, r, r * 1.1); c.stroke();
+      c.fillStyle = '#5a3a1a'; rrect(c, x - r * 0.22, y + r * 1.02, r * 0.44, r * 0.26, r * 0.06); c.fill();
+      if (o.flash > 0) { c.globalAlpha = o.flash * 0.6; ell(c, x, y, r, r * 1.1); c.fillStyle = '#fff'; c.fill(); }
+      c.globalAlpha = 1;
+      if (o.hp > 0 && o.hp < o.hm) { const bw = r * 1.8, bh = Math.max(2.5, s * 0.5), bx = x - bw / 2, by = y - r * 1.1 - s * 1.2; c.fillStyle = 'rgba(10,8,20,.75)'; c.fillRect(bx - 1, by - 1, bw + 2, bh + 2); c.fillStyle = o.side === 1 ? '#ffc93c' : '#7fc0ff'; c.fillRect(bx, by, bw * clamp(o.hp / o.hm, 0, 1), bh); }
+      continue;
+    }
     if (o.t === 'balloon') {
       const x = X(o.x), y = Y(o.y) + Math.sin(t * 2 + o.x) * s * 0.3, r = o.r * s;
       // 停在半路：下一輪才飛過來，畫一圈提醒
@@ -565,7 +671,7 @@ function drawShields(c, t, rdt) {
     const T = S.team[sd], st = S.st[sd]; if (!T) continue;
     RD.sh[sd] += ((T.shield.on && !st.dead ? 1 : 0) - RD.sh[sd]) * Math.min(1, rdt * 9);
     const a = RD.sh[sd]; if (a < 0.02) continue;
-    const x = X(st.cx), y = Y(st.y0 + st.h * 0.42), rx = (st.w * 0.5 + 6) * s * (0.9 + 0.1 * a), ry = (st.h * 0.6 + 6) * s * (0.9 + 0.1 * a);
+    const cc = stCenter(st), x = X(cc.x), y = Y(cc.y), rx = (st.w * 0.5 + 6) * s * (0.9 + 0.1 * a), ry = (st.h * 0.6 + 6) * s * (0.9 + 0.1 * a);
     c.save(); c.beginPath(); c.rect(0, 0, V.W, Y(st.y0) + s * 0.5); c.clip();
     ell(c, x, y, rx, ry); c.fillStyle = rg(c, x, y, ry * 0.5, Math.max(rx, ry), sd === 0 ? [0, 'rgba(90,170,255,0)', 0.75, 'rgba(90,170,255,' + 0.12 * a + ')', 1, 'rgba(170,220,255,' + 0.4 * a + ')'] : [0, 'rgba(255,90,70,0)', 0.75, 'rgba(255,90,70,' + 0.12 * a + ')', 1, 'rgba(255,170,150,' + 0.4 * a + ')']); c.fill();
     c.strokeStyle = sd === 0 ? 'rgba(210,236,255,' + 0.9 * a + ')' : 'rgba(255,200,190,' + 0.9 * a + ')'; c.lineWidth = Math.max(1.5, s * 0.5); c.stroke();
@@ -641,9 +747,11 @@ function renderFrame(dt, rdt) {
   c.setTransform(1, 0, 0, 1, FX.shx, FX.shy);
   sceneBack(c, t, dt);
   drawRocks(c);
+  if (S.plats.length) drawPlats(c, t);
   drawObjs(c, t);
   for (const st of S.structs) drawBackdrop(c, st, rdt);
   drawBlocks(c, t, rdt);
+  drawFuses(c, t);
   drawRopes(c, t);
   drawGates(c, t);
   drawUnits(c, t);

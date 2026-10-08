@@ -14,8 +14,12 @@ const SKINS = {
   temple: { stone: ['#d4cfc6', '#aaa397', '#7a7368', '#575147'], wood: ['#d0563f', '#a8382a', '#6c2018'], roof: ['#7c8590', '#545c68', '#323842'], iron: ['#c9a65a', '#9a7a32', '#5e4718'], panel: ['#4a2620', '#381b16'], ink: '#24100c', trim: '#ffd36a', flag: '#dc3a2e', flagDk: '#8f1418' },
   canyon: { stone: ['#e8a47e', '#c97a52', '#9a5433', '#6e3720'], wood: ['#8f6a4a', '#6c4c32', '#43301e'], roof: ['#d9644a', '#a94330', '#6c2618'], iron: ['#a59a8e', '#776c61', '#4a423a'], panel: ['#4a2a1e', '#371f16'], ink: '#26140c', trim: '#ffcf7a', flag: '#dc3a2e', flagDk: '#8f1418' },
   crystal: { stone: ['#ece6f6', '#c8bfe0', '#958bb6', '#6a6190'], wood: ['#b8c4dc', '#8d9bba', '#5d6a88'], roof: ['#8fe6f0', '#46b6c8', '#22788a'], iron: ['#d8d2f0', '#a69ec8', '#6c6494'], panel: ['#1f2550', '#161b3e'], ink: '#10133a', trim: '#b9f6ff', flag: '#dc3a2e', flagDk: '#8f1418' },
-  maple: { stone: ['#d8d2c8', '#b0a89b', '#80786c', '#5a5348'], wood: ['#b85a34', '#8c3e22', '#5a2412'], roof: ['#6f8a7e', '#4b6559', '#2e423a'], iron: ['#c4a45e', '#957732', '#5c4618'], panel: ['#3e2418', '#2f1a11'], ink: '#1e0f08', trim: '#ffcf6a', flag: '#dc3a2e', flagDk: '#8f1418' }
+  maple: { stone: ['#d8d2c8', '#b0a89b', '#80786c', '#5a5348'], wood: ['#b85a34', '#8c3e22', '#5a2412'], roof: ['#6f8a7e', '#4b6559', '#2e423a'], iron: ['#c4a45e', '#957732', '#5c4618'], panel: ['#3e2418', '#2f1a11'], ink: '#1e0f08', trim: '#ffcf6a', flag: '#dc3a2e', flagDk: '#8f1418' },
+  ship: { stone: ['#d9cdb4', '#b3a585', '#857858', '#5d523a'], wood: ['#a8673a', '#7e4624', '#4c2610'], roof: ['#d9a35c', '#b07a34', '#76501c'], iron: ['#a9a49c', '#7a756d', '#4a4640'], panel: ['#3e2a1c', '#2e1f14'], ink: '#1f120a', trim: '#ffd27a', flag: '#dc3a2e', flagDk: '#8f1418' }
 };
+// 每一關雙方的城樓一模一樣，只有屋瓦和旗子分顏色：我方藍、敵方紅（藍圖的外觀名稱後面接 @0、@1）
+const ROOF_TEAM = [['#78b2ff', '#2f6fe0', '#1a429c'], ['#ff8a6c', '#d43c2a', '#86180f']], FLAG_TEAM = [['#2f7bff', '#1b46b8'], ['#dc3a2e', '#8f1418']];
+for (const k of Object.keys(SKINS)) for (let sd = 0; sd < 2; sd++) SKINS[k + '@' + sd] = Object.assign({}, SKINS[k], { roof: ROOF_TEAM[sd], flag: FLAG_TEAM[sd][0], flagDk: FLAG_TEAM[sd][1] });
 const PAL_GLASS = ['#e9fdff', '#a5eef6', '#5ccbdc', '#2a8fa6'];
 const PAL_BAMBOO = ['#cfe58c', '#9cc457', '#6b9a33', '#40651c'];
 const PAL_ICE = ['#e6f8ff', '#a8e0f8', '#62b6e4', '#3c8cc0'];
@@ -66,6 +70,7 @@ function paintBlock(c, b, ds, w, h, sc) {
     else if (b.kind === 'bell') { c.beginPath(); c.moveTo(0, h); c.lineTo(w, h); c.quadraticCurveTo(w * 0.86, h * 0.62, w * 0.81, h * 0.36); c.quadraticCurveTo(w * 0.76, 0, w * 0.5, 0); c.quadraticCurveTo(w * 0.24, 0, w * 0.19, h * 0.36); c.quadraticCurveTo(w * 0.14, h * 0.62, 0, h); c.closePath(); }
     else if (b.dom) { const r = w * 0.48; c.beginPath(); c.moveTo(0, h); c.lineTo(0, r); c.quadraticCurveTo(0, 0, r, 0); c.lineTo(w - r, 0); c.quadraticCurveTo(w, 0, w, r); c.lineTo(w, h); c.closePath(); }      // 石碑：圓頂
     else if (b.reso) { c.beginPath(); c.moveTo(w * 0.5, 0); c.lineTo(w * 0.95, h * 0.2); c.lineTo(w * 0.95, h * 0.86); c.lineTo(w * 0.5, h); c.lineTo(w * 0.05, h * 0.86); c.lineTo(w * 0.05, h * 0.2); c.closePath(); }
+    else if (b.mat === M_SNOW) { c.beginPath(); c.moveTo(0, h); c.lineTo(0, h * 0.3); c.quadraticCurveTo(w * 0.05, 0, w * 0.3, h * 0.06); c.quadraticCurveTo(w * 0.5, -h * 0.04, w * 0.68, h * 0.07); c.quadraticCurveTo(w * 0.97, h * 0.02, w, h * 0.32); c.lineTo(w, h); c.closePath(); }      // 積雪：上緣蓬蓬的
     else rrect(c, 0, 0, w, h, Math.min(w, h) * 0.09);
   };
   c.save(); path(); c.clip();
@@ -215,6 +220,13 @@ function paintBlock(c, b, ds, w, h, sc) {
       c.fillStyle = '#5a2e14'; c.fillRect(w * 0.2, 0, w * 0.6, Math.max(1.5, h * 0.09));
       break;
     }
+    case M_SNOW: {
+      // 積雪：白，底下帶一點藍影，表面幾個凹痕和亮點
+      c.fillStyle = lg(c, 0, 0, 0, h, [0, '#ffffff', 0.5, '#f0f6ff', 1, '#bcd2ec']); c.fillRect(0, 0, w, h);
+      c.fillStyle = 'rgba(140,175,215,.32)'; for (let k = 0; k < 4; k++) { c.beginPath(); c.arc(R() * w, h * (0.45 + R() * 0.45), u * (0.12 + R() * 0.16), 0, TAU); c.fill(); }
+      c.fillStyle = '#ffffff'; for (let k = 0; k < 5; k++) { c.beginPath(); c.arc(R() * w, h * (0.12 + R() * 0.3), Math.max(1, u * 0.05), 0, TAU); c.fill(); }
+      break;
+    }
     case M_KEG: {
       c.fillStyle = lg(c, 0, 0, w, 0, [0, '#5a3418', 0.28, '#a8672e', 0.55, '#cf8a46', 0.8, '#a8672e', 1, '#5a3418']); c.fillRect(0, 0, w, h);
       c.strokeStyle = 'rgba(60,30,10,.55)'; c.lineWidth = Math.max(1, u * 0.035); for (let k = 1; k < 5; k++) { c.beginPath(); c.moveTo(w * k / 5, 0); c.lineTo(w * k / 5, h); c.stroke(); }
@@ -240,7 +252,7 @@ function paintBlock(c, b, ds, w, h, sc) {
   }
   c.restore();
   if (ds === 3) return;
-  path(); c.strokeStyle = b.mat === M_KEG ? '#2a1608' : b.mat === M_CLAY ? '#3a1c0a' : P.ink; c.lineWidth = b.prop ? lw * 0.8 : lw; c.stroke();
+  path(); c.strokeStyle = b.mat === M_KEG ? '#2a1608' : b.mat === M_CLAY ? '#3a1c0a' : b.mat === M_SNOW ? '#7f9cc4' : P.ink; c.lineWidth = b.prop || b.mat === M_SNOW ? lw * 0.8 : lw; c.stroke();
   if (roof) {
     // 屋簷兩端往上翹的角（只是畫的，不算在碰撞裡）
     const p = P.roof, T = u;
