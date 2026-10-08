@@ -1,7 +1,7 @@
 // node test/warn.js [場數=16]：敵軍回合的預警（「敵軍的砲彈會穿過倍增符：×N」）準不準：有預警的那幾輪真的有穿過嗎？沒預警的有沒有漏掉？
 const G = require('./load')(); const { S, simInit, simStep, LEVELS, BOTS } = G;
 const N = +(process.argv[2] || 16);
-for (let li = 1; li < 6; li++) {
+for (let li = 1; li < LEVELS.length; li++) {
   let turns = 0, warn = 0, warnHit = 0, silentHit = 0, wrongN = 0;
   for (let sd = 0; sd < N; sd++) {
     simInit(li, {}, 31000 + sd * 7919 + li * 131, 1, { botA: BOTS.casual });

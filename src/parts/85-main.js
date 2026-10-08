@@ -67,13 +67,13 @@ function startLevel(idx) {
   $('hint').hidden = true;
   $('banner').className = ''; sayClear(); $('mile').className = '';
   hudBuild(); hudUpdate();
-  setTimeout(() => { if (G.mode === 'play' && G.run === run) banner(LEVELS[idx].name, 'blue', '第' + NUM_ZH[idx] + '關'); }, 60);
+  setTimeout(() => { if (G.mode === 'play' && G.run === run) banner(LEVELS[idx].name, 'blue', '第' + numZh(idx + 1) + '關'); }, 60);
   musStart(LEVELS[idx].theme);
 }
 function goHome() {
   G.run++;
   G.mode = 'home'; sayClear(); $('hud').hidden = true; $('result').hidden = true; $('opt').hidden = true; $('shop').hidden = true; $('home').hidden = false;
-  homeRender(); demoStart(UI.sel); musStart(6);
+  homeRender(); demoStart(UI.sel); musStart('home');
 }
 function pauseGame() { if (G.mode !== 'play' || S.state !== 'play') return; G.mode = 'pause'; G.drag = null; G.keys = {}; sayHold(true); openOpt(true); }
 function resumeGame() { if (G.mode !== 'pause') return; G.mode = 'play'; $('opt').hidden = true; G.last = performance.now(); sayHold(false); }
@@ -123,6 +123,7 @@ function uiEvent(t, a, b, c, d, e) {
         // 這一關的訣竅：一回合最多講一句，而且要還用得上才講（該打的東西已經不在了就跳過）。第一次玩第一關的時候讓教學先講
         const hs = S.lv.hints;
         if (!G.tut && hs) for (let i = 0; i < hs.length; i++) { const h = hs[i]; if (G.hinted[i] || b < h.r || (h.ok && !h.ok())) continue; G.hinted[i] = 1; say(h.t, 0, 'hint' + i, h.ok ? () => S.state === 'play' && h.ok() : null); break; }
+        if (ultK(0) > 1 && T.ult.c < T.ult.need) once('comeback', '兵比敵軍少：打出的傷害和坍塌讓連珠集氣快五成，一次大坍塌就能翻盤');
         if (!SV.seenUlt && T.ult.c >= T.ult.need && !T.ult.armed) once('ult', '「連珠」集滿了！按右下角金色按鈕上膛，這一輪每個兵連打三次', 0, () => { const U = S.team[0].ult; return U.c >= U.need && !U.armed; });
       } else {
         // 護罩的教學：敵軍瞄準只有一秒多，排隊就來不及了——插隊馬上講；輪不到（前面有別的警告）就下一回合再講
@@ -224,7 +225,7 @@ function bindInput() {
   // 滑鼠和手指都一樣：按住畫面任何地方拖曳，照拖的方向和距離微調（不是指到哪打到哪），放開就發射。
   // 這樣每一輪都是從上一輪的角度接著調，吊高、平射都拉得到，手指也不必蓋住城樓
   stage.addEventListener('pointerdown', (e) => {
-    auInit(); if (!G.started) { G.started = true; if (G.mode === 'home') musStart(6); }
+    auInit(); if (!G.started) { G.started = true; if (G.mode === 'home') musStart('home'); }
     G.kbNav = false;
     // 分出勝負之後的垮城演出：看了一會兒再點畫面，就直接跳到結算
     if (G.mode === 'play' && S.state !== 'play' && G.endT > 1.6 && !e.target.closest('button')) { G.endT = 99; return; }
@@ -365,7 +366,7 @@ function boot() {
   // 字型晚一點才載到的話重新排一次
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { layout(); }).catch(() => { });
 }
-window.__qp = { S, SH, FX, G, V, SV, AU, RD, UI, PH, LEVELS, BOTS, simInit, simStep, simAim, simFire, simSkill, aiInit, teamBar, startLevel, goHome, layout, renderFrame, fxStep, hudUpdate, sfx, musStart, physExplode, blockKill, killUnit, WPN, blockDist,
+window.__qp = { S, SH, FX, G, V, SV, AU, RD, UI, PH, LEVELS, BOTS, simInit, simStep, simAim, simFire, simSkill, aiInit, teamBar, startLevel, goHome, layout, renderFrame, fxStep, hudUpdate, sfx, musStart, physExplode, blockKill, killUnit, WPN, blockDist, homeRender, demoStart,
   // 測試用：凍結即時迴圈後，手動把戰局往前推 sec 秒
   advance(sec) { const n = Math.round(sec / STEP); let acc = 0; for (let i = 0; i < n; i++) { simStep(STEP); fxStep(STEP, STEP); acc += STEP; if (G.mode === 'play' && S.state !== 'play') G.endT += STEP; if (acc >= 0.05 && i < n - 1) { renderFrame(acc, acc); acc = 0; } } if (G.mode === 'play') hudUpdate(); renderFrame(acc || STEP, acc || STEP); }
 };

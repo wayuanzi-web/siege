@@ -1,4 +1,4 @@
-// node test/first.js <關卡 1-6> [場數=150] [敵軍打幾輪=1]
+// node test/first.js <關卡 1-12> [場數=150] [敵軍打幾輪=1]
 // 開場公平性：我方完全不開火、不開護罩，敵軍（照關卡原本的 AI，含手抖）先打 K 輪，看我方倒幾個兵
 const G = require('./load')(); const { S, simInit, simStep, simFire, LEVELS } = G;
 const li = +(process.argv[2] || 1) - 1, N = +(process.argv[3] || 150), K = +(process.argv[4] || 1);

@@ -22,7 +22,7 @@ function anchorAt(st, P) {
 // 傷害種類對繩子的倍率：   爆   穿刺  重   火   冰   雷   壓   暗
 const ROPE_DM = [1.0, 2.6, 1.2, 1.6, 0.4, 0.8, 0, 1.1];        // 麻繩：一箭射得斷、火燒得斷
 const CHAIN_DM = [0.8, 0.45, 1.25, 0.25, 0.4, 2.2, 0, 1.0];    // 鐵鍊：箭射不太動，重砲、雷才打得斷
-const ROPE_HP = { rope: 26, chain: 72 };
+const ROPE_HP = { rope: 26, chain: 60 };
 function ropeEnds(r) {
   const e = r.e;
   if (r.a && r.a.body) { const p = r.a.body.getWorldPoint(r.la); e[0] = p.x; e[1] = p.y; } else if (!r.a) { e[0] = r.la.x; e[1] = r.la.y; }
@@ -284,7 +284,8 @@ function stressCalib(k) {
     b.sAcc = 0;
   }
   // 吊殿的鐵鍊（stay）餘裕少：上面那間殿砸下來壓在這間上，它就繃斷
-  for (const r of S.ropes) r.tmax = Math.max(r.t0 * (r.tag === 'stay' ? 2.6 : r.kind === 'chain' ? 4.2 : 3.0), r.kind === 'chain' ? 1800 : 700);
+  // 麻繩（索橋）一被扯緊就斷：一棟倒了，不會把另一棟整個拖下去（只會晃一下）
+  for (const r of S.ropes) r.tmax = Math.max(r.t0 * (r.tag === 'stay' ? 2.6 : r.kind === 'chain' ? 4.2 : 2.5), r.kind === 'chain' ? 1800 : r.hang ? 700 : 420);
 }
 function stressStep(dt, act) {
   const credit = S.phase === 'hazard' ? 2 : S.turn;
@@ -342,7 +343,7 @@ function mechStep(dt) {
       if (r.cut) continue;
       ropeEnds(r);
       if (r.flash > 0) r.flash = Math.max(0, r.flash - dt * 5);
-      if (r.j) { r.tens = ropeTension(r.j, 1 / dt); if (act && r.tens > r.tmax) { r.over += dt; if (r.over > (r.tag === 'stay' ? 0.35 : 0.12)) { ropeCut(r, S.phase === 'hazard' ? 2 : S.turn, K_CRUSH, false); continue; } } else r.over = Math.max(0, r.over - dt); }
+      if (r.j) { r.tens = ropeTension(r.j, 1 / dt); if (act && r.tens > r.tmax) { r.over += dt; if (r.over > (r.tag === 'stay' ? 0.35 : r.kind === 'rope' && !r.hang ? 0.04 : 0.12)) { ropeCut(r, S.phase === 'hazard' ? 2 : S.turn, K_CRUSH, false); continue; } } else r.over = Math.max(0, r.over - dt); }
       if (r.burn > 0 && act) { r.burn -= dt; r.hp -= 7 * dt; if (r.hp <= 0) ropeCut(r, S.turn === r.side ? 2 : S.turn, K_FIRE, false); }
     }
   }

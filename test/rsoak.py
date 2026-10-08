@@ -14,7 +14,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 args = [a for a in sys.argv[1:] if not a.startswith('--')]
 opts = dict(a[2:].split('=', 1) if '=' in a else (a[2:], '1') for a in sys.argv[1:] if a.startswith('--'))
 GAMES = int(args[0]) if args else 2
-LEVELS = [int(x) for x in (args[1] if len(args) > 1 else '1,2,3,4,5,6').split(',')]
+LEVELS = [int(x) for x in (args[1] if len(args) > 1 else '1,2,3,4,5,6,7,8,9,10,11,12').split(',')]
 W, H = [int(x) for x in opts.get('size', '844x390').split('x')]
 MONKEY = 'monkey' in opts
 PAGE = opts.get('page', str(ROOT / 'src/dist/index.html'))
@@ -37,7 +37,7 @@ async ([lvl, bot, seed, monkey, maxSec]) => {
   const q = window.__qp, S = q.S, G = q.G, $ = (id) => document.getElementById(id);
   window.__hold = true;
   let s = seed; const rnd = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
-  q.SV.open = 6; q.SV.seen = true; q.UI.sel = lvl - 1;
+  q.SV.open = 12; q.SV.seen = true; q.UI.sel = lvl - 1;
   if (G.mode !== 'home') q.goHome();
   $('btnGo').click();
   if (!monkey) q.aiInit(S.team[0], q.BOTS[bot], { aiErr: 1 });

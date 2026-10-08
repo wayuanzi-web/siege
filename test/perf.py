@@ -27,7 +27,7 @@ async def main():
         ctx = await b.new_context(viewport={'width': W, 'height': H}, device_scale_factor=dpr)
         pg = await ctx.new_page(); await pg.goto(page if '://' in page else pathlib.Path(page).as_uri()); await pg.wait_for_timeout(500)
         print(f'{page}  {W}x{H} dpr{dpr}')
-        for lvl in range(1, 7):
+        for lvl in range(1, 13):
             r = await pg.evaluate(JS, lvl)
             print(f"L{r['lvl']} 畫布 {r['canvas'][0]}x{r['canvas'][1]}  平靜時畫一格 {r['idleRender']}ms  ｜ 大爆炸後 醒著 {r['awake'][0]}/{r['awake'][1]} 碎塊 {r['nfrag']} 粒子 {r['parts']}  simStep 平均 {r['busyStep'][0]}ms（最久 {r['busyStep'][1]}）  畫一格 平均 {r['busyRender'][0]}ms（最久 {r['busyRender'][1]}）")
         await b.close()

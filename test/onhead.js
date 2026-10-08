@@ -8,7 +8,7 @@ const G = new Function('planck', src + '\nreturn { S, PH, simInit, simStep, BOTS
 const { S, PH, simInit, simStep, BOTS } = G;
 const N = +(process.argv[2] || 6), bot = process.argv[3] || 'casual';
 let checks = 0, heads = 0, heavy = 0; const per = [];
-for (let li = 0; li < 6; li++) {
+for (let li = 0; li < LEVELS.length; li++) {
   let h = 0, c = 0;
   for (let sd = 0; sd < N; sd++) {
     simInit(li, {}, 31000 + sd * 7919 + li * 131, 1, { botA: BOTS[bot] });

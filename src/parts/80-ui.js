@@ -9,11 +9,16 @@ function loadSave() {
       // 存檔可能被改過或壞掉：每個數字都取整、夾在合理範圍裡
       const int = (v, lo, hi) => { v = Math.floor(+v); return v >= lo ? Math.min(v, hi) : lo; };
       SV.coins = int(s.coins, 0, 9999999); SV.open = int(s.open, 1, LEVELS.length);
-      if (Array.isArray(s.stars)) for (let i = 0; i < LEVELS.length; i++) SV.stars[i] = int(s.stars[i], 0, 3);
+      if (Array.isArray(s.stars)) {
+        // 舊版（六關）的存檔：第六關魔王城現在是第十二關，星星搬過去；中間新加的第六到十一關從頭打
+        if (s.stars.length === 6 && LEVELS.length === 12) { const st = s.stars.slice(); st[11] = st[5]; st[5] = 0; s.stars = st; }
+        for (let i = 0; i < LEVELS.length; i++) SV.stars[i] = int(s.stars[i], 0, 3);
+      }
       if (s.up && typeof s.up === 'object') { for (const k in SV.up) SV.up[k] = int(s.up[k], 0, 5); if (s.up.aim === undefined && s.up.rate) SV.up.aim = int(s.up.rate, 0, 5); }      // 舊版的「裝填」改成「準星」
       SV.sfx = s.sfx !== false; SV.mus = s.mus !== false; SV.vib = s.vib !== false; SV.seen = !!s.seen; SV.seenUlt = !!s.seenUlt; SV.seenSh = !!s.seenSh; SV.flip = !!s.flip;
       SV.diff = s.diff === 0 || s.diff === 2 ? s.diff : 1;
-      let top = 0; for (let i = 0; i < LEVELS.length; i++) if (SV.stars[i] > 0) top = i + 1;
+      // 從第一關起一路過了幾關（存檔裡的「解鎖到第幾關」壞了也救得回來；舊存檔搬過去的魔王城星星不算，不會一口氣解鎖整個第二篇）
+      let top = 0; while (top < LEVELS.length && SV.stars[top] > 0) top++;
       SV.open = clamp(Math.max(SV.open, top + 1), 1, LEVELS.length);
     }
   } catch (e) { /* 讀不到存檔就當新玩家 */ }
@@ -29,7 +34,9 @@ const UPS = [
 ];
 const UP_COST = [80, 150, 240, 360, 520];
 const NUM_ZH = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
-const UI = { sel: 0, wipeArm: 0, resRun: 0, resAt: -1e9 };
+const UI = { sel: 0, chap: 0, wipeArm: 0, resRun: 0, resAt: -1e9 };
+const CHAP = 6;                                          // 一篇幾關
+const CHAPS = ['第一篇', '第二篇'];
 function numZh(n) { return n <= 10 ? NUM_ZH[n - 1] : n < 20 ? '十' + NUM_ZH[n - 11] : n % 10 === 0 ? NUM_ZH[n / 10 - 1] + '十' : NUM_ZH[((n / 10) | 0) - 1] + '十' + NUM_ZH[n % 10 - 1]; }
 
 function replay(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
@@ -85,25 +92,45 @@ function sayHold(on) {
 function mile(txt) { const el = $('mile'); el.textContent = txt; replay(el, 'show'); }
 
 function starsHtml(n) { return '<em>' + '★'.repeat(n) + '</em>' + '★'.repeat(3 - n); }
+// 換一篇：選那一篇裡打到的最後一關（還沒解鎖就選那一篇的第一關）
+function chapGo(k) {
+  if (UI.chap === k) return;
+  sfx('click'); UI.chap = k;
+  const a = k * CHAP, b = Math.min(LEVELS.length, a + CHAP);
+  UI.sel = clamp(SV.open - 1, a, b - 1);
+  homeRender(); if (typeof demoStart === 'function') demoStart(UI.sel);
+}
 function homeRender() {
   const box = $('lvls'); box.textContent = '';
+  UI.chap = Math.floor(UI.sel / CHAP);
+  // 兩篇各一個分頁：一次只列一篇的六關（十二關排成一長條放不下）
+  const tabs = $('chaps'); tabs.textContent = '';
+  CHAPS.forEach((nm, k) => {
+    if (k * CHAP >= LEVELS.length) return;
+    const t = document.createElement('button'), lock = k * CHAP >= SV.open;
+    t.className = 'chap chamfer' + (lock ? ' locked' : ''); t.setAttribute('role', 'tab'); t.setAttribute('aria-selected', String(k === UI.chap));
+    t.innerHTML = '<span>' + nm + '</span><small>' + (k * CHAP + 1) + '–' + Math.min(LEVELS.length, (k + 1) * CHAP) + '</small>';
+    onTap(t, () => chapGo(k));
+    tabs.appendChild(t);
+  });
   LEVELS.forEach((lv, i) => {
+    if (Math.floor(i / CHAP) !== UI.chap) return;
     const b = document.createElement('button'), locked = i >= SV.open;
     b.className = 'lv chamfer' + (locked ? ' locked' : ''); b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(i === UI.sel));
-    b.setAttribute('aria-label', '第' + NUM_ZH[i] + '關 ' + lv.name + (locked ? '（未解鎖）' : ''));
+    b.setAttribute('aria-label', '第' + numZh(i + 1) + '關 ' + lv.name + (locked ? '（未解鎖）' : ''));
     const n = document.createElement('b'); n.textContent = String(i + 1);
     const nm = document.createElement('strong'); nm.textContent = lv.name;
     const st = document.createElement('span'); st.className = 'stars'; st.innerHTML = starsHtml(SV.stars[i]);
     b.appendChild(n); b.appendChild(nm); b.appendChild(st);
     onTap(b, () => {
       sfx('click'); if (UI.sel === i) return; UI.sel = i; homeRender(); if (typeof demoStart === 'function') demoStart(i);
-      const nb = $('lvls').children[i]; if (nb) nb.focus({ preventScroll: true });      // 清單重畫過了，把焦點放回同一關（用鍵盤選關才不會跳掉）
+      const nb = $('lvls').children[i % CHAP]; if (nb) nb.focus({ preventScroll: true });      // 清單重畫過了，把焦點放回同一關（用鍵盤選關才不會跳掉）
     });
     box.appendChild(b);
   });
   const lv = LEVELS[UI.sel], locked = UI.sel >= SV.open;
   $('liName').textContent = lv.name; $('liTag').textContent = lv.tag;
-  const tipTxt = locked ? '先打下第' + NUM_ZH[UI.sel - 1] + '關「' + LEVELS[UI.sel - 1].name + '」才能出戰。' : lv.tip + '。';
+  const tipTxt = locked ? '先打下第' + numZh(UI.sel) + '關「' + LEVELS[UI.sel - 1].name + '」才能出戰。' : lv.tip + '。';
   const tip = $('liTip'); tip.textContent = tipTxt; tip.classList.remove('blurb');
   // 看不見的墊高文字：每一段可能出現在這裡的說明都放一份，格子的高度就是最長那一段的高度
   const tb = $('liTipBox'); tb.querySelectorAll('.sizer').forEach((e) => e.remove());
@@ -179,12 +206,18 @@ const LOSE_TIPS_LV = [
   ['兵被凍住就開護罩，會立刻解凍。', '冰很滑：把冰塔牆腳底下那一格冰板打穿，塔一歪，上面的兵就溜下去。火油兵的火對冰特別有效。', '冰術士躲在大廳裡兩根冰柱中間：打斷冰柱（火一烤就化）、冰板再破一格，整片冰板就垮進大廳；或是吊高從他頭頂把冰板轟穿，砲彈直接落進去。', TIP_RED],
   ['敵城正面是鐵甲：吊高從屋頂打進去，把樓上的火藥庫炸開，一桶爆就三桶連環爆。', '讓砲彈從正在噴的地火裡穿過去，威力多五成。', '紅圈是這一回合結束時落石的位置：火山不認人，敵城也會被砸；砸得到你就開護罩。', TIP_RED],
   ['氣球先停在半路，下一輪才飛過來：趁它停著的時候打下來。', '把砲彈射進藍色傳送門，會從敵城頭頂往下灌，繞過正面的金甲。', '防空弩架在伸出牆外的木板露台上：把露台打斷，它就掉進雲海；不然每一輪都會被它射下三發。', TIP_RED],
-  ['結界每回合換缺口（魔王暴怒之後開兩個）：看哪一段沒有光牆，就用那個角度打進去；光牆也打得破。', '毀滅光球先停在城前面的半空中，下一輪才砸過來：打爆它，它會掉頭砸在魔王自己身上；來不及就開護罩。', '先打斷大殿的木柱，屋頂會砸在魔王頭上；掀開了再把砲彈吊高落進去。把他腳下的樓板打穿，他摔一層就痛一次。', TIP_RED]
+  ['吊腳樓的竹樁很細：打斷一根，剩下的撐不住，會嘎吱嘎吱一根接一根斷，整間連人滑進河裡。', '竹子一點就著：火油兵燒竹樁、燒繩子都很快。', '望樓用兩條繩子拉著前後兩棟：前面那棟倒進河裡，會把望樓一起拖下去。', TIP_RED],
+  ['投石兵丟的大石頭砸中最左邊那塊矮石碑的上半截，整排石碑會一路倒過去，最高的那塊砸進敵城。', '中間那根石柱頂上只靠兩根細石頸撐著：打斷一根，整棟屋子往那一邊翻，砸在旁邊那間小屋上。', '石柱頂的小屋只有一根石頸撐著：炸到一邊就翻，兵會從十幾格高摔下來。', TIP_RED],
+  ['兩間殿的外端各吊著一條鐵鍊：轟天砲、雷法師打得斷，連弩手的箭射不太動。斷了之後樑會一點一點往下垂，垂到底就整間掉進深谷。', '打斷吊鐘的鐵鍊，大銅鐘砸穿屋頂，正好砸在上面那間殿的兵頭上。', '先弄垮上面那間殿：它掉下來壓在下面那間上，下面那條鐵鍊也會繃斷。', TIP_RED],
+  ['前面那籃配重只用麻繩吊著，一箭就斷；後面那籃是鐵鍊（要轟天砲、投石）。哪一籃沒了，大樑就往另一頭翻。', '大樑往前翻，前面那座樓會連人滑進深谷；往後翻，後面的東西會滑到寨子外面。', '一頭的兵和磚打掉夠多，那一頭變輕，大樑也會翻：專心打同一邊。', TIP_RED],
+  ['上層正中間的紫色共鳴晶柱一下被打掉一半，整座宮殿的琉璃會一圈一圈震碎：先打開它前面的琉璃牆。', '大廳天花板吊著水晶吊燈，正下方就是一個兵：把天花板打穿，吊燈砸下來。', '琉璃一撞就碎：從上往下打，碎片會一層壓垮一層。投石兵的大石頭砸琉璃最痛。', TIP_RED],
+  ['每一層只有兩根柱子：打斷一根，另一根撐不了多久，上面幾層一起壓下來。最底下那層最值得打。', '火油兵點著的柱子會越燒越細：塔是木頭和瓦蓋的，火一路往上延燒。', '塔頂的兵最高：底下任何一層垮了，他都會一路摔下來。', TIP_RED],
+  ['結界每回合換缺口（魔王暴怒之後開兩個）：看哪一段沒有光牆，就用那個角度打進去；光牆也打得破。', '毀滅光球先停在城前面的半空中，下一輪才砸過來：打爆它，它會掉頭砸在魔王自己身上；來不及就開護罩。', '大殿屋頂吊著一盞鐵吊燈，就在魔王頭頂：打斷鐵鍊（轟天砲、雷法師），或打斷大殿的木柱，讓吊燈和屋頂一起砸下來。', TIP_RED]
 ];
 function showResult(won, st) {
   $('resTitle').textContent = won ? (st.idx === LEVELS.length - 1 ? '魔王伏誅' : '敵城攻破') : '城樓失守';
   $('resTitle').className = won ? '' : 'lose';
-  $('resSub').textContent = '第' + NUM_ZH[st.idx] + '關 ' + LEVELS[st.idx].name;
+  $('resSub').textContent = '第' + numZh(st.idx + 1) + '關 ' + LEVELS[st.idx].name;
   const stars = $('resStars'); stars.hidden = !won;
   const run = ++UI.resRun;
   [...stars.children].forEach((s, i) => { s.className = ''; if (won && i < st.stars) setTimeout(() => { if (UI.resRun === run && !$('result').hidden) { s.className = 'on'; sfx('star', i); } }, 350 + i * 320); });
@@ -226,7 +259,7 @@ function hudBuild() {
   if (S.lv.boss) for (const p of [S.lv.boss.p2, S.lv.boss.p3]) { const t = document.createElement('span'); t.className = 'tick'; t.style.right = (p * 100) + '%'; hb.appendChild(t); }
   $('foeLbl').textContent = S.lv.boss ? '魔王' : '敵城';
   $('windBox').hidden = !S.lv.wind;
-  HUD.a = HUD.b = -1; HUD.ult = HUD.sh = -1; HUD.wind = 99; HUD.deg = HUD.pow = -1; HUD.mile = 0; HUD.turn = ''; HUD.round = -1; HUD.fire = -1;
+  HUD.a = HUD.b = -1; HUD.ult = HUD.sh = -1; HUD.wind = 99; HUD.deg = HUD.pow = -1; HUD.mile = 0; HUD.turn = ''; HUD.round = -1; HUD.fire = -1; HUD.boost = null;
   $('turnChip').hidden = true;                                       // 上一局留下來的「輪到你」不能帶進新的一局
 }
 function foeBar() { return teamBar(1); }
@@ -266,6 +299,8 @@ function hudUpdate() {
   const T = S.team[0], bu = $('btnUlt'), bs = $('btnShield');
   const up = clamp(T.ult.c / T.ult.need, 0, 1), armed = T.ult.armed, uk = Math.round(up * 100) + (armed ? 1000 : 0);
   if (uk !== HUD.ult) { HUD.ult = uk; bu.style.setProperty('--p', armed ? '1' : up.toFixed(3)); bu.classList.toggle('ready', up >= 1 && !armed); bu.classList.toggle('on', armed); $('ultNum').textContent = armed ? '已上膛' : up >= 1 ? '可用' : Math.floor(up * 100) + '%'; }
+  // 兵比敵軍少：連珠集氣加快（按鈕上掛一個「逆轉」的小牌子）
+  const boost = S.state === 'play' && ultK(0) > 1; if (boost !== HUD.boost) { HUD.boost = boost; bu.classList.toggle('boost', boost); }
   const sp = clamp(T.shield.c / T.shield.need, 0, 1), son = T.shield.on, sk = Math.round(sp * 100) + (son ? 1000 : 0);
   if (sk !== HUD.sh) { HUD.sh = sk; bs.style.setProperty('--p', son ? '1' : sp.toFixed(3)); bs.classList.toggle('ready', sp >= 1 && !son); bs.classList.toggle('on', son); $('shNum').textContent = son ? '展開中' : sp >= 1 ? '可用' : Math.floor(sp * 100) + '%'; }
   if (S.lv.wind) {

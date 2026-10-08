@@ -33,7 +33,6 @@ function flameSprite() {
 /* ---------- 城樓 ---------- */
 // 城基：畫進靜態的佈景裡（不會動、打不壞）
 function drawFoundations(c) {
-  for (const st of S.structs) if (st.rock && st.rock.length) drawRock(c, st);
   for (const st of S.structs) {
     if (st.side > 1 || st.nofound) continue;
     const P = SKINS[st.skin], x0 = X(st.fx0 - CS * 0.45), x1 = X(st.fx1 + CS * 0.45), y0 = Y(st.y0), h = V.s * 2.1, s = V.s;
@@ -41,6 +40,18 @@ function drawFoundations(c) {
     c.fillStyle = P.stone[0]; c.fillRect(x0 + s * 0.3, y0 - s * 0.05, x1 - x0 - s * 0.6, Math.max(1, s * 0.3));
     c.strokeStyle = P.ink; c.lineWidth = Math.max(1.5, s * 0.28); rrect(c, x0, y0 - s * 0.05, x1 - x0, h, s * 0.5); c.stroke();
     c.fillStyle = rgba(P.stone[3], 0.6); for (let x = x0 + s * 2.4; x < x1 - s; x += s * 3.4) c.fillRect(x, y0 + s * 0.5, Math.max(1, s * 0.2), h - s * 1.0);
+  }
+}
+// 岩壁：每一幀貼在佈景上、城樓後面（佈景裡會動的雲、霧畫在它後面，不會飄到岩壁前面）。只畫一次，存成一張圖
+function drawRocks(c) {
+  for (const st of S.structs) {
+    if (!st.rock || !st.rock.length) continue;
+    const pad = 4, key = V.T + '|' + V.s;
+    if (!st._rk || st._rkKey !== key) {
+      const x0 = X(st.x0) - pad, y0 = Y(st.y1) - pad, cv = mkCanvas(st.cols * V.T + pad * 2, st.rows * V.T + pad * 2), k = cv.getContext('2d');
+      k.translate(-x0, -y0); drawRock(k, st); st._rk = cv; st._rkKey = key; st._rkX = st.x0; st._rkY = st.y1;
+    }
+    c.drawImage(st._rk, X(st._rkX) - pad, Y(st._rkY) - pad);
   }
 }
 // 岩壁（藍圖裡的 A）：一格一格的岩石，跟旁邊不是岩壁的地方畫一道深色的邊，上緣長一點苔
@@ -205,7 +216,20 @@ function ropeLine(c, x0, y0, x1, y1, sag, kind, hurt, flash) {
   c.setLineDash([s * 0.35, s * 0.45]); c.strokeStyle = 'rgba(90,60,25,.6)'; c.lineWidth = Math.max(1, s * 0.12); c.stroke(); c.setLineDash([]);
   if (hurt > 0.5) { c.strokeStyle = '#e8d2a6'; c.lineWidth = Math.max(1, s * 0.1); for (let k = -1; k <= 1; k++) { c.beginPath(); c.moveTo(mx, (y0 + y1) / 2 + sag); c.lineTo(mx + k * s * 0.6, (y0 + y1) / 2 + sag + s * 0.5); c.stroke(); } }
 }
+// 天秤的轉軸、懸臂樑釘在岩壁上的插銷：一顆大鐵釘
+function drawPins(c) {
+  const s = V.s;
+  const bolt = (x, y, r, plate) => {
+    if (plate) { c.fillStyle = '#2c2833'; rrect(c, x - r * 1.5, y - r * 1.5, r * 3, r * 3, r * 0.4); c.fill(); c.fillStyle = '#4c4656'; c.fillRect(x - r * 1.5, y - r * 1.5, r * 3, Math.max(1, r * 0.3)); }
+    c.fillStyle = '#3a3340'; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
+    c.fillStyle = '#a49aae'; c.beginPath(); c.arc(x - r * 0.25, y - r * 0.25, r * 0.55, 0, TAU); c.fill();
+    c.fillStyle = '#ffc93c'; c.beginPath(); c.arc(x, y, r * 0.28, 0, TAU); c.fill();
+  };
+  for (const o of S.pivots) if (o.b && !o.b.dead) bolt(X(o.x), Y(o.y), s * 1.15, false);
+  for (const o of S.pins) if (!o.broke && o.b && !o.b.dead && o.b.body) { const p = o.b.body.getWorldPoint(o.lp); bolt(X(p.x), Y(p.y - 0.8), s * 0.7, true); }
+}
 function drawRopes(c, t) {
+  if (S.pivots.length || S.pins.length) drawPins(c);
   if (!S.ropes.length) return;
   const s = V.s;
   for (const r of S.ropes) {
@@ -615,6 +639,7 @@ function renderFrame(dt, rdt) {
   if (FX.shx || FX.shy) { c.fillStyle = '#0d1019'; c.fillRect(0, 0, V.W, V.H); }
   c.setTransform(1, 0, 0, 1, FX.shx, FX.shy);
   sceneBack(c, t, dt);
+  drawRocks(c);
   drawObjs(c, t);
   for (const st of S.structs) drawBackdrop(c, st, rdt);
   drawBlocks(c, t, rdt);

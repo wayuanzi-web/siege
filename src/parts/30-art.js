@@ -64,6 +64,7 @@ function paintBlock(c, b, ds, w, h, sc) {
       c.quadraticCurveTo(w * 1.06, h * 0.62, w * 0.72, h); c.lineTo(w * 0.28, h); c.quadraticCurveTo(w * -0.06, h * 0.62, w * 0.14, h * 0.34); c.quadraticCurveTo(w * 0.38, h * 0.2, w * 0.3, h * 0.1); c.closePath();
     }
     else if (b.kind === 'bell') { c.beginPath(); c.moveTo(0, h); c.lineTo(w, h); c.quadraticCurveTo(w * 0.86, h * 0.62, w * 0.81, h * 0.36); c.quadraticCurveTo(w * 0.76, 0, w * 0.5, 0); c.quadraticCurveTo(w * 0.24, 0, w * 0.19, h * 0.36); c.quadraticCurveTo(w * 0.14, h * 0.62, 0, h); c.closePath(); }
+    else if (b.dom) { const r = w * 0.48; c.beginPath(); c.moveTo(0, h); c.lineTo(0, r); c.quadraticCurveTo(0, 0, r, 0); c.lineTo(w - r, 0); c.quadraticCurveTo(w, 0, w, r); c.lineTo(w, h); c.closePath(); }      // 石碑：圓頂
     else if (b.reso) { c.beginPath(); c.moveTo(w * 0.5, 0); c.lineTo(w * 0.95, h * 0.2); c.lineTo(w * 0.95, h * 0.86); c.lineTo(w * 0.5, h); c.lineTo(w * 0.05, h * 0.86); c.lineTo(w * 0.05, h * 0.2); c.closePath(); }
     else rrect(c, 0, 0, w, h, Math.min(w, h) * 0.09);
   };
@@ -79,11 +80,16 @@ function paintBlock(c, b, ds, w, h, sc) {
         c.fillStyle = mix(p[1], p[0], 0.3); for (let x = u * 0.2; x < w - u * 0.3; x += u * 0.5) c.fillRect(x, h * 0.66, u * 0.26, h * 0.22);
         c.fillStyle = rgba(p[3], 0.5); c.fillRect(0, h * 0.54, w, Math.max(1, h * 0.07));
       } else if (b.dom) {
-        // 石碑：上面一塊碑首，碑身刻了一行字
-        c.fillStyle = rgba(p[3], 0.55); c.fillRect(0, 0, w, u * 0.5);
-        c.fillStyle = rgba(p[0], 0.5); c.fillRect(0, u * 0.5, w, Math.max(1, u * 0.06));
-        c.fillStyle = rgba(p[3], 0.7);
-        for (let y = u * 0.9; y < h - u * 0.6; y += u * 0.62) { const gx = w * 0.5; c.fillRect(gx - w * 0.22, y, w * 0.44, Math.max(1, u * 0.06)); c.fillRect(gx - Math.max(1, u * 0.03), y - u * 0.16, Math.max(1, u * 0.06), u * 0.38); if (R() < 0.6) c.fillRect(gx - w * 0.18, y + u * 0.18, w * 0.36, Math.max(1, u * 0.05)); }
+        // 石碑：圓頂的碑首刻一圈雲紋，碑身一道框、框裡一行塗了朱紅的字，底下一截碑座
+        c.fillStyle = lg(c, 0, 0, w, 0, [0, mix(p[1], p[0], 0.7), 0.5, mix(p[1], p[0], 0.35), 1, p[1]]); c.fillRect(0, 0, w, h);
+        c.strokeStyle = rgba(p[2], 0.8); c.lineWidth = Math.max(1, u * 0.05);
+        c.beginPath(); c.arc(w * 0.5, w * 0.62, w * 0.26, Math.PI, TAU); c.stroke();
+        c.beginPath(); c.arc(w * 0.5, w * 0.62, w * 0.12, Math.PI, TAU); c.stroke();
+        const fy0 = w * 0.95, fy1 = h - u * 0.75;
+        c.strokeRect(w * 0.16, fy0, w * 0.68, fy1 - fy0);
+        c.fillStyle = '#b8352a';
+        for (let y = fy0 + u * 0.35; y < fy1 - u * 0.3; y += u * 0.58) { const gx = w * 0.5; c.fillRect(gx - w * 0.2, y, w * 0.4, Math.max(1, u * 0.06)); c.fillRect(gx - Math.max(1, u * 0.03), y - u * 0.14, Math.max(1, u * 0.06), u * 0.34); if (R() < 0.6) c.fillRect(gx - w * 0.16, y + u * 0.16, w * 0.32, Math.max(1, u * 0.05)); }
+        c.fillStyle = rgba(p[3], 0.7); c.fillRect(0, h - u * 0.5, w, u * 0.5); c.fillStyle = rgba(p[0], 0.6); c.fillRect(0, h - u * 0.5, w, Math.max(1, u * 0.05));
       } else if (h > u * 1.6) {
         c.fillStyle = rgba(p[2], 0.45); c.fillRect(w * 0.3, 0, Math.max(1, w * 0.07), h); c.fillRect(w * 0.64, 0, Math.max(1, w * 0.07), h);
       } else {

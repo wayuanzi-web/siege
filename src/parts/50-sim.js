@@ -15,7 +15,7 @@ const S = {
   gates: [], gsp: [], bitUse: new Float64Array(30),
   objs: [], marks: [], pend: [],
   wind: 0, rage: 1, sudden: false, gpts: null, voids: null, boss: null, nburn: 0, burnT: 0, chain: 0, vol: 0, nfrag: 0, bid: 0, balls: [], hz: 0, endBar: [0, 0],
-  ropes: [], pivots: [], water: null,
+  ropes: [], pivots: [], pins: [], water: null,
   stat: { fired: 0, peak: 0, swarm: 1, cells: 0, kills: 0, gates: 0, lost: 0, chain: 0 },
   on: null
 };

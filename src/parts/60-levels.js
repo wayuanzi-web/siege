@@ -133,11 +133,11 @@ const LEVELS = [
     ground: [[-40, 3], [0, 0], [37, 0], [41, -1.5], [46, -7], [170, -7]],
     water: { x0: 42, x1: 175, y: -1.6, cur: 2.4 },
     me: { castle: 'P3', crew: ['rocket', 'fire', 'bolt', 'bomb'] },
-    foe: { castle: 'E7', y0: -7, crew: ['bolt', 'rocket', 'bomb', 'fire'], hp: 1.4, dmg: 1.8, ai: { err: 3.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
+    foe: { castle: 'E7', y0: -7, crew: ['bolt', 'rocket', 'bomb', 'fire'], hp: 1.7, dmg: 2.6, ai: { err: 3.0, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6 } },
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[47, 36]], move: { t: 'bob', a: 4, per: 8 } },
       { owner: 0, mult: 5, h: 5.5, spots: [[55, 44], [53, 29]], at: 2, hop: true },
-      { owner: 1, mult: 2, h: 5.5, spots: [[60, 36]], at: 3, regap: 2 }
+      { owner: 1, mult: 2, h: 5.5, spots: [[60, 36]], at: 2, regap: 2 }
     ],
     lantern: { at: 3, every: 3, spots: [[52, 47], [57, 25]] }
   },
@@ -149,7 +149,7 @@ const LEVELS = [
       { r: 3, t: '石柱頂的小屋只有一根石頸撐著，炸到一邊就翻：站在上面的兵會從十幾格高摔下來', ok: () => foeHome(1) || foeHome(3) }],
     ground: [[-40, 3], [0, 0], [112, 0], [152, 3]],
     me: { castle: 'P3', crew: ['stone', 'rocket', 'bolt', 'bomb'] },
-    foe: { castle: 'E8', crew: ['rocket', 'bomb', 'stone', 'bolt'], hp: 1.4, dmg: 1.8, ai: { err: 3.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
+    foe: { castle: 'E8', crew: ['rocket', 'bomb', 'stone', 'bolt'], hp: 1.5, dmg: 2.6, ai: { err: 2.9, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6 } },
     extra: [{ castle: 'DOM', x: 50.8, y: 0, hp: 1 }],
     weak: (side) => {
       if (side !== 0) return [];
@@ -161,7 +161,7 @@ const LEVELS = [
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[46, 37]], move: { t: 'bob', a: 4, per: 8 } },
       { owner: 0, mult: 5, h: 5.5, spots: [[56, 45], [52, 30]], at: 2, hop: true },
-      { owner: 1, mult: 2, h: 5.5, spots: [[64, 38]], at: 3, regap: 2 }
+      { owner: 1, mult: 2, h: 5.5, spots: [[64, 38]], at: 2, regap: 2 }
     ],
     lantern: { at: 3, every: 3, spots: [[51, 48], [58, 27]] }
   },
@@ -174,12 +174,12 @@ const LEVELS = [
     ground: [[-40, 3], [0, 0], [49, 0], [53, -3], [96, -3], [97, 0], [152, 0]],
     voids: [[53.5, 95.2]],
     me: { castle: 'P3', crew: ['rocket', 'zap', 'bolt', 'bomb'] },
-    foe: { castle: 'E9', crew: ['fire', 'bomb', 'zap', 'bolt'], hp: 1.45, dmg: 1.85, ai: { err: 3.6, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
+    foe: { castle: 'E9', crew: ['fire', 'bomb', 'zap', 'bolt'], hp: 1.45, dmg: 2.8, ai: { err: 2.7, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6 } },
     weak: (side) => side === 0 ? tgB([[4, 11], [4, 7], [9, 10], [5, 6]], 0.6) : [],
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[47, 38]], move: { t: 'bob', a: 4, per: 8 } },
       { owner: 0, mult: 5, h: 5.5, spots: [[57, 46], [55, 30]], at: 2, hop: true },
-      { owner: 1, mult: 2, h: 5.5, spots: [[63, 40]], at: 3, regap: 2 }
+      { owner: 1, mult: 3, h: 5.5, spots: [[63, 40]], at: 2, regap: 2 }
     ],
     lantern: { at: 3, every: 3, spots: [[52, 49], [60, 26]] }
   },
@@ -193,12 +193,12 @@ const LEVELS = [
     voids: [[58.5, 81.5]],
     wind: { max: 6, at: 3 },
     me: { castle: 'P3', crew: ['rocket', 'bolt', 'stone', 'bomb'] },
-    foe: { castle: 'E10', crew: ['bomb', 'rocket', 'ice', 'bolt'], hp: 1.45, dmg: 1.85, ai: { err: 3.5, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
+    foe: { castle: 'E10', crew: ['bomb', 'rocket', 'ice', 'bolt'], hp: 1.45, dmg: 2.2, ai: { err: 3.0, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6 } },
     weak: (side) => side === 0 ? tgB([[12, 3], [9, 3], [12, 1], [9, 1]], 0.55) : [],
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[46, 39]], move: { t: 'bob', a: 4, per: 8 } },
       { owner: 0, mult: 5, h: 5.5, spots: [[56, 46], [53, 31]], at: 2, hop: true },
-      { owner: 1, mult: 2, h: 5.5, spots: [[61, 40]], at: 3, regap: 2 }
+      { owner: 1, mult: 2, h: 5.5, spots: [[61, 40]], at: 2, regap: 2 }
     ],
     lantern: { at: 3, every: 3, spots: [[51, 49], [58, 27]] }
   },
@@ -210,13 +210,13 @@ const LEVELS = [
       { r: 3, t: '琉璃碎片砸到下面的琉璃也會碎：從上往下打，一層壓垮一層' }],
     ground: [[-40, 3], [0, 0], [38, 0], [42, -3.5], [70, -3.5], [74, 0], [112, 0], [152, 3]],
     me: { castle: 'P3', crew: ['rocket', 'stone', 'zap', 'bomb'] },
-    foe: { castle: 'E11', crew: ['bomb', 'ice', 'zap', 'rocket'], hp: 1.5, dmg: 1.9, ai: { err: 3.4, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
+    foe: { castle: 'E11', crew: ['bomb', 'ice', 'zap', 'rocket'], hp: 1.6, dmg: 2.8, ai: { err: 2.7, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6 } },
     weak: (side) => side === 0 ? tgB([[5, 3]], 1.25).concat(tgB([[5, 4]], 0.6)) : [],
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[46, 37]], move: { t: 'bob', a: 4, per: 8 } },
       { owner: 0, mult: 5, h: 5.5, spots: [[56, 45], [52, 30]], at: 2, hop: true },
       { owner: 0, mult: 10, h: 5.5, spots: [[51, 47]], at: 4, life: 1, gap: 2 },
-      { owner: 1, mult: 2, h: 5.5, spots: [[63, 38], [61, 46]], at: 3, hop: true, regap: 2 }
+      { owner: 1, mult: 3, h: 5.5, spots: [[63, 38], [61, 46]], at: 2, hop: true, regap: 2 }
     ],
     lantern: { at: 3, every: 3, spots: [[50, 49], [59, 26]] }
   },
@@ -229,7 +229,7 @@ const LEVELS = [
     ground: [[-40, 3], [0, 0], [112, 0], [152, 3]],
     wind: { max: 5, at: 3 },
     me: { castle: 'P3', crew: ['fire', 'rocket', 'stone', 'bomb'] },
-    foe: { castle: 'E12', crew: ['bomb', 'fire', 'rocket', 'bolt'], hp: 1.5, dmg: 1.95, ai: { err: 3.3, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
+    foe: { castle: 'E12', crew: ['bomb', 'fire', 'rocket', 'bolt'], hp: 1.4, dmg: 1.9, ai: { err: 3.3, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
     weak: (side) => side === 0 ? tgB([[3, 10], [9, 10], [4, 8], [8, 8]], 0.65) : [],
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[46, 38]], move: { t: 'bob', a: 4, per: 8 } },
@@ -244,7 +244,7 @@ const LEVELS = [
     hints: [{ r: 1, t: '打倒魔王就贏：鐵吊燈就吊在他頭頂，打斷鐵鍊（轟天砲、雷法師），或打斷大殿的木柱讓屋頂連燈一起砸下來' }, { r: 2, t: '把魔王腳下的樓板打穿，他摔一層就痛一次；轟出城外也會摔掉一截血' }],
     voids: [[36, 69.5]],
     me: { castle: 'P3', crew: ['rocket', 'zap', 'bomb', 'fire'] },
-    foe: { castle: 'E6', crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 1.1, dmg: 1.9, ai: { err: 4.6, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
+    foe: { castle: 'E6', crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 1.2, dmg: 2.1, ai: { err: 4.2, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
     boss: { p2: 0.8, p3: 0.45, segHp: 60, regen: 2, orbHp: 30, orbGap: [3, 2], meteors: 1 },
     gates: [
       { owner: 0, mult: 3, h: 6, spots: [[45, 37]] },

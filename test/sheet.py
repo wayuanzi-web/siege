@@ -17,7 +17,7 @@ async def main():
         await pg.goto((root / 'src/dist/index.html').as_uri()); await pg.wait_for_timeout(500)
         await pg.add_style_tag(content='#banner,#say,#hint,#mile{display:none!important}' + ('#hud{display:none!important}' if '--nohud' in flags else ''))
         tiles = []
-        for l in range(6):
+        for l in range(12):
             await pg.evaluate("([l, t]) => { const q = window.__qp; q.G.freeze = true; q.startLevel(l); q.aiInit(q.S.team[0], q.BOTS.casual, {aiErr: 1}); q.advance(t); }", [l, T])
             tiles.append(Image.open(io.BytesIO(await pg.screenshot())).convert('RGB'))
         tw, th = tiles[0].size

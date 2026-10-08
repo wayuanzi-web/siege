@@ -5,7 +5,7 @@ const { S, PH, simInit, simStep, BOTS } = G;
 const N = +(process.argv[2] || 6), bot = process.argv[3] || 'casual';
 let checks = 0, toe = 0, gap = 0; const per = [], ex = [];
 const under = (u, dx) => { let h = false; PH.world.rayCast({ x: u.x + dx, y: u.y + 0.6 }, { x: u.x + dx, y: u.y - 0.9 }, (f, pt, n, fr) => { const o = f.getUserData(); if (o && o.isUnit) return -1; h = true; return fr; }); return h; };
-for (let li = 0; li < 6; li++) {
+for (let li = 0; li < LEVELS.length; li++) {
   let t = 0, c = 0;
   for (let sd = 0; sd < N; sd++) {
     simInit(li, {}, 51000 + sd * 7919 + li * 131, 1, { botA: BOTS[bot] });
