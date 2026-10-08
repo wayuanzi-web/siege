@@ -125,7 +125,12 @@ function aiBegin(T) {
     const mate = o.plat.teth.find((q) => q !== o && Math.abs(q.ax - o.ax) < CS * 3);
     tg.push({ x: o.x, y: o.y, w: mate && mate.hp <= 0 ? 1.9 : 1.05, obj: o });
   }
-  for (const R of S.rollers) if (R.to === 1 - side && !R.go && R.stake && !R.stake.dead) { const p = R.stake.body.getPosition(); tg.push({ x: p.x, y: p.y + R.stake.h * 0.2, w: 1.25, blk: R.stake }); }
+  // 擋滾石的木樁：對面城前半邊、低樓層還有幾個兵（滾石撞得到的），越多越值得打
+  for (const R of S.rollers) if (R.to === 1 - side && !R.go && R.stake && !R.stake.dead && (side === 0 || rnd() < A.sap + 0.25)) {          // 敵軍不是每一輪都想得到
+    const p = R.stake.body.getPosition(), ts = S.st[R.to]; let n = 0;
+    for (const u of foeT.units) if (u.alive && u.y - ts.y0 < 13 && (ts.mirror ? u.x < ts.cx : u.x > ts.cx)) n++;
+    tg.push({ x: p.x, y: p.y + R.stake.h * 0.2, w: 1.15 + 0.3 * Math.min(n, 2), blk: R.stake });
+  }
   if (S.bell && S.bell.b.body) { const B = S.bell, p = B.b.body.getPosition(), v = B.b.body.getLinearVelocity(); if (v.x * v.x + v.y * v.y < 2) tg.push({ x: p.x - dir * B.b.w * 0.3, y: p.y, w: 1.0, blk: B.b }); }
   { const F = fst.fuse; if (F && !F.done && !F.fronts.length && T.units.some((u) => u.alive && u.w && u.w.kind === K_FIRE && u.frozen <= 0 && u.stun <= 0)) tg.push({ x: F.x[0], y: F.y[0] + 0.6, w: 1.5, fuse: F }); }
   if (fst.plat && fst.plat.comps && rnd() < A.sap + 0.35) for (const c of fst.plat.comps) {

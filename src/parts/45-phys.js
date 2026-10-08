@@ -504,6 +504,8 @@ function rockPass(ball, dmg, kind, side) {
 }
 // 一塊磚算不算「大塊」：橫跨四格以上的樓板和樑、三格高的鐵甲和柱子
 function bigBlock(o) { return o.inPlace && !o.frag && !o.prop && !o.dom && (o.cw >= 4 || o.ch >= 3); }
+// 第一回合敵軍還在試射：炸到我方的兵只推一點點（不會開場就被轟出城、摔下樓）
+function open1(u, side) { return u.side === 0 && side === 1 && S.round <= 1 && !!S.lv.foe.open; }
 // hit: 直接打中的東西（磚或兵），vx/vy: 砲彈當時的方向
 function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
   const T = side < 2 ? S.team[side] : null, kind = w.kind, keg = w.id === 'keg' || w.id === 'powder';
@@ -525,7 +527,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
       blockHurt(b, dmg, kind, side, x, y);
     } else if (hit && hit.alive) {
       hurtUnit(hit, ud, side, kind);
-      if (hit.alive && hit.body) { const m = Math.pow(Math.min(1, mass), 0.8), jx = ux * 20 * m, jy = (uy * 20 + 8) * m, k = pushScale(hit.body, hit.mass, jx, jy, UKB_V); if (k > 0) hit.body.applyLinearImpulse({ x: jx * k, y: jy * k }, hit.body.getWorldCenter(), true); }
+      if (hit.alive && hit.body) { const m = Math.pow(Math.min(1, mass), 0.8) * (open1(hit, side) ? 0.35 : 1), jx = ux * 20 * m, jy = (uy * 20 + 8) * m, k = pushScale(hit.body, hit.mass, jx, jy, UKB_V); if (k > 0) hit.body.applyLinearImpulse({ x: jx * k, y: jy * k }, hit.body.getWorldCenter(), true); }
     }
     ev('boom', x, y, 0, w.i, side, mass + ((flag & F_FIRE) ? 100 : 0));
     return;
@@ -564,7 +566,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
       const bp = o.body.getPosition(), dx = bp.x - x, dy = bp.y - y, d = Math.hypot(dx, dy);
       let f = o === hit ? 1 : 1 - Math.max(0, d - 1.3 * (o.def.big ? MUZ_BIG : 1)) / r; if (f <= 0) continue; if (f > 1) f = 1;       // 離身體表面多遠（魔王的身體比較大）
       // 推兵：一輪幾十發小砲彈接連炸在旁邊，力道不能一直疊上去（不然人會像砲彈一樣飛出城）。已經被推到多快，就少推多少
-      const dl = d || 1, j = Math.min(Jw * UKB_K * f, o.mass * UKB_V), jx = dx / dl * j, jy = dy / dl * j + j * 0.3, k = pushScale(o.body, o.mass, jx, jy, UKB_V);
+      const dl = d || 1, j = Math.min(Jw * UKB_K * f, o.mass * UKB_V) * (open1(o, side) ? 0.35 : 1), jx = dx / dl * j, jy = dy / dl * j + j * 0.3, k = pushScale(o.body, o.mass, jx, jy, UKB_V);
       if (k > 0) o.body.applyLinearImpulse({ x: jx * k, y: jy * k }, o.body.getWorldCenter(), true);
       if (kind === K_ICE && !o.immune) { o.frozen = Math.max(o.frozen, 1); o.dazed = 1; ev('freeze', bp.x, bp.y, o.side); }      // 剛被凍過（或電暈過）一輪的，這一輪凍不住
       hurtUnit(o, o === hit ? ud : ud * 0.7 * f, side, kind);

@@ -719,8 +719,10 @@ function rollersRound() {
 function rollersStep() {
   for (const R of S.rollers) {
     if (!R.go && R.pend >= 0) rollerRelease(R, R.pend);
-    const b = R.ball; if (!R.go || !b || b.dead || !b.smash) continue;
-    const v = b.body.getLinearVelocity(); if (v.x * v.x + v.y * v.y < 4 && Math.abs(b.body.getAngularVelocity()) < 1) { b.smash = 0; b.body.setBullet(false); b.body.setAngularDamping(0.7); }
+    const b = R.ball; if (!R.go || !b || b.dead) continue;
+    // 滾石撞停了：過一下就碎成一地石塊（下一顆滾下來才衝得進去，撞得到後面那座樓）
+    if (!b.smash) { if (R.restT > 0 && S.time >= R.restT) { R.restT = 0; blockKill(b, R.by, K_CRUSH); } continue; }
+    const v = b.body.getLinearVelocity(); if (v.x * v.x + v.y * v.y < 4 && Math.abs(b.body.getAngularVelocity()) < 1) { b.smash = 0; b.body.setBullet(false); b.body.setAngularDamping(0.7); R.restT = Math.abs(b.body.getPosition().x - R.d.x) > R.d.r * 2.5 ? S.time + 1.6 : 0; }
   }
 }
 

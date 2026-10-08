@@ -33,7 +33,6 @@ const castleB = (side, cx, row) => { const st = S.st[side], b = st.cellB[(st.row
 const foeB = (cx, row) => castleB(1, cx, row);
 // 戰場中間的牆（中立的那一座）還剩幾塊在原位
 const wallLeft = () => { let n = 0; for (const q of S.structs) if (q.side === 2 && !q.loose && q.def && q.def === CASTLES.ICEWALL) for (const b of q.blocks) if (!b.dead && b.inPlace) n++; return n; };
-const kegsLeft = (side) => S.st[side].blocks.some((b) => !b.dead && b.mat === M_KEG);
 // 自動玩家想打 side 對面那座城的要害：直接打中那一塊最好
 // （瞄的是那一格的位置：長樑、長柱子要打的是指定的那一段，不是整根的正中間）
 const tgC = (side, cells, w) => { const out = [], o = 1 - side, st = S.st[o]; for (const [cx, row] of cells) { const b = castleB(o, cx, row); if (b) { const P = cellPt(st, [cx, row, 0.5, 0.5]); out.push({ x: P.x, y: P.y, w, blk: b }); } } return out; };
@@ -79,10 +78,10 @@ const LEVELS = [
     tip: '中間的山坡上兩顆大滾石，各用一根木樁擋著。打斷對面那根木樁，滾石就衝下坡、撞破敵城的大門。風每回合都在變',
     hints: [{ r: 1, t: '山坡右邊那根木樁擋著一顆大滾石：打斷它，滾石衝下坡，撞破敵城一樓的大門', ok: () => stakeUp(1) },
       { r: 2, t: '小心左邊那顆：敵軍打斷它的木樁，滾石就往你這邊衝過來', ok: () => stakeUp(0) },
-      { r: 3, t: '滾石衝下去之後過兩回合，山頂又會架好一顆新的', ok: () => !stakeUp(1) }],
+      { r: 3, t: '滾石撞停就碎掉；過兩回合山頂再架一顆，這一顆會一路衝進後面那座望樓', ok: () => !stakeUp(1) }],
     ground: [[-40, 4], [0, 0], [40.5, 0], [44, 1.4], [47, 4.6], [50.6, 5.4], [53.6, 9.8], [56, 10.8], [58.4, 9.8], [61.4, 5.4], [65, 4.6], [68, 1.4], [71.5, 0], [112, 0], [152, 4]],
     me: { crew: ['rocket', 'bolt', 'stone', 'bomb'] },
-    foe: { crew: ['bomb', 'rocket', 'stone', 'rocket'], hp: 0.9, dmg: 0.9, open: 0.55, ai: { err: 7.2, think: 1.2, gate: 0.5, sap: 0.25, warm: 1.6 } },
+    foe: { crew: ['bomb', 'rocket', 'stone', 'rocket'], hp: 0.8, dmg: 0.7, open: 0.55, ai: { err: 7.5, think: 1.2, gate: 0.5, sap: 0.25, warm: 1.6 } },
     wind: { max: 8, at: 2 },
     rollers: [{ x: 49.1, r: 2.35, stake: 45.9, to: 0, every: 2 }, { x: 62.9, r: 2.35, stake: 66.1, to: 1, every: 2 }],
     weak: (side) => tgC(side, [[9, 6], [5, 6]], 0.8),
@@ -114,13 +113,13 @@ const LEVELS = [
   },
   {
     name: '引信火藥塔', tag: '引信・火藥・地火', theme: 3, castle: 'POWDER',
-    tip: '塔裡每一層都擺著火藥桶，一條引信從塔頂窗口垂下來串著它們。用火點著引信頭，火順著引信一路往下燒，一層炸完炸下一層',
-    hints: [{ r: 1, t: '敵城塔頂的窗口外面垂著引信頭：火油兵的火、穿過地火的砲彈打到它，引信就點著了', ok: () => !fuseLit(1) },
-      { r: 2, t: '讓砲彈從正在噴的地火裡穿過去：會著火，威力多五成，也點得著引信', ok: () => !fuseLit(1) },
-      { r: 3, t: '火藥桶直接被炸到也會爆，順便點著引信', ok: () => kegsLeft(1) }],
+    tip: '塔裡每一層都擺著火藥桶，一條引信從塔頂窗口垂出來串著它們。只有火油兵的火點得著引信頭：一點著，火順著引信一路往下燒，一層炸完炸下一層',
+    hints: [{ r: 1, t: '敵城塔頂的窗口外面垂著引信頭：讓火油兵的火燒到它，引信就點著了（別的砲彈炸不爆裡面的火藥桶）', ok: () => !fuseLit(1) },
+      { r: 2, t: '讓砲彈從正在噴的地火裡穿過去：會著火，打磚、打兵威力多五成（但點不著引信）' },
+      { r: 3, t: '你的塔頂也垂著一條引信：敵軍的火油兵會瞄它。先把他們打倒，你的火藥就安全了', ok: () => !fuseLit(0) && foeHas('fire') }],
     ground: [[-40, 5], [0, 0], [38, 0], [41, -3.5], [71, -3.5], [74, 0], [112, 0], [152, 5]],
     me: { crew: ['fire', 'rocket', 'bomb', 'ice'] },
-    foe: { crew: ['fire', 'bomb', 'rocket', 'fire'], hp: 1.4, dmg: 1.35, open: 0.55, ai: { err: 4.6, think: 1.1, gate: 0.65, hate: 0.2, skill: 0.5, sap: 0.45, warm: 2.2 } },
+    foe: { crew: ['fire', 'bomb', 'rocket', 'fire'], hp: 1.4, dmg: 1.25, open: 0.55, ai: { err: 4.6, think: 1.1, gate: 0.65, hate: 0.2, skill: 0.5, sap: 0.45, warm: 2.2 } },
     objs: [
       { t: 'geyser', x: 46, w: 2.8, hgt: 45 },
       { t: 'geyser', x: 56, w: 2.8, hgt: 48 },
@@ -142,7 +141,7 @@ const LEVELS = [
       { r: 3, t: '防空弩每一輪射下你三發砲彈：先把它打掉，或是用倍增符多打幾發', ok: () => foeHas('flak') }],
     voids: [[-60, 172]],
     me: { crew: ['rocket', 'zap', 'bolt', 'bomb'] },
-    foe: { crew: ['bal', 'rocket', 'flak', 'zap'], hp: 1.35, dmg: 1.4, open: 0.55, ai: { err: 4.0, think: 1.1, gate: 0.75, hate: 0.25, skill: 0.5, sap: 0.5, warm: 1.8 } },
+    foe: { crew: ['bal', 'rocket', 'flak', 'zap'], hp: 1.35, dmg: 1.5, open: 0.55, ai: { err: 3.7, think: 1.1, gate: 0.75, hate: 0.25, skill: 0.5, sap: 0.5, warm: 1.8 } },
     objs: [
       // 藍色傳送門放在 ×3 符的後面：穿過符的砲彈順勢飛進去，從敵城正上方灌下來
       { t: 'portal', owner: 0, x: 58, y: 40, r: 3.8, ex: 89.9, ey: 52, ea: -Math.PI / 2, ej: 0.22, ew: 14, mv: { a: 3, per: 9 } },
@@ -165,7 +164,7 @@ const LEVELS = [
     ground: [[-60, -40], [172, -40]],
     water: { x0: -60, x1: 172, y: 0, cur: 0.6, rho: 0.85, sea: 1 },
     me: { crew: ['rocket', 'bomb', 'bolt', 'fire'] },
-    foe: { crew: ['bomb', 'rocket', 'fire', 'bolt'], hp: 1.25, dmg: 1.35, open: 0.55, ai: { err: 4.0, think: 1.1, gate: 0.8, hate: 0.3, skill: 0.6, sap: 0.55, warm: 1.8 } },
+    foe: { crew: ['bomb', 'rocket', 'fire', 'bolt'], hp: 1.25, dmg: 1.35, open: 0.55, ai: { err: 3.6, think: 1.1, gate: 0.8, hate: 0.3, skill: 0.6, sap: 0.55, warm: 1.8 } },
     wind: { max: 6, at: 3 },
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[47, 36]], move: { t: 'bob', a: 4, per: 8 } },
@@ -178,11 +177,11 @@ const LEVELS = [
     name: '石林骨牌', sayTop: 1, tag: '石碑骨牌・石頸・投石兵', theme: 7, castle: 'SPIRE', stress: 1,
     tip: '戰場中間兩排石碑，各往一座城那邊一塊比一塊高：把靠中間那塊矮的往敵城推，一路倒過去，最高的那塊砸進敵城',
     hints: [{ r: 1, t: '右邊那排石碑：砸中最靠中間那塊矮的上半截，整排往右倒，最高的那塊砸進敵城', ok: () => steles().some((b) => b.x0 > 56) },
-      { r: 2, t: '敵城高石柱頂上只靠兩根細石頸撐著：打斷前面那根，整棟樓往前翻，砸在前面那座小亭子上', ok: () => foeHome(1) || foeHome(2) },
+      { r: 2, t: '敵城高石柱頂上那棟樓只靠兩根細石頸撐著：打斷後面那根，整棟樓往後翻、連人摔下去；打斷前面那根，往前砸在小亭子上', ok: () => foeHome(1) || foeHome(2) },
       { r: 3, t: '左邊那排會往你這邊倒：敵軍推倒它之前，可以先把它往中間推倒', ok: () => steles().some((b) => b.x0 < 56) }],
     ground: [[-40, 3], [0, 0], [112, 0], [152, 3]],
     me: { crew: ['stone', 'rocket', 'bolt', 'bomb'] },
-    foe: { crew: ['rocket', 'bomb', 'stone', 'bolt'], hp: 1.25, dmg: 1.3, open: 0.55, ai: { err: 3.6, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.0 } },
+    foe: { crew: ['rocket', 'bomb', 'stone', 'bolt'], hp: 1.25, dmg: 1.25, open: 0.55, ai: { err: 3.6, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.0 } },
     extra: [{ castle: 'P5', x: 41.2, y: 0 }, { castle: 'P4', x: 46, y: 0 }, { castle: 'P3', x: 50.6, y: 0 }, { castle: 'P3', x: 61.4, y: 0 }, { castle: 'P4', x: 66, y: 0 }, { castle: 'P5', x: 70.8, y: 0 }],
     weak: (side) => {
       const out = tgC(side, [[3, 5], [1, 5], [6, 9], [8, 9]], 0.95), st = steles(), o = 1 - side;
@@ -201,13 +200,13 @@ const LEVELS = [
   {
     name: '懸空寺', tag: '懸臂・鐵鍊・銅鐘', theme: 8, castle: 'CLIFF', stress: 1,
     tip: '兩座寺各從自己的懸崖伸出來，殿的外端用鐵鍊吊著。打斷鐵鍊，整間殿壓在插進岩壁的樑上，撐不住就連人掉進深谷',
-    hints: [{ r: 1, t: '敵寺每間殿的外端吊著一條鐵鍊：轟天砲兩發就斷，火箭、雷要打好幾發，箭射不太動。斷了之後樑會往下垂，撐不了多久', ok: () => ropeLeft('stay') },
+    hints: [{ r: 1, t: '敵寺每間殿的外端吊著一條鐵鍊：轟天砲要兩三發、雷要好幾下（穿過倍增符一輪就夠），火箭、箭打不太動。斷了之後樑會往下垂，撐不了多久', ok: () => ropeLeft('stay') },
       { r: 2, t: '岩簷底下吊著一口大銅鐘，正下方就是上面那間殿的兵：打斷吊鐘的鐵鍊，鐘砸穿屋頂', ok: () => ropeLeft('bell') },
       { r: 3, t: '上面那間殿掉下來會砸在下面那間上：兩間一起壓垮、一起掉進深谷', ok: () => foeHome(3) && (foeHome(1) || foeHome(2)) }],
     ground: [[-40, 3], [0, 0], [112, 0], [152, 3]],
     voids: [[13.8, 98.2]],
     me: { crew: ['rocket', 'zap', 'bolt', 'bomb'] },
-    foe: { crew: ['fire', 'bomb', 'zap', 'bolt'], hp: 1.35, dmg: 1.85, open: 0.55, ai: { err: 2.8, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.0 } },
+    foe: { crew: ['fire', 'bomb', 'zap', 'bolt'], hp: 1.35, dmg: 2.1, open: 0.55, ai: { err: 2.5, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.0 } },
     weak: (side) => tgC(side, [[3, 11], [3, 7], [8, 10], [7, 6]], 0.95),
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[48, 40]], move: { t: 'bob', a: 4, per: 8 } },
@@ -218,15 +217,15 @@ const LEVELS = [
   },
   {
     name: '天秤寨', tag: '天秤・配重・深谷', theme: 9, castle: 'BEAM', stress: 1,
-    tip: '兩座寨子都架在一根會轉的大樑上，兩頭各吊一籃配重。哪一頭變輕，大樑就往另一頭翻，上面的東西全滑下去',
-    hints: [{ r: 1, t: '敵寨前面那籃配重只用麻繩吊著，幾箭就斷：配重沒了，大樑往後翻，後面那座樓滑下去', ok: () => !tilted() },
-      { r: 2, t: '後面那籃是鐵鍊吊的（要轟天砲、投石）：它斷了，大樑往前翻，前面那座樓連人滑進深谷', ok: () => !tilted() },
+    tip: '兩座寨子都架在一根會轉的大樑上，兩頭各吊一籃配重。少了一籃，大樑嘎一聲還撐得住；那一頭再變輕一點，大樑就整根翻過去，上面的東西全滑下去',
+    hints: [{ r: 1, t: '敵寨前面那籃配重只用麻繩吊著，一輪連弩就斷。少了它大樑只會嘎一聲；再打掉前面那座樓幾塊磚、一個兵，大樑就往後翻，後面那座樓滑下去', ok: () => !tilted() },
+      { r: 2, t: '後面那籃是鐵鍊吊的（要轟天砲、投石）：它斷了之後再打後面那座樓，大樑就往前翻，前面那座樓連人滑進深谷', ok: () => !tilted() },
       { r: 3, t: '把一頭的兵和磚打掉，那一頭變輕，打掉夠多大樑也會翻', ok: () => !tilted() }],
     ground: [[-40, 4], [0, 0], [33.4, 0], [35, -3], [77, -3], [78.6, 0], [112, 0], [152, 4]],
     voids: [[34, 78]],
     wind: { max: 6, at: 3 },
     me: { crew: ['rocket', 'bolt', 'stone', 'bomb'] },
-    foe: { crew: ['bomb', 'rocket', 'ice', 'bolt'], hp: 1.25, dmg: 1.3, open: 0.55, ai: { err: 3.6, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 1.8 } },
+    foe: { crew: ['bomb', 'rocket', 'ice', 'bolt'], hp: 1.25, dmg: 1.55, open: 0.55, ai: { err: 3.2, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 1.8 } },
     weak: (side) => tgC(side, [[10, 3], [8, 3], [2, 3], [0, 3]], 0.9),
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[47, 40]], move: { t: 'bob', a: 4, per: 8 } },
@@ -238,12 +237,12 @@ const LEVELS = [
   {
     name: '琉璃宮', tag: '琉璃・共鳴晶柱・吊燈', theme: 10, castle: 'GLASS', stress: 1,
     tip: '兩座宮殿都是琉璃，一撞就碎。上層正中間的紫色晶柱被重重打中，整座宮殿的琉璃會一圈一圈震碎',
-    hints: [{ r: 1, t: '先把敵宮上層的琉璃牆打開，再瞄準正中間的紫色共鳴晶柱：一下打掉它一半，整座宮殿一起震碎', ok: () => !!foeB(5, 3) },
+    hints: [{ r: 1, t: '先把敵宮上層的琉璃牆打開，再瞄準正中間的紫色共鳴晶柱：轟天砲正中一發再補一下（或火箭五六發），整座宮殿的琉璃一圈一圈震碎', ok: () => !!foeB(5, 3) },
       { r: 2, t: '大廳天花板吊著一盞水晶吊燈，正下方就是一個兵：把天花板打穿，吊燈砸下來', ok: () => foeHome(1) && lampUp() },
       { r: 3, t: '琉璃碎片砸到下面的琉璃也會碎：從上往下打，一層壓垮一層', ok: () => foeLeft(M_GLASS) >= 8 }],
     ground: [[-40, 3], [0, 0], [40, 0], [43, -3.5], [69, -3.5], [72, 0], [112, 0], [152, 3]],
     me: { crew: ['rocket', 'stone', 'zap', 'bomb'] },
-    foe: { crew: ['bomb', 'ice', 'zap', 'rocket'], hp: 1.6, dmg: 1.85, open: 0.55, ai: { err: 3.0, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.0 } },
+    foe: { crew: ['bomb', 'ice', 'zap', 'rocket'], hp: 1.7, dmg: 1.8, open: 0.55, ai: { err: 3.0, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.0 } },
     weak: (side) => tgC(side, [[5, 3]], 1.25).concat(tgC(side, [[5, 4]], 0.6)),
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[47, 38]], move: { t: 'bob', a: 4, per: 8 } },
@@ -263,7 +262,7 @@ const LEVELS = [
     wind: { max: 5, at: 3 },
     bell: { x: 56, y: 50.5, len: 34, w: 6.8, h: 7.4, den: 2.6 },
     me: { crew: ['fire', 'rocket', 'stone', 'bomb'] },
-    foe: { crew: ['bomb', 'fire', 'rocket', 'bolt'], hp: 1.25, dmg: 1.15, open: 0.5, ai: { err: 4.3, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 2.0 } },
+    foe: { crew: ['bomb', 'fire', 'rocket', 'bolt'], hp: 1.25, dmg: 1.08, open: 0.5, ai: { err: 4.3, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 2.0 } },
     weak: (side) => tgC(side, [[1, 10], [9, 10], [2, 8], [8, 8], [3, 6]], 0.95),
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[46, 38]], move: { t: 'bob', a: 4, per: 8 } },

@@ -52,7 +52,7 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
     if (ex) { o.deco = ex.deco || 0; if (kind === 'roof') { o.il = (mirror ? ex.ir : ex.il) * CS; o.ir = (mirror ? ex.il : ex.ir) * CS; } if (kind === 'ball') { o.r = ex.r; o.y = y0 + cy * CS + ex.r; } if (ex.bw) { o.w = ex.bw; o.h = ex.bh; o.y = y0 + cy * CS + ex.bh / 2; } if (ex.sw) o.w = cw * CS * ex.sw; if (ex.den) o.den = ex.den; }
     const b = mkBlock(st, o);
     b.cx = mx; b.cy = cy; b.cw = cw; b.ch = ch;
-    if (ex) { if (ex.dom) { b.dom = 1; b.body.getFixtureList().setFriction(0.3); } if (ex.reso) { b.reso = 1; b.hp *= 8; b.hm *= 8; } /* 共鳴晶柱很硬：要一發重砲（或兩三發火箭）才震得起來 */ if (ex.sk) b.sk = ex.sk; if (ex.beam) { b.beam = 1; b.hp *= 12; b.hm *= 12; b.body.getFixtureList().setFriction(0.22); } if (ex.snow) b.snow = 1; }      // 天秤的大樑很滑：一歪，上面的東西就往下滑
+    if (ex) { if (ex.dom) { b.dom = 1; b.body.getFixtureList().setFriction(0.3); } if (ex.reso) { b.reso = 1; b.hp *= 10; b.hm *= 10; } /* 共鳴晶柱很硬：一發重砲再補一兩下（或三四發火箭）才震得起來 */ if (ex.sk) b.sk = ex.sk; if (ex.beam) { b.beam = 1; b.hp *= 12; b.hm *= 12; b.body.getFixtureList().setFriction(0.22); } if (ex.snow) b.snow = 1; }      // 天秤的大樑很滑：一歪，上面的東西就往下滑
     if (kind === 'box' && ch === 1 && cw >= 3 && !(ex && (ex.deco || ex.beam)) && (mat === M_STONE || mat === M_WOOD || mat === M_ICE || mat === M_BAMBOO || mat === M_GLASS)) segInit(b);        // 長樑、樓板：分段算耐久
     for (let a = 0; a < cw; a++) for (let bb = 0; bb < ch; bb++) { const i = (cy + bb) * cols + mx + a; st.cellB[i] = b; st.cellK[i] = 1; }
     return b;
@@ -272,6 +272,8 @@ function unitsStep(dt) {
   for (const u of S.units) {
     if (!u.alive) { if (u.dieT < 3) u.dieT += dt; continue; }
     const p = u.body.getPosition(), v = u.body.getLinearVelocity();
+    // 第一回合敵軍的第一輪：我方的兵被炸到、被飛起來的屋瓦撞到，只會踉蹌一下，不會被轟出城
+    if (u.side === 0 && S.turn === 1 && S.round <= 1 && S.lv.foe.open && (Math.abs(v.x) > 1.5 || v.y > 7)) u.body.setLinearVelocity({ x: clamp(v.x, -6, 6) * (1 - Math.min(1, dt * 4)), y: Math.min(v.y, 7) });
     u.x = p.x; u.y = p.y - u.bh / 2; u.vx = v.x; u.vy = v.y;
     u.air = u.body.isAwake() && (Math.abs(v.y) > 5 || Math.abs(v.x) > 7);
     // 被炸飛或腳下空了：叫一聲（落地後才會再叫）

@@ -124,6 +124,11 @@ function fxOn(t, a, b, c, d, e, f) {
       for (let k = 0; k < (fin ? 3 : Math.min(3, 1 + area | 0)); k++) part(P_DUST, a + rndS() * f.w * 0.6, b + rndS() * f.h * 0.6, rndS() * (fin ? 22 : 8), 2 + Math.random() * (fin ? 7 : 4), fin ? 1.1 : 0.6, fin ? 3.4 : 2.4, c === M_ICE ? C_WHITE : C_SAND);
       if (c === M_GLASS) { burst(P_SPARK, a, b, 5, 26, 0.4, 0.45, C_ICE); }
       if (c === M_SNOW) burst(P_DUST, a, b, 4, 9, 0.9, 2.6, C_WHITE, 2);
+      if (f.roll) {          // 滾石撞停、碎成一地：大塊的石屑往四面滾開，一大團黃沙
+        for (let k = 0; k < (FX.low ? 5 : 10); k++) part(P_DEBRIS, a + rndS() * f.w * 0.4, b + rndS() * f.h * 0.4, rndS() * 30, 6 + Math.random() * 20, 1.1 + Math.random() * 0.8, 1.0 + Math.random() * 0.9, col);
+        for (let k = 0; k < 5; k++) part(P_DUST, a + rndS() * f.w * 0.5, b - f.h * 0.2 + Math.random() * f.h * 0.5, rndS() * 14, 1 + Math.random() * 5, 1.3, 3.6, C_SAND);
+        shake(0.12);
+      }
       sfx(c === M_GLASS ? 'glass' : c === M_ICE || c === M_CLAY ? 'shatter' : c === M_SNOW ? 'thud' : c === M_WOOD || c === M_ROOF || c === M_KEG || c === M_BAMBOO ? 'crack' : c === M_IRON ? 'clang' : 'crumble'); FX.heat = Math.min(1, FX.heat + 0.03);
       if (fin) shake(0.35);
       break;
