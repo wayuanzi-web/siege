@@ -165,7 +165,7 @@ function mkUnit(side, type, st, slot, hpMul) {
     isUnit: true, side, type, def, st, slot: slot.slot, hx: 0, hy: 0, x: st.x0 + (slot.cx + 0.5) * CS, y: st.y0 + slot.cy * CS, vx: 0, vy: 0,
     hp: def.hp * hpMul, hpMax: def.hp * hpMul, frozen: 0, stun: 0, alive: true, air: false, airT: 0, recoil: 0, hurtT: 0, tilt: 0,
     w: def.w ? WPN[def.w] : null, flakN: 0, flakT: 0, dieT: 0, body: null, mass: 1, bw: 0, bh: 0, stamp: 0, dazed: 0, outT: 0, held: false,
-    loadJ: 0, loadT: 0, load: 0, sepT: 0, sepNow: false, sepVol: -1, edge: 0, edgeT: 0, roofOn: null
+    loadJ: 0, loadT: 0, load: 0, sepT: 0, sepNow: false, sepVol: -1, edge: 0, edgeT: 0, roofOn: null, hcV: -1, hcN: 0, rox: 0
   };
   u.hx = u.x; u.hy = u.y;
   mkUnitBody(u);
@@ -765,6 +765,30 @@ function worldQuiet() {
   }
   return true;
 }
+/* 收尾的時候（其他東西都停了）兵頭上還架著一塊掉下來的磚：卡在頭和牆中間的碎塊、斜靠過來的樓板、整塊的冰磚。
+   讓它在頭上裂開、碎片往兩邊掉——不然看起來像兵用頭頂著一塊磚，一站好幾個回合。
+   還在原位、只是往下沉了一點貼到頭的天花板不算（那是兵在撐著屋頂，拿走了屋頂會垮）；還沒掉下來的屋頂、火藥桶、石球也不算。
+   魔王不管（他頂得開）。一個兵一輪最多碎三塊。碎了就有東西在動，回合照樣等它停 */
+function headClear() {
+  let hit = false;
+  for (const u of S.units) {
+    if (!u.alive || u.def.big || u.air || !u.body) continue;
+    if (u.hcV !== S.vol) { u.hcV = S.vol; u.hcN = 0; }
+    if (u.hcN >= 3) continue;
+    const p = u.body.getPosition();
+    for (let ce = u.body.getContactList(); ce; ce = ce.next) {
+      const ct = ce.contact; if (!ct.isTouching()) continue;
+      const o = ce.other.getUserData();
+      if (!o || !o.isBlock || o.dead || o.inPlace || o.mat === M_KEG || o.kind === 'ball' || (o.mat === M_ROOF && !o.frag && !roofDown(o))) continue;
+      const wm = ct.getWorldManifold(null); if (!wm || !wm.pointCount) continue;
+      const pt = wm.points[0]; if (pt.y <= p.y + u.bh * 0.25) continue;          // 碰在肩膀以上
+      u.hcN++; hit = true;
+      if (o.seg) blockHurt(o, 1e4, K_CRUSH, 2, pt.x, pt.y); else blockKill(o, 2, K_CRUSH);
+      break;
+    }
+  }
+  return hit;
+}
 function chainNote() {
   if (S.turn === 0 && S.chain > S.stat.chain) S.stat.chain = S.chain;
   if (S.chain >= 6) { const T = S.team[S.turn]; T.ult.c = Math.min(T.ult.need, T.ult.c + Math.min(30, S.chain)); ev('chain', S.chain, S.turn); }
@@ -951,7 +975,7 @@ function simStep(dt) {
       }
       case 'resolve': case 'hazard': {
         const busy = SH.n > 0 || S.pend.length > 0 || flyersBusy() || (S.nburn > 0 && S.phaseT < 6);
-        if (!busy && worldQuiet()) S.quietT += dt; else S.quietT = 0;
+        if (!busy && worldQuiet()) { if (headClear()) S.quietT = 0; else S.quietT += dt; } else S.quietT = 0;
         // 最多等 9 秒；還在一塊接一塊垮的時候多等一下（等最後一塊垮完再過 1.5 秒），最久 14 秒
         if (S.quietT >= 0.5 || S.phaseT > (S.time - S.chainT < 1.5 ? 14 : 9)) { if (S.phase === 'hazard') roundStart(); else endTurn(); }
         break;

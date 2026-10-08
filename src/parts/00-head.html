@@ -152,12 +152,16 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 .lvinfo { text-align: center; padding: calc(var(--u) * 2) calc(var(--u) * 2.6) calc(var(--u) * 2.4); background: rgba(14, 10, 28, .8); --cut: calc(var(--u) * 2.2); }
 .lvinfo h2 { margin: 0; font-family: var(--f-display); font-weight: 900; font-size: calc(var(--u) * 5.8); letter-spacing: .1em; text-indent: .1em; line-height: 1.2; }
 .lvinfo small { display: inline-block; margin-top: calc(var(--u) * .8); font-weight: 700; font-size: calc(var(--u) * 2.9); letter-spacing: .1em; padding: 1px calc(var(--u) * 1.8); color: var(--gold-ink); background: var(--gold); }
-.lvinfo p { margin: calc(var(--u) * 1.2) 0 0; color: #cfc8e6; font-size: calc(var(--u) * 3.2); line-height: 1.5; text-wrap: pretty; min-height: 4.5em; }
+/* 關卡說明和每個兵的介紹疊在同一格：高度取最長的那一段，點頭像換文字的時候卡片不會忽高忽低 */
+.lvinfo .tipbox { display: grid; margin: calc(var(--u) * 1.2) 0 0; font-size: calc(var(--u) * 3.2); line-height: 1.5; min-height: 4.5em; }
+.lvinfo .tipbox > p { grid-area: 1 / 1; margin: 0; color: #cfc8e6; font-size: calc(var(--u) * 3.2); line-height: 1.5; text-wrap: pretty; }
+.lvinfo .tipbox > p.sizer { visibility: hidden; }
 .lvinfo p.blurb { color: var(--bone); }
-.lvcrew { display: grid; gap: calc(var(--u) * 1.3); justify-content: center; margin-top: calc(var(--u) * 1.6); }
-.lvcrew .grp { display: flex; align-items: center; gap: calc(var(--u) * 1.4); }
-.lvcrew small { margin: 0 calc(var(--u) * .6) 0 0; padding: 0; background: none; color: #a79fc4; font-size: calc(var(--u) * 2.7); letter-spacing: .08em; font-weight: 700; }
-.lvcrew .cu { flex: none; padding: 0; border: 0; width: max(calc(var(--u) * 8.4), 32px); height: max(calc(var(--u) * 8.4), 32px); cursor: pointer; transition: transform .12s ease; }
+/* 雙方的兵：一排頭像，左邊直書的「我方／敵軍」。卡片窄的時候頭像一起縮，標籤不會被擠成一個字一行 */
+.lvcrew { display: grid; gap: calc(var(--u) * 1.3); margin-top: calc(var(--u) * 1.6); }
+.lvcrew .grp { display: grid; grid-auto-flow: column; grid-template-columns: auto; grid-auto-columns: minmax(0, max(calc(var(--u) * 9.4), 36px)); justify-content: center; align-items: center; gap: calc(var(--u) * 1.4); }
+.lvcrew small { width: 1em; margin: 0 calc(var(--u) * .3) 0 0; padding: 0; background: none; color: #a79fc4; font-size: calc(var(--u) * 2.7); letter-spacing: 0; text-indent: 0; line-height: 1.12; font-weight: 700; word-break: break-all; text-align: center; }
+.lvcrew .cu { padding: 0; border: 0; width: 100%; height: auto; aspect-ratio: 1; cursor: pointer; transition: transform .12s ease; }
 .lvcrew .foe .cu { box-shadow: 0 0 0 calc(var(--u) * .45) var(--red); }
 .lvcrew .cu[aria-pressed="true"] { transform: scale(1.14); box-shadow: 0 0 0 calc(var(--u) * .7) var(--gold); }
 .webbar { display: flex; gap: calc(var(--u) * 2); justify-content: center; }
@@ -294,7 +298,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
         </div>
       </div>
       <div class="home-m">
-        <div class="lvinfo chamfer"><h2 id="liName"></h2><small id="liTag" class="chamfer" style="--cut:3px"></small><p id="liTip" aria-live="polite"></p><div id="liCrew" class="lvcrew"></div></div>
+        <div class="lvinfo chamfer"><h2 id="liName"></h2><small id="liTag" class="chamfer" style="--cut:3px"></small><div id="liTipBox" class="tipbox"><p id="liTip" aria-live="polite"></p></div><div id="liCrew" class="lvcrew"></div></div>
       </div>
       <div class="home-r" id="homeR">
         <div class="lvls" id="lvls" role="listbox" aria-label="選擇關卡"></div>

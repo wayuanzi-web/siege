@@ -105,6 +105,11 @@ function homeRender() {
   $('liName').textContent = lv.name; $('liTag').textContent = lv.tag;
   const tipTxt = locked ? '先打下第' + NUM_ZH[UI.sel - 1] + '關「' + LEVELS[UI.sel - 1].name + '」才能出戰。' : lv.tip + '。';
   const tip = $('liTip'); tip.textContent = tipTxt; tip.classList.remove('blurb');
+  // 看不見的墊高文字：每一段可能出現在這裡的說明都放一份，格子的高度就是最長那一段的高度
+  const tb = $('liTipBox'); tb.querySelectorAll('.sizer').forEach((e) => e.remove());
+  for (const t of [tipTxt].concat([...new Set(lv.me.crew.concat(lv.foe.crew))].map((k) => UNIT[k].name + '：' + UNIT[k].blurb + '。'))) {
+    const p = document.createElement('p'); p.className = 'sizer'; p.setAttribute('aria-hidden', 'true'); p.textContent = t; tb.appendChild(p);
+  }
   // 這一關雙方派誰上場：一排頭像，點一下看那個兵會什麼（再點一下回到關卡說明）
   const cr = $('liCrew'); cr.textContent = ''; let picked = null;
   [[0, lv.me.crew, '我方'], [1, lv.foe.crew, '敵軍']].forEach(([sd, crew, label]) => {
@@ -171,7 +176,7 @@ const TIP_RED = '敵軍的赤符會擋住你的砲彈，也讓他們的砲彈變
 const LOSE_TIPS_LV = [
   ['上一輪的彈道會留一條淡淡的虛線，盡頭打一個叉：照著它微調就好。', '望樓只靠幾根細柱子撐著：打斷最底下的柱子，整座連人一起倒。'],
   ['每回合的風都不一樣，虛線已經把風算進去了；逆風很強的時候別吊太高，砲彈會被吹回來。', '倍增符下面那道紫色的折損符會吃掉一半砲彈，瞄高一點。', '沙城木板平台上的大石球：把它腳下的木板打穿，它就砸在底下的兵頭上；把平台的一頭打斷，石球會一路滾下來。', TIP_RED],
-  ['兵被凍住就開護罩，會立刻解凍。', '冰很滑：把冰塔腳下的冰板打穿，整座塔連人一起溜下去。火油兵的火對冰特別有效。', '中間的冰牆擋平射：吊高越過去，或是先把它轟倒。躲在大廳的冰術士要轟破冰板才打得到。', TIP_RED],
+  ['兵被凍住就開護罩，會立刻解凍。', '冰很滑：把冰塔牆腳底下那一格冰板打穿，塔一歪，上面的兵就溜下去。火油兵的火對冰特別有效。', '冰術士躲在大廳裡兩根冰柱中間：先把冰柱打斷（火一烤就化），冰板再破一格，整片就垮下去壓住他；或是從他頭頂的冰板直接轟下去。', TIP_RED],
   ['敵城正面是鐵甲：吊高從屋頂打進去，把樓上的火藥庫炸開，一桶爆就三桶連環爆。', '讓砲彈從正在噴的地火裡穿過去，威力多五成。', '紅圈是這一回合結束時落石的位置：火山不認人，敵城也會被砸；砸得到你就開護罩。', TIP_RED],
   ['氣球先停在半路，下一輪才飛過來：趁它停著的時候打下來。', '把砲彈射進藍色傳送門，會從敵城頭頂往下灌，繞過正面的金甲。', '防空弩架在伸出牆外的木板露台上：把露台打斷，它就掉進雲海；不然每一輪都會被它射下三發。', TIP_RED],
   ['結界每回合換缺口（魔王暴怒之後開兩個）：看哪一段沒有光牆，就用那個角度打進去；光牆也打得破。', '毀滅光球先停在城前面的半空中，下一輪才砸過來：打爆它，它會掉頭砸在魔王自己身上；來不及就開護罩。', '先打斷大殿的木柱，屋頂會砸在魔王頭上；掀開了再把砲彈吊高落進去。把他腳下的樓板打穿，他摔一層就痛一次。', TIP_RED]
@@ -228,7 +233,7 @@ function foeBar() { return teamBar(1); }
 // 角落的按鈕（發射、仰角力道、護罩、連珠）在畫布上佔哪裡。用版面座標算（舞台轉了 90 度也一樣）
 function hudAvoid() {
   const stage = $('stage'), k = V.W / (stage.offsetWidth || 1), out = [];
-  for (const id of ['btnFire', 'aimInfo', 'btnShield', 'btnUlt']) {
+  for (const id of ['btnFire', 'aimInfo', 'btnShield', 'btnUlt', 'turnChip']) {
     const el = $(id); if (!el || !el.offsetWidth) continue;
     let x = 0, y = 0; for (let e = el; e && e !== stage; e = e.offsetParent) { x += e.offsetLeft; y += e.offsetTop; }
     out.push([x * k - 4, y * k - 4, (x + el.offsetWidth) * k + 4, (y + el.offsetHeight) * k + 4]);

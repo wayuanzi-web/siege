@@ -1,0 +1,4 @@
+# 4fe1f3d：先打斷一根冰柱，再切中間一格（跟 list_l3.txt 同一個場景，檔名加 cur）
+3 --name=r5_L3_pillar_then_cut_cur --kill=96.7,15.3;96.7,18.7@0.05 --cut=93.3,22.1@1.2 --tail=3.5 --n=16 --cols=4
+3 --name=r5_L3_both_pillars_then_cut_cur --kill=96.7,15.3;96.7,18.7@0.05;89.9,15.3@0.1;89.9,18.7@0.15 --cut=93.3,22.1@1.2 --tail=3.5 --n=16 --cols=4
+3 --name=r5_L3_cut_foot_inner_cur --cut=96.7,22.1 --tail=3 --n=12 --cols=4

@@ -160,11 +160,24 @@ function drawBlocks(c, t, rdt) {
   c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
 }
 function drawUnits(c, t) {
-  const s = V.s, sx = FX.shx, sy = FX.shy;
+  const s = V.s, sx = FX.shx, sy = FX.shy, us = S.units;
+  /* 兩個兵擠在同一個地方分不開（被瓦礫夾住、一格寬的小隔間）：畫的時候往兩邊錯開一點，看得出是兩個人擠在一起，
+     不會一個整個被另一個蓋住（只是畫的位置，不影響戰局） */
+  for (const u of us) u._tx = 0;
+  for (let i = 0; i < us.length; i++) {
+    const a = us[i]; if (!a.alive) continue;
+    for (let j = i + 1; j < us.length; j++) {
+      const b = us[j]; if (!b.alive) continue;
+      const dx = b.x - a.x, want = (a.bw + b.bw) * 0.32; if (Math.abs(dx) >= want || Math.abs(b.y - a.y) > 2) continue;
+      const d = dx > 0.02 ? 1 : dx < -0.02 ? -1 : (a.slot + a.side * 9 < b.slot + b.side * 9 ? 1 : -1), k = (want - Math.abs(dx)) * 0.5;
+      if (a.def.big) b._tx += d * k * 2; else if (b.def.big) a._tx -= d * k * 2; else { a._tx -= d * k; b._tx += d * k; }
+    }
+  }
+  for (const u of us) { if (!u.alive) { u.rox = 0; continue; } u.rox += (clamp(u._tx, -1.6, 1.6) - u.rox) * 0.15; }
   for (const u of S.units) {
     if (!u.alive) continue;
     const T = S.team[u.side], sp = unitSprite(u.side, u.type), dir = T.dir, big = u.def.big ? 1.9 : 1, held = u.frozen > 0 || u.stun > 0;
-    const x = X(u.x) - dir * u.recoil * s * 0.7, y = Y(u.y) + (u.air || held ? 0 : Math.sin(t * 3.2 + u.slot * 1.9) * s * 0.07);
+    const x = X(u.x + u.rox) - dir * u.recoil * s * 0.7, y = Y(u.y) + (u.air || held ? 0 : Math.sin(t * 3.2 + u.slot * 1.9) * s * 0.07);
     if (T.ult.armed || T.rage > 0) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.5 + 0.2 * Math.sin(t * 14 + u.slot); const g = glowSprite(T.ult.armed ? C_GOLD : C_ORANGE), r = sp.px * 0.75; c.drawImage(g, x - r, y - sp.px * 0.5 - r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
     const tilt = u.tilt;
     if (Math.abs(tilt) > 0.02) { const cs = Math.cos(tilt), sn = Math.sin(tilt), oy = u.bh * s * 0.5; c.setTransform(cs, sn, -sn, cs, x + sx, y - oy + sy); c.drawImage(sp.cv, -sp.ax, -sp.ay + oy); if (u.hurtT > 0) { c.globalAlpha = Math.min(0.85, u.hurtT * 5); c.drawImage(sp.wh, -sp.ax, -sp.ay + oy); c.globalAlpha = 1; } c.setTransform(1, 0, 0, 1, sx, sy); }
