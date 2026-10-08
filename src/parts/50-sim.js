@@ -23,7 +23,7 @@ const DIFFS = [
   { name: '標準', aiErr: 1.0, foeHp: 1.0, foeDmg: 1.0 },
   { name: '硬仗', aiErr: 0.6, foeHp: 1.15, foeDmg: 1.15 }
 ];
-const CRUSH_LOAD = 2.2;   // 兵頭上壓著超過自己體重幾倍的東西，就會被壓扁
+const CRUSH_LOAD = 1.5;   // 兵頭上壓著超過自己體重幾倍的東西，就會被壓扁（卡在頭和牆之間的石球有一部分重量是牆在撐，量到的只有一倍半多，所以門檻不能訂太高）
 const BAR_TH = 0.15;       // 城樓完整度：還留在原位的磚剩不到這個比例就算全毀
 const BASE_HP = 4;         // 城基的石磚特別厚：一輪齊射打不穿（不然轟一下牆腳，整座城連人一起倒，沒得打）
 const BOSS_SOFT = 0.35;     // 魔王跨過換階段門檻的那一輪，超過門檻的傷害打幾折
@@ -165,7 +165,7 @@ function mkUnit(side, type, st, slot, hpMul) {
     isUnit: true, side, type, def, st, slot: slot.slot, hx: 0, hy: 0, x: st.x0 + (slot.cx + 0.5) * CS, y: st.y0 + slot.cy * CS, vx: 0, vy: 0,
     hp: def.hp * hpMul, hpMax: def.hp * hpMul, frozen: 0, stun: 0, alive: true, air: false, airT: 0, recoil: 0, hurtT: 0, tilt: 0,
     w: def.w ? WPN[def.w] : null, flakN: 0, flakT: 0, dieT: 0, body: null, mass: 1, bw: 0, bh: 0, stamp: 0, dazed: 0, outT: 0, held: false,
-    loadJ: 0, loadT: 0, load: 0, sepT: 0, sepNow: false, edge: 0, edgeT: 0
+    loadJ: 0, loadT: 0, load: 0, sepT: 0, sepNow: false, sepVol: -1, edge: 0, edgeT: 0, roofOn: null
   };
   u.hx = u.x; u.hy = u.y;
   mkUnitBody(u);
@@ -174,6 +174,7 @@ function mkUnit(side, type, st, slot, hpMul) {
 }
 function hurtUnit(u, d, side, kind) {
   if (!u.alive || d <= 0) return;
+  if (S.state !== 'play' && u.side !== S.loser) return;          // 勝負已分：贏的那一邊不會再受傷（星數、損兵都以分出勝負那一刻為準）
   const boss = u.def.big && S.boss ? S.boss : null;
   if (boss) {
     /* 魔王換階段：血一掉過門檻就馬上換（第二階段的結界當場張開）。跨過門檻的那一輪，超過的傷害只算三成五，
@@ -225,51 +226,69 @@ function unitsStep(dt) {
     u.tilt += ((u.air ? clamp(v.x * 0.035, -0.9, 0.9) : 0) - u.tilt) * Math.min(1, dt * 9);
     if (u.hurtT > 0) u.hurtT -= dt; if (u.recoil > 0) u.recoil = Math.max(0, u.recoil - dt * 5);
     if (u.flakT > 0) u.flakT -= dt;
-    /* 被重的東西壓住（卡在頭上的石球、整片樓板、一堆瓦礫）：頭上撐著超過自己體重兩倍多、撐了一會，就一直扣血直到被壓扁。
+    // 這些「站不住、撐不住」的規則只在砲擊進行中才往下走：瞄準的時候不會有人突然被壓扁、突然滑下去
+    const act = S.state !== 'play' || S.phase === 'volley' || S.phase === 'resolve' || S.phase === 'hazard';
+    /* 被重的東西壓住（卡在頭上的石球、整片樓板、一堆瓦礫）：頭上撐著超過自己體重一倍半、撐了一會，就一直扣血直到被壓扁。
        整堆東西靜止「睡著」之後物理引擎不再回報接觸的力道：那時用睡著前量到的（東西還壓在那裡，不會因為不動了就沒事）。
-       魔王撐得住，不算（他另外有「被屋頂、樓板砸到頭」的傷害） */
+       魔王撐得住，不算（他另外有「被屋頂、樓板砸到頭」的傷害）。
+       掉下來的屋瓦是脆的：壓在頭上就碎掉、順著頭兩邊滑下去，不會整片完好地蓋在頭上把人壓扁
+       （屋頂還好好的在原位、是兵自己被震得跳起來撞到的，不算——那樣屋頂不會碎） */
+    if (u.roofOn) { const r = u.roofOn; u.roofOn = null; if (act && !r.dead && roofDown(r)) blockKill(r, S.phase === 'hazard' || r.side === S.turn ? 2 : S.turn, K_CRUSH); }
     if (u.body.isAwake()) u.load += (u.loadJ / (dt * u.mass * GRAV) - u.load) * 0.3;
     u.loadJ = 0;
-    if (!u.def.big && u.load > CRUSH_LOAD) { u.loadT += dt; if (u.loadT > 0.3) { hurtUnit(u, 120 * dt, S.phase === 'hazard' ? 2 : 1 - u.side, K_CRUSH); if (!u.alive) continue; } }
-    else if (u.loadT > 0) u.loadT = Math.max(0, u.loadT - dt * 2);
-    /* 站在邊緣、腳底正中間已經懸空：站不住，往懸空的那一邊滑下去（身體不會倒，所以沒有這一條的話，
-       只要鞋底還勾著一點邊，大半個人就會懸在半空中站得好好的）。兩腳各踩一塊、中間有縫的不算 */
-    if (!u.air && u.body.isAwake()) {
-      if (((S.frame + u.slot * 3) & 7) === 0) {
-        const fy = u.y, fx = u.bw * 0.27;
+    if (act) {
+      if (!u.def.big && u.load > CRUSH_LOAD) { u.loadT += dt; if (u.loadT > 0.3) { hurtUnit(u, 120 * dt, S.phase === 'hazard' ? 2 : 1 - u.side, K_CRUSH); if (!u.alive) continue; } }
+      else if (u.loadT > 0) u.loadT = Math.max(0, u.loadT - dt * 2);
+    }
+    /* 站在邊緣、腳底正中間已經懸空，而且那一邊是真的空的（往外一個身位都沒有東西可以踩）：站不住，往空的那一邊滑下去。
+       身體不會倒，所以沒有這一條的話，只要鞋底還勾著一點邊，大半個人就會懸在半空中站得好好的。
+       只是跨在一條窄縫上（縫的另一邊就有東西）不算；推的力道很小、速度有上限，推不動就算了，不會把人甩出去，也不會來回推個不停 */
+    if (act && !u.air && u.body.isAwake()) {
+      if (((S.frame + u.slot * 3) & 3) === 0) {
+        const fy = u.y, hw = u.bw * 0.5;
         const under = (dx) => { let h = false; PH.world.rayCast({ x: u.x + dx, y: fy + 0.6 }, { x: u.x + dx, y: fy - 0.9 }, (f, pt, n, fr) => { const o = f.getUserData(); if (o && o.isUnit) return -1; h = true; return fr; }); return h; };
-        let e = 0; if (!under(0)) { const L = under(-fx), R = under(fx); e = L && !R ? 1 : R && !L ? -1 : 0; }
-        if (e !== u.edge) { u.edge = e; u.edgeT = 0; }
+        let e = 0;
+        if (!under(0)) {
+          const free = (d) => !under(d * hw * 0.3) && !under(d * hw * 0.6) && !under(d * hw * 0.95) && !under(d * (hw + 0.6));
+          const L = free(-1), R = free(1); e = R && !L ? 1 : L && !R ? -1 : 0;
+        }
+        u.edge = e;
       }
-      if (u.edge && u.edgeT < 1.5) { u.edgeT += dt; u.body.applyLinearImpulse({ x: u.edge * u.mass * GRAV * 1.35 * dt, y: 0 }, u.body.getWorldCenter(), true); }
-    } else u.edge = 0;
+      if (u.edge && u.edgeT < 1.2) { u.edgeT += dt; if (u.edge * v.x < 2.2) u.body.applyLinearImpulse({ x: u.edge * u.mass * GRAV * 1.2 * dt, y: 0 }, u.body.getWorldCenter(), true); }
+      else if (!u.edge && u.edgeT > 0) u.edgeT = Math.max(0, u.edgeT - dt * 0.3);
+    } else if (!act) u.edge = 0;
     // 掉下深淵、飛出戰場兩邊：出局
     if (u.y < -26 || u.x < -GUT + 1.5 || u.x > VIEW_W + GUT - 1.5) { if (u.def.big) bossReturn(u); else killUnit(u, 1 - u.side, u.y < -26 ? 4 : 6); continue; }
     // 被轟出自己的城、落地站定了：也算出局（守不了城了）。魔王會自己飛回去
     const st = u.st;
     if ((u.x < st.x0 - OUT_M || u.x > st.x1 + OUT_M) && !u.air) { u.outT += dt; if (u.outT > 0.6) { if (u.def.big) bossReturn(u); else killUnit(u, 1 - u.side, 5); } } else u.outT = 0;
   }
-  /* 兵跟兵不碰撞，所以掉到同一個地方會疊在一起：往兩邊慢慢推開（魔王不動，推小兵）。
-     推了兩秒多還分不開（兩個人擠在一格寬的小隔間裡）就不推了，不然永遠靜不下來、回合結束不了 */
+  /* 兵跟兵不碰撞，所以掉到同一個地方會疊在一起：往兩邊慢慢推開（魔王不動，推小兵）。只在砲擊進行中推。
+     推的方向前面沒有地可以踩就不推（寧可兩個人擠著，也不要把人推下去）；推了兩秒還分不開（被瓦礫擋住、擠在一格寬的小隔間裡）
+     這一輪就先不推了，不然永遠靜不下來、回合結束不了——下一輪砲擊再試（擋路的東西可能已經被炸開） */
   const us = S.units;
-  for (let i = 0; i < us.length; i++) us[i].sepNow = false;
-  for (let i = 0; i < us.length; i++) {
-    const a = us[i]; if (!a.alive) continue;
-    for (let j = i + 1; j < us.length; j++) {
-      const b = us[j]; if (!b.alive) continue;
-      const dx = b.x - a.x, ox = (a.bw + b.bw) * 0.5 * 0.9 - Math.abs(dx), oy = (a.bh + b.bh) * 0.5 * 0.85 - Math.abs(b.y + b.bh * 0.5 - a.y - a.bh * 0.5);
-      if (ox <= 0 || oy <= 0) continue;
-      a.sepNow = b.sepNow = true;
-      if (a.sepT > 2.4 || b.sepT > 2.4) continue;
-      const dir = dx > 0.01 ? 1 : dx < -0.01 ? -1 : (a.slot + a.side * 9 < b.slot + b.side * 9 ? 1 : -1), acc = GRAV * 1.7 * Math.min(1, 0.35 + ox) * dt;
-      const ka = a.def.big ? 0 : b.def.big ? 2 : 1, kb = b.def.big ? 0 : a.def.big ? 2 : 1;
-      if (ka) a.body.applyLinearImpulse({ x: -dir * acc * ka * a.mass, y: 0 }, a.body.getWorldCenter(), true);
-      if (kb) b.body.applyLinearImpulse({ x: dir * acc * kb * b.mass, y: 0 }, b.body.getWorldCenter(), true);
+  if (S.state !== 'play' || S.phase === 'volley' || S.phase === 'resolve' || S.phase === 'hazard') {
+    const floorAt = (x, y) => { let h = false; PH.world.rayCast({ x, y: y + 0.6 }, { x, y: y - 1.3 }, (f, pt, n, fr) => { const o = f.getUserData(); if (o && o.isUnit) return -1; h = true; return fr; }); return h; };
+    for (let i = 0; i < us.length; i++) { const u = us[i]; u.sepNow = false; if (u.sepVol !== S.vol) { u.sepVol = S.vol; u.sepT = 0; } }
+    for (let i = 0; i < us.length; i++) {
+      const a = us[i]; if (!a.alive) continue;
+      for (let j = i + 1; j < us.length; j++) {
+        const b = us[j]; if (!b.alive) continue;
+        const dx = b.x - a.x, ox = (a.bw + b.bw) * 0.5 * 0.9 - Math.abs(dx), oy = (a.bh + b.bh) * 0.5 * 0.85 - Math.abs(b.y + b.bh * 0.5 - a.y - a.bh * 0.5);
+        if (ox <= 0 || oy <= 0) continue;
+        a.sepNow = b.sepNow = true;
+        if (a.sepT > 2 || b.sepT > 2) continue;
+        const dir = dx > 0.01 ? 1 : dx < -0.01 ? -1 : (a.slot + a.side * 9 < b.slot + b.side * 9 ? 1 : -1), acc = GRAV * 1.25 * dt;
+        const push = (u, d, k) => { if (u.def.big || u.air || d * u.vx > 2.2 || !floorAt(u.x + d * (u.bw * 0.5 + 0.5), u.y)) return; u.body.applyLinearImpulse({ x: d * acc * k * u.mass, y: 0 }, u.body.getWorldCenter(), true); };
+        push(a, -dir, b.def.big ? 2 : 1); push(b, dir, a.def.big ? 2 : 1);
+      }
     }
+    for (let i = 0; i < us.length; i++) { const u = us[i]; if (u.sepNow) u.sepT += dt; }
   }
-  for (let i = 0; i < us.length; i++) { const u = us[i]; if (u.sepNow) u.sepT += dt; else if (u.sepT > 0) u.sepT = Math.max(0, u.sepT - dt * 0.5); }
 }
 
+// 這片屋瓦是不是已經「掉下來」了：比原位低了一截、歪了、或橫移了。還好好的架在柱子上的不算
+function roofDown(b) { const p = b.body.getPosition(); return b.y0 - p.y > 0.22 || Math.abs(p.x - b.x0) > 0.45 || Math.abs(b.body.getAngle()) > 0.1; }
 /* ---------- 砲彈 ---------- */
 function spawnShot(side, wi, x, y, vx, vy, mass, flag, mask, lin) {
   if (SH.n >= NS) return -1;
@@ -736,6 +755,7 @@ function simFire(side) {
 function worldQuiet() {
   // 有兵正被壓著扣血（一兩秒內不是被壓扁就是東西滑開）：等出結果，不要輪到下一邊瞄準了他才倒下
   for (const u of S.units) if (u.alive && !u.def.big && u.loadT > 0 && u.load > CRUSH_LOAD) return false;
+  for (const u of S.units) if (u.alive && (u.edge || (u.sepNow && u.sepT <= 2)) && u.body.isAwake()) return false;      // 還在往邊上滑、還在被推開的也等
   for (let b = PH.world.getBodyList(); b; b = b.getNext()) {
     if (!b.isDynamic() || !b.isAwake()) continue;
     const p = b.getPosition(); if (p.x < -GUT - 2 || p.x > VIEW_W + GUT + 2 || p.y < -10) continue;

@@ -74,8 +74,9 @@ function physNew() {
     if ((ua && ua.isUnit) || (ub && ub.isUnit)) {
       const ni = imp.normalImpulses; let J = 0; for (let k = 0; k < ni.length; k++) J += ni[k] || 0;
       if (J > 0) { const wm = c.getWorldManifold(PH.wm); if (wm) { PH.wm = wm; const ny = wm.normal.y;        // 法線由 A 指向 B
-        if (ua && ua.isUnit && ua.alive && ub && ub.isBlock && ny > 0.35) ua.loadJ += J * ny;
-        if (ub && ub.isUnit && ub.alive && ua && ua.isBlock && ny < -0.35) ub.loadJ -= J * ny; } }
+        // 壓下來的是屋瓦：不算重量，記下是哪一片（unitsStep 看它是不是已經掉下來了，是的話讓它碎掉）
+        if (ua && ua.isUnit && ua.alive && ub && ub.isBlock && ny > 0.35) { if (ub.mat === M_ROOF && !ub.frag) ua.roofOn = ub; else ua.loadJ += J * ny; }
+        if (ub && ub.isUnit && ub.alive && ua && ua.isBlock && ny < -0.35) { if (ua.mat === M_ROOF && !ua.frag) ub.roofOn = ua; else ub.loadJ -= J * ny; } } }
     }
     if (c._vs !== PH.stepId || !c._vn) return;
     c._vs = -1;
@@ -323,7 +324,7 @@ function mkUnitBody(u) {
   const mask = CAT_TERR | CAT_BLOCK;
   body.createFixture({ shape: new PL.Polygon(sole), density: den, friction: 0.9, restitution: 0, filterCategoryBits: CAT_UNIT, filterMaskBits: mask, userData: u });
   body.createFixture({ shape: new PL.Polygon(trunk), density: den, friction: 0.03, restitution: 0, filterCategoryBits: CAT_UNIT, filterMaskBits: mask, userData: u });
-  u.body = body; u.mass = body.getMass(); u.loadJ = 0; u.loadT = 0; u.load = 0; u.sepT = 0;
+  u.body = body; u.mass = body.getMass(); u.loadJ = 0; u.loadT = 0; u.load = 0; u.sepT = 0; u.sepNow = false; u.sepVol = -1; u.edge = 0; u.edgeT = 0; u.roofOn = null;
 }
 
 /* ---------- 每一步 ---------- */
@@ -366,7 +367,8 @@ function physStep(dt) {
       } else if (o.alive) {
         // 屋瓦砸在兵（或魔王）頭上：瓦是脆的，當場碎掉、順著頭兩邊滑下去。該痛的照痛（下面照撞擊的力道算），
         // 但不會整片屋頂完好地蓋在頭上、一路把人壓到扁——頂樓的兵不該因為亭子的柱子斷了就必死
-        { const oth = k ? r.a : r.b; if (oth && oth.isBlock && oth.mat === M_ROOF && !oth.dead && !oth.frag && (k ? -r.ny : r.ny) > 0.3) blockKill(oth, oth.side === credit ? 2 : credit, K_CRUSH); }
+        // （屋頂還好好的在原位、是兵自己被震得跳起來撞到的不算：屋頂不會因為這樣就碎）
+        { const oth = k ? r.a : r.b; if (oth && oth.isBlock && oth.mat === M_ROOF && !oth.dead && !oth.frag && (k ? -r.ny : r.ny) > 0.3 && roofDown(oth)) blockKill(oth, oth.side === credit ? 2 : credit, K_CRUSH); }
         if (o.def.big) {
           // 魔王皮厚：摔不死。但是摔一層、被掉下來的屋頂或樓板砸到頭，每一下至少扣半成血（一下之後隔一會才會再算）。
           // 被爆炸震得跳一下再落地的不算；輕的碎塊砸到也不算
