@@ -104,7 +104,7 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
       case 'K': put(M_KEG, 'box', cx, cy, 1, 1, { bw: CS * 0.78, bh: CS * 0.88 }); break;
       // 第二篇的新東西
       case 'A': { used[cy * cols + cx] = 1; rock.push(cx); rock.push(cy); break; }                 // 岩壁（不會動、打不壞，跟地面一樣）
-      case '!': put(M_BAMBOO, 'box', cx, cy, 1, vrun(cx, cy, ch), { sw: 0.42 }); break;          // 竹樁、竹竿（細）
+      case '!': put(M_BAMBOO, 'box', cx, cy, 1, vrun(cx, cy, ch), { sw: 0.42, sk: def.sk }); break;          // 竹樁、竹竿（細）
       case 'y': put(M_BAMBOO, 'box', cx, cy, hrun(cx, cy, ch), 1); break;                         // 竹排（同一列連著的算一整片）
       case 'g': put(M_GLASS, 'box', cx, cy, hrun(cx, cy, ch), 1); break;                          // 琉璃板
       case 'G': put(M_GLASS, 'box', cx, cy, 1, vrun(cx, cy, ch), { sw: 0.56 }); break;           // 琉璃柱
@@ -124,13 +124,13 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
   for (const b of st.blocks) if (b.mat === M_KEG && !b.prop) { st.cellK[b.cy * cols + b.cx] = 2; st.cellB[b.cy * cols + b.cx] = null; }
   // 岩壁：一列一列併成長方形，掛在一個不會動的物體上（跟地面同一類，砲彈打到就跟打到地面一樣）
   if (rock.length) {
-    const rb = PH.world.createBody({ type: 'static' }); st.rock = []; st.rockBody = rb;
+    const rb = PH.world.createBody({ type: 'static' }); st.rock = []; st.rockBody = rb; st.rockTag = { isRock: true, st, side };
     const isR = (cx, cy) => { for (let i = 0; i < rock.length; i += 2) if (rock[i] === cx && rock[i + 1] === cy) return true; return false; };
     for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
       if (!isR(cx, cy) || (cx > 0 && isR(cx - 1, cy))) continue;
       let k = 1; while (isR(cx + k, cy)) k++;
       const mx = mirror ? cols - cx - k : cx;
-      rb.createFixture({ shape: new PL.Box(k * CS / 2, CS / 2, { x: x0 + (mx + k / 2) * CS, y: y0 + (cy + 0.5) * CS }, 0), friction: 0.85, restitution: 0, filterCategoryBits: CAT_TERR });
+      rb.createFixture({ shape: new PL.Box(k * CS / 2, CS / 2, { x: x0 + (mx + k / 2) * CS, y: y0 + (cy + 0.5) * CS }, 0), friction: 0.85, restitution: 0, filterCategoryBits: CAT_TERR, userData: st.rockTag });
       for (let a = 0; a < k; a++) { const ix = mirror ? cols - 1 - (cx + a) : cx + a; st.cellK[cy * cols + ix] = 3; st.rock.push(ix, cy); }
     }
   }
@@ -208,6 +208,8 @@ function mkUnit(side, type, st, slot, hpMul) {
 function hurtUnit(u, d, side, kind) {
   if (!u.alive || d <= 0) return;
   if (S.state !== 'play' && u.side !== S.loser) return;          // 勝負已分：贏的那一邊不會再受傷（星數、損兵都以分出勝負那一刻為準）
+  // 第二篇敵軍火力大：第一回合敵軍打到我方的兵只算幾成（開場不會還沒打就先倒一個）
+  if (u.side === 0 && side === 1 && S.round <= 1 && S.lv.foe.open) d *= S.lv.foe.open * (kind === K_CRUSH ? 0.5 : 1);
   const boss = u.def.big && S.boss ? S.boss : null;
   if (boss) {
     /* 魔王換階段：血一掉過門檻就馬上換（第二階段的結界當場張開）。跨過門檻的那一輪，超過的傷害只算三成五，
@@ -276,7 +278,10 @@ function unitsStep(dt) {
     if (u.body.isAwake()) u.load += (u.loadJ / (dt * u.mass * GRAV) - u.load) * 0.3;
     u.loadJ = 0;
     if (act) {
-      if (!u.def.big && u.load > CRUSH_LOAD) { u.loadT += dt; if (u.loadT > 0.3) { hurtUnit(u, 120 * dt, S.phase === 'hazard' ? 2 : 1 - u.side, K_CRUSH); if (!u.alive) continue; } }
+      if (!u.def.big && u.load > CRUSH_LOAD) { u.loadT += dt; if (u.loadT > 0.3) {
+        // 第二篇第一回合（敵軍的第一輪）：壓在我方兵頭上的碎磚直接裂開掉下去，不會還沒開打就被壓扁
+        if (u.side === 0 && S.round <= 1 && S.lv.foe.open && headClearUnit(u)) { u.loadT = 0; continue; }
+        hurtUnit(u, 120 * dt, S.phase === 'hazard' ? 2 : 1 - u.side, K_CRUSH); if (!u.alive) continue; } }
       else if (u.loadT > 0) u.loadT = Math.max(0, u.loadT - dt * 2);
     }
     /* 站在邊緣、腳底正中間已經懸空，只剩半邊鞋底踩著東西（另外半邊底下是空的）：站不住，往空的那一邊滑下去。
@@ -622,14 +627,18 @@ function grantBonus(side, kind, x, y) {
     let u = null; for (const k of T.units) if (!k.alive) { u = k; break; }
     if (u) {
       // 回到原本的位置；那裡的樓板已經不在（或被磚佔住）就站到那個位置現在最高的東西上面，不會摔傷
-      u.alive = true; u.hp = u.hpMax * 0.7; u.frozen = 0; u.stun = 0; u.dazed = 0; u.outT = 0; u.dieT = 0; u.x = u.hx; u.y = u.hy + 0.2;
+      u.alive = true; u.hp = u.hpMax * 0.7; u.frozen = 0; u.stun = 0; u.dazed = 0; u.outT = 0; u.dieT = 0; u.wet = 0; u.wetT = 0; u.x = u.hx; u.y = u.hy + 0.2;
       // 腳下有沒有東西：從原位的腰部往下看一小段；身體那一格有沒有被磚佔住
-      let floor = -999; PH.world.rayCast({ x: u.x, y: u.hy + 1.2 }, { x: u.x, y: u.hy - 1.2 }, (f, pt, n, fr) => { const o = f.getUserData(); if (o && !o.isBlock) return -1; floor = pt.y; return fr; });
+      // （只站在還在原位的磚、岩壁、地面上：漂在河裡的碎木頭不算）
+      const solid = (o) => !o || o.isRock || (o.isBlock && o.inPlace && !o.frag && !o.dead);
+      let floor = -999; PH.world.rayCast({ x: u.x, y: u.hy + 1.2 }, { x: u.x, y: u.hy - 1.2 }, (f, pt, n, fr) => { if (!solid(f.getUserData())) return -1; floor = pt.y; return fr; });
+      const W = S.water, wetAt = (x, y) => W && x > W.x0 && x < W.x1 && y < W.y + 0.4;          // 那裡在水面下（河底）：不能站
+      if (wetAt(u.x, floor)) floor = -999;
       const q = physQuery(u.x, u.hy + 1.6, 2); let blocked = false; for (const o of q) if (o.isBlock && !o.dead && blockDist(o, u.x, u.hy + 1.6) < 1.25) blocked = true;
       // 那個位置現在有沒有別的兵站著（掉下來的隊友、摔下來的魔王）：有的話也要另外找地方，不要復活在別人身體裡
       const crowded = (x, y) => { for (const k of S.units) if (k !== u && k.alive && Math.abs(k.x - x) < (k.bw + UNIT_W) * 0.45 && Math.abs(k.y - y) < (k.bh + UNIT_H) * 0.45) return true; return false; };
       if (blocked || floor < u.hy - 0.7 || floor > u.hy + 0.5 || crowded(u.x, floor + 0.1)) {
-        const find = (x) => { let top = -999; PH.world.rayCast({ x, y: st.y1 + 30 }, { x, y: st.y0 - 2 }, (f, pt, n, fr) => { const o = f.getUserData(); if (o && !o.isBlock) return -1; top = pt.y; return fr; }); return top; };
+        const find = (x) => { let top = -999; PH.world.rayCast({ x, y: st.y1 + 30 }, { x, y: st.y0 - 2 }, (f, pt, n, fr) => { if (!solid(f.getUserData())) return -1; top = pt.y; return fr; }); return wetAt(x, top) ? -999 : top; };
         // 先看原本那一直線上最高的地方；那裡底下什麼都沒有（露台斷了，下面是深淵）或已經有人，就往兩邊一格一格找，只在城基的範圍裡找
         let bx = u.x, top = find(u.x);
         if (top < -900 || crowded(u.x, top + 0.25)) {
@@ -640,10 +649,10 @@ function grantBonus(side, kind, x, y) {
           }
           if (!done && top < -900) { bx = clamp(u.x, lo, hi); top = find(bx); }
         }
-        u.x = bx; u.y = (top > -900 ? top : st.y0) + 0.25;
+        if (top < -900) { u.alive = false; u.hp = 0; u = null; }          // 城裡找不到能站的地方（整座都垮進河裡、掉進深谷了）：改成補血
+        else { u.x = bx; u.y = top + 0.25; }
       } else u.y = floor + 0.1;
-      mkUnitBody(u); u.body.setAwake(true);
-      T.alive++; ev('revive', u.x, u.y, side, u.slot);
+      if (u) { mkUnitBody(u); u.body.setAwake(true); T.alive++; ev('revive', u.x, u.y, side, u.slot); } else kind = 'heal';
     } else kind = 'heal';
   }
   if (kind === 'heal') { for (const u of T.units) if (u.alive) { u.hp = Math.min(u.hpMax, u.hp + u.hpMax * (u.def.big ? 0.06 : 0.45)); u.frozen = 0; u.stun = 0; } }       // 魔王只補一點點
@@ -819,11 +828,19 @@ function worldQuiet() {
   for (const u of S.units) if (u.alive && !u.def.big && u.loadT > 0 && u.load > CRUSH_LOAD) return false;
   for (const u of S.units) if (u.alive && (u.edge || (u.sepNow && u.sepT <= 2)) && u.body.isAwake()) return false;      // 還在往邊上滑、還在被推開的也等
   for (const u of S.units) if (u.alive && u.outT > 0) return false;          // 被轟出城外、正在倒數出局的：等他出局了再換人（不然換人那一格才跳「出局」）
+  for (const u of S.units) if (u.alive && u.wet > 0.2) return false;         // 掉進河裡的兵：等他被沖走（或爬上來）再換人
+  // 還在滑、還在掉的兵：等他停下來（天秤翻了、樓板歪了，人一路滑出去）；最多等的時間也跟著延長
+  for (const u of S.units) if (u.alive && u.body) { const v = u.body.getLinearVelocity(); if (v.x * v.x + v.y * v.y > 4) { S.chainT = S.time; return false; } }
+  // 第二篇：還在超載、嘎吱作響的柱子；還在往下垂的懸臂樑；還在翻的天秤 —— 等它斷完、翻完
+  for (const b of S.blocks) if (!b.dead && b.sT > 0 && b.cap) return false;
+  for (const o of S.pins) if (!o.broke && o.b && o.b.body && Math.abs(o.b.body.getAngularVelocity()) > 0.01) return false;
+  for (const o of S.pivots) if (o.b && !o.b.dead && Math.abs(o.b.body.getAngularVelocity()) > 0.01) return false;
   for (let b = PH.world.getBodyList(); b; b = b.getNext()) {
     if (!b.isDynamic() || !b.isAwake()) continue;
     const p = b.getPosition(); if (p.x < -GUT - 2 || p.x > VIEW_W + GUT + 2 || p.y < -10) continue;
     const v = b.getLinearVelocity(), s2 = v.x * v.x + v.y * v.y, om = Math.abs(b.getAngularVelocity()), o = b.getUserData();
-    if (o && o.wet && !o.inPlace) continue;                       // 泡在河裡漂走的碎木頭、快被沖走的兵：不等
+    if (o && o.isBlock && o.wet && !o.inPlace) continue;           // 泡在河裡漂走的碎木頭：不等
+    if (o && o.hang && !o.hangFree) continue;                       // 還吊著、只是在晃的鐘和燈：不等
     if (s2 > 3.2 || om > 0.7) return false;
     if (o && (o.isUnit || (o.isBlock && !o.frag && !o.prop && !o.st.loose)) && (s2 > 0.5 || om > 0.16)) return false;
   }
@@ -835,23 +852,25 @@ function worldQuiet() {
    魔王不管（他頂得開）。一個兵一輪最多碎三塊。碎了就有東西在動，回合照樣等它停 */
 function headClear() {
   let hit = false;
-  for (const u of S.units) {
-    if (!u.alive || u.def.big || u.air || !u.body) continue;
-    if (u.hcV !== S.vol) { u.hcV = S.vol; u.hcN = 0; }
-    if (u.hcN >= 3) continue;
-    const p = u.body.getPosition();
-    for (let ce = u.body.getContactList(); ce; ce = ce.next) {
-      const ct = ce.contact; if (!ct.isTouching()) continue;
-      const o = ce.other.getUserData();
-      if (!o || !o.isBlock || o.dead || o.inPlace || o.mat === M_KEG || o.kind === 'ball' || (o.mat === M_ROOF && !o.frag && !roofDown(o))) continue;
-      const wm = ct.getWorldManifold(null); if (!wm || !wm.pointCount) continue;
-      const pt = wm.points[0]; if (pt.y <= p.y + u.bh * 0.25) continue;          // 碰在肩膀以上
-      u.hcN++; hit = true;
-      if (o.seg) blockHurt(o, 1e4, K_CRUSH, 2, pt.x, pt.y); else blockKill(o, 2, K_CRUSH);
-      break;
-    }
-  }
+  for (const u of S.units) if (headClearUnit(u)) hit = true;
   return hit;
+}
+function headClearUnit(u) {
+  if (!u.alive || u.def.big || u.air || !u.body) return false;
+  if (u.hcV !== S.vol) { u.hcV = S.vol; u.hcN = 0; }
+  if (u.hcN >= 3) return false;
+  const p = u.body.getPosition();
+  for (let ce = u.body.getContactList(); ce; ce = ce.next) {
+    const ct = ce.contact; if (!ct.isTouching()) continue;
+    const o = ce.other.getUserData();
+    if (!o || !o.isBlock || o.dead || o.inPlace || o.mat === M_KEG || o.kind === 'ball' || (o.mat === M_ROOF && !o.frag && !roofDown(o))) continue;
+    const wm = ct.getWorldManifold(null); if (!wm || !wm.pointCount) continue;
+    const pt = wm.points[0]; if (pt.y <= p.y + u.bh * 0.25) continue;          // 碰在肩膀以上
+    u.hcN++;
+    if (o.seg) blockHurt(o, 1e4, K_CRUSH, 2, pt.x, pt.y); else blockKill(o, 2, K_CRUSH);
+    return true;
+  }
+  return false;
 }
 function chainNote() {
   if (S.turn === 0 && S.chain > S.stat.chain) S.stat.chain = S.chain;

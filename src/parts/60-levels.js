@@ -30,7 +30,8 @@ const foeKegs = () => S.st[1].blocks.some((b) => !b.dead && b.mat === M_KEG);
 // 敵城藍圖上第 cx 欄（照藍圖寫的方向）、由上往下第 row 列的那塊磚（還在原位才算）
 const foeB = (cx, row) => { const st = S.st[1], b = st.cellB[(st.rows - 1 - row) * st.cols + (st.cols - 1 - cx)]; return b && !b.dead && b.inPlace ? b : null; };
 // 自動玩家（我方）想打的要害：直接打中那一塊最好
-const tgB = (cells, w) => { const out = []; for (const [cx, row] of cells) { const b = foeB(cx, row); if (b) { const p = b.body.getPosition(); out.push({ x: p.x, y: p.y + (b.seg ? 0 : b.h * 0.25), w, blk: b }); } } return out; };
+// （瞄的是那一格的位置：長樑、長柱子要打的是指定的那一段，不是整根的正中間）
+const tgB = (cells, w) => { const out = []; for (const [cx, row] of cells) { const b = foeB(cx, row); if (b) { const P = cellPt(S.st[1], [cx, row, 0.5, 0.5]); out.push({ x: P.x, y: P.y, w, blk: b }); } } return out; };
 // 第七關：戰場中間還站著的石碑（由左到右）
 const steles = () => { const out = []; for (const q of S.structs) if (q.side === 2 && !q.loose) for (const b of q.blocks) if (!b.dead && b.dom && b.inPlace) out.push(b); return out.sort((a, b) => a.x0 - b.x0); };
 // 第八關：鐵鍊還在不在（tag）
@@ -129,11 +130,13 @@ const LEVELS = [
     tip: '吊腳樓蓋在細細的竹樁上：打斷竹樁，樓子一歪，連人滑進河裡被沖走。竹子一點就著，繩子一箭就斷',
     hints: [{ r: 1, t: '吊腳樓只靠兩三根細竹樁撐著：打斷一根，剩下的撐不住，會嘎吱嘎吱一根接一根斷' },
       { r: 2, t: '掉進河裡的兵會被水沖走：把樓子打歪，讓它整間滑進河裡' },
-      { r: 3, t: '望樓用兩條繩子拉著前後兩棟樓：前面那棟倒進河裡，會把望樓一起拖下去', ok: () => foeHome(2) }],
+      { r: 3, t: '望樓立在河中間的大石頭上，只靠兩根細竹竿撐著：打斷一根，整座望樓連人倒進河裡', ok: () => foeHome(2) }],
     ground: [[-40, 3], [0, 0], [37, 0], [41, -1.5], [46, -7], [170, -7]],
     water: { x0: 42, x1: 175, y: -1.6, cur: 2.4 },
     me: { castle: 'P3', crew: ['rocket', 'fire', 'bolt', 'bomb'] },
-    foe: { castle: 'E7', y0: -7, crew: ['bolt', 'rocket', 'bomb', 'fire'], hp: 1.7, dmg: 2.6, ai: { err: 3.0, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6 } },
+    foe: { castle: 'E7', y0: -7, crew: ['bolt', 'rocket', 'bomb', 'fire'], hp: 1.7, dmg: 2.6, open: 0.6, ai: { err: 3.0, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 1.5 } },
+    // 竹樁露在水面上的那一截（泡在水裡的打不到）
+    weak: (side) => side === 0 ? tgB([[10, 7], [12, 7], [3, 7], [0, 7], [5, 4], [8, 4]], 0.95) : [],
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[47, 36]], move: { t: 'bob', a: 4, per: 8 } },
       { owner: 0, mult: 5, h: 5.5, spots: [[55, 44], [53, 29]], at: 2, hop: true },
@@ -149,11 +152,11 @@ const LEVELS = [
       { r: 3, t: '石柱頂的小屋只有一根石頸撐著，炸到一邊就翻：站在上面的兵會從十幾格高摔下來', ok: () => foeHome(1) || foeHome(3) }],
     ground: [[-40, 3], [0, 0], [112, 0], [152, 3]],
     me: { castle: 'P3', crew: ['stone', 'rocket', 'bolt', 'bomb'] },
-    foe: { castle: 'E8', crew: ['rocket', 'bomb', 'stone', 'bolt'], hp: 1.5, dmg: 2.6, ai: { err: 2.9, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6 } },
+    foe: { castle: 'E8', crew: ['rocket', 'bomb', 'stone', 'bolt'], hp: 1.5, dmg: 2.6, open: 0.6, ai: { err: 2.9, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.1 } },
     extra: [{ castle: 'DOM', x: 50.8, y: 0, hp: 1 }],
     weak: (side) => {
       if (side !== 0) return [];
-      const out = tgB([[6, 5], [5, 5], [10, 8], [1, 7]], 0.7), st = steles();
+      const out = tgB([[6, 5], [5, 5], [10, 8], [1, 7]], 1.0), st = steles();
       // 最左邊（最矮）那塊石碑的上半截、偏左一點：往右推倒
       if (st.length >= 3 && st[0].x0 < 44) { const b = st[0], p = b.body.getPosition(); out.push({ x: p.x - b.w * 0.5, y: p.y + b.h * 0.3, w: 1.1, blk: b }); }
       return out;
@@ -174,8 +177,8 @@ const LEVELS = [
     ground: [[-40, 3], [0, 0], [49, 0], [53, -3], [96, -3], [97, 0], [152, 0]],
     voids: [[53.5, 95.2]],
     me: { castle: 'P3', crew: ['rocket', 'zap', 'bolt', 'bomb'] },
-    foe: { castle: 'E9', crew: ['fire', 'bomb', 'zap', 'bolt'], hp: 1.45, dmg: 2.8, ai: { err: 2.7, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6 } },
-    weak: (side) => side === 0 ? tgB([[4, 11], [4, 7], [9, 10], [5, 6]], 0.6) : [],
+    foe: { castle: 'E9', crew: ['fire', 'bomb', 'zap', 'bolt'], hp: 1.45, dmg: 2.8, open: 0.6, ai: { err: 2.7, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.1 } },
+    weak: (side) => side === 0 ? tgB([[4, 11], [4, 7], [9, 10], [8, 6]], 0.95) : [],
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[47, 38]], move: { t: 'bob', a: 4, per: 8 } },
       { owner: 0, mult: 5, h: 5.5, spots: [[57, 46], [55, 30]], at: 2, hop: true },
@@ -186,15 +189,15 @@ const LEVELS = [
   {
     name: '天秤寨', tag: '天秤・配重・深谷', theme: 9, stress: 1,
     tip: '整座寨子架在一根會轉的大樑上，兩頭各吊一籃配重。哪一頭變輕，大樑就往另一頭翻，上面的東西全滑下去',
-    hints: [{ r: 1, t: '前面那籃配重只用麻繩吊著，一箭就斷：配重沒了，大樑往後翻，後面那座樓滑下去', ok: () => !tilted() },
+    hints: [{ r: 1, t: '前面那籃配重只用麻繩吊著，幾箭就斷：配重沒了，大樑往後翻，後面那座樓滑下去', ok: () => !tilted() },
       { r: 2, t: '後面那籃是鐵鍊吊的（要轟天砲、投石）：它斷了，大樑往前翻，前面那座樓連人滑進深谷', ok: () => !tilted() },
       { r: 3, t: '把一頭的兵和磚打掉，那一頭變輕，打掉夠多大樑也會翻', ok: () => !tilted() }],
     ground: [[-40, 4], [0, 0], [56, 0], [58, -3], [80, -3], [82, 0], [152, 4]],
     voids: [[58.5, 81.5]],
     wind: { max: 6, at: 3 },
     me: { castle: 'P3', crew: ['rocket', 'bolt', 'stone', 'bomb'] },
-    foe: { castle: 'E10', crew: ['bomb', 'rocket', 'ice', 'bolt'], hp: 1.45, dmg: 2.2, ai: { err: 3.0, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6 } },
-    weak: (side) => side === 0 ? tgB([[12, 3], [9, 3], [12, 1], [9, 1]], 0.55) : [],
+    foe: { castle: 'E10', crew: ['bomb', 'rocket', 'ice', 'bolt'], hp: 1.45, dmg: 2.2, open: 0.6, ai: { err: 3.0, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 1.5 } },
+    weak: (side) => side === 0 ? tgB([[12, 3], [9, 3], [12, 1], [9, 1]], 0.9) : [],
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[46, 39]], move: { t: 'bob', a: 4, per: 8 } },
       { owner: 0, mult: 5, h: 5.5, spots: [[56, 46], [53, 31]], at: 2, hop: true },
@@ -210,7 +213,7 @@ const LEVELS = [
       { r: 3, t: '琉璃碎片砸到下面的琉璃也會碎：從上往下打，一層壓垮一層' }],
     ground: [[-40, 3], [0, 0], [38, 0], [42, -3.5], [70, -3.5], [74, 0], [112, 0], [152, 3]],
     me: { castle: 'P3', crew: ['rocket', 'stone', 'zap', 'bomb'] },
-    foe: { castle: 'E11', crew: ['bomb', 'ice', 'zap', 'rocket'], hp: 1.6, dmg: 2.8, ai: { err: 2.7, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6 } },
+    foe: { castle: 'E11', crew: ['bomb', 'ice', 'zap', 'rocket'], hp: 1.6, dmg: 2.8, open: 0.6, ai: { err: 2.7, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.1 } },
     weak: (side) => side === 0 ? tgB([[5, 3]], 1.25).concat(tgB([[5, 4]], 0.6)) : [],
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[46, 37]], move: { t: 'bob', a: 4, per: 8 } },
@@ -229,8 +232,8 @@ const LEVELS = [
     ground: [[-40, 3], [0, 0], [112, 0], [152, 3]],
     wind: { max: 5, at: 3 },
     me: { castle: 'P3', crew: ['fire', 'rocket', 'stone', 'bomb'] },
-    foe: { castle: 'E12', crew: ['bomb', 'fire', 'rocket', 'bolt'], hp: 1.4, dmg: 1.9, ai: { err: 3.3, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6 } },
-    weak: (side) => side === 0 ? tgB([[3, 10], [9, 10], [4, 8], [8, 8]], 0.65) : [],
+    foe: { castle: 'E12', crew: ['bomb', 'fire', 'rocket', 'bolt'], hp: 1.4, dmg: 1.9, open: 0.6, ai: { err: 3.3, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 1.5 } },
+    weak: (side) => side === 0 ? tgB([[3, 10], [9, 10], [4, 8], [8, 8]], 1.0) : [],
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[46, 38]], move: { t: 'bob', a: 4, per: 8 } },
       { owner: 0, mult: 5, h: 5.5, spots: [[55, 46], [52, 30]], at: 2, hop: true },

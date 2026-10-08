@@ -1,10 +1,9 @@
 // node test/inv.js [場數=3]：各關各種自動玩家各打幾場，一路檢查內部數字有沒有對不上、有沒有卡住
-const G = require('./load')('physQuery');
+const G = require('../load')('physQuery');
 const { S, SH, PH, simInit, simStep, LEVELS, BOTS, teamBar } = G;
 const N = +(process.argv[2] || 3); let bad = 0, games = 0;
 const fail = (m) => { bad++; if (bad < 40) console.log('  ✗ ' + m); };
-const LR = (process.env.LV || '1-' + LEVELS.length).split('-').map(Number);        // LV=7-12：只跑這幾關
-for (let li = LR[0] - 1; li <= (LR[1] || LR[0]) - 1; li++) for (const bot of ['newbie', 'casual', 'expert']) for (let sd = 0; sd < N; sd++) {
+const LR = (process.env.LV || '6-12').split('-').map(Number); for (let li = LR[0] - 1; li <= (LR[1] || LR[0]) - 1; li++) for (const bot of ['newbie', 'casual', 'expert']) for (let sd = 0; sd < N; sd++) {
   const seed = 31337 + sd * 104729 + li * 977 + bot.length, tag = `L${li + 1} ${bot} #${sd}`;
   const up = { dmg: sd % 6, aim: sd % 6, hp: (sd * 2) % 6, shield: (sd * 3) % 6, ult: (sd * 5) % 6 };
   simInit(li, up, seed, sd % 3, { botA: BOTS[bot] }); games++;
@@ -28,7 +27,7 @@ for (let li = LR[0] - 1; li <= (LR[1] || LR[0]) - 1; li++) for (const bot of ['n
         let c0 = 0, c1 = 0, c2 = 0; for (let i = 0; i < SH.n; i++) { if (SH.side[i] === 0) c0++; else if (SH.side[i] === 1) c1++; else c2++; if (!(SH.x[i] === SH.x[i])) fail(`${tag}: 砲彈 NaN`); }
         if (c0 !== SH.cnt[0] || c1 !== SH.cnt[1] || c2 !== SH.cnt[2]) fail(`${tag}: 砲彈數對不上`);
         const b0 = teamBar(0), b1 = teamBar(1); if (!(b0 >= 0 && b0 <= 1 && b1 >= 0 && b1 <= 1)) fail(`${tag}: 城防超出範圍 ${b0} ${b1}`);
-        let bodies = 0; for (let b = PH.world.getBodyList(); b; b = b.getNext()) if (b.isDynamic()) bodies++;      // 只數會動的（地面、第二篇的岩壁是靜態的）
+        let bodies = 0; for (let b = PH.world.getBodyList(); b; b = b.getNext()) if (b.isDynamic()) bodies++;   // review7: 第二篇的岩壁是另外一個靜態物體，只數會動的
         let live = 0; for (const b of S.blocks) if (!b.dead) live++; for (const u of S.units) if (u.alive) live++;
         if (bodies !== live) fail(`${tag}: 物理世界裡的物體數對不上 ${bodies} vs ${live}`);
       }

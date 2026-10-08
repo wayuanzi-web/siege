@@ -9,6 +9,7 @@ function aiInit(T, p, D) {
     sh: p.sh || 0,                                           // 對方開火時會開護罩的機率（只有自動玩家有；敵軍不會開罩）
     guard: p.guard === undefined ? 1 : p.guard,              // 會不會打氣球、光球、天燈
     lob: p.lob || 0,                                         // 偏好吊高砲的程度
+    warm: p.warm || 1,                                       // 第一回合還在試射：落點誤差是平常的幾倍（第二篇敵軍火力大，開場不能一輪就打倒你的兵）
     sap: p.sap === undefined ? 1 : p.sap,                    // 這一輪會考慮「打牆腳、打柱子」的機率（不然就只瞄兵和火藥桶）
     st: 0, t: 0, fireAt: 0, cand: [], top: [], ci: 0, best: null, bs: 0, px: T.aim[0], py: T.aim[1], lead: null, useGate: true, mult: 1, warn: 1
   };
@@ -167,7 +168,7 @@ function aiChoose(T) {
     b = { vx: a[0], vy: a[1], tau: 2.0, t: { x: fst.cx, y: fst.y0 + fst.h * 0.5 } }; A.mult = 1;
   }
   // 手抖：落點偏掉一些
-  const ex = gauss() * A.err, ey = gauss() * A.err * 0.7;
+  const k = S.round <= 1 ? A.warm : 1, ex = gauss() * A.err * k, ey = gauss() * A.err * 0.7 * k;
   let a = clampAim(b.vx + ex / b.tau, b.vy + ey / b.tau, dir);
   // 真的要打出去的這個角度（手抖之後），每個開得了火的兵各試射一發：最多會穿過幾倍的符。畫面上拿來預警「敵軍瞄準了倍增符」
   let v = aiVolley(T, a[0], a[1]);

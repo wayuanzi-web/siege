@@ -64,6 +64,8 @@ function mkHang(st, h) {
   const mat = h.mat !== undefined ? h.mat : h.t === 'bell' ? M_IRON : h.t === 'lamp' ? M_GLASS : M_STONE;
   const b = mkBlock(st, { mat, kind, x: P.x, y, w, h: hh, prop: 1, den: h.den, il: kind === 'bell' ? w * 0.24 : 0, ir: kind === 'bell' ? w * 0.24 : 0 });
   b.hang = h.t; b.cx = P.cx; b.cy = P.cy; b.cw = 1; b.ch = 1; if (h.bal) b.bal = 1;
+  b.wt = 0;                                               // 吊著的東西不算城防
+  b.body.setAngularDamping(1.2);
   if (h.hp) { b.hp = b.hm = h.hp * (st.hpMul || 1); }
   return mkRope(st, { b: top, x: P.x, y: P.y }, { b, x: P.x, y: y + hh / 2 }, { kind: h.chain ? 'chain' : 'rope', hp: h.rhp, aw: h.aw, tag: h.tag || h.t, hang: b });
 }
@@ -104,11 +106,20 @@ function ropesOff(b, pieces) {
   }
   b.ropes = null;
 }
-// 點到線段的距離
+// 點到線段的距離（最近的那一點放在 _sq）
+const _sq = { x: 0, y: 0 };
 function segDist(px, py, ax, ay, bx, by) {
   const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy; let t = l2 > 0 ? ((px - ax) * dx + (py - ay) * dy) / l2 : 0;
-  t = t < 0 ? 0 : t > 1 ? 1 : t; const qx = ax + dx * t - px, qy = ay + dy * t - py;
+  t = t < 0 ? 0 : t > 1 ? 1 : t; const qx = ax + dx * t - px, qy = ay + dy * t - py; _sq.x = ax + dx * t; _sq.y = ay + dy * t;
   return Math.sqrt(qx * qx + qy * qy);
+}
+// 兩點之間有沒有隔著岩壁（藍圖裡的 A）
+let _rb = false;
+function _rbcb(f, pt, n, fr) { const o = f.getUserData(); if (o && o.isRock) { _rb = true; return 0; } return -1; }
+function rockBetween(x0, y0, x1, y1) {
+  if (!S.st[0].rock && !S.st[1].rock) return false;
+  if (Math.abs(x1 - x0) + Math.abs(y1 - y0) < 0.05) return false;
+  _rb = false; PH.world.rayCast({ x: x0, y: y0 }, { x: x1, y: y1 }, _rbcb); return _rb;
 }
 // 砲彈這一步有沒有碰到對方的繩子（自己的繩子不擋自己的砲）
 function ropeCross(x, y, nx, ny, side) {
@@ -125,8 +136,9 @@ const _rc = { r: null, t: 0 };
 // 爆炸炸到繩子
 function ropesBlast(x, y, rad, dmg, kind, side, fire) {
   for (const r of S.ropes) {
-    if (r.cut) continue;
+    if (r.cut || r.side === side) continue;                 // 自己的砲不傷自己的繩子（跟雷一樣）
     const e = r.e, d = segDist(x, y, e[0], e[1], e[2], e[3]); if (d > rad + 0.4) continue;
+    if (rockBetween(x, y, _sq.x, _sq.y)) continue;           // 中間隔著岩壁（懸空寺的岩簷）：炸不到
     const f = Math.min(1, 1 - (d - 0.4) / rad);
     ropeHurt(r, dmg * 0.9 * f, kind, side);
     if (fire && !r.cut && r.kind === 'rope' && f > 0.4) { if (r.burn <= 0) ev('ignite', (e[0] + e[2]) / 2, (e[1] + e[3]) / 2); r.burn = Math.max(r.burn, 3.5); }
@@ -219,8 +231,8 @@ function pinStep(dt, act) {
     // 瞄準的時候插銷完全卡死（不會在別人瞄準時慢慢垂下去）
     o.j.setMaxMotorTorque(act ? o.tq : 1e9);
     const a = (o.b.body.getAngle() - o.a0) * o.droop, w = o.b.body.getAngularVelocity() * o.droop;
+    if (act && Math.abs(w) > 0.01) S.chainT = S.time;
     if (act && w > 0.02) {
-      S.chainT = S.time;
       o.creak -= dt; if (o.creak <= 0) { o.creak = 0.38; ev('creak', o.x, o.y, M_WOOD, 1.5 + a * 6); }
     }
     if (a > o.brk) {
@@ -291,6 +303,7 @@ function stressStep(dt, act) {
   const credit = S.phase === 'hazard' ? 2 : S.turn;
   for (const b of S.blocks) {
     if (b.dead) continue;
+    if (b.cap && !b.inPlace) { b.cap = 0; b.sT = 0; }          // 已經掉下來的不再算超載（地上的碎構件不會一直嘎吱、一直給人集氣）
     if (!b.cap) { b.sJ = 0; b.sW = 0; continue; }
     if (b.body.isAwake()) {
       b.sL += (b.sJ / dt - b.sL) * 0.25;
@@ -301,7 +314,7 @@ function stressStep(dt, act) {
     // 已經裂了的撐得比較少（長樑、樓板看最弱的那一段）
     const cap = b.cap * (0.35 + 0.65 * Math.max(0, b.seg ? (b.low === undefined ? 1 : b.low) : b.hp / b.hm));
     if (b.sL > cap) {
-      b.sT += dt;
+      b.sT += dt; S.chainT = S.time;          // 還在嘎吱：回合先別結束
       if (b.sT > 0.22) {
         const k = Math.min(2.5, b.sL / cap - 0.8) * dt, by = b.side === credit ? 2 : credit;
         // 長樑、樓板：從受力最集中的那一段斷（懸臂樑插進岩壁的那一截、只剩一根柱子撐著的那一頭），不是整根一起碎
@@ -353,10 +366,11 @@ function mechStep(dt) {
   for (const b of S.blocks) if (!b.dead && b.frag && b.mat === M_GLASS) { b.age = (b.age || 0) + dt; if (b.age > 2.2) { const p = b.body.getPosition(); ev('glint', p.x, p.y); blockKill(b, 2, K_CRUSH, true); } }
   if (S.pins.length) pinStep(dt, act);
   for (const o of S.pivots) if (o.b && !o.b.dead) {
-    if (o.tq) o.j.setMaxMotorTorque(act ? o.tq : 1e9);          // 瞄準的時候天秤卡死
     const a = o.b.body.getAngle(), w = o.b.body.getAngularVelocity();
+    // 瞄準的時候天秤卡死。轉軸是「靜摩擦大、動摩擦小」：一旦開始翻（歪了快兩度），摩擦只剩三成，一路翻到底
+    if (o.tq) o.j.setMaxMotorTorque(!act ? 1e9 : Math.abs(a) > 0.012 && Math.abs(w) > 0.004 ? o.tq * 0.3 : o.tq);
     // 大樑開始翻：嘎——的一聲（一次翻動只響一次）
-    if (Math.abs(w) > 0.05 && act) S.chainT = S.time;          // 還在翻：回合先別結束
+    if (Math.abs(w) > 0.01 && act) S.chainT = S.time;          // 還在翻：回合先別結束
     if (Math.abs(w) > 0.25 && !o.tip && act) { o.tip = 1; ev('tilt', o.x, o.y, w); }
     else if (Math.abs(w) < 0.05) o.tip = 0;
     o.ang = a;
