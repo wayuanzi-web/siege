@@ -43,39 +43,379 @@ function drawFoundations(c) {
   }
 }
 // 岩壁：每一幀貼在佈景上、城樓後面（佈景裡會動的雲、霧畫在它後面，不會飄到岩壁前面）。只畫一次，存成一張圖
+// （圖的四邊多留一點：岩石的邊有起伏、頂上長草、積雪，會稍微超出格子）
 function drawRocks(c) {
   for (const st of S.structs) {
     if (!st.rock || !st.rock.length) continue;
-    const pad = 4, key = V.T + '|' + V.s;
+    const key = V.T + '|' + V.s;
     if (!st._rk || st._rkKey !== key) {
-      const x0 = X(st.x0) - pad, y0 = Y(st.y1) - pad, cv = mkCanvas(st.cols * V.T + pad * 2, st.rows * V.T + pad * 2), k = cv.getContext('2d');
-      k.translate(-x0, -y0); drawRock(k, st); st._rk = cv; st._rkKey = key; st._rkX = st.x0; st._rkY = st.y1;
+      const pad = Math.ceil(V.s * 1.4) + 2, x0 = Math.round(X(st.x0)) - pad, y0 = Math.round(Y(st.y1)) - pad, cv = mkCanvas(st.cols * V.T + pad * 2, st.rows * V.T + pad * 2), k = cv.getContext('2d');
+      k.translate(-x0, -y0); drawRock(k, st); st._rk = cv; st._rkKey = key; st._rkX = st.x0; st._rkY = st.y1; st._rkP = pad;
     }
-    c.drawImage(st._rk, X(st._rkX) - pad, Y(st._rkY) - pad);
+    c.drawImage(st._rk, Math.round(X(st._rkX)) - st._rkP, Math.round(Y(st._rkY)) - st._rkP);
   }
 }
-// 岩壁（藍圖裡的 A）：一格一格的岩石，跟旁邊不是岩壁的地方畫一道深色的邊，上緣長一點苔
-const ROCK_PAL = { canyon: ['#d98c62', '#b4643e', '#83432a', '#5a2a18'], karst: ['#c9cbc2', '#a2a49b', '#76786f', '#52544c'], frost: ['#c8d6e6', '#9cb0c8', '#6f84a0', '#4c5d78'], jade: ['#b8b0a0', '#968c7a', '#6e6555', '#4a4336'] };
+// 岩石的顏色和長相：c = [受光、本色、背光、描邊]；veg 頂上長什麼（'grass' 草、'snow' 積雪、0 什麼都不長）、g 草的亮、中、暗三個綠；
+// jnt 直的岩縫多不多；ldg 橫的岩棚多不多；band 一層一層的岩層顏色（砂岩、浮島）；groove 石灰岩頂上往下的溶溝和雨水痕；
+// soil 浮島草皮底下那層土；glow 浮島底下被日出的雲海映亮的暖色；foot 岩腳貼著地面的那一截暗多少（懸空寺的岩柱底下接著崖壁，不能暗）
+const ROCK_PAL = {
+  canyon: { c: ['#d98c62', '#b4643e', '#83432a', '#5a2a18'], veg: 0, jnt: 0.45, ldg: 0.5, band: ['#e3a06c', '#c27449', '#a4552f', '#d8925f', '#b9643c', '#edb47e'], foot: 0.3 },
+  karst: { c: ['#c9cbc2', '#a2a49b', '#76786f', '#52544c'], veg: 'grass', g: ['#a3cf72', '#64994b', '#3d6a37'], jnt: 0.35, ldg: 0.7, groove: 1, foot: 0.25 },
+  frost: { c: ['#c8d6e6', '#9cb0c8', '#6f84a0', '#4c5d78'], veg: 'snow', jnt: 0.75, ldg: 0.5, foot: 0.2 },
+  jade: { c: ['#b8b0a0', '#968c7a', '#6e6555', '#4a4336'], veg: 'grass', g: ['#b2e27a', '#71b950', '#3e7d39'], jnt: 0.3, ldg: 0.5, band: ['#a99f8b', '#8c826e', '#9b8f78', '#7f7562', '#b3a891'], soil: ['#8d6844', '#5c3f28'], glow: '#ffb38e' },
+  def: { c: ['#a39a8c', '#81786b', '#5c554b', '#3e3932'], veg: 'grass', g: ['#a2e070', '#7fae5a', '#4a7a3a'], jnt: 0.85, ldg: 1 }
+};
+// 岩石（藍圖裡的 A；浮島的 R 由 drawPlats 傳 cells 進來）：整片連成一塊畫，不是一格一格的磚。
+// 沿著格子的邊界描出外框，邊緣稍微起伏、轉角磨圓或缺一角（離格子的邊最多 0.3 左右，砲彈打到的地方看起來還是岩石的邊）；
+// 裡面的明暗、岩縫、岩棚、嵌著的石頭跨格子連成一片；光從左上來：頂上、朝左的面亮，底下、朝右的面暗；頂上露天的地方長草（冰崖是積雪，峽谷不長）。
+// 浮島：底下那幾階補成往下收的岩錐，垂幾根鐘乳石、樹根，草皮底下一層土，島邊垂著藤
 function drawRock(c, st, cells) {
-  const T = V.T, s = V.s, R = mkRand(st.x0 * 13 + 7), has = new Set(); cells = cells || st.rock;
-  for (let i = 0; i < cells.length; i += 2) has.add(cells[i] + ',' + cells[i + 1]);
-  const pal = ROCK_PAL[st.skinB] || ['#a39a8c', '#81786b', '#5c554b', '#3e3932'];
+  const isle = !!cells, s = V.s, pr = ROCK_PAL[st.skinB] || ROCK_PAL.def, pal = pr.c, G = pr.g, R = mkRand(st.x0 * 13 + 7);
+  cells = cells || st.rock;
+  const has = new Set(); let gx0 = 1e9, gx1 = -1e9, gy0 = 1e9, gy1 = -1e9;
+  for (let i = 0; i < cells.length; i += 2) { const x = cells[i], y = cells[i + 1]; has.add(x + ',' + y); gx0 = Math.min(gx0, x); gx1 = Math.max(gx1, x + 1); gy0 = Math.min(gy0, y); gy1 = Math.max(gy1, y + 1); }
+  const at = (x, y) => has.has(x + ',' + y), lw = (k, m) => Math.max(m || 1, s * k), onGnd = (gy) => !isle && Math.abs(st.y0 + gy * CS) < 0.01;
+  const inRock = (x, y, m) => { m = m || 0; for (const [dx, dy] of [[0, 0], [m, 0], [-m, 0], [0, m], [0, -m]]) if (!at(Math.floor((x + dx - st.x0) / CS), Math.floor((y + dy - st.y0) / CS))) return false; return true; };
+  // 從 (x, y) 往 (dx, dy)（上下左右其中一個）還有多厚的岩石
+  const span = (x, y, dx, dy) => {
+    let cx = Math.floor((x - st.x0) / CS), cy = Math.floor((y - st.y0) / CS), n = 0;
+    if (!at(cx, cy)) { cx += dx; cy += dy; if (!at(cx, cy)) return 0; }
+    while (n < 60 && at(cx + dx, cy + dy)) { cx += dx; cy += dy; n++; }
+    return dx > 0 ? st.x0 + (cx + 1) * CS - x : dx < 0 ? x - st.x0 - cx * CS : dy > 0 ? st.y0 + (cy + 1) * CS - y : y - st.y0 - cy * CS;
+  };
+  const bx0 = st.x0 + gx0 * CS, bx1 = st.x0 + gx1 * CS, by0 = st.y0 + gy0 * CS, by1 = st.y0 + gy1 * CS, area = cells.length / 2 * CS * CS;
+  // 沿著一條線（戰場座標 [x, y, …]）每隔 d 取一點
+  const resample = (q, d) => {
+    const o = [q[0], q[1]]; let need = d;
+    for (let i = 2; i < q.length; i += 2) { const ax = q[i - 2], ay = q[i - 1], L = Math.hypot(q[i] - ax, q[i + 1] - ay); let t = need; for (; t < L; t += d) o.push(lerp(ax, q[i], t / L), lerp(ay, q[i + 1], t / L)); need = t - L; }
+    if (d - need > d * 0.35) o.push(q[q.length - 2], q[q.length - 1]);
+    return o;
+  };
+  // 一顆不太圓的石頭（圓滑的多邊形）
+  const blob = (x, y, r, e, n) => { const p = [], b = new Path2D(), a0 = R() * TAU; for (let j = 0; j < n; j++) { const a = a0 + j / n * TAU, rr = r * (0.8 + R() * 0.35); p.push(X(x + Math.cos(a) * rr), Y(y + Math.sin(a) * rr * e)); } for (let j = 0; j <= n; j++) { const i = j % n, k = (j + 1) % n, mx = (p[i * 2] + p[k * 2]) / 2, my = (p[i * 2 + 1] + p[k * 2 + 1]) / 2; if (j) b.quadraticCurveTo(p[i * 2], p[i * 2 + 1], mx, my); else b.moveTo(mx, my); } b.closePath(); return b; };
+
+  // ---- 外框：沿著格子的邊界走（岩石在左手邊），接成幾個封閉的圈（分開的幾塊、中間的洞各一圈），只留轉角 ----
+  const from = new Map(), loops = [];
+  const edge = (x0, y0, x1, y1) => { const k = x0 + ',' + y0; let a = from.get(k); if (!a) from.set(k, a = []); a.push([x0, y0, x1, y1, 0]); };
   for (let i = 0; i < cells.length; i += 2) {
-    const cx = cells[i], cy = cells[i + 1], x = X(st.x0 + cx * CS), y = Y(st.y0 + (cy + 1) * CS);
-    c.fillStyle = lg(c, x, y, x + T, y + T, [0, pal[1], 0.6, pal[2], 1, pal[3]]); c.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
-    c.fillStyle = rgba(pal[0], 0.35); for (let k = 0; k < 3; k++) c.fillRect(x + R() * T * 0.8, y + R() * T * 0.8, T * (0.12 + R() * 0.2), Math.max(1, s * 0.25));
-    c.strokeStyle = rgba(pal[3], 0.6); c.lineWidth = Math.max(1, s * 0.2); c.beginPath(); c.moveTo(x + R() * T, y + R() * T * 0.3); c.lineTo(x + R() * T, y + T * (0.5 + R() * 0.5)); c.stroke();
+    const x = cells[i], y = cells[i + 1];
+    if (!at(x, y - 1)) edge(x, y, x + 1, y);
+    if (!at(x + 1, y)) edge(x + 1, y, x + 1, y + 1);
+    if (!at(x, y + 1)) edge(x + 1, y + 1, x, y + 1);
+    if (!at(x - 1, y)) edge(x, y + 1, x, y);
   }
-  c.strokeStyle = pal[3]; c.lineWidth = Math.max(1.5, s * 0.32); c.lineCap = 'round';
-  for (let i = 0; i < cells.length; i += 2) {
-    const cx = cells[i], cy = cells[i + 1], x = X(st.x0 + cx * CS), y = Y(st.y0 + (cy + 1) * CS);
-    c.beginPath();
-    if (!has.has(cx + ',' + (cy + 1))) { c.moveTo(x, y); c.lineTo(x + T, y); }
-    if (!has.has(cx + ',' + (cy - 1))) { c.moveTo(x, y + T); c.lineTo(x + T, y + T); }
-    if (!has.has((cx - 1) + ',' + cy)) { c.moveTo(x, y); c.lineTo(x, y + T); }
-    if (!has.has((cx + 1) + ',' + cy)) { c.moveTo(x + T, y); c.lineTo(x + T, y + T); }
-    c.stroke();
-    if (!has.has(cx + ',' + (cy + 1)) && st.skinB !== 'canyon') { c.fillStyle = st.skinB === 'frost' ? 'rgba(245,250,255,.9)' : 'rgba(110,160,80,.75)'; c.fillRect(x, y - s * 0.25, T, Math.max(1.5, s * (st.skinB === 'frost' ? 0.7 : 0.45))); }
+  for (const list of from.values()) for (const e0 of list) {
+    if (e0[4]) continue;
+    const L = []; let e = e0;
+    for (let n = 0; n < 9999; n++) {
+      e[4] = 1; L.push(e[0], e[1]);
+      // 兩塊只有角碰角的地方有兩條路：往左轉（兩塊各圈各的）
+      let q = null;
+      for (const o of from.get(e[2] + ',' + e[3]) || []) if ((!o[4] || o === e0) && (!q || (e[2] - e[0]) * (o[3] - o[1]) - (e[3] - e[1]) * (o[2] - o[0]) > 0)) q = o;
+      if (!q || q === e0) break;
+      e = q;
+    }
+    const n = L.length / 2, C = [];
+    for (let i = 0; i < n; i++) {
+      const a = (i + n - 1) % n * 2, b = i * 2, d = (i + 1) % n * 2, cr = (L[b] - L[a]) * (L[d + 1] - L[b + 1]) - (L[b + 1] - L[a + 1]) * (L[d] - L[b]);
+      if (cr) C.push([L[b], L[b + 1], cr > 0]);          // 往左轉的是凸出去的角
+    }
+    if (C.length >= 4) loops.push(C);
+  }
+  // ---- 外框上的點（戰場座標）：凹進去的角往外補一點、凸出去的角削一點再磨圓；邊上每隔一小段往外（內）推一點。
+  //      貼著地面的那一段不動、往地裡多埋一點，也不描邊。浮島底下那幾階補多一點，收成往下鼓的岩錐，再垂幾根鐘乳石 ----
+  const outs = [];
+  for (const C of loops) {
+    const m = C.length, Q = [], RA = [], GO = [], EL = [], p = [], g = [], put = (x, y, f) => { p.push(x, y); g.push(f); };
+    for (let k = 0; k < m; k++) {
+      const a = C[(k + m - 1) % m], q = C[k], b = C[(k + 1) % m], ax = st.x0 + q[0] * CS, ay = st.y0 + q[1] * CS;
+      const ix = Math.sign(q[0] - a[0]), iy = Math.sign(q[1] - a[1]), ox = Math.sign(b[0] - q[0]), oy = Math.sign(b[1] - q[1]);
+      const gIn = onGnd(q[1]) && ix > 0, gOut = onGnd(q[1]) && ox > 0;
+      GO.push(gOut);
+      if (gIn || gOut) { Q.push(ax, ay - 0.25); RA.push(0); continue; }
+      const under = isle && q[1] < gy1, nx = iy + oy, ny = -ix - ox, nl = Math.hypot(nx, ny) || 1;      // 兩條邊的外法線相加：指向角的外側
+      const push = q[2] ? -R() * (under ? 0.3 : 0.12) : under ? 1.45 + R() * 0.45 : 0.1 + R() * 0.16;
+      Q.push(ax + nx / nl * push, ay + ny / nl * push);
+      RA.push(q[2] ? (under ? 1.1 + R() * 0.6 : 0.3 + R() * 0.45) : (under ? 1.3 + R() * 0.5 : 0.35 + R() * 0.35));
+    }
+    for (let k = 0; k < m; k++) { const j = (k + 1) % m; EL.push(Math.hypot(Q[j * 2] - Q[k * 2], Q[j * 2 + 1] - Q[k * 2 + 1])); }
+    for (let k = 0; k < m; k++) RA[k] = Math.min(RA[k], EL[k] * 0.45, EL[(k + m - 1) % m] * 0.45);
+    for (let k = 0; k < m; k++) {
+      const k0 = (k + m - 1) % m, k1 = (k + 1) % m, qx = Q[k * 2], qy = Q[k * 2 + 1], r = RA[k];
+      const ux = (Q[k1 * 2] - qx) / EL[k], uy = (Q[k1 * 2 + 1] - qy) / EL[k], vx = (qx - Q[k0 * 2]) / EL[k0], vy = (qy - Q[k0 * 2 + 1]) / EL[k0];
+      // 轉角：一段二次曲線，控制點就是角
+      if (r > 0.04) { const ax = qx - vx * r, ay = qy - vy * r, bx = qx + ux * r, by = qy + uy * r, n = Math.max(2, Math.ceil(r / 0.3)); for (let j = 0; j <= n; j++) { const t = j / n, w = 1 - t; put(w * w * ax + 2 * w * t * qx + t * t * bx, w * w * ay + 2 * w * t * qy + t * t * by, 0); } }
+      else put(qx, qy, GO[k] ? 1 : 0);
+      if (GO[k]) continue;
+      // 邊：從這個角的弧尾走到下一個角的弧頭，外法線 (nx, ny)；浮島底下朝下的邊中間往下鼓一點
+      const len = EL[k] - r - RA[k1], sx = qx + ux * r, sy = qy + uy * r, nx = uy, ny = -ux;
+      const cone = isle && Math.min(qy, Q[k1 * 2 + 1]) < by1 - CS - 0.01, lo = ny > 0.5 ? -0.02 : -0.07, hi = ny > 0.5 ? 0.1 : cone ? 0.4 : 0.25, mid = (lo + hi) / 2;
+      const belly = cone && ny < -0.5 ? Math.min(0.6, len * 0.04) : 0;
+      let off = mid, spike = cone && ny < -0.5 && len > 3 ? 0.8 + R() * 1.6 : 1e9;
+      for (let t = 0.3 + R() * 0.4; t < len - 0.25;) {
+        const tp = Math.min(1, t / 0.6, (len - t) / 0.6), bl = belly * Math.sin(Math.PI * t / len), pt = (u, o) => put(sx + ux * (t + u) + nx * o, sy + uy * (t + u) + ny * o, 0);
+        if (t > spike && t < len - 1.4) {
+          // 鐘乳石：根寬寬的，往下收成尖（連根最多垂到格子底下 1.5）
+          const o = off * tp + bl, w = 0.32 + R() * 0.3, L = Math.min(1.5 - o, 0.6 + R() * 0.8), j = (R() - 0.5) * 0.25;
+          pt(0, o); pt(w * 0.55, o + L * 0.45); pt(w + j, o + L); pt(w * 1.4, o + L * 0.4); pt(w * 2, o);
+          t += w * 2 + 0.35; spike = t + 2.2 + R() * 2.8; continue;
+        }
+        off = clamp(lerp(off, mid, 0.3) + (R() - 0.5) * (hi - lo) * 0.85, lo, hi);
+        pt(0, off * tp + bl);
+        t += 0.45 + R() * 0.6;
+      }
+    }
+    outs.push({ p, g });
+  }
+  const shape = new Path2D();
+  for (const o of outs) { const p = o.p; shape.moveTo(X(p[0]), Y(p[1])); for (let i = 2; i < p.length; i += 2) shape.lineTo(X(p[i]), Y(p[i + 1])); shape.closePath(); }
+  // 外框上連續、朝某個方向（want(外法線)）的幾段接成一條線（貼地的那幾段不算）：受光面、背光面、頂上長草、底下掛冰柱用
+  const runs = (want) => {
+    const out = [];
+    for (const o of outs) {
+      const p = o.p, n = p.length / 2, ok = (i) => { if (o.g[i]) return false; const j = (i + 1) % n, dx = p[j * 2] - p[i * 2], dy = p[j * 2 + 1] - p[i * 2 + 1], l = Math.hypot(dx, dy) || 1; return want(dy / l, -dx / l); };
+      let i0 = -1; for (let i = 0; i < n; i++) if (!ok(i)) { i0 = i; break; }
+      if (i0 < 0) continue;
+      let cur = null;
+      for (let k = 1; k <= n; k++) { const i = (i0 + k) % n; if (ok(i)) { const j = (i + 1) % n; if (!cur) cur = [p[i * 2], p[i * 2 + 1]]; cur.push(p[j * 2], p[j * 2 + 1]); } else if (cur) { out.push(cur); cur = null; } }
+      if (cur) out.push(cur);
+    }
+    return out;
+  };
+  const tops = runs((nx, ny) => ny > 0.4), lows = runs((nx, ny) => ny < -0.55);
+  c.lineCap = 'round'; c.lineJoin = 'round';
+
+  // ---- 浮島底下垂著的樹根：畫在岩石後面，只露出外框底下那一截；粗的根上再分出細的鬚 ----
+  if (isle) {
+    const rt = new Path2D(), rf = new Path2D();
+    for (const q of lows) {
+      const g = resample(q, 0.5);
+      for (let i = 1; i < g.length / 2 - 1; i++) {
+        if (R() < 0.7) continue;
+        const x = g[i * 2], y = g[i * 2 + 1], L = 0.5 + R() * 1.1, sw = (R() - 0.5) * 1.1, P2 = R() < 0.55 ? rt : rf;
+        P2.moveTo(X(x), Y(y + 0.6)); P2.bezierCurveTo(X(x + sw * 0.15), Y(y - L * 0.35), X(x - sw * 0.5), Y(y - L * 0.65), X(x + sw), Y(y - L));
+        for (let j = 0; j < 2; j++) if (R() < 0.55) { const t = 0.3 + R() * 0.4, bx = x + sw * (0.1 + t * 0.3), by = y - L * t, d = R() < 0.5 ? -1 : 1; rf.moveTo(X(bx), Y(by)); rf.quadraticCurveTo(X(bx + d * 0.35), Y(by - 0.1), X(bx + d * (0.3 + R() * 0.4)), Y(by - 0.35 - R() * 0.4)); }
+      }
+    }
+    c.strokeStyle = '#4b3824'; c.lineWidth = lw(0.18); c.stroke(rt); c.lineWidth = lw(0.09); c.stroke(rf);
+  }
+
+  // ---- 岩石本體：整片一個上亮下暗的漸層，再疊上跨格子連成一片的紋理 ----
+  c.fillStyle = lg(c, 0, Y(by1), 0, Y(by0), isle ? [0, mix(pal[1], pal[0], 0.25), 0.3, pal[1], 1, mix(pal[2], pal[3], 0.3)] : [0, mix(pal[1], pal[0], 0.3), 0.45, pal[1], 1, mix(pal[1], pal[2], 0.4)]);
+  c.fill(shape);
+  c.save(); c.clip(shape);
+  // 一層一層的岩層顏色（砂岩、浮島）：照岩層的起伏，稍微斜
+  const tilt = (R() - 0.5) * 0.07, ph = R() * TAU, sy = (x, y) => y + tilt * (x - bx0) + Math.sin(x * 0.55 + y * 1.3 + ph) * 0.16 + Math.sin(x * 1.9 + y) * 0.05;
+  if (pr.band) {
+    const lv = []; for (let y = by0 - 0.5 + R(); y < by1 + 0.5; y += 0.7 + R() * 1.6) lv.push(y);
+    for (let i = 0; i + 1 < lv.length; i++) {
+      c.beginPath(); for (let x = bx0 - 1; x < bx1 + 1.6; x += 0.6) c.lineTo(X(x), Y(sy(x, lv[i]))); for (let x = bx1 + 1; x > bx0 - 1.6; x -= 0.6) c.lineTo(X(x), Y(sy(x, lv[i + 1])));
+      c.closePath(); c.fillStyle = rgba(pr.band[(R() * pr.band.length) | 0], 0.3 + R() * 0.35); c.fill();
+      if (R() < 0.45) { c.beginPath(); for (let x = bx0 - 1; x < bx1 + 1.6; x += 0.6) c.lineTo(X(x), Y(sy(x, lv[i]))); c.lineWidth = lw(0.08); c.strokeStyle = rgba(pal[3], 0.3); c.stroke(); }
+    }
+  }
+  // 大片的明暗斑駁
+  for (let k = 0, n = Math.ceil(area / 7); k < n; k++) {
+    const x = lerp(bx0, bx1, R()), y = lerp(by0, by1, R()), r = (1.2 + R() * 2.6) * s, col = R() < 0.5 ? pal[0] : pal[2], a = 0.1 + R() * 0.14;
+    if (!inRock(x, y)) continue;
+    c.fillStyle = rg(c, X(x), Y(y), 0, r, [0, rgba(col, a), 1, rgba(col, 0)]); c.fillRect(X(x) - r, Y(y) - r, r * 2, r * 2);
+  }
+  // 受光面、背光面：從朝左（上）的邊往裡鋪一片亮的，朝右（下）的邊鋪一片暗的；寬度看那裡的岩石多厚，內緣彎彎曲曲的
+  const plane = (want, dx, dy, k, w0, w1, col, a) => {
+    for (const q of runs(want)) {
+      const g = resample(q, 0.35), n = g.length / 2; if (n < 3) continue;
+      const h = n >> 1, W = clamp(span(g[h * 2], g[h * 2 + 1], dx, dy) * k, w0, w1), ph2 = R() * TAU, Lr = (n - 1) * 0.35, NX = [], NY = [], WD = [];
+      for (let i = 0; i < n; i++) {
+        const i0 = Math.max(0, i - 1), i1 = Math.min(n - 1, i + 1), tx = g[i1 * 2] - g[i0 * 2], ty = g[i1 * 2 + 1] - g[i0 * 2 + 1], tl = Math.hypot(tx, ty) || 1, u = i * 0.35;
+        NX.push(ty / tl); NY.push(-tx / tl);
+        WD.push(W * smooth(clamp(Math.min(u, Lr - u) / Math.min(0.7, Lr * 0.3), 0, 1)) * (0.74 + 0.18 * Math.sin(u * 0.8 + ph2) + 0.1 * Math.sin(u * 2.3 + ph2 * 2)));
+      }
+      for (const [f, fa] of [[1, 0.5], [0.5, 0.6]]) {
+        c.beginPath();
+        for (let i = 0; i < n; i++) c.lineTo(X(g[i * 2] + NX[i] * 0.5), Y(g[i * 2 + 1] + NY[i] * 0.5));
+        for (let i = n - 1; i >= 0; i--) c.lineTo(X(g[i * 2] - NX[i] * WD[i] * f), Y(g[i * 2 + 1] - NY[i] * WD[i] * f));
+        c.closePath(); c.fillStyle = rgba(col, a * fa); c.fill();
+      }
+    }
+  };
+  plane((nx) => nx > 0.55, -1, 0, 0.34, 0.8, 3.2, pal[3], 0.36);
+  plane((nx, ny) => ny < -0.55, 0, 1, isle ? 0.5 : 0.36, 0.6, isle ? 3.4 : 2.4, pal[3], 0.4);
+  plane((nx) => nx < -0.55, 1, 0, 0.2, 0.5, 1.6, pal[0], 0.32);
+  plane((nx, ny) => ny > 0.55, 0, -1, 0.16, 0.4, 1.1, pal[0], 0.3);
+  // 石灰岩：頂上往下的一道道溶溝，雨水沖出來的黑色條紋
+  if (pr.groove) {
+    const gd = new Path2D(), gl = new Path2D();
+    for (let i = 0; i < cells.length; i += 2) {
+      const cx = cells[i], cy = cells[i + 1]; if (at(cx, cy + 1)) continue;
+      const yT = st.y0 + (cy + 1) * CS, xa = st.x0 + cx * CS;
+      for (let x = xa + 0.25 + R() * 0.5; x < xa + CS - 0.15; x += 0.5 + R() * 0.6) {
+        const L = 0.8 + R() * 3.4, ex = x + (R() - 0.5) * 0.3;
+        gd.moveTo(X(x), Y(yT - 0.1)); gd.quadraticCurveTo(X(x + (R() - 0.5) * 0.25), Y(yT - L * 0.5), X(ex), Y(yT - L));
+        gl.moveTo(X(x - 0.17), Y(yT - 0.2)); gl.lineTo(X(ex - 0.17), Y(yT - L * 0.8));
+      }
+      if (R() < 0.7) { const x = xa + R() * CS, w = 0.35 + R() * 0.6, L = 2 + R() * 4.5; c.fillStyle = lg(c, 0, Y(yT), 0, Y(yT - L), [0, rgba(pal[3], 0.3), 1, rgba(pal[3], 0)]); c.fillRect(X(x - w), Y(yT), w * 2 * s, L * s); }
+    }
+    c.lineWidth = lw(0.09); c.strokeStyle = rgba(pal[0], 0.45); c.stroke(gl);
+    c.lineWidth = lw(0.12); c.strokeStyle = rgba(pal[3], 0.42); c.stroke(gd);
+  }
+  // 直的岩縫：一道柔柔的暗帶，中間一道深縫，受光的左邊貼一道亮線；還有幾道短短的裂縫
+  const cd = new Path2D(), cl = new Path2D(), cb = new Path2D();
+  for (let x = bx0 + 0.6 + R() * 2; x < bx1 - 0.4; x += (1.8 + R() * 3.2) / pr.jnt) {
+    for (let y = by1 - R() * 3; y > by0 + 0.6;) {
+      const L = 2 + R() * 7, lean = (R() - 0.5) * 0.06; let xx = x + (R() - 0.5) * 0.8, yy = y;
+      if (R() < 0.8 && inRock(xx, y - L / 2, 0.5)) {
+        cd.moveTo(X(xx), Y(yy)); cl.moveTo(X(xx - 0.17), Y(yy)); cb.moveTo(X(xx), Y(yy));
+        for (let k = 0; k < L; k += 0.5) { xx += lean + (R() - 0.5) * 0.14; yy -= 0.5; cd.lineTo(X(xx), Y(yy)); cl.lineTo(X(xx - 0.17), Y(yy)); cb.lineTo(X(xx), Y(yy)); }
+      }
+      y -= L + 0.8 + R() * 4;
+    }
+  }
+  for (let k = 0, n = Math.ceil(area / 40); k < n; k++) {
+    let x = lerp(bx0, bx1, R()), y = lerp(by0, by1, R()), a = -Math.PI / 2 + (R() - 0.5) * 1.6;
+    if (!inRock(x, y, 0.5)) continue;
+    cd.moveTo(X(x), Y(y)); cl.moveTo(X(x - 0.13), Y(y));
+    for (let j = 0, m = 2 + ((R() * 3) | 0); j < m; j++) { a += (R() - 0.5) * 1.2; const d = 0.35 + R() * 0.4; x += Math.cos(a) * d; y += Math.sin(a) * d; cd.lineTo(X(x), Y(y)); cl.lineTo(X(x - 0.13), Y(y)); }
+  }
+  c.lineWidth = lw(0.9); c.strokeStyle = rgba(pal[3], 0.1); c.stroke(cb);
+  c.lineWidth = lw(0.12); c.strokeStyle = rgba(pal[0], 0.42); c.stroke(cl);
+  c.lineWidth = lw(0.11); c.strokeStyle = rgba(pal[3], 0.55); c.stroke(cd);
+  // 岩棚：一道道短短的橫棚，上緣一道亮邊，底下一片影子；草、雪長在上面
+  const ledges = [];
+  for (let k = 0, n = Math.ceil(area / 12 * pr.ldg); k < n; k++) {
+    let x = lerp(bx0, bx1, R()); const y = lerp(by0 + 1.2, by1 - 1.4, R()), a = (R() - 0.5) * 0.12, d = 0.45 + R() * 0.45;
+    if (!inRock(x, y, 0.7)) continue;
+    // 長度看這裡的岩石多寬（窄的岩柱上，岩棚橫過大半個柱身）
+    const wl = span(x, y, -1, 0), wr = span(x, y, 1, 0), L = Math.min(5, (wl + wr) * (0.4 + R() * 0.45));
+    x = clamp(x, x - wl + L / 2 - 0.2, x + wr - L / 2 + 0.2);
+    const q = []; for (let u = -L / 2; u <= L / 2 + 0.01; u += L / Math.ceil(L / 0.35)) q.push(x + u, sy(x + u, y) - sy(x, y) + y + a * u);
+    const n2 = q.length / 2, tp = (i) => smooth(clamp(Math.min(i, n2 - 1 - i) / (n2 * 0.3), 0, 1));
+    c.beginPath(); for (let i = 0; i < n2; i++) c.lineTo(X(q[i * 2]), Y(q[i * 2 + 1])); for (let i = n2 - 1; i >= 0; i--) c.lineTo(X(q[i * 2]), Y(q[i * 2 + 1] - d * tp(i)));
+    c.closePath(); c.fillStyle = lg(c, 0, Y(y), 0, Y(y - d), [0, rgba(pal[3], 0.42), 1, rgba(pal[3], 0)]); c.fill();
+    c.beginPath(); for (let i = 1; i < n2 - 1; i++) c.lineTo(X(q[i * 2]), Y(q[i * 2 + 1] + 0.07)); c.lineWidth = lw(0.14); c.strokeStyle = rgba(pal[0], 0.6); c.stroke();
+    c.beginPath(); for (let i = 0; i < n2; i++) c.lineTo(X(q[i * 2]), Y(q[i * 2 + 1] - 0.04)); c.lineWidth = lw(0.08); c.strokeStyle = rgba(pal[3], 0.5); c.stroke();
+    ledges.push(q);
+  }
+  // 嵌在岩壁裡的大石頭：自己亮一點，左上一道亮邊、右下一道影子
+  for (let k = 0, n = Math.ceil(area / 38); k < n; k++) {
+    const x = lerp(bx0, bx1, R()), y = lerp(by0, by1, R()), r = 0.35 + R() * 0.55, e = 0.6 + R() * 0.3;
+    if (!inRock(x, y, r + 0.4)) continue;
+    const b = blob(x, y, r, e, 7);
+    c.save(); c.translate(s * 0.12, s * 0.14); c.fillStyle = rgba(pal[3], 0.32); c.fill(b); c.restore();
+    c.fillStyle = lg(c, 0, Y(y + r * e), 0, Y(y - r * e), [0, mix(pal[1], pal[0], 0.6), 1, mix(pal[1], pal[2], 0.25)]); c.fill(b);
+    c.save(); c.clip(b); c.translate(s * 0.1, s * 0.12); c.lineWidth = lw(0.16); c.strokeStyle = rgba(pal[0], 0.6); c.stroke(b); c.restore();
+  }
+  // 細碎的斑點
+  const sp1 = new Path2D(), sp2 = new Path2D();
+  for (let k = 0, n = Math.ceil(area * 0.45); k < n; k++) { const x = X(lerp(bx0, bx1, R())), y = Y(lerp(by0, by1, R())), r = lw(0.04 + R() * 0.07, 0.6), P2 = R() < 0.5 ? sp1 : sp2; P2.moveTo(x + r, y); P2.arc(x, y, r, 0, TAU); }
+  c.fillStyle = rgba(pal[3], 0.32); c.fill(sp1); c.fillStyle = rgba(pal[0], 0.42); c.fill(sp2);
+  // 浮島：草皮底下一層土（跟著頂上的起伏，下緣波浪狀），土裡夾幾顆小石子
+  if (isle && pr.soil) for (const q of tops) {
+    const g = resample(q, 0.3), n = g.length / 2, ph2 = R() * TAU;
+    c.beginPath(); for (let i = 0; i < n; i++) c.lineTo(X(g[i * 2]), Y(g[i * 2 + 1] + 0.3));
+    for (let i = n - 1; i >= 0; i--) c.lineTo(X(g[i * 2]), Y(g[i * 2 + 1] - 0.8 - 0.22 * Math.sin(g[i * 2] * 0.9 + ph2) - 0.08 * Math.sin(g[i * 2] * 3.1)));
+    c.closePath(); c.fillStyle = lg(c, 0, Y(by1), 0, Y(by1 - 1.3), [0, pr.soil[0], 1, pr.soil[1]]); c.fill();
+    c.lineWidth = lw(0.1); c.strokeStyle = rgba(pr.soil[1], 0.9); c.stroke();
+    c.fillStyle = rgba(pal[0], 0.6); for (let i = 1; i < n - 1; i++) if (R() < 0.3) { c.beginPath(); c.ellipse(X(g[i * 2] + (R() - 0.5) * 0.3), Y(g[i * 2 + 1] - 0.3 - R() * 0.35), lw(0.07 + R() * 0.08), lw(0.05 + R() * 0.05), 0, 0, TAU); c.fill(); }
+  }
+  // 岩腳貼著地面的那一截暗一點
+  if (pr.foot && onGnd(gy0)) { c.fillStyle = lg(c, 0, Y(2.6), 0, Y(-0.3), [0, rgba(pal[3], 0), 1, rgba(pal[3], pr.foot)]); c.fillRect(X(bx0 - 1), Y(2.6), (bx1 - bx0 + 2) * s, 2.9 * s); }
+  // 外框內側一道細細的亮邊（朝左上）、暗邊（朝右下），邊才立得起來
+  const LX = -0.55, LY = 0.835, B = [new Path2D(), new Path2D()];
+  for (const o of outs) { const p = o.p, n = p.length / 2; for (let i = 0; i < n; i++) { if (o.g[i]) continue; const j = (i + 1) % n, dx = p[j * 2] - p[i * 2], dy = p[j * 2 + 1] - p[i * 2 + 1], d = (dy * LX - dx * LY) / (Math.hypot(dx, dy) || 1); if (Math.abs(d) < 0.2) continue; const P2 = B[d > 0 ? 0 : 1]; P2.moveTo(X(p[i * 2]), Y(p[i * 2 + 1])); P2.lineTo(X(p[j * 2]), Y(p[j * 2 + 1])); } }
+  c.lineWidth = lw(0.55); c.strokeStyle = rgba(pal[0], 0.4); c.stroke(B[0]);
+  c.lineWidth = lw(0.9); c.strokeStyle = rgba(pal[3], 0.2); c.stroke(B[1]);
+  // 浮島的底被底下日出的雲海映亮一道暖邊
+  if (isle && pr.glow) { const gp = new Path2D(); for (const q of lows) { gp.moveTo(X(q[0]), Y(q[1])); for (let i = 2; i < q.length; i += 2) gp.lineTo(X(q[i]), Y(q[i + 1])); } c.lineWidth = lw(2.2); c.strokeStyle = rgba(pr.glow, 0.14); c.stroke(gp); c.lineWidth = lw(0.95); c.strokeStyle = rgba(pr.glow, 0.42); c.stroke(gp); }
+  c.restore();
+
+  // ---- 描邊（貼著地面的那一段不描） ----
+  c.strokeStyle = pal[3]; c.lineWidth = lw(0.3, 1.5); c.beginPath();
+  for (const o of outs) { const p = o.p, n = p.length / 2; let pen = false; for (let i = 0; i <= n; i++) { const k = i % n, x = X(p[k * 2]), y = Y(p[k * 2 + 1]); if (pen) c.lineTo(x, y); else c.moveTo(x, y); pen = !o.g[k]; } }
+  c.stroke();
+
+  // ---- 頂上：草（往下垂幾撮、草葉、幾朵小花）或積雪（蓬蓬的，邊上掛冰柱）；岩棚上也長一點 ----
+  const blades = (x, y, h, n, P3) => { for (let k = 0; k < n; k++) { const bx = X(x + (R() - 0.5) * 0.5), by = Y(y) + 1, bh = s * h * (0.5 + R() * 0.6), w = s * (0.07 + R() * 0.05), ln = (R() - 0.5) * bh * 0.9, P2 = P3[(R() * 3) | 0]; P2.moveTo(bx - w, by); P2.lineTo(bx + ln, by - bh); P2.lineTo(bx + w, by); P2.closePath(); } };
+  if (pr.veg === 'grass') {
+    const bl = [new Path2D(), new Path2D(), new Path2D()], fl = [];
+    for (const q of tops) {
+      const g = resample(q, 0.25), n = g.length / 2; if (n < 3) continue;
+      const up = [], dn = [];
+      for (let i = 0; i < n; i++) { const tp = smooth(clamp(Math.min(i, n - 1 - i) * 0.25 / 0.45, 0, 1)); up.push(tp * (0.08 + R() * 0.07)); dn.push(tp * (0.3 + R() * 0.14)); }
+      for (let k = 0; k < n * 0.06; k++) { const i = 2 + ((R() * (n - 4)) | 0), d = 0.25 + R() * 0.5; for (let j = -2; j <= 2; j++) if (i + j > 0 && i + j < n - 1) dn[i + j] += d * (1 - Math.abs(j) / 2.5); }      // 往下垂的幾撮
+      const path = (dy) => { c.beginPath(); for (let i = 0; i < n; i++) c.lineTo(X(g[i * 2]), Y(g[i * 2 + 1] + up[i] - dy)); for (let i = n - 1; i >= 0; i--) c.lineTo(X(g[i * 2]), Y(g[i * 2 + 1] - dn[i] - dy)); c.closePath(); };
+      let ya = 1e9, yb = -1e9; for (let i = 0; i < n; i++) { ya = Math.min(ya, g[i * 2 + 1] + up[i]); yb = Math.max(yb, g[i * 2 + 1] + up[i]); }
+      path(0.16); c.fillStyle = rgba(pal[3], 0.32); c.fill();
+      path(0); c.fillStyle = lg(c, 0, Y(yb), 0, Y(ya - 0.75), [0, G[0], 0.35, G[1], 1, G[2]]); c.fill();
+      c.lineWidth = lw(0.1); c.strokeStyle = rgba(G[2], 0.8); c.stroke();
+      for (let i = 1; i < n - 1; i++) {
+        const tp = smooth(clamp(Math.min(i, n - 1 - i) * 0.25 / 0.6, 0, 1)); if (R() < 0.3 || tp < 0.2) continue;
+        blades(g[i * 2], g[i * 2 + 1] + up[i] - 0.05, (0.24 + R() * 0.32) * tp, 1 + ((R() * 2) | 0), bl);
+        if (R() < 0.05) fl.push(g[i * 2], g[i * 2 + 1] + up[i] + 0.15 + R() * 0.2);
+      }
+    }
+    for (const q of ledges) if (R() < 0.3) { const n2 = q.length / 2, i = 1 + ((R() * (n2 - 2)) | 0); blades(q[i * 2], q[i * 2 + 1] + 0.04, 0.32, 3 + ((R() * 3) | 0), bl); }
+    c.fillStyle = G[2]; c.fill(bl[0]); c.fillStyle = G[1]; c.fill(bl[1]); c.fillStyle = G[0]; c.fill(bl[2]);
+    for (let i = 0; i < fl.length; i += 2) { c.fillStyle = R() < 0.6 ? '#ffffff' : R() < 0.5 ? '#ffd0e4' : '#ffe27a'; c.beginPath(); c.arc(X(fl[i]), Y(fl[i + 1]), lw(0.13), 0, TAU); c.fill(); c.fillStyle = '#e8a83a'; c.beginPath(); c.arc(X(fl[i]), Y(fl[i + 1]), lw(0.05), 0, TAU); c.fill(); }
+  } else if (pr.veg === 'snow') {
+    const icicle = (x, y, L, w) => { c.beginPath(); c.moveTo(X(x - w), Y(y)); c.quadraticCurveTo(X(x - w * 0.3), Y(y - L * 0.45), X(x), Y(y - L)); c.quadraticCurveTo(X(x + w * 0.3), Y(y - L * 0.45), X(x + w), Y(y)); c.closePath(); c.fillStyle = lg(c, X(x - w), 0, X(x + w), 0, [0, '#ffffff', 0.55, '#d6eafa', 1, '#9cc0e4']); c.fill(); c.lineWidth = lw(0.08); c.strokeStyle = '#7f9cc4'; c.stroke(); };
+    // 一條蓬蓬的積雪：沿著 g（由右往左的點），上緣鼓 up(i)、下緣垂 dn(i)，邊緣用圓滑的曲線
+    const cap = (g, up, dn) => {
+      const n = g.length / 2, P2 = [];
+      for (let i = 0; i < n; i++) P2.push(g[i * 2], g[i * 2 + 1] + up(i));
+      for (let i = n - 1; i >= 0; i--) P2.push(g[i * 2], g[i * 2 + 1] - dn(i));
+      const path = (dy) => { const m = P2.length / 2, mx = (i) => (X(P2[(i % m) * 2]) + X(P2[((i + 1) % m) * 2])) / 2, my = (i) => (Y(P2[(i % m) * 2 + 1]) + Y(P2[((i + 1) % m) * 2 + 1])) / 2 + dy; c.beginPath(); c.moveTo(mx(0), my(0)); for (let i = 1; i <= m; i++) c.quadraticCurveTo(X(P2[(i % m) * 2]), Y(P2[(i % m) * 2 + 1]) + dy, mx(i), my(i)); c.closePath(); };
+      let ya = 1e9; for (let i = 1; i < P2.length; i += 2) ya = Math.min(ya, P2[i]);
+      path(s * 0.2); c.fillStyle = 'rgba(30,50,90,.25)'; c.fill();
+      path(0); c.fillStyle = lg(c, 0, Y(ya + 0.6), 0, Y(ya - 0.4), [0, '#ffffff', 0.55, '#eef5fd', 1, '#c4d7ee']); c.fill();
+      c.lineWidth = lw(0.2, 1.2); c.strokeStyle = '#7f9cc4'; c.stroke();
+    };
+    for (const q of tops) {
+      const g = resample(q, 0.25), n = g.length / 2; if (n < 3) continue;
+      const ph2 = R() * TAU, tp = (i) => smooth(clamp(Math.min(i, n - 1 - i) * 0.25 / 0.8, 0, 1)), dn = []; for (let i = 0; i < n; i++) dn.push(0.22 + tp(i) * 0.14 + (1 - tp(i)) * 0.3 + R() * 0.06);
+      cap(g, (i) => tp(i) * (0.48 + 0.14 * Math.sin(g[i * 2] * 1.7 + ph2) + 0.07 * Math.sin(g[i * 2] * 4.1)) + 0.05, (i) => dn[i]);
+      c.fillStyle = '#ffffff'; for (let i = 2; i < n - 2; i++) if (R() < 0.12) { c.beginPath(); c.arc(X(g[i * 2]), Y(g[i * 2 + 1] + 0.15), lw(0.06), 0, TAU); c.fill(); }
+      // 積雪的兩頭垂下一兩根冰柱
+      for (const i of [0, n - 1]) if (R() < 0.85) icicle(g[i * 2] + (i ? 0.14 : -0.14), g[i * 2 + 1] - dn[i] + 0.08, 0.4 + R() * 0.5, 0.12 + R() * 0.06);
+    }
+    // 岩棚上積一點雪
+    for (const q of ledges) if (R() < 0.8) {
+      const n2 = q.length / 2, up = (i) => smooth(clamp(Math.min(i, n2 - 1 - i) / (n2 * 0.35), 0, 1)) * 0.2 + 0.02;
+      c.beginPath(); for (let i = 0; i < n2; i++) c.lineTo(X(q[i * 2]), Y(q[i * 2 + 1] + up(i))); for (let i = n2 - 1; i >= 0; i--) c.lineTo(X(q[i * 2]), Y(q[i * 2 + 1] - 0.05));
+      c.closePath(); c.fillStyle = 'rgba(250,253,255,.95)'; c.fill();
+    }
+    // 岩簷底下掛冰柱（靠外緣多一點）
+    for (const q of lows) {
+      const g = resample(q, 0.3), n = g.length / 2;
+      for (let i = 1; i < n - 1; i++) { const e = Math.min(i, n - 1 - i) * 0.3; if (R() < (e < 1.2 ? 0.45 : 0.08)) icicle(g[i * 2], g[i * 2 + 1] + 0.08, 0.35 + R() * 0.75, 0.1 + R() * 0.08); }
+    }
+    // 岩腳積著一堆雪，跟地上的雪接起來
+    for (const o of outs) {
+      const p = o.p, n = p.length / 2;
+      for (let i = 0; i < n; i++) {
+        if (!o.g[i]) continue;
+        const j = (i + 1) % n, xa = Math.min(p[i * 2], p[j * 2]) - 0.5, xb = Math.max(p[i * 2], p[j * 2]) + 0.5, ph2 = R() * TAU, m = Math.max(4, Math.ceil((xb - xa) / 0.5)), q = [];
+        for (let k = 0; k <= m; k++) { const u = k / m, x = lerp(xa, xb, u); q.push(x, -0.1 + Math.pow(Math.sin(Math.PI * u), 0.6) * (0.55 + 0.18 * Math.sin(x * 2.3 + ph2))); }
+        const top = () => { c.beginPath(); c.moveTo(X(xa), Y(-0.35)); for (let k = 0; k < q.length; k += 2) c.lineTo(X(q[k]), Y(q[k + 1])); c.lineTo(X(xb), Y(-0.35)); c.closePath(); };
+        top(); c.fillStyle = lg(c, 0, Y(0.8), 0, Y(-0.3), [0, '#ffffff', 0.6, '#e8f1fb', 1, '#cddcee']); c.fill();
+        c.beginPath(); for (let k = 0; k < q.length; k += 2) c.lineTo(X(q[k]), Y(q[k + 1])); c.lineWidth = lw(0.16); c.strokeStyle = 'rgba(127,156,196,.75)'; c.stroke();
+      }
+    }
+  }
+  // ---- 浮島邊上、岩簷邊上垂下來的藤（從草皮底下長出來） ----
+  if (pr.veg === 'grass') {
+    const vn = new Path2D(), lf = [new Path2D(), new Path2D()];
+    for (const q of tops) for (const end of [0, 1]) {
+      if (R() < (isle ? 0.05 : 0.5)) continue;
+      const g = resample(q, 0.25), n = g.length / 2; if (n < 6) continue;
+      for (let v = 0, nv = isle ? 2 + ((R() * 2) | 0) : 1; v < nv; v++) {
+        // 外框上的點是由右往左排的：開頭那一端在右邊，藤往右垂；尾巴那一端往左
+        const i = end ? n - 2 - ((R() * Math.min(6, n / 3)) | 0) : 1 + ((R() * Math.min(6, n / 3)) | 0), x = g[i * 2], y = g[i * 2 + 1] - 0.2, L = (isle ? 1.2 : 0.8) + R() * (isle ? 1.8 : 1.2), d = end ? -1 : 1;
+        const b1 = d * 0.35, b2 = d * (0.1 + R() * 0.3), b3 = d * (0.2 + R() * 0.3), bz = (t, a0, a1, a2) => 3 * t * (1 - t) * (1 - t) * a0 + 3 * t * t * (1 - t) * a1 + t * t * t * a2;
+        vn.moveTo(X(x), Y(y)); vn.bezierCurveTo(X(x + b1), Y(y - L * 0.3), X(x + b2), Y(y - L * 0.7), X(x + b3), Y(y - L));
+        for (let t = 0.25; t < 1; t += 0.22 + R() * 0.12) { const lx = x + bz(t, b1, b2, b3), ly = y - L * bz(t, 0.3, 0.7, 1), sd = R() < 0.5 ? -1 : 1, P2 = lf[(R() * 2) | 0]; const ex = X(lx + sd * 0.16), ey = Y(ly - 0.04), rx = lw(0.17); P2.moveTo(ex + rx * Math.cos(sd * 0.5), ey + rx * Math.sin(sd * 0.5)); P2.ellipse(ex, ey, rx, lw(0.08), sd * 0.5, 0, TAU); }
+      }
+    }
+    c.lineWidth = lw(0.07); c.strokeStyle = G[2]; c.stroke(vn); c.fillStyle = G[1]; c.fill(lf[0]); c.fillStyle = G[0]; c.fill(lf[1]);
   }
 }
 // 屋內的暗色背景：整座城畫成一張圖，之後每一幀只貼還看得到的那幾格
@@ -139,18 +479,15 @@ function drawPlats(c, t) {
         c.strokeStyle = '#3a2a16'; c.lineWidth = Math.max(1.5, s * 0.36); c.beginPath(); c.moveTo(X(wp.x), Y(wp.y)); c.lineTo(X(o.x), Y(by)); c.stroke();
         c.strokeStyle = o.flash > 0 ? '#fff6d0' : '#c9a05e'; c.lineWidth = Math.max(1, s * 0.18); c.stroke();
       }
-      const pad = 6, key = V.T + '|' + V.s;
+      // 浮島本身（岩錐、草皮、鐘乳石、樹根、藤都在 drawRock 裡）只畫一次：四邊多留一點給草和藤，底下再多留一點給鐘乳石和樹根。
+      // 貼的位置每一幀照島的左上角（戰場座標）重算：畫面只是平移、比例尺沒變的時候不用重畫，也不會貼歪
+      const key = V.T + '|' + V.s;
       if (!P._rk || P._rkKey !== key) {
-        const x0 = X(P.xa) - pad, y0 = Y(P.yb) - pad, cv = mkCanvas((P.xb - P.xa) * s + pad * 2, (P.yb - P.ya) * s + pad * 2 + s * 4), k = cv.getContext('2d');
-        k.translate(-x0, -y0);
-        // 島底下掛著一些土和樹根
-        const R = mkRand(st.x0 * 7 + 3);
-        drawRock(k, st, P.cells);
-        k.strokeStyle = '#5a4a32'; k.lineWidth = Math.max(1, s * 0.22); k.lineCap = 'round';
-        for (let n = 0; n < 9; n++) { const x = lerp(P.xa + 4, P.xb - 4, R()), y = P.ya + 0.4; k.beginPath(); k.moveTo(X(x), Y(y)); k.quadraticCurveTo(X(x + (R() - 0.5) * 2), Y(y - 1.2), X(x + (R() - 0.5) * 3), Y(y - 1.6 - R() * 2)); k.stroke(); }
-        P._rk = cv; P._rkKey = key; P._rkX = x0; P._rkY = y0;
+        const pad = Math.ceil(s * 1.6) + 2, x0 = Math.floor(X(P.xa)) - pad, y0 = Math.floor(Y(P.yb)) - pad, cv = mkCanvas((P.xb - P.xa) * s + pad * 2, (P.yb - P.ya + 2.4) * s + pad * 2), k = cv.getContext('2d');
+        k.translate(-x0, -y0); drawRock(k, st, P.cells);
+        P._rk = cv; P._rkKey = key; P._rkP = pad;
       }
-      if (platXform(c, P)) { c.drawImage(P._rk, P._rkX, P._rkY); c.restore(); }
+      if (platXform(c, P)) { c.drawImage(P._rk, Math.floor(X(P.xa)) - P._rkP, Math.floor(Y(P.yb)) - P._rkP); c.restore(); }
       continue;
     }
     // 戰船：船身一個艙一個艙畫，進水的艙顏色變深、裡面的水越來越高
