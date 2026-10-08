@@ -598,7 +598,13 @@ function platStep(dt, act) {
     const body = P.body, p = body.getPosition();
     // 掉出戰場（整座島、整艘船沉下去了）
     if (p.y < -48) { PH.world.destroyBody(body); P.dead = true; continue; }
-    if (P.kind === 'island') { for (const o of P.teth) { o.flash = Math.max(0, o.flash - dt * 5); if (o.hp <= 0 && o.cutT < 0) tetherPop(o, o.by >= 0 ? o.by : 2); } if (act && body.isAwake() && Math.abs(body.getAngularVelocity()) > 0.02) S.chainT = S.time; continue; }
+    if (P.kind === 'island') {
+      for (const o of P.teth) { o.flash = Math.max(0, o.flash - dt * 5); if (o.hp <= 0 && o.cutT < 0) tetherPop(o, o.by >= 0 ? o.by : 2); }
+      if (act && body.isAwake() && Math.abs(body.getAngularVelocity()) > 0.02) S.chainT = S.time;
+      // 一頭的氣球都破了，整座島直直吊在另一頭：撐了一會兒，剩下的繩子也繃斷，整座島掉進雲海
+      if (act && Math.abs(body.getAngle() - P.a0) > 0.9) { P.hangT = (P.hangT || 0) + dt; if (P.hangT > 2.2) for (const o of P.teth) if (o.hp > 0) { const by = P.teth.reduce((a, q) => (q.by >= 0 ? q.by : a), 2); o.hp = 0; o.cutT = S.time; o.by = by; o.snap = 1; const wp = body.getWorldPoint(o.lp); ev('snap', (wp.x + o.ax) / 2, (wp.y + o.ay) / 2, 0, o.side, 'tether'); S.chainT = S.time; } }
+      continue;
+    }
     // 船艙進水：船身被打得越破，水進得越多；整艙泡到水面下了，就灌滿
     for (const c of P.comps) {
       c.flash = Math.max(0, c.flash - dt * 4);
@@ -681,7 +687,7 @@ function groundTop(x0, x1) { let y = -999; for (let x = x0; x <= x1 + 1e-6; x +=
 function rollerSpawn(R) {
   const d = R.d, st = S.mech;
   let cy = -999; for (let x = d.x - d.r; x <= d.x + d.r + 1e-6; x += 0.05) cy = Math.max(cy, groundYRaw(x) + Math.sqrt(Math.max(0, d.r * d.r - (x - d.x) * (x - d.x))));
-  const ball = mkBlock(st, { mat: M_ROCK, kind: 'ball', x: d.x, y: cy + 0.03, r: d.r, den: 4, prop: 1 });
+  const ball = mkBlock(st, { mat: M_ROCK, kind: 'ball', x: d.x, y: cy + 0.03, r: d.r, den: 6, prop: 1 });
   ball.body.setType('static'); ball.roll = R; ball.hp = ball.hm = 1e6; ball.wt = 0;
   const gw = 1.3, gh = 4.4, gx = d.stake, gy = groundTop(gx - gw / 2, gx + gw / 2);
   const stake = mkBlock(st, { mat: M_WOOD, kind: 'box', x: gx, y: gy + gh / 2 - 0.6, w: gw, h: gh });
@@ -694,7 +700,7 @@ function rollerRelease(R, by) {
   if (!b || b.dead) return;
   const dir = R.to === 0 ? -1 : 1;
   b.body.setType('dynamic'); b.body.setAwake(true); b.body.setBullet(true); b.body.setAngularDamping(0.05);
-  b.body.setLinearVelocity({ x: dir * 5, y: -1 }); b.body.setAngularVelocity(-dir * 5 / b.r);
+  b.body.setLinearVelocity({ x: dir * 7, y: -1 }); b.body.setAngularVelocity(-dir * 7 / b.r);
   b.smash = 1; b.smashBy = by; b.inPlace = false;
   const p = b.body.getPosition(); ev('roll', p.x, p.y, R.to);
   S.chainT = S.time;

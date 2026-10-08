@@ -80,9 +80,9 @@ const LEVELS = [
     hints: [{ r: 1, t: '山坡右邊那根木樁擋著一顆大滾石：打斷它，滾石衝下坡，撞破敵城一樓的大門', ok: () => stakeUp(1) },
       { r: 2, t: '小心左邊那顆：敵軍打斷它的木樁，滾石就往你這邊衝過來', ok: () => stakeUp(0) },
       { r: 3, t: '滾石衝下去之後過兩回合，山頂又會架好一顆新的', ok: () => !stakeUp(1) }],
-    ground: [[-40, 4], [0, 0], [37.5, 0], [41, -0.6], [44, 1.2], [47, 4.6], [50.6, 5.4], [53.6, 11.2], [56, 12.4], [58.4, 11.2], [61.4, 5.4], [65, 4.6], [68, 1.2], [71, -0.6], [74.5, 0], [112, 0], [152, 4]],
+    ground: [[-40, 4], [0, 0], [40.5, 0], [44, 1.4], [47, 4.6], [50.6, 5.4], [53.6, 9.8], [56, 10.8], [58.4, 9.8], [61.4, 5.4], [65, 4.6], [68, 1.4], [71.5, 0], [112, 0], [152, 4]],
     me: { crew: ['rocket', 'bolt', 'stone', 'bomb'] },
-    foe: { crew: ['bomb', 'rocket', 'stone', 'rocket'], hp: 1.0, dmg: 1.0, open: 0.55, ai: { err: 6.5, think: 1.2, gate: 0.5, sap: 0.25, warm: 1.6 } },
+    foe: { crew: ['bomb', 'rocket', 'stone', 'rocket'], hp: 0.9, dmg: 0.9, open: 0.55, ai: { err: 7.2, think: 1.2, gate: 0.5, sap: 0.25, warm: 1.6 } },
     wind: { max: 8, at: 2 },
     rollers: [{ x: 49.1, r: 2.35, stake: 45.9, to: 0, every: 2 }, { x: 62.9, r: 2.35, stake: 66.1, to: 1, every: 2 }],
     weak: (side) => tgC(side, [[9, 6], [5, 6]], 0.8),
@@ -102,7 +102,7 @@ const LEVELS = [
       { r: 3, t: '冰很滑：把冰板打歪一點，上面的兵就溜下去', ok: () => foeHome(2) }],
     ground: [[-40, 3], [0, 0], [41, 0], [44, -2], [68, -2], [71, 0], [112, 0], [152, 3]],
     me: { crew: ['fire', 'bolt', 'bomb', 'rocket'] },
-    foe: { crew: ['ice', 'rocket', 'bomb', 'fire'], hp: 1.1, dmg: 1.05, open: 0.55, ai: { err: 5.4, think: 1.2, gate: 0.6, hate: 0.15, lob: 1, skill: 0.4, sap: 0.4, warm: 1.7 } },
+    foe: { crew: ['ice', 'rocket', 'bomb', 'fire'], hp: 1.1, dmg: 0.95, open: 0.55, ai: { err: 5.4, think: 1.2, gate: 0.6, hate: 0.15, lob: 1, skill: 0.4, sap: 0.4, warm: 1.7 } },
     extra: [{ castle: 'ICEWALL', x: 56, y: -2, hp: 1 }],
     weak: (side) => tgC(side, [[6, 4], [7, 4], [6, 3], [6, 5]], 1.05),
     gates: [
@@ -120,7 +120,7 @@ const LEVELS = [
       { r: 3, t: '火藥桶直接被炸到也會爆，順便點著引信', ok: () => kegsLeft(1) }],
     ground: [[-40, 5], [0, 0], [38, 0], [41, -3.5], [71, -3.5], [74, 0], [112, 0], [152, 5]],
     me: { crew: ['fire', 'rocket', 'bomb', 'ice'] },
-    foe: { crew: ['fire', 'bomb', 'rocket', 'fire'], hp: 1.15, dmg: 1.1, open: 0.55, ai: { err: 5.2, think: 1.1, gate: 0.65, hate: 0.2, skill: 0.5, sap: 0.45, warm: 2.2 } },
+    foe: { crew: ['fire', 'bomb', 'rocket', 'fire'], hp: 1.4, dmg: 1.35, open: 0.55, ai: { err: 4.6, think: 1.1, gate: 0.65, hate: 0.2, skill: 0.5, sap: 0.45, warm: 2.2 } },
     objs: [
       { t: 'geyser', x: 46, w: 2.8, hgt: 45 },
       { t: 'geyser', x: 56, w: 2.8, hgt: 48 },
@@ -142,7 +142,7 @@ const LEVELS = [
       { r: 3, t: '防空弩每一輪射下你三發砲彈：先把它打掉，或是用倍增符多打幾發', ok: () => foeHas('flak') }],
     voids: [[-60, 172]],
     me: { crew: ['rocket', 'zap', 'bolt', 'bomb'] },
-    foe: { crew: ['bal', 'rocket', 'flak', 'zap'], hp: 1.15, dmg: 1.15, open: 0.55, ai: { err: 4.6, think: 1.1, gate: 0.75, hate: 0.25, skill: 0.5, sap: 0.5, warm: 1.8 } },
+    foe: { crew: ['bal', 'rocket', 'flak', 'zap'], hp: 1.35, dmg: 1.4, open: 0.55, ai: { err: 4.0, think: 1.1, gate: 0.75, hate: 0.25, skill: 0.5, sap: 0.5, warm: 1.8 } },
     objs: [
       // 藍色傳送門放在 ×3 符的後面：穿過符的砲彈順勢飛進去，從敵城正上方灌下來
       { t: 'portal', owner: 0, x: 58, y: 40, r: 3.8, ex: 89.9, ey: 52, ea: -Math.PI / 2, ej: 0.22, ew: 14, mv: { a: 3, per: 9 } },
@@ -165,7 +165,7 @@ const LEVELS = [
     ground: [[-60, -40], [172, -40]],
     water: { x0: -60, x1: 172, y: 0, cur: 0.6, rho: 0.85, sea: 1 },
     me: { crew: ['rocket', 'bomb', 'bolt', 'fire'] },
-    foe: { crew: ['bomb', 'rocket', 'fire', 'bolt'], hp: 1.2, dmg: 1.2, open: 0.55, ai: { err: 4.5, think: 1.1, gate: 0.8, hate: 0.3, skill: 0.6, sap: 0.55, warm: 1.8 } },
+    foe: { crew: ['bomb', 'rocket', 'fire', 'bolt'], hp: 1.25, dmg: 1.35, open: 0.55, ai: { err: 4.0, think: 1.1, gate: 0.8, hate: 0.3, skill: 0.6, sap: 0.55, warm: 1.8 } },
     wind: { max: 6, at: 3 },
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[47, 36]], move: { t: 'bob', a: 4, per: 8 } },
@@ -207,7 +207,7 @@ const LEVELS = [
     ground: [[-40, 3], [0, 0], [112, 0], [152, 3]],
     voids: [[13.8, 98.2]],
     me: { crew: ['rocket', 'zap', 'bolt', 'bomb'] },
-    foe: { crew: ['fire', 'bomb', 'zap', 'bolt'], hp: 1.25, dmg: 1.35, open: 0.55, ai: { err: 3.4, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.0 } },
+    foe: { crew: ['fire', 'bomb', 'zap', 'bolt'], hp: 1.35, dmg: 1.85, open: 0.55, ai: { err: 2.8, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.0 } },
     weak: (side) => tgC(side, [[3, 11], [3, 7], [8, 10], [7, 6]], 0.95),
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[48, 40]], move: { t: 'bob', a: 4, per: 8 } },
@@ -243,7 +243,7 @@ const LEVELS = [
       { r: 3, t: '琉璃碎片砸到下面的琉璃也會碎：從上往下打，一層壓垮一層', ok: () => foeLeft(M_GLASS) >= 8 }],
     ground: [[-40, 3], [0, 0], [40, 0], [43, -3.5], [69, -3.5], [72, 0], [112, 0], [152, 3]],
     me: { crew: ['rocket', 'stone', 'zap', 'bomb'] },
-    foe: { crew: ['bomb', 'ice', 'zap', 'rocket'], hp: 1.3, dmg: 1.35, open: 0.55, ai: { err: 3.4, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.0 } },
+    foe: { crew: ['bomb', 'ice', 'zap', 'rocket'], hp: 1.6, dmg: 1.85, open: 0.55, ai: { err: 3.0, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.0 } },
     weak: (side) => tgC(side, [[5, 3]], 1.25).concat(tgC(side, [[5, 4]], 0.6)),
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[47, 38]], move: { t: 'bob', a: 4, per: 8 } },
@@ -263,7 +263,7 @@ const LEVELS = [
     wind: { max: 5, at: 3 },
     bell: { x: 56, y: 50.5, len: 34, w: 6.8, h: 7.4, den: 2.6 },
     me: { crew: ['fire', 'rocket', 'stone', 'bomb'] },
-    foe: { crew: ['bomb', 'fire', 'rocket', 'bolt'], hp: 1.3, dmg: 1.3, open: 0.5, ai: { err: 3.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 2.0 } },
+    foe: { crew: ['bomb', 'fire', 'rocket', 'bolt'], hp: 1.25, dmg: 1.15, open: 0.5, ai: { err: 4.3, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 2.0 } },
     weak: (side) => tgC(side, [[1, 10], [9, 10], [2, 8], [8, 8], [3, 6]], 0.95),
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[46, 38]], move: { t: 'bob', a: 4, per: 8 } },
@@ -279,7 +279,7 @@ const LEVELS = [
     ground: [[-40, 3], [0, 0], [112, 0], [152, 3]],
     voids: [[41.5, 70.5]],
     me: { crew: ['rocket', 'zap', 'bomb', 'fire'] },
-    foe: { crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 1.1, dmg: 1.4, open: 0.55, ai: { err: 4.4, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 1.8 } },
+    foe: { crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 1.1, dmg: 1.4, open: 0.55, ai: { err: 4.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 1.8 } },
     weak: (side) => side === 1 ? tgC(side, [[4, 2], [6, 2]], 0.7) : [],
     boss: { p2: 0.8, p3: 0.45, segHp: 60, regen: 2, orbHp: 30, orbGap: [3, 2], meteors: 1 },
     gates: [

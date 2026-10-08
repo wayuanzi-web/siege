@@ -516,6 +516,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
   if (r <= 0) {
     // 穿刺：只打中的那一個
     if (hit && hit.isHull) hullHurt(hit, dmg, kind, side);
+    else if (hit && hit.bigBell && guard1(0, side)) { /* 第一回合敵軍推不動大鐘 */ }
     else if (hit && hit.isBlock && !hit.dead) {
       if (hit.bigBell) bellPush(side);
       const b = hit;
@@ -544,7 +545,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
     if (o.isBlock) {
       if (o.dead) continue;
       const d = blockDist(o, x, y); let f = o === hit ? 1 : 1 - d / r; if (f <= 0) continue; if (f > 1) f = 1;
-      if (o.bigBell) bellPush(side);
+      if (o.bigBell) { if (guard1(0, side)) continue; bellPush(side); }          // 第一回合敵軍推不動大鐘（不會開場就撞過來）
       // 推：從爆炸中心往外，作用在最近的那一點（所以磚會轉）
       const p = o.body.getPosition(); let nx = _cp.x - x, ny = _cp.y - y, nl = Math.hypot(nx, ny);
       if (nl < 0.3) { nx = p.x - x; ny = p.y - y; nl = Math.hypot(nx, ny); if (nl < 0.05) { nx = ux; ny = uy; nl = 1; } }
