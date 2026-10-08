@@ -236,7 +236,7 @@ function fxOn(t, a, b, c, d, e, f) {
       // 吊鐘、吊燈砸在兵頭上（c：bell / lamp）
       if (c === 'bell') { ring(a, b, 1, 12, 0.6, '#ffe08a', 0.7); ring(a, b, 1, 20, 0.9, '#ffe08a', 0.4); sfx('bong'); shake(0.6); }
       else { burst(P_SHARD, a, b, 18, 28, 0.7, 0.6, C_ICE, 6); sfx('glass'); shake(0.4); }
-      if (S.state === 'play') pop(a, b + 3, c === 'bell' ? '噹——！' : '砸中了！', '#ffe14a', 3.4, 1.2);
+      if (S.state === 'play') pop(a, b + 6.5, c === 'bell' ? '噹——！' : '砸中了！', '#ffe14a', 3.4, 1.2);
       vibrate(60);
       break;
     }

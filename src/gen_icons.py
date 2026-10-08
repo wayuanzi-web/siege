@@ -111,7 +111,7 @@ async def main():
     d.text((66, 310), '穿過倍增符', font=font(34), fill='#f6eeda')
     d.text((66, 358), '打斷柱子', font=font(34), fill='#f6eeda')
     d.text((66, 406), '整座城垮下來', font=font(34), fill='#f6eeda')
-    d.text((66, 486), '六個關卡・不用帳號', font=font(28), fill='#aea6c8')
+    d.text((66, 486), '十二個關卡・不用帳號', font=font(28), fill='#aea6c8')
     d.text((66, 528), '手機橫拿就能玩', font=font(28), fill='#aea6c8')
     og.save(out / 'og.png', optimize=True)
     print('icons and og.png written to', out)

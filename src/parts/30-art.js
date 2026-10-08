@@ -387,10 +387,11 @@ const UNIT_ART = {
     // 投石兵：兩手把一顆大石頭舉過肩，頭上綁一條頭巾
     uShadow(c); uLegs(c, P); uBody(c, P); uHead(c, side, P, side === 0);
     if (side === 0) { c.fillStyle = '#e8b04a'; rrect(c, 22, 9, 21, 5.5, 2.4); c.fill(); c.strokeStyle = P.ink; c.lineWidth = 1.6; c.stroke(); c.fillStyle = '#e8b04a'; poly(c, [22, 11, 14, 8, 15, 15]); c.fill(); }
-    uArm(c, P, 25, 31); uArm(c, P, 41, 30);
-    ell(c, 38, 20, 11.5, 10.5); fs(c, rg(c, 34, 15, 1, 13, [0, '#bdb6c4', 0.55, '#8e8796', 1, '#5c5566']), '#2a2532', 2);
-    c.fillStyle = 'rgba(40,34,48,.45)'; poly(c, [33, 22, 37, 18, 42, 21, 40, 26, 35, 26]); c.fill();
-    c.fillStyle = 'rgba(255,255,255,.45)'; ell(c, 33, 15, 3.4, 2.2, -0.5); c.fill();
+    // 石頭舉在頭的右上方（臉要露出來）
+    uArm(c, P, 40, 19); uArm(c, P, 47, 22);
+    ell(c, 47, 10, 9.5, 8.6); fs(c, rg(c, 44, 6, 1, 11, [0, '#bdb6c4', 0.55, '#8e8796', 1, '#5c5566']), '#2a2532', 2);
+    c.fillStyle = 'rgba(40,34,48,.45)'; poly(c, [43, 12, 46, 9, 50, 11, 49, 15, 44, 15]); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.45)'; ell(c, 43, 6, 2.8, 1.8, -0.5); c.fill();
   },
   fire(c, side, P) {
     uShadow(c); uLegs(c, P); uBody(c, P); uArm(c, P, 21, 38);

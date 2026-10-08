@@ -61,7 +61,7 @@ print('built', len(frag) // 1024, 'KB (planck', len(planck_js) // 1024, 'KB);', 
 if len(sys.argv) > 1:
     url = sys.argv[1].rstrip('/') + '/'
     site = root.parent
-    desc = '兩座城樓輪流開砲：拖曳調角度和力道，砲彈穿過倍增符一發變多發；打斷柱子、打穿樓板，看對面的城一層一層垮下來。六個關卡，手機橫拿、點開就能玩。'
+    desc = '兩座城樓輪流開砲：拖曳調角度和力道，砲彈穿過倍增符一發變多發；打斷柱子、打穿樓板，看對面的城一層一層垮下來。十二個關卡：竹樁吊樓、石碑骨牌、懸空寺、天秤寨、琉璃宮、五重塔、魔王城。手機橫拿、點開就能玩。'
     meta = ('<meta name="theme-color" content="#120f1c">'
             f'<meta name="description" content="{desc}">'
             '<link rel="manifest" href="manifest.webmanifest">'

@@ -566,6 +566,6 @@ function lightning(x, y, mul, side) {
   if (roof > low) low = roof;
   for (const u of S.units) if (u.alive && u.side !== side && Math.abs(u.x - x) < 2.6 && u.y + 3 > low - 4 && u.y + 3 > roof) { hurtUnit(u, 9 * mul, side, K_ZAP); if (u.alive && !u.immune) { u.stun = Math.max(u.stun, 1); u.dazed = 1; } }
   // 雷劈過鐵鍊：鐵會導電
-  for (const r of S.ropes) { if (r.cut || r.side === side) continue; const e = r.e, lo2 = Math.min(e[1], e[3]), hi2 = Math.max(e[1], e[3]); if (lo2 < low - 1 || hi2 < roof) continue; if ((e[0] - x) * (e[2] - x) <= 0 || Math.abs(e[0] - x) < 1.2 || Math.abs(e[2] - x) < 1.2) ropeHurt(r, 15 * mul, K_ZAP, side); }
+  for (const r of S.ropes) { if (r.cut || r.side === side) continue; const e = r.e, lo2 = Math.min(e[1], e[3]), hi2 = Math.max(e[1], e[3]); if (lo2 < low - 1 || hi2 < roof) continue; if ((e[0] - x) * (e[2] - x) <= 0 || Math.abs(e[0] - x) < 1.8 || Math.abs(e[2] - x) < 1.8) ropeHurt(r, 15 * mul, K_ZAP, side); }
   ev('zap', x, n ? low : roof > -90 ? roof : -9, 78, n ? 1 : 0);
 }

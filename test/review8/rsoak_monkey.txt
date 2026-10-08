@@ -1,0 +1,8 @@
+ok  {"lvl": 6, "bot": "monkey", "state": "lost", "mode": "result", "rounds": 14, "sec": 130, "fired": 14, "paused": 10, "skills": 4, "result": true, "title": "城樓失守", "low": false, "btn": "btnHome", "after": "home"}  39s
+ok  {"lvl": 7, "bot": "monkey", "state": "lost", "mode": "result", "rounds": 10, "sec": 99, "fired": 10, "paused": 5, "skills": 5, "result": true, "title": "城樓失守", "low": false, "btn": "btnAgain", "after": "play"}  26s
+ok  {"lvl": 8, "bot": "monkey", "state": "lost", "mode": "result", "rounds": 26, "sec": 210, "fired": 26, "paused": 9, "skills": 6, "result": true, "title": "城樓失守", "low": false, "btn": "btnAgain", "after": "play"}  38s
+ok  {"lvl": 9, "bot": "monkey", "state": "lost", "mode": "result", "rounds": 8, "sec": 84, "fired": 8, "paused": 7, "skills": 7, "result": true, "title": "城樓失守", "low": false, "btn": "btnAgain", "after": "play"}  18s
+ok  {"lvl": 10, "bot": "monkey", "state": "lost", "mode": "result", "rounds": 8, "sec": 101, "fired": 8, "paused": 6, "skills": 5, "result": true, "title": "城樓失守", "low": false, "btn": "btnAgain", "after": "play"}  32s
+ok  {"lvl": 11, "bot": "monkey", "state": "lost", "mode": "result", "rounds": 6, "sec": 75, "fired": 6, "paused": 2, "skills": 3, "result": true, "title": "城樓失守", "low": false, "btn": "btnAgain", "after": "play"}  18s
+ok  {"lvl": 12, "bot": "monkey", "state": "lost", "mode": "result", "rounds": 8, "sec": 80, "fired": 8, "paused": 3, "skills": 4, "result": true, "title": "城樓失守", "low": false, "btn": "btnAgain", "after": "play"}  24s
+全部正常（7 局，198 秒）

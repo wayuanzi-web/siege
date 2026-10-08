@@ -142,13 +142,14 @@ function frostSprite(sp) {
   sp.frost = cv; return cv;
 }
 // 每一塊磚：照它現在的位置和角度貼上去
-function drawBlocks(c, t, rdt) {
+// hp：只畫吊著的鐘、燈、石籃（畫在兵的前面：魔王頭頂的吊燈才不會被他的身體蓋住）
+function drawBlocks(c, t, rdt, hp) {
   const s = V.s, sx = FX.shx, sy = FX.shy, burn = RD.burn; burn.length = 0;
-  const f0 = flagBlock(S.st[0]), f1 = flagBlock(S.st[1]);
+  const f0 = hp ? null : flagBlock(S.st[0]), f1 = hp ? null : flagBlock(S.st[1]);
   // 插旗的那片屋瓦碎了：旗子飛出去（不是憑空不見）
-  for (let k = 0; k < 2; k++) { const fb = k ? f1 : f0, st = S.st[k]; if (fb && fb.dead && !st._flagOut) { st._flagOut = 1; FX.flung.push({ flag: st, x: fb.x, y: fb.y + fb.h / 2, vx: rndS() * 9, vy: 15 + Math.random() * 9, rot: 0, vr: (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 3), t: 0 }); } }
+  if (!hp) for (let k = 0; k < 2; k++) { const fb = k ? f1 : f0, st = S.st[k]; if (fb && fb.dead && !st._flagOut) { st._flagOut = 1; FX.flung.push({ flag: st, x: fb.x, y: fb.y + fb.h / 2, vx: rndS() * 9, vy: 15 + Math.random() * 9, rot: 0, vr: (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 3), t: 0 }); } }
   for (const b of S.blocks) {
-    if (b.dead) continue;
+    if (b.dead || !b.hang !== !hp) continue;
     const p = b.body.getPosition(), a = b.body.getAngle(), seg = b.seg, f = seg ? 1 : b.hp / b.hm;
     if (b.hot > 0) { b.hot -= rdt * 0.22; if (b.hot < 0) b.hot = 0; }
     const ds = b.mat === M_KEG || b.mat === M_ROCK ? 0 : f > 0.66 ? 0 : f > 0.33 ? 1 : 2, sp = b.frag ? fragSprite(b) : blockSprite(b, ds);
@@ -646,6 +647,7 @@ function renderFrame(dt, rdt) {
   drawRopes(c, t);
   drawGates(c, t);
   drawUnits(c, t);
+  if (S.ropes.length) { drawBlocks(c, t, rdt, 1); c.setTransform(1, 0, 0, 1, FX.shx, FX.shy); }
   drawWater(c, t);
   drawFlyers(c, t);
   drawShots(c);

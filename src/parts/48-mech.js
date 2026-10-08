@@ -21,7 +21,7 @@ function anchorAt(st, P) {
 /* ---------- 繩索與鐵鍊 ---------- */
 // 傷害種類對繩子的倍率：   爆   穿刺  重   火   冰   雷   壓   暗
 const ROPE_DM = [1.0, 2.6, 1.2, 1.6, 0.4, 0.8, 0, 1.1];        // 麻繩：一箭射得斷、火燒得斷
-const CHAIN_DM = [0.8, 0.45, 1.25, 0.25, 0.4, 2.2, 0, 1.0];    // 鐵鍊：箭射不太動，重砲、雷才打得斷
+const CHAIN_DM = [0.8, 0.45, 1.25, 0.25, 0.4, 3.2, 0, 1.0];    // 鐵鍊：箭射不太動，重砲、雷、大石頭才打得斷
 const ROPE_HP = { rope: 26, chain: 60 };
 function ropeEnds(r) {
   const e = r.e;
@@ -340,7 +340,10 @@ function boulderStep(dt) {
     if (b.dead || !b.boulder) continue;
     const body = b.body, p = body.getPosition(), v = body.getLinearVelocity();
     if (b.bIn) { const own = S.st[b.bSide]; if (p.x < own.x0 - 1.5 || p.x > own.x1 + 1.5 || p.y > own.y1 + 3) b.bIn = 0; }
-    if (!b.bFly) continue;
+    if (!b.bFly) { b.bpx = undefined; continue; }
+    // 飛過對方的繩子、鐵鍊：大石頭一路砸斷（每一條只算一次）
+    if (b.bpx !== undefined && S.ropes.length) { const rc = ropeCross(b.bpx, b.bpy, p.x, p.y, b.bSide); if (rc && !(b.bRope && b.bRope.has(rc.r))) { (b.bRope || (b.bRope = new Set())).add(rc.r); ropeHurt(rc.r, b.bW.dmg * b.bMul * 1.25, K_HEAVY, b.bSide); } }
+    b.bpx = p.x; b.bpy = p.y;
     body.applyForce({ x: S.wind * body.getMass(), y: 0 }, body.getWorldCenter(), true);         // 跟砲彈一樣吃風
     const o = 1 - b.bSide;
     if (S.team[o].shield.on && inBubble(S.st[o], p.x, p.y)) { ev('shieldhit', p.x, p.y, o); ev('rockstop', p.x, p.y, o); blockKill(b, 2, K_CRUSH, true); continue; }

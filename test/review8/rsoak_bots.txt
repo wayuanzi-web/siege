@@ -1,0 +1,8 @@
+ok  {"lvl": 6, "bot": "casual", "state": "won", "mode": "result", "rounds": 5, "sec": 67, "fired": 0, "paused": 0, "skills": 0, "result": true, "title": "敵城攻破", "low": false, "btn": "btnNext", "after": "play"}  19s
+ok  {"lvl": 7, "bot": "newbie", "state": "won", "mode": "result", "rounds": 4, "sec": 52, "fired": 0, "paused": 0, "skills": 0, "result": true, "title": "敵城攻破", "low": false, "btn": "btnNext", "after": "play"}  14s
+ok  {"lvl": 8, "bot": "expert", "state": "won", "mode": "result", "rounds": 7, "sec": 67, "fired": 0, "paused": 0, "skills": 0, "result": true, "title": "敵城攻破", "low": false, "btn": "btnNext", "after": "play"}  14s
+ok  {"lvl": 9, "bot": "casual", "state": "won", "mode": "result", "rounds": 13, "sec": 149, "fired": 0, "paused": 0, "skills": 0, "result": true, "title": "敵城攻破", "low": false, "btn": "btnNext", "after": "play"}  26s
+ok  {"lvl": 10, "bot": "newbie", "state": "won", "mode": "result", "rounds": 4, "sec": 45, "fired": 0, "paused": 0, "skills": 0, "result": true, "title": "敵城攻破", "low": false, "btn": "btnNext", "after": "play"}  16s
+ok  {"lvl": 11, "bot": "expert", "state": "won", "mode": "result", "rounds": 4, "sec": 52, "fired": 0, "paused": 0, "skills": 0, "result": true, "title": "敵城攻破", "low": false, "btn": "btnNext", "after": "play"}  13s
+ok  {"lvl": 12, "bot": "casual", "state": "won", "mode": "result", "rounds": 6, "sec": 78, "fired": 0, "paused": 0, "skills": 0, "result": true, "title": "魔王伏誅", "low": false, "btn": "btnNext(hidden)", "after": "result"}  23s
+全部正常（7 局，126 秒）

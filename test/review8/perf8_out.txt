@@ -1,0 +1,25 @@
+844x390 dpr2.0
+L1  run1  idle avg   5.8ms p95   6.9 max   41.2 (frame #  0) >50ms   0   |  after blasts avg  18.9ms p95  33.8 max   50.5 (frame #  0) >50ms   1
+L1  run2  idle avg   5.3ms p95   6.8 max     36 (frame #  0) >50ms   0   |  after blasts avg    18ms p95  29.5 max   34.8 (frame #  0) >50ms   0
+L2  run1  idle avg   5.8ms p95   6.7 max   56.5 (frame #  0) >50ms   1   |  after blasts avg  20.3ms p95  34.2 max     40 (frame #  0) >50ms   0
+L2  run2  idle avg   6.5ms p95   8.7 max   55.4 (frame #  0) >50ms   1   |  after blasts avg  21.8ms p95  34.4 max   41.9 (frame # 94) >50ms   0
+L3  run1  idle avg   8.4ms p95  11.2 max   75.4 (frame #  0) >50ms   1   |  after blasts avg  27.8ms p95  38.6 max   61.5 (frame # 60) >50ms   1
+L3  run2  idle avg   8.8ms p95  13.1 max   56.2 (frame #  0) >50ms   1   |  after blasts avg  29.3ms p95  43.6 max   74.2 (frame # 72) >50ms   2
+L4  run1  idle avg   8.8ms p95  12.2 max   75.2 (frame #  0) >50ms   1   |  after blasts avg  22.3ms p95  35.1 max   42.6 (frame # 11) >50ms   0
+L4  run2  idle avg   8.9ms p95  12.9 max   72.3 (frame #  0) >50ms   1   |  after blasts avg    25ms p95  39.3 max   44.4 (frame #  6) >50ms   0
+L5  run1  idle avg   9.9ms p95  11.4 max   95.4 (frame #  0) >50ms   1   |  after blasts avg    25ms p95  41.6 max   50.4 (frame #  7) >50ms   1
+L5  run2  idle avg  10.1ms p95  12.9 max   88.8 (frame #  0) >50ms   1   |  after blasts avg    26ms p95  38.1 max   50.6 (frame #  0) >50ms   1
+L6  run1  idle avg  12.2ms p95    17 max  176.9 (frame #  0) >50ms   1   |  after blasts avg    31ms p95    49 max   74.1 (frame #121) >50ms   6
+L6  run2  idle avg  10.1ms p95  11.7 max  179.9 (frame #  0) >50ms   1   |  after blasts avg  23.9ms p95  38.1 max   50.6 (frame #  7) >50ms   1
+L7  run1  idle avg   7.3ms p95   8.7 max  104.3 (frame #  0) >50ms   1   |  after blasts avg  20.8ms p95  38.3 max   45.5 (frame #  4) >50ms   0
+L7  run2  idle avg   6.7ms p95     8 max     84 (frame #  0) >50ms   1   |  after blasts avg  21.4ms p95  36.9 max   40.3 (frame #  4) >50ms   0
+L8  run1  idle avg   9.1ms p95  12.5 max   99.3 (frame #  0) >50ms   1   |  after blasts avg  18.9ms p95  35.8 max   54.9 (frame #  0) >50ms   2
+L8  run2  idle avg   7.3ms p95   9.4 max   68.2 (frame #  0) >50ms   1   |  after blasts avg  20.2ms p95  34.3 max   40.3 (frame #  9) >50ms   0
+L9  run1  idle avg   6.2ms p95   8.1 max   51.9 (frame #  0) >50ms   1   |  after blasts avg  17.7ms p95  30.8 max   52.4 (frame # 10) >50ms   1
+L9  run2  idle avg   6.9ms p95   9.9 max   52.6 (frame #  0) >50ms   1   |  after blasts avg  18.5ms p95  32.1 max   34.3 (frame # 21) >50ms   0
+L10 run1  idle avg  10.5ms p95  12.8 max     67 (frame #  0) >50ms   1   |  after blasts avg  25.9ms p95  40.8 max   54.2 (frame #  0) >50ms   1
+L10 run2  idle avg  10.5ms p95  13.4 max   56.1 (frame #  0) >50ms   1   |  after blasts avg  26.1ms p95  41.2 max     48 (frame #  0) >50ms   0
+L11 run1  idle avg   6.1ms p95   7.9 max   64.3 (frame #  0) >50ms   1   |  after blasts avg  16.7ms p95  31.3 max   39.5 (frame #  0) >50ms   0
+L11 run2  idle avg   6.6ms p95   8.6 max   67.2 (frame #  0) >50ms   1   |  after blasts avg  15.9ms p95  29.2 max   37.4 (frame #  8) >50ms   0
+L12 run1  idle avg   7.9ms p95  10.5 max   71.4 (frame #  0) >50ms   1   |  after blasts avg  24.9ms p95  38.3 max   47.6 (frame #  0) >50ms   0
+L12 run2  idle avg  10.1ms p95  13.8 max   70.5 (frame #  0) >50ms   1   |  after blasts avg  28.8ms p95  46.5 max   64.2 (frame #  2) >50ms   5

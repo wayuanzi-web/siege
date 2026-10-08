@@ -1,0 +1,18 @@
+L8 stay 鐵鍊 hp 87  rocket：正中 9 發才斷 ≈ 5 輪（一輪 2 發）
+L8 stay 鐵鍊 hp 87  bolt  ：（穿刺，另算）
+L8 stay 鐵鍊 hp 87  bomb  ：正中 2 發才斷 ≈ 2 輪（一輪 1 發）
+L8 stay 鐵鍊 hp 87  fire  ：正中 49 發才斷 ≈ 25 輪（一輪 2 發）
+L8 stay 鐵鍊 hp 87  zap   ：正中 6 發才斷 ≈ 6 輪（一輪 1 發）
+L8 stay 鐵鍊 hp 87  ice   ：正中 27 發才斷 ≈ 14 輪（一輪 2 發）
+L9 back 鐵鍊 hp 87  rocket：正中 9 發才斷 ≈ 5 輪（一輪 2 發）
+L9 back 鐵鍊 hp 87  bolt  ：（穿刺，另算）
+L9 back 鐵鍊 hp 87  bomb  ：正中 2 發才斷 ≈ 2 輪（一輪 1 發）
+L9 back 鐵鍊 hp 87  fire  ：正中 18 發才斷 ≈ 9 輪（一輪 2 發）
+L9 back 鐵鍊 hp 87  zap   ：正中 5 發才斷 ≈ 5 輪（一輪 1 發）
+L9 back 鐵鍊 hp 87  ice   ：正中 8 發才斷 ≈ 4 輪（一輪 2 發）
+L12 lamp 鐵鍊 hp 72  rocket：正中 7 發才斷 ≈ 4 輪（一輪 2 發）
+L12 lamp 鐵鍊 hp 72  bolt  ：（穿刺，另算）
+L12 lamp 鐵鍊 hp 72  bomb  ：正中 2 發才斷 ≈ 2 輪（一輪 1 發）
+L12 lamp 鐵鍊 hp 72  fire  ：正中 9 發才斷 ≈ 5 輪（一輪 2 發）
+L12 lamp 鐵鍊 hp 72  zap   ：正中 2 發才斷 ≈ 2 輪（一輪 1 發）
+L12 lamp 鐵鍊 hp 72  ice   ：正中 8 發才斷 ≈ 4 輪（一輪 2 發）

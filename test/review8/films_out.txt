@@ -1,0 +1,96 @@
+t=0.5 {"pops": ["繩子斷了！"], "ropes": "ropeX rope", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=1.2 {"pops": ["繩子斷了！", "哇！", "繩子斷了！"], "ropes": "ropeX ropeX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=2.0 {"pops": [], "ropes": "ropeX ropeX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=3.0 {"pops": [], "ropes": "ropeX ropeX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=4.5 {"pops": [], "ropes": "ropeX ropeX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=7.0 {"pops": [], "ropes": "ropeX ropeX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+console: []
+/home/claude/siege/shots/review8/film_L6_L6tower.png
+t=0.5 {"pops": [], "ropes": "rope rope", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=1.2 {"pops": ["哇！", "哇！", "繩子斷了！"], "ropes": "rope ropeX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=2.0 {"pops": ["沖走了！"], "ropes": "rope ropeX", "units": "P1 P2 P3 P4 E1 E2 E3x E4", "piv": "", "pins": "", "state": "play"}
+t=3.0 {"pops": ["沖走了！"], "ropes": "rope ropeX", "units": "P1 P2 P3 P4 E1 E2 E3x E4x", "piv": "", "pins": "", "state": "play"}
+t=4.5 {"pops": [], "ropes": "rope ropeX", "units": "P1 P2 P3 P4 E1 E2 E3x E4x", "piv": "", "pins": "", "state": "play"}
+t=7.0 {"pops": [], "ropes": "rope ropeX", "units": "P1 P2 P3 P4 E1 E2 E3x E4x", "piv": "", "pins": "", "state": "play"}
+console: []
+/home/claude/siege/shots/review8/film_L6_L6back.png
+t=0.6 {"pops": [], "ropes": "", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=1.4 {"pops": [], "ropes": "", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=2.2 {"pops": ["哇！"], "ropes": "", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=3.0 {"pops": [], "ropes": "", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=4.0 {"pops": [], "ropes": "", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=6.0 {"pops": [], "ropes": "", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+console: []
+/home/claude/siege/shots/review8/film_L7_L7domino.png
+t=0.4 {"pops": [], "ropes": "", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=1.0 {"pops": [], "ropes": "", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=1.8 {"pops": ["哇！"], "ropes": "", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=2.6 {"pops": ["哇！"], "ropes": "", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=3.6 {"pops": ["哇！"], "ropes": "", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=5.0 {"pops": [], "ropes": "", "units": "P1 P2 P3 P4 E1 E2 E3x E4", "piv": "", "pins": "", "state": "play"}
+console: []
+/home/claude/siege/shots/review8/film_L7_L7neck.png
+t=0.4 {"pops": ["鐵鍊斷了！", "鐵鍊斷了！"], "ropes": "bell stayX stayX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "ok,ok", "state": "play"}
+t=1.2 {"pops": ["樑斷了！", "樑斷了！"], "ropes": "bell stayX stayX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "X,X", "state": "play"}
+t=2.4 {"pops": ["摔下去了！", "摔下去了！"], "ropes": "bell stayX stayX", "units": "P1 P2 P3 P4 E1x E2x E3 E4", "piv": "", "pins": "X,X", "state": "play"}
+t=3.6 {"pops": [], "ropes": "bell stayX stayX", "units": "P1 P2 P3 P4 E1x E2x E3x E4", "piv": "", "pins": "X,X", "state": "play"}
+t=5.0 {"pops": [], "ropes": "bell stayX stayX", "units": "P1 P2 P3 P4 E1x E2x E3x E4", "piv": "", "pins": "X,X", "state": "play"}
+t=7.0 {"pops": [], "ropes": "bell stayX stayX", "units": "P1 P2 P3 P4 E1x E2x E3x E4", "piv": "", "pins": "X,X", "state": "play"}
+console: []
+/home/claude/siege/shots/review8/film_L8_L8chains.png
+t=0.3 {"pops": ["鐵鍊斷了！"], "ropes": "bellX stay stay", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "ok,ok", "state": "play"}
+t=0.7 {"pops": ["鐵鍊斷了！", "噹——！", "砸扁！"], "ropes": "bellX stay stay", "units": "P1 P2 P3 P4 E1 E2 E3x E4", "piv": "", "pins": "ok,ok", "state": "play"}
+t=1.1 {"pops": ["噹——！", "砸扁！"], "ropes": "bellX stay stay", "units": "P1 P2 P3 P4 E1 E2 E3x E4", "piv": "", "pins": "ok,ok", "state": "play"}
+t=1.6 {"pops": ["噹——！", "砸扁！"], "ropes": "bellX stay stay", "units": "P1 P2 P3 P4 E1 E2 E3x E4", "piv": "", "pins": "ok,ok", "state": "play"}
+t=2.4 {"pops": [], "ropes": "bellX stay stay", "units": "P1 P2 P3 P4 E1 E2 E3x E4", "piv": "", "pins": "ok,ok", "state": "play"}
+t=4.0 {"pops": [], "ropes": "bellX stay stay", "units": "P1 P2 P3 P4 E1 E2 E3x E4", "piv": "", "pins": "ok,ok", "state": "play"}
+console: []
+/home/claude/siege/shots/review8/film_L8_L8bell.png
+t=0.3 {"pops": ["繩子斷了！"], "ropes": "frontX back", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "-0.00", "pins": "", "state": "play"}
+t=0.8 {"pops": ["繩子斷了！"], "ropes": "frontX back", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "-0.01", "pins": "", "state": "play"}
+t=1.4 {"pops": [], "ropes": "frontX back", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "-0.02", "pins": "", "state": "play"}
+t=2.2 {"pops": [], "ropes": "frontX back", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "-0.07", "pins": "", "state": "play"}
+t=3.2 {"pops": ["失去平衡！"], "ropes": "frontX back", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "-0.27", "pins": "", "state": "play"}
+t=5.0 {"pops": ["哇！"], "ropes": "frontX back", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "-0.45", "pins": "", "state": "play"}
+console: []
+/home/claude/siege/shots/review8/film_L9_L9front.png
+t=0.3 {"pops": ["鐵鍊斷了！"], "ropes": "front backX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "0.01", "pins": "", "state": "play"}
+t=0.8 {"pops": ["鐵鍊斷了！"], "ropes": "front backX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "0.04", "pins": "", "state": "play"}
+t=1.4 {"pops": [], "ropes": "front backX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "0.11", "pins": "", "state": "play"}
+t=2.2 {"pops": ["失去平衡！", "哇！", "哇！"], "ropes": "front backX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "0.42", "pins": "", "state": "play"}
+t=3.2 {"pops": ["哇！", "哇！"], "ropes": "front backX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "0.46", "pins": "", "state": "play"}
+t=5.0 {"pops": ["轟出城外！"], "ropes": "front backX", "units": "P1 P2 P3 P4 E1 E2 E3 E4x", "piv": "0.46", "pins": "", "state": "play"}
+console: []
+/home/claude/siege/shots/review8/film_L9_L9back.png
+t=0.2 {"pops": ["共鳴！"], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=0.5 {"pops": ["共鳴！", "哇！", "砸中了！"], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=0.9 {"pops": ["共鳴！", "哇！", "砸中了！"], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=1.4 {"pops": ["砸中了！"], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=2.2 {"pops": ["哇！", "砸扁！"], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2 E3x E4", "piv": "", "pins": "", "state": "play"}
+t=3.5 {"pops": ["砸扁！"], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2x E3x E4", "piv": "", "pins": "", "state": "play"}
+console: []
+/home/claude/siege/shots/review8/film_L10_L10reso.png
+t=0.2 {"pops": ["繩子斷了！"], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=0.5 {"pops": ["繩子斷了！", "砸中了！"], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=0.8 {"pops": ["繩子斷了！", "砸中了！"], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=1.2 {"pops": ["砸中了！"], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=2.0 {"pops": [], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=3.0 {"pops": [], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+console: []
+/home/claude/siege/shots/review8/film_L10_L10lamp.png
+t=0.5 {"pops": ["哇！", "哇！", "哇！"], "ropes": "", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=1.2 {"pops": ["砸扁！"], "ropes": "", "units": "P1 P2 P3 P4 E1 E2x E3 E4", "piv": "", "pins": "", "state": "play"}
+t=2.0 {"pops": [], "ropes": "", "units": "P1 P2 P3 P4 E1 E2x E3 E4", "piv": "", "pins": "", "state": "play"}
+t=3.0 {"pops": [], "ropes": "", "units": "P1 P2 P3 P4 E1 E2x E3 E4", "piv": "", "pins": "", "state": "play"}
+t=4.0 {"pops": [], "ropes": "", "units": "P1 P2 P3 P4 E1 E2x E3 E4", "piv": "", "pins": "", "state": "play"}
+t=6.0 {"pops": [], "ropes": "", "units": "P1 P2 P3 P4 E1 E2x E3 E4", "piv": "", "pins": "", "state": "play"}
+console: []
+/home/claude/siege/shots/review8/film_L11_L11pillar.png
+t=0.2 {"pops": ["鐵鍊斷了！"], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=0.5 {"pops": ["鐵鍊斷了！", "砸中了！"], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=0.8 {"pops": ["鐵鍊斷了！", "砸中了！"], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=1.2 {"pops": ["砸中了！"], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=2.0 {"pops": [], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+t=3.0 {"pops": [], "ropes": "lampX", "units": "P1 P2 P3 P4 E1 E2 E3 E4", "piv": "", "pins": "", "state": "play"}
+console: []
+/home/claude/siege/shots/review8/film_L12_L12lamp.png

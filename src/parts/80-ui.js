@@ -82,7 +82,7 @@ function sayPump() {
 }
 // 有更要緊的話要馬上講：正在講的、排隊的都先放掉（沒講完的之後還可以再講）
 function sayFlush() { clearTimeout(SAY.tm); for (const m of SAY.q) sayDrop(m); SAY.q.length = 0; if (SAY.cur && performance.now() - SAY.t0 < 1200) sayDrop(SAY.cur); SAY.cur = null; }
-function sayClear() { clearTimeout(SAY.tm); SAY.q.length = 0; SAY.cur = null; SAY.held = 0; const el = $('say'); el.className = 'chamfer'; el.style.animationPlayState = ''; }
+function sayClear() { clearTimeout(SAY.tm); SAY.q.length = 0; SAY.cur = null; SAY.held = 0; const el = $('say'); el.className = 'chamfer' + (S.lv && S.lv.sayTop ? ' top' : ''); el.style.animationPlayState = ''; }       // sayTop：這一關要打的東西在戰場下半（竹樁、石碑），提示改放在上面
 // 暫停的時候提示也停住（計時和淡出動畫都停），繼續之後接著講
 function sayHold(on) {
   const el = $('say');
@@ -110,13 +110,17 @@ function homeRender() {
     const t = document.createElement('button'), lock = k * CHAP >= SV.open;
     t.className = 'chap chamfer' + (lock ? ' locked' : ''); t.setAttribute('role', 'tab'); t.setAttribute('aria-selected', String(k === UI.chap));
     t.innerHTML = '<span>' + nm + '</span><small>' + (k * CHAP + 1) + '–' + Math.min(LEVELS.length, (k + 1) * CHAP) + '</small>';
-    onTap(t, () => chapGo(k));
+    t.tabIndex = k === UI.chap ? 0 : -1;
+    onTap(t, () => { chapGo(k); const nt = $('chaps').children[k]; if (nt) nt.focus({ preventScroll: true }); });
+    // 方向鍵換篇（分頁的慣例）
+    t.addEventListener('keydown', (e) => { if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; e.preventDefault(); const n = Math.ceil(LEVELS.length / CHAP), k2 = (k + (e.key === 'ArrowRight' ? 1 : n - 1)) % n; chapGo(k2); const nt = $('chaps').children[k2]; if (nt) nt.focus({ preventScroll: true }); });
     tabs.appendChild(t);
   });
   LEVELS.forEach((lv, i) => {
     if (Math.floor(i / CHAP) !== UI.chap) return;
     const b = document.createElement('button'), locked = i >= SV.open;
-    b.className = 'lv chamfer' + (locked ? ' locked' : ''); b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(i === UI.sel));
+    // 還沒解鎖、可是有星星的（舊版存檔打過的魔王城搬到第十二關）：星星照樣顯示，不畫鎖頭
+    b.className = 'lv chamfer' + (locked ? ' locked' : '') + (locked && SV.stars[i] > 0 ? ' had' : ''); b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(i === UI.sel));
     b.setAttribute('aria-label', '第' + numZh(i + 1) + '關 ' + lv.name + (locked ? '（未解鎖）' : ''));
     const n = document.createElement('b'); n.textContent = String(i + 1);
     const nm = document.createElement('strong'); nm.textContent = lv.name;
@@ -206,10 +210,10 @@ const LOSE_TIPS_LV = [
   ['兵被凍住就開護罩，會立刻解凍。', '冰很滑：把冰塔牆腳底下那一格冰板打穿，塔一歪，上面的兵就溜下去。火油兵的火對冰特別有效。', '冰術士躲在大廳裡兩根冰柱中間：打斷冰柱（火一烤就化）、冰板再破一格，整片冰板就垮進大廳；或是吊高從他頭頂把冰板轟穿，砲彈直接落進去。', TIP_RED],
   ['敵城正面是鐵甲：吊高從屋頂打進去，把樓上的火藥庫炸開，一桶爆就三桶連環爆。', '讓砲彈從正在噴的地火裡穿過去，威力多五成。', '紅圈是這一回合結束時落石的位置：火山不認人，敵城也會被砸；砸得到你就開護罩。', TIP_RED],
   ['氣球先停在半路，下一輪才飛過來：趁它停著的時候打下來。', '把砲彈射進藍色傳送門，會從敵城頭頂往下灌，繞過正面的金甲。', '防空弩架在伸出牆外的木板露台上：把露台打斷，它就掉進雲海；不然每一輪都會被它射下三發。', TIP_RED],
-  ['吊腳樓的竹樁很細：打斷一根，剩下的撐不住，會嘎吱嘎吱一根接一根斷，整間連人滑進河裡。', '竹子一點就著：火油兵燒竹樁、燒繩子都很快。', '望樓立在河中間的大石頭上，只靠兩根細竹竿撐著：打斷一根，整座望樓連人倒進河裡。', TIP_RED],
+  ['吊腳樓的竹樁很細：打斷一根，剩下的撐不住，會嘎吱嘎吱一根接一根斷，整間連人滑進河裡。', '竹子一點就著：火油兵燒竹樁、燒繩子都很快。', '望樓靠兩根細竹竿撐在河中間的大石頭上：打斷竹竿，整座望樓連人摔下來。', TIP_RED],
   ['投石兵丟的大石頭砸中最左邊那塊矮石碑的上半截，整排石碑會一路倒過去，最高的那塊砸進敵城。', '中間那根石柱頂上只靠兩根細石頸撐著：打斷一根，整棟屋子往那一邊翻，砸在旁邊那間小屋上。', '石柱頂的小屋只有一根石頸撐著：炸到一邊就翻，兵會從十幾格高摔下來。', TIP_RED],
-  ['兩間殿的外端各吊著一條鐵鍊：轟天砲、雷法師打得斷，連弩手的箭射不太動。斷了之後樑會一點一點往下垂，垂到底就整間掉進深谷。', '打斷吊鐘的鐵鍊，大銅鐘砸穿屋頂，正好砸在上面那間殿的兵頭上。', '先弄垮上面那間殿：它掉下來壓在下面那間上，下面那條鐵鍊也會繃斷。', TIP_RED],
-  ['前面那籃配重只用麻繩吊著，幾箭就斷；後面那籃是鐵鍊（要轟天砲、雷法師）。哪一籃沒了，大樑就往另一頭翻。', '大樑往前翻，前面那座樓會連人滑進深谷；往後翻，後面的東西會滑到寨子外面。', '一頭的兵和磚打掉夠多，那一頭變輕，大樑也會翻：專心打同一邊。', TIP_RED],
+  ['兩間殿的外端各吊著一條鐵鍊：轟天砲兩發就斷，火箭、雷要打好幾發，連弩手的箭射不太動。斷了之後樑會一點一點往下垂，垂到底就整間掉進深谷。', '打斷吊鐘的鐵鍊，大銅鐘砸穿屋頂，正好砸在上面那間殿的兵頭上。', '先弄垮上面那間殿：它掉下來壓在下面那間上，下面那條鐵鍊也會繃斷。', TIP_RED],
+  ['前面那籃配重只用麻繩吊著，幾箭就斷；後面那籃是鐵鍊（要轟天砲，或投石兵的大石頭砸過去）。哪一籃沒了，大樑就往另一頭翻。', '大樑往前翻，前面那座樓會連人滑進深谷；往後翻，後面的東西會滑到寨子外面。', '一頭的兵和磚打掉夠多，那一頭變輕，大樑也會翻：專心打同一邊。', TIP_RED],
   ['上層正中間的紫色共鳴晶柱一下被打掉一半，整座宮殿的琉璃會一圈一圈震碎：先打開它前面的琉璃牆。', '大廳天花板吊著水晶吊燈，正下方就是一個兵：把天花板打穿，吊燈砸下來。', '琉璃一撞就碎：從上往下打，碎片會一層壓垮一層。投石兵的大石頭砸琉璃最痛。', TIP_RED],
   ['每一層只有兩根柱子：打斷一根，另一根撐不了多久，上面幾層一起壓下來。最底下那層最值得打。', '火油兵點著的柱子會越燒越細：塔是木頭和瓦蓋的，火一路往上延燒。', '塔頂的兵最高：底下任何一層垮了，他都會一路摔下來。', TIP_RED],
   ['結界每回合換缺口（魔王暴怒之後開兩個）：看哪一段沒有光牆，就用那個角度打進去；光牆也打得破。', '毀滅光球先停在城前面的半空中，下一輪才砸過來：打爆它，它會掉頭砸在魔王自己身上；來不及就開護罩。', '大殿屋頂吊著一盞鐵吊燈，就在魔王頭頂：打斷鐵鍊（轟天砲、雷法師），或打斷大殿的木柱，讓吊燈和屋頂一起砸下來。', TIP_RED]

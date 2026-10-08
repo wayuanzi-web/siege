@@ -1,0 +1,174 @@
+== L6 game 0 (won)
+  r1 aim0: 吊腳樓只靠兩三根細竹樁撐著：打斷一根，剩下的撐不住，會嘎吱嘎吱一根接一根斷
+      hang=[] ropes=['rope:ok', 'rope:ok'] reso=[] piv=[] pins=[] units=1H 2H 3H 4H inplace=23/23
+  r2 aim0: 敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它
+      hang=[] ropes=['rope:CUT', 'rope:ok'] reso=[] piv=[] pins=[] units=1x 2H 3H 4H inplace=18/20
+  r2 resolve0: 掉進河裡的兵會被水沖走：把樓子打歪，讓它整間滑進河裡
+      hang=[] ropes=['rope:CUT', 'rope:ok'] reso=[] piv=[] pins=[] units=1x 2H 3H 4H inplace=18/23
+  r3 aim0: 天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走
+      hang=[] ropes=['rope:CUT', 'rope:ok'] reso=[] piv=[] pins=[] units=1x 2H 3H 4H inplace=17/18
+  r3 aim1: 漂亮的坍塌！一次垮得越多，「連珠」集得越快
+      hang=[] ropes=['rope:CUT', 'rope:CUT'] reso=[] piv=[] pins=[] units=1x 2m 3x 4x inplace=0/40
+  r3 resolve1: 敵軍連珠砲上膛了，這一輪打三次：快開護罩！
+      hang=[] ropes=['rope:CUT', 'rope:CUT'] reso=[] piv=[] pins=[] units=1x 2m 3x 4x inplace=0/13
+  r4 aim0: 有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住
+      hang=[] ropes=['rope:CUT', 'rope:CUT'] reso=[] piv=[] pins=[] units=1x 2m 3x 4x inplace=0/12
+== L6 game 1 (won)
+  r1 aim0: 吊腳樓只靠兩三根細竹樁撐著：打斷一根，剩下的撐不住，會嘎吱嘎吱一根接一根斷
+      hang=[] ropes=['rope:ok', 'rope:ok'] reso=[] piv=[] pins=[] units=1H 2H 3H 4H inplace=23/23
+  r2 aim0: 敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它
+      hang=[] ropes=['rope:CUT', 'rope:ok'] reso=[] piv=[] pins=[] units=1x 2H 3H 4H inplace=17/19
+  r2 resolve0: 掉進河裡的兵會被水沖走：把樓子打歪，讓它整間滑進河裡
+      hang=[] ropes=['rope:CUT', 'rope:CUT'] reso=[] piv=[] pins=[] units=1x 2m 3H 4H inplace=13/29
+  r2 aim1: 漂亮的坍塌！一次垮得越多，「連珠」集得越快
+      hang=[] ropes=['rope:CUT', 'rope:CUT'] reso=[] piv=[] pins=[] units=1x 2m 3H 4H inplace=9/19
+  r3 aim0: 天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走
+      hang=[] ropes=['rope:CUT', 'rope:CUT'] reso=[] piv=[] pins=[] units=1x 2m 3x 4x inplace=0/13
+== L7 game 0 (play)
+  r1 aim0: 投石兵丟的是一顆真的大石頭：砸中最左邊那塊矮石碑的上半截，整排石碑一路倒過去，最高的那塊砸進
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1H 2H 3H 4H inplace=37/37
+  r1 aim1: 漂亮的坍塌！一次垮得越多，「連珠」集得越快
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1x 2H 3H 4H inplace=28/30
+  r2 aim0: 敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1x 2H 3H 4H inplace=28/30
+  r3 aim0: 天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1x 2m 3x 4m inplace=11/21
+  r3 resolve1: 有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1x 2m 3x 4x inplace=10/20
+  r4 aim1: 敵軍連珠砲上膛了，這一輪打三次：快開護罩！
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1x 2m 3x 4x inplace=8/12
+== L7 game 1 (play)
+  r1 aim0: 投石兵丟的是一顆真的大石頭：砸中最左邊那塊矮石碑的上半截，整排石碑一路倒過去，最高的那塊砸進
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1H 2H 3H 4H inplace=37/37
+  r1 aim1: 漂亮的坍塌！一次垮得越多，「連珠」集得越快
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1m 2H 3H 4H inplace=30/36
+  r2 aim0: 敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1m 2H 3H 4H inplace=28/31
+  r3 aim0: 天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1m 2m 3x 4x inplace=6/17
+  r3 aim1: 敵軍連珠砲上膛了，這一輪打三次：快開護罩！
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1x 2m 3x 4x inplace=6/17
+  r3 resolve1: 有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1x 2m 3x 4x inplace=6/17
+  r4 aim1: 敵軍連珠砲上膛了，這一輪打三次：快開護罩！
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1x 2m 3x 4x inplace=6/20
+== L8 game 0 (lost)
+  r1 aim0: 每間殿的外端吊著一條鐵鍊：轟天砲、雷法師才打得斷。斷了之後樑會嘎吱嘎吱響，撐不了多久
+      hang=['bell:up'] ropes=['bell:ok', 'stay:ok', 'stay:ok'] reso=[] piv=[] pins=['ok', 'ok'] units=1H 2H 3H 4H inplace=12/12
+  r2 aim0: 敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它
+      hang=['bell:up'] ropes=['bell:ok', 'stay:ok', 'stay:ok'] reso=[] piv=[] pins=['ok', 'ok'] units=1H 2H 3H 4H inplace=12/12
+  r2 resolve0: 岩簷底下吊著一口大銅鐘，正下方就是上面那間殿的兵：打斷吊鐘的鐵鍊，鐘砸穿屋頂
+      hang=['bell:up'] ropes=['bell:ok', 'stay:ok', 'stay:ok'] reso=[] piv=[] pins=['ok', 'ok'] units=1H 2H 3H 4H inplace=9/19
+  r3 aim0: 天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走
+      hang=['bell:up'] ropes=['bell:ok', 'stay:ok', 'stay:ok'] reso=[] piv=[] pins=['ok', 'ok'] units=1H 2H 3H 4H inplace=9/10
+  r3 resolve0: 上面那間殿掉下來會砸在下面那間上：兩間一起壓垮、一起掉進深谷
+      hang=['bell:up'] ropes=['bell:ok', 'stay:CUT', 'stay:ok'] reso=[] piv=[] pins=['ok', 'ok'] units=1m 2H 3H 4H inplace=7/14
+  r3 resolve1: 有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住
+      hang=['bell:up'] ropes=['bell:ok', 'stay:CUT', 'stay:ok'] reso=[] piv=[] pins=['ok', 'ok'] units=1m 2H 3H 4H inplace=7/10
+  r4 aim0: 兵比敵軍少：打出的傷害和坍塌讓連珠集氣快五成，一次大坍塌就能翻盤
+      hang=['bell:up'] ropes=['bell:ok', 'stay:CUT', 'stay:ok'] reso=[] piv=[] pins=['ok', 'ok'] units=1m 2H 3H 4H inplace=7/10
+  r4 aim1: 敵軍連珠砲上膛了，這一輪打三次！
+      hang=['bell:up'] ropes=['bell:ok', 'stay:CUT', 'stay:ok'] reso=[] piv=[] pins=['ok', 'ok'] units=1m 2H 3H 4m inplace=7/9
+  r5 aim1: 漂亮的坍塌！一次垮得越多，「連珠」集得越快
+      hang=['bell:up'] ropes=['bell:ok', 'stay:CUT', 'stay:CUT'] reso=[] piv=[] pins=['X', 'X'] units=1x 2x 3x 4m inplace=1/11
+  r5 resolve1: 敵軍連珠砲上膛了，這一輪打三次！
+      hang=['bell:up'] ropes=['bell:ok', 'stay:CUT', 'stay:CUT'] reso=[] piv=[] pins=['X', 'X'] units=1x 2x 3x 4m inplace=1/1
+== L8 game 1 (play)
+  r1 aim0: 每間殿的外端吊著一條鐵鍊：轟天砲、雷法師才打得斷。斷了之後樑會嘎吱嘎吱響，撐不了多久
+      hang=['bell:up'] ropes=['bell:ok', 'stay:ok', 'stay:ok'] reso=[] piv=[] pins=['ok', 'ok'] units=1H 2H 3H 4H inplace=12/12
+  r2 aim0: 敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它
+      hang=['bell:up'] ropes=['bell:ok', 'stay:CUT', 'stay:ok'] reso=[] piv=[] pins=['X', 'ok'] units=1x 2x 3H 4H inplace=8/8
+  r2 aim1: 岩簷底下吊著一口大銅鐘，正下方就是上面那間殿的兵：打斷吊鐘的鐵鍊，鐘砸穿屋頂
+      hang=['bell:up'] ropes=['bell:ok', 'stay:CUT', 'stay:ok'] reso=[] piv=[] pins=['X', 'ok'] units=1x 2x 3H 4H inplace=8/8
+  r2 resolve1: 有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住
+      hang=['bell:up'] ropes=['bell:ok', 'stay:CUT', 'stay:ok'] reso=[] piv=[] pins=['X', 'ok'] units=1x 2x 3H 4H inplace=8/8
+  r3 resolve0: 天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走
+      hang=['bell:up'] ropes=['bell:ok', 'stay:CUT', 'stay:ok'] reso=[] piv=[] pins=['X', 'ok'] units=1x 2x 3H 4H inplace=8/8
+== L9 game 0 (play)
+  r1 aim0: 前面那籃配重只用麻繩吊著，幾箭就斷：配重沒了，大樑往後翻，後面那座樓滑下去
+      hang=['basket:up', 'basket:up'] ropes=['front:ok', 'back:ok'] reso=[] piv=[0] pins=[] units=1H 2H 3H 4H inplace=18/18
+  r1 aim1: 漂亮的坍塌！一次垮得越多，「連珠」集得越快
+      hang=['basket:FREE', 'basket:FREE'] ropes=['front:ok', 'back:ok'] reso=[] piv=[-0.45] pins=[] units=1m 2x 3m 4m inplace=0/13
+  r2 aim0: 敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它
+      hang=['basket:FREE', 'basket:FREE'] ropes=['front:ok', 'back:ok'] reso=[] piv=[-0.45] pins=[] units=1m 2x 3m 4m inplace=0/13
+  r2 resolve1: 兵被凍住了，下一輪不能開火；開護罩可以立刻解凍
+      hang=['basket:FREE', 'basket:FREE'] ropes=['front:ok', 'back:ok'] reso=[] piv=[-0.45] pins=[] units=1m 2x 3m 4x inplace=0/11
+  r2 resolve1: 有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住
+      hang=['basket:FREE', 'basket:FREE'] ropes=['front:ok', 'back:ok'] reso=[] piv=[-0.45] pins=[] units=1m 2x 3m 4x inplace=0/11
+  r3 resolve0: 起風了！每回合的風都不一樣，虛線已經把風算進去
+      hang=['basket:FREE', 'basket:FREE'] ropes=['front:CUT', 'back:ok'] reso=[] piv=[-0.45] pins=[] units=1m 2x 3m 4x inplace=0/15
+  r3 volley1: 敵軍連珠砲上膛了，這一輪打三次：快開護罩！
+      hang=['basket:FREE'] ropes=['front:CUT', 'back:ok'] reso=[] piv=[-0.45] pins=[] units=1m 2x 3m 4x inplace=0/7
+  r5 aim1: 敵軍連珠砲上膛了，這一輪打三次！
+      hang=['basket:FREE'] ropes=['front:CUT', 'back:ok'] reso=[] piv=[-0.45] pins=[] units=1m 2x 3m 4x inplace=0/10
+  r6 aim0: 天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走
+      hang=['basket:FREE'] ropes=['front:CUT', 'back:ok'] reso=[] piv=[-0.45] pins=[] units=1m 2x 3m 4x inplace=0/9
+== L9 game 1 (play)
+  r1 aim0: 前面那籃配重只用麻繩吊著，幾箭就斷：配重沒了，大樑往後翻，後面那座樓滑下去
+      hang=['basket:up', 'basket:up'] ropes=['front:ok', 'back:ok'] reso=[] piv=[0] pins=[] units=1H 2H 3H 4H inplace=18/18
+  r1 aim1: 漂亮的坍塌！一次垮得越多，「連珠」集得越快
+      hang=['basket:FREE', 'basket:FREE'] ropes=['front:ok', 'back:ok'] reso=[] piv=[-0.46] pins=[] units=1m 2x 3x 4x inplace=0/20
+  r2 aim0: 敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它
+      hang=['basket:FREE', 'basket:FREE'] ropes=['front:ok', 'back:ok'] reso=[] piv=[-0.46] pins=[] units=1m 2x 3x 4x inplace=0/13
+  r3 aim0: 起風了！每回合的風都不一樣，虛線已經把風算進去
+      hang=['basket:FREE', 'basket:FREE'] ropes=['front:ok', 'back:ok'] reso=[] piv=[-0.45] pins=[] units=1m 2x 3x 4x inplace=0/8
+  r6 aim0: 天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走
+      hang=['basket:FREE'] ropes=['front:CUT', 'back:ok'] reso=[] piv=[-0.45] pins=[] units=1m 2x 3x 4x inplace=0/3
+== L11 game 0 (won)
+  r1 aim0: 每一層只有兩根柱子：打斷一根，另一根會嘎吱嘎吱響，撐不了多久，上面幾層一起壓下來
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1H 2H 3H 4H inplace=24/24
+  r2 aim0: 火油兵點著的柱子會越燒越細：燒到撐不住就斷，整座塔一層壓一層垮下來
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1H 2H 3m 4x inplace=12/13
+  r3 aim0: 起風了！每回合的風都不一樣，虛線已經把風算進去
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1H 2x 3x 4x inplace=9/10
+== L11 game 1 (play)
+  r1 aim0: 每一層只有兩根柱子：打斷一根，另一根會嘎吱嘎吱響，撐不了多久，上面幾層一起壓下來
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1H 2H 3H 4H inplace=24/24
+  r1 aim1: 漂亮的坍塌！一次垮得越多，「連珠」集得越快
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1H 2H 3m 4x inplace=11/16
+  r2 aim0: 火油兵點著的柱子會越燒越細：燒到撐不住就斷，整座塔一層壓一層垮下來
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1H 2H 3m 4x inplace=11/15
+  r3 aim0: 起風了！每回合的風都不一樣，虛線已經把風算進去
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1H 2m 3x 4x inplace=9/12
+  r3 resolve0: 敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1H 2x 3x 4x inplace=8/14
+  r3 resolve1: 敵軍連珠砲上膛了，這一輪打三次：快開護罩！
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1m 2x 3x 4x inplace=8/10
+  r4 resolve1: 有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1m 2x 3x 4x inplace=8/9
+  r6 aim0: 天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走
+      hang=[] ropes=[] reso=[] piv=[] pins=[] units=1m 2x 3x 4x inplace=8/9
+== L12 game 0 (play)
+  r1 aim0: 打倒魔王就贏：鐵吊燈就吊在他頭頂，打斷鐵鍊（轟天砲、雷法師），或打斷大殿的木柱讓屋頂連燈一起
+      hang=['lamp:up'] ropes=['lamp:ok'] reso=[] piv=[] pins=[] units=1H 2H 3H 4H inplace=53/53
+  r1 resolve0: 魔王張開結界了！結界分三段，每回合換缺口：從沒有光牆的地方打進去
+      hang=['lamp:FREE'] ropes=['lamp:CUT'] reso=[] piv=[] pins=[] units=1H 2H 3H 4H inplace=48/50
+  r1 resolve1: 毀滅光球！它先停在半空中，下一輪砸過來：現在打爆它，它會掉頭砸在魔王自己身上
+      hang=['lamp:FREE'] ropes=['lamp:CUT'] reso=[] piv=[] pins=[] units=1H 2H 3H 4H inplace=48/49
+  r2 resolve0: 把魔王腳下的樓板打穿，他摔一層就痛一次；轟出城外也會摔掉一截血
+      hang=['lamp:FREE'] ropes=['lamp:CUT'] reso=[] piv=[] pins=[] units=1H 2H 3H 4H inplace=48/49
+  r3 aim0: 敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它
+      hang=['lamp:FREE'] ropes=['lamp:CUT'] reso=[] piv=[] pins=[] units=1H 2H 3H 4H inplace=48/49
+  r4 resolve1: 有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住
+      hang=['lamp:FREE'] ropes=['lamp:CUT'] reso=[] piv=[] pins=[] units=1m 2H 3H 4H inplace=44/48
+  r6 aim0: 天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走
+      hang=['lamp:FREE'] ropes=['lamp:CUT'] reso=[] piv=[] pins=[] units=1m 2H 3H 4H inplace=41/45
+== L12 game 1 (won)
+  r1 aim0: 打倒魔王就贏：鐵吊燈就吊在他頭頂，打斷鐵鍊（轟天砲、雷法師），或打斷大殿的木柱讓屋頂連燈一起
+      hang=['lamp:up'] ropes=['lamp:ok'] reso=[] piv=[] pins=[] units=1H 2H 3H 4H inplace=53/53
+  r1 aim1: 魔王張開結界了！結界分三段，每回合換缺口：從沒有光牆的地方打進去
+      hang=['lamp:FREE'] ropes=['lamp:CUT'] reso=[] piv=[] pins=[] units=1m 2H 3H 4H inplace=43/53
+  r1 resolve1: 毀滅光球！它先停在半空中，下一輪砸過來：現在打爆它，它會掉頭砸在魔王自己身上
+      hang=['lamp:FREE'] ropes=['lamp:CUT'] reso=[] piv=[] pins=[] units=1m 2H 3H 4H inplace=43/47
+  r2 resolve0: 把魔王腳下的樓板打穿，他摔一層就痛一次；轟出城外也會摔掉一截血
+      hang=['lamp:FREE'] ropes=['lamp:CUT'] reso=[] piv=[] pins=[] units=1m 2H 3x 4H inplace=36/64
+  r2 resolve1: 漂亮！光球打爆了會掉頭砸回魔王身上，連結界都擋不住
+      hang=['lamp:FREE'] ropes=['lamp:CUT'] reso=[] piv=[] pins=[] units=1m 2H 3x 4H inplace=36/41
+  r3 volley0: 敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它
+      hang=['lamp:FREE'] ropes=['lamp:CUT'] reso=[] piv=[] pins=[] units=1m 2H 3x 4H inplace=36/39
+  r3 resolve0: 魔王暴怒了：每回合多砸一顆隕石。下一回合會出現 ×20 的倍增符
+      hang=['lamp:FREE'] ropes=['lamp:CUT'] reso=[] piv=[] pins=[] units=1m 2x 3x 4m inplace=24/69
+  r3 resolve1: 漂亮的坍塌！一次垮得越多，「連珠」集得越快
+      hang=[] ropes=['lamp:CUT'] reso=[] piv=[] pins=[] units=1m 2x 3x 4m inplace=24/27
+  r4 volley0: ×20 的倍增符出現了！只出現這一回合：穿過去，一發變二十發
+      hang=[] ropes=['lamp:CUT'] reso=[] piv=[] pins=[] units=1m 2x 3x 4m inplace=24/27

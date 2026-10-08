@@ -53,13 +53,13 @@ function stagePoint(x, y) {
 function demoStart(idx) {
   G.demo = true; G.demoIdx = idx; G.demoWait = 0; G.drag = null;
   simInit(idx, { dmg: 1, hp: 1, shield: 2, ult: 2 }, (Math.random() * 1e9) | 0, 1, { botA: BOTS.demo });
-  fxReset(); sceneBuild(true); S.on = fxOn; RD.showAim = false; RD.trail = null; RD.sh[0] = RD.sh[1] = 0;
+  fxReset(); sceneBuild(false); S.on = fxOn; RD.showAim = false; RD.trail = null; RD.sh[0] = RD.sh[1] = 0;      // 同一關、同樣大小就沿用畫好的佈景（第六關的竹林畫一次要不少時間）
 }
 function startLevel(idx) {
   auInit();
   G.demo = false; G.mode = 'play'; G.endT = 0; G.acc = 0; G.fired = 0; G.drag = null; G.said = {}; G.hinted = {}; G.tapAt = -1e9; G.tut = idx === 0 && !SV.seen ? 1 : 0;
   const run = ++G.run;
-  simInit(idx, SV.up, (Math.random() * 1e9) | 0, SV.diff); fxReset(); sceneBuild(true); S.on = fxOn;
+  simInit(idx, SV.up, (Math.random() * 1e9) | 0, SV.diff); fxReset(); sceneBuild(false); S.on = fxOn;
   RD.showAim = true; RD.aimOn = false; RD.trail = null; RD.sh[0] = RD.sh[1] = 0;
   RD.aimT = [1.2, 0.95, 0.75][SV.diff] + 0.11 * (SV.up.aim || 0);
   $('home').hidden = true; $('result').hidden = true; $('opt').hidden = true; $('shop').hidden = true; $('hud').hidden = false;

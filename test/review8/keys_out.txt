@@ -1,0 +1,14 @@
+Tab sequence to 第一篇: ['#btnGo [出戰] sel=null', '#btnShop [強化500] sel=null', '#btnOpt [設定] sel=null', 'cu [] sel=null', 'cu [] sel=null', 'cu [] sel=null', 'cu [] sel=null', 'cu [] sel=null', 'cu [] sel=null', 'cu [] sel=null', 'cu [] sel=null', 'chap chamfer [第一篇1–6] sel=false']
+after Enter on 第一篇: focus = BODY {'sel': 5, 'chap': 0, 'tabs': 'true,false', 'name': '竹海吊樓'}
+next Tab -> chap chamfer [第一篇1–6] sel=true
+next Tab -> chap chamfer [第二篇7–12] sel=false
+focus now chap chamfer [第二篇7–12] sel=false
+after ArrowRight on a tab: focus = chap chamfer [第二篇7–12] sel=false {'sel': 5, 'chap': 0, 'tabs': 'true,false', 'name': '竹海吊樓'}
+focus on chap chamfer [第二篇7–12] sel=false
+after Space on 第二篇: focus = BODY {'sel': 11, 'chap': 1, 'tabs': 'false,true', 'name': '魔王城'}
+after Enter on card 10: focus = lv chamfer [10琉璃宮★★★] sel=true {'sel': 9, 'chap': 1, 'tabs': 'false,true', 'name': '琉璃宮'}
+mouse click 第一篇: {'sel': 5, 'chap': 0, 'tabs': 'true,false', 'name': '竹海吊樓'} focus BODY
+mouse click 第二篇: {'sel': 11, 'chap': 1, 'tabs': 'false,true', 'name': '魔王城'} focus BODY
+console: []
+old6 click 第二篇: {'sel': 6, 'chap': 1, 'tabs': 'false,true', 'name': '石林骨牌'}
+old6 click 魔王城: {'sel': 11, 'chap': 1, 'tabs': 'false,true', 'name': '魔王城'} go disabled True stars text <em>★★</em>★ hidden
