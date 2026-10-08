@@ -324,7 +324,7 @@ function mkUnitBody(u) {
   const mask = CAT_TERR | CAT_BLOCK;
   body.createFixture({ shape: new PL.Polygon(sole), density: den, friction: 0.9, restitution: 0, filterCategoryBits: CAT_UNIT, filterMaskBits: mask, userData: u });
   body.createFixture({ shape: new PL.Polygon(trunk), density: den, friction: 0.03, restitution: 0, filterCategoryBits: CAT_UNIT, filterMaskBits: mask, userData: u });
-  u.body = body; u.mass = body.getMass(); u.loadJ = 0; u.loadT = 0; u.load = 0; u.sepT = 0; u.sepNow = false; u.sepVol = -1; u.edge = 0; u.edgeT = 0; u.roofOn = null;
+  u.body = body; u.mass = body.getMass(); u.loadJ = 0; u.loadT = 0; u.load = 0; u.sepT = 0; u.sepNow = false; u.sepVol = -1; u.edge = 0; u.edgeT = 0; u.edgeV = -1; u.edgeD = 0; u.roofOn = null;
 }
 
 /* ---------- 每一步 ---------- */

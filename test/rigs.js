@@ -18,14 +18,17 @@ function world() {
 }
 if (mode === 'gap' || mode === 'all') {
   for (const type of ['rocket', 'boss']) {
-    let bad = 0, n = 0; const notes = [];
+    let bad = 0, n = 0, toe = 0; const notes = [], tnotes = [];
     for (let gap = 0.5; gap <= (type === 'boss' ? 2.6 : 2.0) + 1e-6; gap += 0.1) for (const off of [0, 0.2, 0.4, 0.7]) {
       const W = world(), top = W.GY + 3; W.plat(W.X0 - 8, W.X0 - gap / 2, top); W.plat(W.X0 + gap / 2, W.X0 + 8, top);
       const u = W.unit(type, W.X0 + off, top); let travel = 0, px = u.x, lastMove = 0, flips = 0, pe = 0; const t0 = W.S.time;
       W.run(10, () => { const v = Math.abs(u.body.getLinearVelocity().x); travel += Math.abs(u.x - px); px = u.x; if (v > 0.4) lastMove = W.S.time - t0; if (u.edge !== pe) { flips++; pe = u.edge; } });
       n++; if (lastMove > 6 || flips > 6) { bad++; notes.push(`gap ${gap.toFixed(1)} off ${off}: ${flips} flips, travel ${travel.toFixed(1)}, last moving ${lastMove.toFixed(1)}s`); }
+      // 最後停在哪：身體中心底下是空的、又只有一邊的半個鞋底踩著東西 = 用腳尖勾著邊站（看起來懸空）
+      if (u.alive && u.y > top - 0.3) { const hw = u.bw * 0.5, on = (dx) => { let h = false; W.PH.world.rayCast({ x: u.x + dx, y: u.y + 0.6 }, { x: u.x + dx, y: u.y - 0.9 }, (f, pt, nn, fr) => { const o = f.getUserData(); if (o && o.isUnit) return -1; h = true; return fr; }); return h; };
+        if (!on(0)) { const L = on(-hw * 0.3) || on(-hw * 0.58), R = on(hw * 0.3) || on(hw * 0.58); if (L !== R) { toe++; tnotes.push(`gap ${gap.toFixed(1)} off ${off}: x=${(u.x - W.X0).toFixed(2)}`); } } }
     }
-    console.log(`gap  ${type}: ${n} 種情況，來回滑個不停的 ${bad}` + (notes.length ? '\n     ' + notes.slice(0, 8).join('\n     ') : ''));
+    console.log(`gap  ${type}: ${n} 種情況，來回滑個不停的 ${bad}，最後只靠一邊腳尖站著的 ${toe}` + (notes.length ? '\n     ' + notes.slice(0, 8).join('\n     ') : '') + (tnotes.length ? '\n     腳尖：' + tnotes.slice(0, 8).join('；') : ''));
   }
 }
 if (mode === 'ledge' || mode === 'all') {

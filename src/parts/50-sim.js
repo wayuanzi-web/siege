@@ -165,7 +165,7 @@ function mkUnit(side, type, st, slot, hpMul) {
     isUnit: true, side, type, def, st, slot: slot.slot, hx: 0, hy: 0, x: st.x0 + (slot.cx + 0.5) * CS, y: st.y0 + slot.cy * CS, vx: 0, vy: 0,
     hp: def.hp * hpMul, hpMax: def.hp * hpMul, frozen: 0, stun: 0, alive: true, air: false, airT: 0, recoil: 0, hurtT: 0, tilt: 0,
     w: def.w ? WPN[def.w] : null, flakN: 0, flakT: 0, dieT: 0, body: null, mass: 1, bw: 0, bh: 0, stamp: 0, dazed: 0, outT: 0, held: false,
-    loadJ: 0, loadT: 0, load: 0, sepT: 0, sepNow: false, sepVol: -1, edge: 0, edgeT: 0, roofOn: null, hcV: -1, hcN: 0, rox: 0
+    loadJ: 0, loadT: 0, load: 0, sepT: 0, sepNow: false, sepVol: -1, edge: 0, edgeT: 0, edgeV: -1, edgeD: 0, roofOn: null, hcV: -1, hcN: 0, rox: 0
   };
   u.hx = u.x; u.hy = u.y;
   mkUnitBody(u);
@@ -240,17 +240,21 @@ function unitsStep(dt) {
       if (!u.def.big && u.load > CRUSH_LOAD) { u.loadT += dt; if (u.loadT > 0.3) { hurtUnit(u, 120 * dt, S.phase === 'hazard' ? 2 : 1 - u.side, K_CRUSH); if (!u.alive) continue; } }
       else if (u.loadT > 0) u.loadT = Math.max(0, u.loadT - dt * 2);
     }
-    /* 站在邊緣、腳底正中間已經懸空，而且那一邊是真的空的（往外一個身位都沒有東西可以踩）：站不住，往空的那一邊滑下去。
-       身體不會倒，所以沒有這一條的話，只要鞋底還勾著一點邊，大半個人就會懸在半空中站得好好的。
-       只是跨在一條窄縫上（縫的另一邊就有東西）不算；推的力道很小、速度有上限，推不動就算了，不會把人甩出去，也不會來回推個不停 */
-    if (act && !u.air && u.body.isAwake()) {
+    /* 站在邊緣、腳底正中間已經懸空，只剩半邊鞋底踩著東西（另外半邊底下是空的）：站不住，往空的那一邊滑下去。
+       身體不會倒，所以沒有這一條的話，只要鞋底還勾著一點邊，大半個人就會懸在半空中站得好好的（睡著了也一樣：叫醒再推）。
+       跨在一條比鞋底窄的縫上、兩個半邊都踩得到東西，就站得住，不推；只有一個半邊踩著的話，往另一邊滑：
+       縫比鞋底窄，滑一點點兩邊就都踩到了，變成跨在縫上；縫比鞋底寬，就掉進縫裡。
+       推的力道很小、速度有上限，推一陣子推不動就算了，不會把人甩出去，也不會來回推個不停 */
+    if (act && !u.air) {
       if (((S.frame + u.slot * 3) & 3) === 0) {
         const fy = u.y, hw = u.bw * 0.5;
         const under = (dx) => { let h = false; PH.world.rayCast({ x: u.x + dx, y: fy + 0.6 }, { x: u.x + dx, y: fy - 0.9 }, (f, pt, n, fr) => { const o = f.getUserData(); if (o && o.isUnit) return -1; h = true; return fr; }); return h; };
         let e = 0;
         if (!under(0)) {
-          const free = (d) => !under(d * hw * 0.3) && !under(d * hw * 0.6) && !under(d * hw * 0.95) && !under(d * (hw + 0.6));
-          const L = free(-1), R = free(1); e = R && !L ? 1 : L && !R ? -1 : 0;
+          const half = (d) => under(d * hw * 0.3) || under(d * hw * 0.58);          // 鞋底寬 ±0.6 個半身寬
+          const L = half(-1), R = half(1); e = L && !R ? 1 : R && !L ? -1 : 0;
+          // 同一輪砲擊裡不回頭推：滑過頭、換成另一邊半懸空的話就停在那裡（不然在比身體略寬的縫上會左右來回抖）
+          if (e) { if (u.edgeV !== S.vol) { u.edgeV = S.vol; u.edgeD = e; } else if (e !== u.edgeD) e = 0; }
         }
         u.edge = e;
       }
@@ -756,6 +760,7 @@ function worldQuiet() {
   // 有兵正被壓著扣血（一兩秒內不是被壓扁就是東西滑開）：等出結果，不要輪到下一邊瞄準了他才倒下
   for (const u of S.units) if (u.alive && !u.def.big && u.loadT > 0 && u.load > CRUSH_LOAD) return false;
   for (const u of S.units) if (u.alive && (u.edge || (u.sepNow && u.sepT <= 2)) && u.body.isAwake()) return false;      // 還在往邊上滑、還在被推開的也等
+  for (const u of S.units) if (u.alive && u.outT > 0) return false;          // 被轟出城外、正在倒數出局的：等他出局了再換人（不然換人那一格才跳「出局」）
   for (let b = PH.world.getBodyList(); b; b = b.getNext()) {
     if (!b.isDynamic() || !b.isAwake()) continue;
     const p = b.getPosition(); if (p.x < -GUT - 2 || p.x > VIEW_W + GUT + 2 || p.y < -10) continue;
