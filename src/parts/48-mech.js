@@ -387,6 +387,13 @@ function mechStep(dt) {
   if (S.lv.stress) stressStep(dt, act);
   boulderStep(dt);
   if (S.plats.length) platStep(dt, act);
+  // 崩下來的冰棚、積雪：掉得快的時候整塊的重量砸上去（跟滾石一樣），砸穿屋頂、把人埋掉
+  if (S.lv.snow) for (let k = 0; k < 2; k++) for (const b of S.st[k].blocks) {
+    if (b.dead || !(b.snow || b.noCalm)) continue;
+    const v = b.body.getLinearVelocity(), sp = v.x * v.x + v.y * v.y, fast = act && sp > (b.snow ? 49 : 30) && !b.inPlace;
+    if (fast && !b.smash) b.smashBy = b.side === S.turn || S.phase === 'hazard' ? 2 : S.turn;
+    b.smash = fast ? 1 : 0;
+  }
   if (S.rollers.length) rollersStep();
   if (S.bell) bellStep(dt, act);
   fuseStep(dt, act);
@@ -442,6 +449,7 @@ function ropesBurning() { for (const r of S.ropes) if (!r.cut && r.burn > 0) ret
    那一頭就往下沉。船用一條看不見的錨鍊拉著，不會漂走 */
 const SHIP_DEN = 1.7;          // 船身的密度（底下壓了石頭當壓艙：重心低，船才不會一歪就翻）
 const ISLE_DEN = 1.1;          // 浮島岩石的密度
+const FLOOD_K = 0.6;           // 一個船艙進滿了水，那一艙的浮力少掉幾成
 const TETHER_S0 = 2.4;         // 氣球繩子在開場時被拉長了多少（越大，少一顆氣球時那一頭沉得越多）
 function mkPlat(st, cells, ch, def) {
   const mir = st.mirror, cols = st.cols; let xa = 1e9, xb = -1e9, ya = 1e9, yb = -1e9; const cw = [];
@@ -553,7 +561,7 @@ function platForces() {
     } else {
       for (const c of P.comps) {
         const q = hullSub(P, c); if (!q) continue;
-        const pt = { x: q.x, y: q.y }, v = body.getLinearVelocityFromWorldPoint(pt), F = P.kb * q.a * (1 - 0.92 * c.flood), cd = P.kb * 0.022 * q.a;
+        const pt = { x: q.x, y: q.y }, v = body.getLinearVelocityFromWorldPoint(pt), F = P.kb * q.a * (1 - FLOOD_K * c.flood), cd = P.kb * 0.022 * q.a;
         body.applyForce({ x: -v.x * cd * 0.6, y: F - v.y * cd }, pt, false);
       }
       // 錨鍊：被炸得往旁邊漂，慢慢拉回原位
@@ -599,7 +607,7 @@ function platStep(dt, act) {
 /* ---------- 引信（第四關）：一條從塔頂窗口垂到外面的繩子，一路串著每一層的火藥桶 ----------
    火燒到露在外面的那一截（火油兵的火、穿過地火的砲彈），或是火藥桶在旁邊炸開，引信就點著了：
    火從點著的地方往兩頭燒，燒到哪一桶火藥，那一桶就爆 */
-const FUSE_V = 6.5;            // 引信一秒燒多長
+const FUSE_V = 8.5;            // 引信一秒燒多長
 function mkFuse(st, d) {
   const xs = [], ys = [], s = [0];
   for (const a of d.pts) { const P = cellPt(st, a); xs.push(P.x); ys.push(P.y); }
@@ -678,8 +686,8 @@ function rollerRelease(R, by) {
   const b = R.ball; R.go = true; R.goR = S.round; R.by = by; R.pend = -1;
   if (!b || b.dead) return;
   const dir = R.to === 0 ? -1 : 1;
-  b.body.setType('dynamic'); b.body.setAwake(true); b.body.setBullet(true);
-  b.body.setLinearVelocity({ x: dir * 3, y: 0 }); b.body.setAngularVelocity(-dir * 3 / b.r);
+  b.body.setType('dynamic'); b.body.setAwake(true); b.body.setBullet(true); b.body.setAngularDamping(0.05);
+  b.body.setLinearVelocity({ x: dir * 5, y: -1 }); b.body.setAngularVelocity(-dir * 5 / b.r);
   b.smash = 1; b.smashBy = by; b.inPlace = false;
   const p = b.body.getPosition(); ev('roll', p.x, p.y, R.to);
   S.chainT = S.time;
@@ -699,7 +707,7 @@ function rollersStep() {
   for (const R of S.rollers) {
     if (!R.go && R.pend >= 0) rollerRelease(R, R.pend);
     const b = R.ball; if (!R.go || !b || b.dead || !b.smash) continue;
-    const v = b.body.getLinearVelocity(); if (v.x * v.x + v.y * v.y < 4 && Math.abs(b.body.getAngularVelocity()) < 1) { b.smash = 0; b.body.setBullet(false); }
+    const v = b.body.getLinearVelocity(); if (v.x * v.x + v.y * v.y < 4 && Math.abs(b.body.getAngularVelocity()) < 1) { b.smash = 0; b.body.setBullet(false); b.body.setAngularDamping(0.7); }
   }
 }
 

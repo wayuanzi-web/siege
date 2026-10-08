@@ -57,7 +57,7 @@ const fuseLit = (side) => { const F = S.st[side].fuse; return !!(F && (F.fronts.
 // 第二關：擋住滾石的木樁（往 to 那一邊滾的那顆）還在不在
 const stakeUp = (to) => S.rollers.some((r) => r.to === to && r.ball && !r.go);
 // 第三關：冰棚還架著（積雪還沒崩）
-const shelfUp = (side) => { const st = S.st[side]; return !!castleB(side, 5, 2) && st.blocks.some((b) => !b.dead && b.mat === M_SNOW && b.inPlace); };
+const shelfUp = (side) => S.st[side].blocks.some((b) => !b.dead && b.mat === M_SNOW && b.inPlace);
 
 const LEVELS = [
   {
@@ -95,7 +95,7 @@ const LEVELS = [
     lantern: { at: 3, every: 3, spots: [[56, 48], [50, 30], [62, 28]] }
   },
   {
-    name: '冰崖雪崩', tag: '雪崩・冰牆・冰凍', theme: 2, castle: 'ICE', stress: 1,
+    name: '冰崖雪崩', tag: '雪崩・冰牆・冰凍', theme: 2, castle: 'ICE', stress: 1, snow: 1,
     tip: '冰城頂上壓著一大片積雪，靠兩根冰柱撐著。打掉冰柱和底下的屋頂，積雪整片崩下來，把守軍埋掉。冰很滑，火一烤就化',
     hints: [{ r: 1, t: '敵城崖頂的冰棚壓著一大堆雪，外端只靠兩根冰柱撐著：打掉冰柱（火一烤就化），雪就崩下來', ok: () => shelfUp(1) },
       { r: 2, t: '中間的冰牆擋住平射：吊高越過去，或是先把它轟倒', ok: () => wallLeft() >= 6 },
@@ -104,7 +104,7 @@ const LEVELS = [
     me: { crew: ['fire', 'bolt', 'bomb', 'rocket'] },
     foe: { crew: ['ice', 'rocket', 'bomb', 'fire'], hp: 1.1, dmg: 1.05, open: 0.55, ai: { err: 5.4, think: 1.2, gate: 0.6, hate: 0.15, lob: 1, skill: 0.4, sap: 0.4, warm: 1.7 } },
     extra: [{ castle: 'ICEWALL', x: 56, y: -2, hp: 1 }],
-    weak: (side) => tgC(side, [[6, 3], [7, 3], [6, 4]], 1.05),
+    weak: (side) => tgC(side, [[6, 4], [7, 4], [6, 3], [6, 5]], 1.05),
     gates: [
       { owner: 0, mult: 5, h: 5.5, spots: [[56, 44]] },
       { owner: 0, mult: 3, h: 5.5, spots: [[47, 41], [48, 32]], at: 2, hop: true },
@@ -135,7 +135,7 @@ const LEVELS = [
     lantern: { at: 3, every: 3, spots: [[56, 26], [45, 47], [67, 47]] }
   },
   {
-    name: '雲海浮島', tag: '氣球・浮島・防空弩', theme: 4, castle: 'SKY', y0: 8,
+    name: '雲海浮島', tag: '氣球・浮島・防空弩', theme: 4, castle: 'SKY', y0: 6,
     tip: '兩座城都蓋在浮島上，各用四顆大氣球吊著。打破同一頭的兩顆氣球，那一頭就往下掉，整座城滑進雲海。防空弩會射下飛過來的砲彈',
     hints: [{ r: 1, t: '敵城的浮島前後各吊著兩顆氣球：專打同一頭，兩顆都破了，浮島就歪下去', ok: () => tethersLeft(1) >= 3 },
       { r: 2, t: '把砲彈射進藍色傳送門，會從敵城頭頂灌下去', ok: () => tethersLeft(1) >= 3 },
@@ -185,7 +185,7 @@ const LEVELS = [
     foe: { crew: ['rocket', 'bomb', 'stone', 'bolt'], hp: 1.25, dmg: 1.3, open: 0.55, ai: { err: 3.6, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.0 } },
     extra: [{ castle: 'P5', x: 41.2, y: 0 }, { castle: 'P4', x: 46, y: 0 }, { castle: 'P3', x: 50.6, y: 0 }, { castle: 'P3', x: 61.4, y: 0 }, { castle: 'P4', x: 66, y: 0 }, { castle: 'P5', x: 70.8, y: 0 }],
     weak: (side) => {
-      const out = tgC(side, [[4, 5], [0, 5], [8, 9]], 0.95), st = steles(), o = 1 - side;
+      const out = tgC(side, [[3, 5], [1, 5], [6, 9], [8, 9]], 0.95), st = steles(), o = 1 - side;
       // 對面那一排最靠中間的那塊石碑：上半截、偏自己這一邊一點，往對面推倒
       const row = st.filter((b) => (o === 1 ? b.x0 > 56 : b.x0 < 56)).sort((a, b) => Math.abs(a.x0 - 56) - Math.abs(b.x0 - 56));
       if (row.length >= 2) { const b = row[0], p = b.body.getPosition(), d = o === 1 ? -1 : 1; out.push({ x: p.x + d * b.w * 0.5, y: p.y + b.h * 0.3, w: 1.15, blk: b }); }
@@ -261,16 +261,16 @@ const LEVELS = [
       { r: 3, t: '火油兵點著的柱子會越燒越細：塔是木頭和瓦蓋的，火一路往上延燒', ok: () => foeLeft(M_WOOD, 1) >= 4 }],
     ground: [[-40, 3], [0, 0], [112, 0], [152, 3]],
     wind: { max: 5, at: 3 },
-    bell: { x: 56, y: 50.5, len: 25, w: 6.6, h: 7.2, den: 2.4 },
+    bell: { x: 56, y: 50.5, len: 34, w: 6.8, h: 7.4, den: 2.6 },
     me: { crew: ['fire', 'rocket', 'stone', 'bomb'] },
     foe: { crew: ['bomb', 'fire', 'rocket', 'bolt'], hp: 1.3, dmg: 1.3, open: 0.5, ai: { err: 3.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 2.0 } },
-    weak: (side) => tgC(side, [[1, 8], [7, 8], [2, 6], [6, 6]], 0.95),
+    weak: (side) => tgC(side, [[1, 10], [9, 10], [2, 8], [8, 8], [3, 6]], 0.95),
     gates: [
-      { owner: 0, mult: 3, h: 5.5, spots: [[47, 40]], move: { t: 'bob', a: 4, per: 8 } },
-      { owner: 0, mult: 5, h: 5.5, spots: [[56, 47], [52, 13]], at: 2, hop: true },
-      { owner: 1, mult: 2, h: 5.5, spots: [[64, 41]], at: 3, regap: 2 }
+      { owner: 0, mult: 3, h: 5.5, spots: [[46, 38]], move: { t: 'bob', a: 4, per: 8 } },
+      { owner: 0, mult: 5, h: 5.5, spots: [[59, 42], [50, 30]], at: 2, hop: true },
+      { owner: 1, mult: 2, h: 5.5, spots: [[65, 37]], at: 3, regap: 2 }
     ],
-    lantern: { at: 3, every: 3, spots: [[50, 50], [62, 50]] }
+    lantern: { at: 3, every: 3, spots: [[48, 45], [64, 45]] }
   },
   {
     name: '魔王城', tag: '魔王三階段・鐵吊燈', theme: 5, castle: 'KEEP',

@@ -7,19 +7,21 @@ const li = +process.argv[2] - 1, script = (process.argv[3] || '').split(';').map
 simInit(li, {}, seed, 1, {});
 S.team[0].ai = null; S.team[1].ai = null;
 const ev = []; S.on = (t, a, b, c, d, e) => { if (t === 'udie' || t === 'snap' || t === 'reso' || t === 'splash' && d === 1) ev.push(`${S.time.toFixed(2)}s ${t} ${typeof a === 'number' ? a.toFixed(1) : a},${typeof b === 'number' ? b.toFixed(1) : b} ${c} ${d === undefined ? '' : d} ${e === undefined ? '' : e}`); };
-const acts = script.map((s) => { const m = s.match(/^(\w+)@([-\d.]+),([-\d.]+)(?:,([\d.]+))?$/); return { w: WPN[m[1]], x: +m[2], y: +m[3], t: +(m[4] || 0), done: false }; });
+// 前面加「1:」表示是敵軍打的（例 1:bomb@40,10）：測我方城的機關
+const acts = script.map((s) => { const m = s.match(/^(?:(\d):)?(\w+)@([-\d.]+),([-\d.]+)(?:,([\d.]+))?$/); return { side: +(m[1] || 0), w: WPN[m[2]], x: +m[3], y: +m[4], t: +(m[5] || 0), done: false }; });
 // 開打：直接跳到我方砲擊的階段（規則照「砲擊進行中」跑）
-S.phase = 'resolve'; S.turn = 0; S.round = 1;
+S.phase = 'resolve'; S.turn = acts.length && acts[0].side ? 1 : 0; S.round = 2;
 const steps = Math.round(T * 60); let t = 0;
 for (let i = 0; i < steps && S.state === 'play'; i++) {
   for (const a of acts) if (!a.done && t >= a.t) {
     a.done = true;
     // 打在哪一塊上（像真的砲彈直接命中）：那個點落在哪一塊磚、哪個兵身上
     let hit = null, best = 0.6; for (const b of S.blocks) { if (b.dead) continue; const d = G.blockDist(b, a.x, a.y); if (d < best) { best = d; hit = b; } }
-    physExplode(a.x, a.y, a.w, 0, 1, 0, hit, 1, 0);
+    physExplode(a.x, a.y, a.w, a.side, 1, a.w.kind === 3 ? 4 : 0, hit, a.side ? -1 : 1, 0);
   }
   S.phase = 'resolve'; S.phaseT = 0; S.quietT = 0;
   simStep(1 / 60); t += 1 / 60;
+  if (process.env.TRACE && (i % 30) === 0) console.log(t.toFixed(2), process.env.TRACE.split(',').map((k) => k + '=' + JSON.stringify(eval(k))).join(' '));
 }
 const lv = LEVELS[li];
 console.log(`L${li + 1} ${lv.name} 跑了 ${t.toFixed(1)} 秒，state ${S.state}`);

@@ -366,7 +366,7 @@ function boot() {
   // 字型晚一點才載到的話重新排一次
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { layout(); }).catch(() => { });
 }
-window.__qp = { S, SH, FX, G, V, SV, AU, RD, UI, PH, LEVELS, BOTS, simInit, simStep, simAim, simFire, simSkill, aiInit, teamBar, startLevel, goHome, layout, renderFrame, fxStep, hudUpdate, sfx, musStart, physExplode, blockKill, killUnit, WPN, blockDist, homeRender, demoStart,
+window.__qp = { S, SH, FX, G, V, SV, AU, RD, UI, PH, LEVELS, BOTS, simInit, simStep, simAim, simFire, simSkill, aiInit, teamBar, startLevel, goHome, layout, renderFrame, fxStep, hudUpdate, sfx, musStart, physExplode, blockKill, killUnit, WPN, blockDist, homeRender, demoStart, ropeCut, tetherPop, fuseIgnite, castleB, bellPush,
   // 測試用：凍結即時迴圈後，手動把戰局往前推 sec 秒
   advance(sec) { const n = Math.round(sec / STEP); let acc = 0; for (let i = 0; i < n; i++) { simStep(STEP); fxStep(STEP, STEP); acc += STEP; if (G.mode === 'play' && S.state !== 'play') G.endT += STEP; if (acc >= 0.05 && i < n - 1) { renderFrame(acc, acc); acc = 0; } } if (G.mode === 'play') hudUpdate(); renderFrame(acc || STEP, acc || STEP); }
 };

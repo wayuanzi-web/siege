@@ -41,7 +41,7 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
   const st = {
     side, skin: side < 2 ? def.skin + '@' + side : def.skin, skinB: def.skin, x0, y0, cols, rows, n, w: cols * CS, h: rows * CS, x1: x0 + cols * CS, y1: y0 + rows * CS, cx: x0 + cols * CS / 2, hpMul,
     blocks: [], units: [], slots: [], cellB: new Array(n).fill(null), cellK: new Uint8Array(n), back: new Float32Array(n), backTo: new Uint8Array(n),
-    hp0: 0, hpNow: 0, ver: 0, dead: false, fin: null, hitT: 0, loose: false
+    hp0: 0, hpNow: 0, ver: 0, dead: false, fin: null, hitT: 0, loose: false, mirror, def
   };
   const at = (cx, cy) => (cx < 0 || cy < 0 || cx >= cols || cy >= rows) ? ' ' : (map[rows - 1 - cy][cx] || ' ');
   const used = new Uint8Array(n);
@@ -123,6 +123,8 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
     }
   }
   if (platC.length) mkPlat(st, platC, platK, def);
+  // 頂著積雪的冰棚：開始歪的時候不要被「快停下來就幫它停」的阻尼卡住（不然它會慢慢地歪、半路就睡著，雪崩不下來）
+  for (const b of st.blocks) if (!b.snow && !b.prop) for (let k = 0; k < b.cw; k++) { const ccx = mirror ? cols - 1 - (b.cx + k) : b.cx + k; if (at(ccx, b.cy + b.ch) === '*') b.noCalm = 1; }
   // 火藥桶那一格也算屋內
   for (const b of st.blocks) if (b.mat === M_KEG && !b.prop) { st.cellK[b.cy * cols + b.cx] = 2; st.cellB[b.cy * cols + b.cx] = null; }
   // 岩壁：一列一列併成長方形，掛在一個不會動的物體上（跟地面同一類，砲彈打到就跟打到地面一樣）

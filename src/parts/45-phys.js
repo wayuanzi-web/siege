@@ -14,6 +14,7 @@ const KEG_V = 12;                       // 火藥桶：撞擊讓它的速度一�
 const DV_MAX = 24;           // 爆炸最多把一塊磚加速到多快
 const BOX_GAP = 0.02;
 const DV_ROCK = 5;           // 大石球、落石很沉：爆炸只推得動一點（腳下的木板被炸穿了，它是直直掉下去，不是被炸飛）
+const DV_BELL = 33;          // 戰場中間的大鐘：一輪砲火最多把它推到多快（推得越快盪得越高）
 const DV_BIG = 7;            // 還在原位的樓板、長樑、鐵甲：爆炸只能把它整塊震一下（推在重心，不讓它像蹺蹺板一頭翹起、另一頭把自己的牆砸碎）
 const FRAG_SHR = typeof process !== 'undefined' && process.env && process.env.FRAG_SHR ? +process.env.FRAG_SHR : 0.74;         // 碎塊比原本那一塊小一圈：磚碎了就撐不住上面的東西，上面的會掉下來、歪掉、滑走（不然碎塊卡在原位，等於沒碎）
 const SEG_K = typeof process !== 'undefined' && process.env && process.env.SEG_K ? +process.env.SEG_K : 1.25;            // 長樑、樓板每一段的耐久，是同材質單塊磚的幾倍
@@ -380,7 +381,7 @@ function physStep(dt) {
     if (b.dead || b.kind === 'ball') continue;
     const body = b.body; if (!body.isAwake()) continue;
     const v = body.getLinearVelocity(), om = Math.abs(body.getAngularVelocity()), s2 = v.x * v.x + v.y * v.y;
-    const calm = b.inPlace ? s2 < 9 && om < 0.35 && Math.abs(body.getAngle()) < 0.1 : s2 < 1.4 && om < 0.5;
+    const calm = b.noCalm ? false : b.inPlace ? s2 < 9 && om < 0.35 && Math.abs(body.getAngle()) < 0.1 : s2 < 1.4 && om < 0.5;
     if (calm !== !!b.calm) { b.calm = calm; body.setLinearDamping(calm ? 2.5 : 0); body.setAngularDamping(calm ? 5 : b.frag ? 0.3 : 0.08); }
   }
   // 撞擊傷害（落石階段造成的不算任何一邊的功勞）
@@ -516,7 +517,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
     else if (hit && hit.isBlock && !hit.dead) {
       if (hit.bigBell) bellPush(side);
       const b = hit;
-      if (b.body) { const big = bigBlock(b), cap = b.mat === M_KEG ? 10 : b.mat === M_ROCK ? DV_ROCK : big ? DV_BIG : DV_MAX, j = Math.min(Jw, b.mass * Math.min(12, cap)), k = pushScale(b.body, b.mass, ux * j, uy * j, cap); if (k > 0) b.body.applyLinearImpulse({ x: ux * j * k, y: uy * j * k }, big ? b.body.getWorldCenter() : { x, y }, true); }
+      if (b.body) { const big = bigBlock(b), cap = b.mat === M_KEG ? 10 : b.mat === M_ROCK ? DV_ROCK : big ? DV_BIG : b.bigBell ? DV_BELL : DV_MAX, j = Math.min(Jw, b.mass * Math.min(12, cap)), k = pushScale(b.body, b.mass, ux * j, uy * j, cap); if (k > 0) b.body.applyLinearImpulse({ x: ux * j * k, y: uy * j * k }, big || b.bigBell ? b.body.getWorldCenter() : { x, y }, true); }
       if (b.mat === M_ROCK && b.kind === 'ball') rockPass(b, dmg * 0.6, kind, side);
       blockHurt(b, dmg, kind, side, x, y);
     } else if (hit && hit.alive) {
@@ -546,9 +547,9 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
       const p = o.body.getPosition(); let nx = _cp.x - x, ny = _cp.y - y, nl = Math.hypot(nx, ny);
       if (nl < 0.3) { nx = p.x - x; ny = p.y - y; nl = Math.hypot(nx, ny); if (nl < 0.05) { nx = ux; ny = uy; nl = 1; } }
       // 火藥桶很沉，不會被震得到處飛；還在原位的大塊只會整塊被震一下
-      const big = bigBlock(o), cap = o.mat === M_KEG ? 10 : o.mat === M_ROCK ? DV_ROCK : big ? DV_BIG : DV_MAX, j = Math.min(Jw * f, o.mass * cap);
+      const big = bigBlock(o), cap = o.mat === M_KEG ? 10 : o.mat === M_ROCK ? DV_ROCK : big ? DV_BIG : o.bigBell ? DV_BELL : DV_MAX, j = Math.min(Jw * f, o.mass * cap);
       const jx = nx / nl * j, jy = ny / nl * j + j * 0.22, k = pushScale(o.body, o.mass, jx, jy, cap);
-      if (k > 0) o.body.applyLinearImpulse({ x: jx * k, y: jy * k }, big ? o.body.getWorldCenter() : { x: _cp.x, y: _cp.y }, true);
+      if (k > 0) o.body.applyLinearImpulse({ x: jx * k, y: jy * k }, big || o.bigBell ? o.body.getWorldCenter() : { x: _cp.x, y: _cp.y }, true);
       if (o.mat === M_KEG && w.id === 'keg') { blockKill(o, side, kind); continue; }           // 火藥桶被另一桶炸到：一定跟著爆
       if (fire && MAT[o.mat].burn && (o === hit || f > 0.5) && (o.mat === M_KEG || rnd() < 0.3 + 0.6 * f)) ignite(o, 3 + rnd() * 2, side);       // 要直接打中或炸在旁邊才點得著（隔著一道牆、一片鐵甲點不到）
       const sootK = kind === K_ICE || kind === K_ZAP || o.mat === M_ICE ? 0 : (fire ? 0.6 : 0.4) * Math.min(1, mass + 0.3);        // 冰不會被燻黑
