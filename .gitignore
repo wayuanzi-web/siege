@@ -2,3 +2,4 @@ src/dist/
 shots/
 __pycache__/
 *.pyc
+.claude/
