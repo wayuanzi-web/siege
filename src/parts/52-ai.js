@@ -81,7 +81,7 @@ function gatePosAt(g, t, out) {
    path：給一個陣列就把每一步的位置記下來（瞄準線照著真的彈道畫：碰到冰鏡、噴流、黑洞會轉彎） */
 const _tr = { hit: 0, x: 0, y: 0, t: 0, mult: 1, gm: 0, o: null, obj: null, lan: null, gate: null, port: false, rope: null, amp: 1, fire: false, zap: false, frost: false, roll: false, ev: false, ex: 0, ey: 0, evx: 0, evy: 0, et: 0 };
 function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
-  const R = _tr; R.hit = 0; R.mult = 1; R.gm = 0; R.o = null; R.obj = null; R.lan = null; R.gate = null; R.port = false; R.rope = null; R.amp = 1; R.fire = false; R.zap = false; R.frost = false; R.roll = false; R.ev = false;
+  const R = _tr; R.hit = 0; R.mult = 1; R.gm = 0; R.o = null; R.obj = null; R.lan = null; R.gate = null; R.port = false; R.rope = null; R.amp = 1; R.fire = false; R.zap = false; R.frost = false; R.roll = false; R.ev = false; R.split = false;
   const dt = 1 / 30, own = S.st[side], foeT = S.team[1 - side], fst = S.st[1 - side], forces = AMP.jets.length || AMP.holes.length;
   // 這裡一步走 1/30 秒，戰局是 1/60 秒；補上兩者每一步差的那一點，落點才會跟真的打出去一樣
   const cy = GRAV * STEP * STEP, cx = -wind * STEP * STEP;
@@ -125,7 +125,7 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
         const ivx = vx, ivy = vy, r = ampObj(o);
         if (!r) continue;
         if (r === 2) { R.x = SA.hx; R.y = SA.hy; return end(5); }
-        if (r === 3) { evt(nx, ny, ivx, ivy); R.mult *= 3; mass *= Math.pow(3, -SPLIT_P); flag |= F_SPLIT | F_ZAPC; continue; }
+        if (r === 3) { evt(nx, ny, ivx, ivy); R.split = true; R.mult *= 3; mass *= Math.pow(3, -SPLIT_P); flag |= F_SPLIT | F_ZAPC; continue; }
         if (r === 4) { evt(nx, ny, ivx, ivy); flag = SA.flag; continue; }
         evt(SA.hx, SA.hy, ivx, ivy);
         x = SA.x; y = SA.y; vx = SA.vx; vy = SA.vy; nx = SA.nx; ny = SA.ny; flag = SA.flag; mass = SA.mass; kk = SA.k;
@@ -295,7 +295,8 @@ function aiScore(T, t, R) {
     sc = hit >= 0 ? Math.max(hit * t.w, gen) : gen;          // 一般的目標只是用來列出彈道：分數照實際打到的算，不乘權重
   }
   if (sc <= 0) return 0;
-  const m = (R.mult < 1 ? R.mult : A.useGate ? Math.pow(Math.min(R.mult, 200), 1 - SPLIT_P) : 1) * (A.useGate ? Math.pow(R.amp, 0.85) * (R.fire || R.zap || R.frost ? 1.15 : 1) : 1);
+  // 穿過倍增符分成好幾發：多打的那幾發也算（稜鏡分出去的散得很開，打得到同一個地方的少）。威力變大（滾地、打水漂……）在上面的分數裡已經算進去了
+  const m = (R.mult < 1 ? R.mult : Math.pow(Math.min(R.mult, 200), R.split ? 0.15 : 1 - SPLIT_P)) * (R.fire || R.zap || R.frost ? 1.12 : 1);
   return sc * m;
 }
 const AI_ROB = 3;          // 看起來不錯的打法，照自己手抖的程度再多試射幾發，取平均（小小的目標、擦邊才打得到的，平均下來就不划算）

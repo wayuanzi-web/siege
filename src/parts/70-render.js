@@ -63,6 +63,10 @@ const ROCK_PAL = {
   karst: { c: ['#c9cbc2', '#a2a49b', '#76786f', '#52544c'], veg: 'grass', g: ['#a3cf72', '#64994b', '#3d6a37'], jnt: 0.35, ldg: 0.7, groove: 1, foot: 0.25 },
   frost: { c: ['#c8d6e6', '#9cb0c8', '#6f84a0', '#4c5d78'], veg: 'snow', jnt: 0.75, ldg: 0.5, foot: 0.2 },
   jade: { c: ['#b8b0a0', '#968c7a', '#6e6555', '#4a4336'], veg: 'grass', g: ['#b2e27a', '#71b950', '#3e7d39'], jnt: 0.3, ldg: 0.5, band: ['#a99f8b', '#8c826e', '#9b8f78', '#7f7562', '#b3a891'], soil: ['#8d6844', '#5c3f28'], glow: '#ffb38e' },
+  ember: { c: ['#6e5a55', '#4a3a37', '#2e2322', '#140d0c'], veg: 0, jnt: 0.7, ldg: 0.45 },
+  crystal: { c: ['#efeaff', '#c3bbee', '#9289cc', '#4f4688'], veg: 'snow', jnt: 0.45, ldg: 0.35 },
+  maple: { c: ['#bdb6a6', '#979080', '#6d675b', '#46423a'], veg: 'grass', g: ['#d8c060', '#a8913f', '#6e5c28'], jnt: 0.5, ldg: 0.7 },
+  demon: { c: ['#7a5a88', '#553a64', '#352442', '#170d20'], veg: 0, jnt: 0.65, ldg: 0.5 },
   def: { c: ['#a39a8c', '#81786b', '#5c554b', '#3e3932'], veg: 'grass', g: ['#a2e070', '#7fae5a', '#4a7a3a'], jnt: 0.85, ldg: 1 }
 };
 // 岩石（藍圖裡的 A；浮島的 R 由 drawPlats 傳 cells 進來）：整片連成一塊畫，不是一格一格的磚。
@@ -597,16 +601,31 @@ function drawFuses(c, t) {
   }
 }
 const _noBlock = { h: 0 };
-// 旗子插在最高的那片屋瓦上，屋瓦歪了、掉了，旗子跟著走
+/* 帥旗：插在城樓最高、還站在原位的那一塊上（屋瓦優先）。那一塊被打掉了，旗子飛出去，城樓剩下的最高處再升起一面；
+   城破的那一刻旗子飛出去，就不再升起來 */
+function flagPick(st) {
+  let best = null, top = -1e9;
+  for (const b of st.blocks) { if (b.dead || b.frag || b.prop || !b.inPlace || b.lost || !(b.wt > 0)) continue; const y = b.y0 + b.h / 2 + (b.kind === 'roof' ? 0.6 : 0); if (y > top + 0.1 || (Math.abs(y - top) <= 0.1 && best && Math.abs(b.x0 - st.cx) < Math.abs(best.x0 - st.cx))) { best = b; top = y; } }
+  return best;
+}
+function flagFling(st, b) { const p = b && b.body ? b.body.getPosition() : b ? { x: b.x, y: b.y } : { x: st.cx, y: st.y1 }; FX.flung.push({ flag: st, x: p.x, y: p.y + (b ? b.h / 2 : 0), vx: rndS() * 9, vy: 15 + Math.random() * 9, rot: 0, vr: (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 3), t: 0 }); }
 function flagBlock(st) {
-  if (st._flagB !== undefined) return st._flagB;
-  let best = null;
-  for (const b of st.blocks) if (b.kind === 'roof' && (!best || b.y0 > best.y0 + 0.1 || (Math.abs(b.y0 - best.y0) <= 0.1 && Math.abs(b.x0 - st.cx) < Math.abs(best.x0 - st.cx)))) best = b;
-  st._flagB = best; return best;
+  if (st._flagGone) return null;
+  const fell = S.state !== 'play' && S.loser === st.side;
+  let b = st._flagB;
+  if (b === undefined) { b = st._flagB = flagPick(st); st._flagT = -9; }
+  else if (fell || !b || b.dead || !b.inPlace || b.lost) {
+    if (b && !st._flagOff) flagFling(st, b);
+    if (fell) { st._flagGone = 1; return null; }
+    const nb = flagPick(st); if (nb !== b) { st._flagB = nb; st._flagT = RD.t; st._flagOff = 0; } else st._flagOff = 1;
+    b = nb;
+  }
+  return b;
 }
 function drawFlag(c, st, b, t) {
   // 在這塊屋瓦自己的座標裡畫（原點是屋瓦中心，y 往下）
-  const s = V.s, P = SKINS[st.skin] || SKINS.blue, py = -b.h * s / 2, ph = s * 5.6, wind = S.wind;
+  const s = V.s, P = SKINS[st.skin] || SKINS.blue, py = -b.h * s / 2, up = b === _noBlock ? 1 : smooth(clamp((RD.t - (st._flagT || -9)) / 0.6, 0, 1)), ph = s * 5.6 * up, wind = S.wind;          // up：新升起來的旗子，旗桿從底下慢慢升上來
+  if (up <= 0.02) return;
   const dir = wind > 1 ? 1 : wind < -1 ? -1 : (st.side === 0 ? 1 : -1), amp = 0.18 + Math.min(0.5, Math.abs(wind) * 0.03), sp = 5 + Math.abs(wind) * 0.3;
   c.strokeStyle = '#3a2a1c'; c.lineWidth = Math.max(1.5, s * 0.36); c.lineCap = 'round'; c.beginPath(); c.moveTo(0, py); c.lineTo(0, py - ph); c.stroke();
   c.fillStyle = P.trim; c.beginPath(); c.arc(0, py - ph, s * 0.45, 0, TAU); c.fill();
@@ -627,8 +646,6 @@ function frostSprite(sp) {
 function drawBlocks(c, t, rdt, hp) {
   const s = V.s, sx = FX.shx, sy = FX.shy, burn = RD.burn; burn.length = 0;
   const f0 = hp ? null : flagBlock(S.st[0]), f1 = hp ? null : flagBlock(S.st[1]);
-  // 插旗的那片屋瓦碎了：旗子飛出去（不是憑空不見）
-  if (!hp) for (let k = 0; k < 2; k++) { const fb = k ? f1 : f0, st = S.st[k]; if (fb && fb.dead && !st._flagOut) { st._flagOut = 1; FX.flung.push({ flag: st, x: fb.x, y: fb.y + fb.h / 2, vx: rndS() * 9, vy: 15 + Math.random() * 9, rot: 0, vr: (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 3), t: 0 }); } }
   for (const b of S.blocks) {
     if (b.dead || !b.hang !== !hp) continue;
     const p = b.body.getPosition(), a = b.body.getAngle(), seg = b.seg, f = seg ? 1 : b.hp / b.hm;

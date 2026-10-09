@@ -9,6 +9,7 @@ const UKB_K = 0.3, UKB_V = 9;                              // 爆炸推兵的力
 const IMP_GATE = 3.5;        // 兩個東西靠近的速度超過這個才算「撞擊」
 const IMP_V0 = 9, IMP_K = 0.9;          // 磚：撞擊造成的速度變化超過 V0 的部分 × K × 脆度 = 傷害
 const UIMP_V0 = 11, UIMP_K = 2.3;       // 兵：摔下來、被砸到都很痛
+const UNIT_FALL_MAX = 0.4;              // 一下最多扣幾成血
 const BOSS_V0 = 10, BOSS_V1 = 2.5;      // 魔王：摔下來的速度超過 V0 才算摔到；重的東西從頭上砸下來，超過 V1 就算
 const KEG_V = 12;                       // 火藥桶：撞擊讓它的速度一下子變這麼多就會爆（摔一層樓差不多）
 const DV_MAX = 24;           // 爆炸最多把一塊磚加速到多快
@@ -245,7 +246,7 @@ function segAt(b, x, y) {
 function segDmg(b, k, d, side) {
   const before = b.seg[k]; if (before <= 0) return;
   b.seg[k] = before - d; b.flash = 1; b.flashM |= 1 << k;          // flashM：這一下打在哪幾段（畫面上只閃那幾段）
-  if (side < 2 && b.side < 2 && b.side !== side) { const T = S.team[side]; T.dealt += Math.min(d, before); T.ult.c = Math.min(T.ult.need, T.ult.c + Math.min(d, before) * T.ult.gain * (b.base ? 0.25 : 1) * ultK(side)); }
+  if (side < 2 && b.side < 2 && b.side !== side) { const T = S.team[side]; T.dealt += Math.min(d, before); T.ult.c = Math.min(T.ult.need, T.ult.c + Math.min(d, before) * T.ult.gain * ULT_BLK * (b.base ? 0.25 : 1) * ultK(side)); }
 }
 // 爆炸：每一段照自己離爆炸中心多遠算傷害（direct：這一塊是被直接打中的，最近的那一段吃全額）
 function segBlast(b, x, y, r, dmg, kind, side, direct, sootK) {
@@ -320,9 +321,9 @@ function blockHurt(b, dmg, kind, side, x, y) {
     segSettle(b, side, kind);
     return;
   }
-  if (b.reso && side < 2 && side !== b.side && b.hp - d < b.hm * 0.55) resonate(b, side);      // 共鳴晶柱：要重重打中（一下去掉快一半）才會共鳴，旁邊擦到不算
+  if (b.reso && side < 2 && side !== b.side) for (let k = b.resoN || 0; k < RESO_TH.length; k++) if (b.hp - d < b.hm * RESO_TH[k]) resonate(b, side);          // 共鳴晶柱：耐久每掉過一道門檻就共鳴一次，一次傳得比一次遠
   const before = b.hp; b.hp -= d; b.flash = 1;
-  if (side < 2 && b.side < 2 && b.side !== side && !b.frag) { const T = S.team[side]; T.dealt += Math.min(d, before); T.ult.c = Math.min(T.ult.need, T.ult.c + Math.min(d, before) * T.ult.gain * (b.base ? 0.25 : 1) * ultK(side)); }      // 打城基集得慢（城基很厚，不然光打牆腳就能一直放連珠）
+  if (side < 2 && b.side < 2 && b.side !== side && !b.frag) { const T = S.team[side]; T.dealt += Math.min(d, before); T.ult.c = Math.min(T.ult.need, T.ult.c + Math.min(d, before) * T.ult.gain * ULT_BLK * (b.base ? 0.25 : 1) * ultK(side)); }      // 打城基集得慢（城基很厚，不然光打牆腳就能一直放連珠）
   if (b.hp <= 0) blockKill(b, side, kind, -b.hp > b.hm * 0.9);          // 傷害遠遠超過它撐得住的：直接炸成粉
   else if (((before / b.hm) * 3 | 0) !== ((b.hp / b.hm) * 3 | 0)) ev('crack', b.body.getPosition().x, b.body.getPosition().y, b.mat);
 }
@@ -442,8 +443,9 @@ function physStep(dt) {
           const d = (dv - (top ? BOSS_V1 : BOSS_V0)) * UIMP_K;
           if (d > 0 && !(S.time < o.crushCd)) { o.crushCd = S.time + 0.7; hurtUnit(o, clamp(d * 0.9, o.hpMax * 0.05, o.hpMax * 0.12), o.side === credit ? 2 : credit, K_CRUSH); }
         } else {
+          // 摔下來、被砸到：很痛，但一下最多扣四成血（城塌了、被轟下城，人還在，站起來接著打）
           const d = (dv - UIMP_V0) * UIMP_K;
-          if (d > 0) hurtUnit(o, Math.min(d, 220), o.side === credit ? 2 : credit, K_CRUSH);
+          if (d > 0) hurtUnit(o, Math.min(d, o.hpMax * UNIT_FALL_MAX), o.side === credit ? 2 : credit, K_CRUSH);
         }
       }
     }

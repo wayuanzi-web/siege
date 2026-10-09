@@ -122,6 +122,7 @@ function cloudIn(o) { const dx = (SA.nx - o.x) / o.rx, dy = (SA.ny - o.y) / o.ry
 function ampObj(o) {
   switch (o.t) {
     case 'mirror': {
+      if (o.side !== undefined && o.side !== SA.side && SA.side < 2) return 0;          // 對方的冰鏡：穿過去（只有自己那一面幫自己，不會變成擋住對方的牆）
       if (Math.abs(SA.nx - o.x) > o.len + 4 && Math.abs(SA.x - o.x) > o.len + 4) return 0;
       const r = segBounce(o, 0); if (!r) return 0;
       if (r === 2) return 2;
