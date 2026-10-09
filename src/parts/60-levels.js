@@ -242,7 +242,7 @@ const LEVELS = [
       { r: 3, t: '琉璃碎片砸到下面的琉璃也會碎：從上往下打，一層壓垮一層', ok: () => foeLeft(M_GLASS) >= 8 }],
     ground: [[-40, 3], [0, 0], [40, 0], [43, -3.5], [69, -3.5], [72, 0], [112, 0], [152, 3]],
     me: { crew: ['rocket', 'stone', 'zap', 'bomb'] },
-    foe: { crew: ['bomb', 'ice', 'zap', 'rocket'], hp: 1.7, dmg: 1.8, open: 0.55, ai: { err: 3.0, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.0 } },
+    foe: { crew: ['bomb', 'ice', 'zap', 'rocket'], hp: 1.7, dmg: 1.65, open: 0.55, ai: { err: 3.0, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.0 } },
     weak: (side) => tgC(side, [[5, 3]], 1.25).concat(tgC(side, [[5, 4]], 0.6)),
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[47, 38]], move: { t: 'bob', a: 4, per: 8 } },
@@ -262,7 +262,7 @@ const LEVELS = [
     wind: { max: 5, at: 3 },
     bell: { x: 56, y: 50.5, len: 34, w: 6.8, h: 7.4, den: 2.6 },
     me: { crew: ['fire', 'rocket', 'stone', 'bomb'] },
-    foe: { crew: ['bomb', 'fire', 'rocket', 'bolt'], hp: 1.25, dmg: 1.08, open: 0.5, ai: { err: 4.3, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 2.0 } },
+    foe: { crew: ['bomb', 'fire', 'rocket', 'bolt'], hp: 1.15, dmg: 0.95, open: 0.5, ai: { err: 4.3, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 2.0 } },
     weak: (side) => tgC(side, [[1, 10], [9, 10], [2, 8], [8, 8], [3, 6]], 0.95),
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[46, 38]], move: { t: 'bob', a: 4, per: 8 } },
@@ -278,7 +278,7 @@ const LEVELS = [
     ground: [[-40, 3], [0, 0], [112, 0], [152, 3]],
     voids: [[41.5, 70.5]],
     me: { crew: ['rocket', 'zap', 'bomb', 'fire'] },
-    foe: { crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 1.1, dmg: 1.3, open: 0.55, ai: { err: 4.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 1.8 } },
+    foe: { crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 1.1, dmg: 1.2, open: 0.55, ai: { err: 4.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 1.8 } },
     weak: (side) => side === 1 ? tgC(side, [[3, 2], [7, 2]], 0.7) : [],
     boss: { p2: 0.8, p3: 0.45, segHp: 60, regen: 2, orbHp: 30, orbGap: [3, 2], meteors: 1 },
     gates: [

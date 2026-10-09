@@ -52,7 +52,7 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
     if (ex) { o.deco = ex.deco || 0; if (kind === 'roof') { o.il = (mirror ? ex.ir : ex.il) * CS; o.ir = (mirror ? ex.il : ex.ir) * CS; } if (kind === 'ball') { o.r = ex.r; o.y = y0 + cy * CS + ex.r; } if (ex.bw) { o.w = ex.bw; o.h = ex.bh; o.y = y0 + cy * CS + ex.bh / 2; } if (ex.sw) o.w = cw * CS * ex.sw; if (ex.den) o.den = ex.den; }
     const b = mkBlock(st, o);
     b.cx = mx; b.cy = cy; b.cw = cw; b.ch = ch;
-    if (ex) { if (ex.dom) { b.dom = 1; b.body.getFixtureList().setFriction(0.3); } if (ex.reso) { b.reso = 1; b.hp *= 10; b.hm *= 10; } /* 共鳴晶柱很硬：一發重砲再補一兩下（或三四發火箭）才震得起來 */ if (ex.sk) b.sk = ex.sk; if (ex.beam) { b.beam = 1; b.hp *= 12; b.hm *= 12; b.body.getFixtureList().setFriction(0.22); } if (ex.snow) b.snow = 1; }      // 天秤的大樑很滑：一歪，上面的東西就往下滑
+    if (ex) { if (ex.dom) { b.dom = 1; b.body.getFixtureList().setFriction(0.3); } if (ex.reso) { b.reso = 1; b.hp = b.hm = 180; } /* 共鳴晶柱很硬，兩邊一樣硬（不吃城防倍率）：轟天砲正中一發、或火箭五六發才震得起來 */ if (ex.sk) b.sk = ex.sk; if (ex.beam) { b.beam = 1; b.hp *= 12; b.hm *= 12; b.body.getFixtureList().setFriction(0.22); } if (ex.snow) b.snow = 1; }      // 天秤的大樑很滑：一歪，上面的東西就往下滑
     if (kind === 'box' && ch === 1 && cw >= 3 && !(ex && (ex.deco || ex.beam)) && (mat === M_STONE || mat === M_WOOD || mat === M_ICE || mat === M_BAMBOO || mat === M_GLASS)) segInit(b);        // 長樑、樓板：分段算耐久
     for (let a = 0; a < cw; a++) for (let bb = 0; bb < ch; bb++) { const i = (cy + bb) * cols + mx + a; st.cellB[i] = b; st.cellK[i] = 1; }
     return b;
@@ -125,6 +125,8 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
   if (platC.length) mkPlat(st, platC, platK, def);
   // 頂著積雪的冰棚：開始歪的時候不要被「快停下來就幫它停」的阻尼卡住（不然它會慢慢地歪、半路就睡著，雪崩不下來）
   for (const b of st.blocks) if (!b.snow && !b.prop) for (let k = 0; k < b.cw; k++) { const ccx = mirror ? cols - 1 - (b.cx + k) : b.cx + k; if (at(ccx, b.cy + b.ch) === '*') b.noCalm = 1; }
+  // 城身比較耐撞、耐壓（stressK、impK），最上面 softTop 列（冰崖的冰棚、積雪、撐它的冰柱、頂樓）照原本的：雪崩要砸得穿頂樓，但不會把整座城一路震垮
+  if (def.stressK || def.impK) for (const b of st.blocks) if (b.cy + b.ch <= rows - (def.softTop || 0)) { b.skK = def.stressK || 1; b.impK = def.impK || 1; }
   // 火藥桶那一格也算屋內
   for (const b of st.blocks) if (b.mat === M_KEG && !b.prop) { st.cellK[b.cy * cols + b.cx] = 2; st.cellB[b.cy * cols + b.cx] = null; }
   // 岩壁：一列一列併成長方形，掛在一個不會動的物體上（跟地面同一類，砲彈打到就跟打到地面一樣）

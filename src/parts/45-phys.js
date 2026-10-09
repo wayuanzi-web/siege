@@ -314,6 +314,7 @@ function blockHurt(b, dmg, kind, side, x, y) {
   if (r1Guard(b, side)) return;                              // 開場護符：敵軍第一輪打不壞我方的機關磚
   if (b.stake && (side !== 1 - b.stake.to || guard1(b.stake.to, side))) return;          // 擋滾石的木樁：只有「石頭滾下去會砸到對方」的那一邊打得斷（第一回合敵軍打不斷我方這邊的）
   let d = dmg * DM[kind][b.mat]; if (b.brit > 0) d *= 1.6;
+  if (b.reso && side < 2) d /= Math.max(0.5, S.team[side].dmg);          // 共鳴晶柱：兩邊要打一樣多下才震得起來（不吃火力倍率）
   if (d <= 0) return;
   if (b.seg) {
     if (x === undefined) { for (let k = 0; k < b.cw; k++) segDmg(b, k, d, side); }
@@ -398,7 +399,7 @@ function physStep(dt) {
         const by = sm.smashBy === undefined ? 2 : sm.smashBy;
         const k1 = sm.bigBell && S.bell.round1 && o.side === 0 ? 0.25 : 1;          // 第一回合敵軍推過來的大鐘：撞得輕一點
         if (o.isBlock && !o.dead && o.st !== S.mech && !(sm.dom && o.dom) && !(S.time < (o.smCd || 0))) { o.smCd = S.time + 0.25; blockHurt(o, sm.mass * r.vn * SMASH_K * k1, K_CRUSH, by === o.side ? 2 : by, r.x, r.y); if (!o.dead) ev('thud', r.x, r.y, r.J, r.vn); }
-        else if (o.isUnit && o.alive && !(S.time < (o.smCd || 0))) { o.smCd = S.time + 0.6; ev('bonk', r.x, r.y, sm.bigBell ? 'bell' : 'rock'); hurtUnit(o, Math.min(o.def.big ? o.hpMax * 0.12 : sm.snow || sm.noCalm ? 60 : 160, sm.mass * r.vn * 0.22), by === o.side ? 2 : by, K_CRUSH); }
+        else if (o.isUnit && o.alive && !(S.time < (o.smCd || 0))) { o.smCd = S.time + 0.6; ev('bonk', r.x, r.y, sm.bigBell ? 'bell' : 'rock'); hurtUnit(o, Math.min(o.def.big ? o.hpMax * 0.12 : sm.snow || sm.noCalm ? 95 : 160, sm.mass * r.vn * 0.22), by === o.side ? 2 : by, K_CRUSH); }
         // 石碑整塊砸進城裡：落下的那一下震得周圍的人都受傷（一塊石碑只算一次）
         if (sm.dom && !sm.domHit && o.isBlock && o.st !== sm.st && !o.dom && r.vn > 6) {
           sm.domHit = 1; ev('slam', r.x, r.y, r.vn);
@@ -427,7 +428,7 @@ function physStep(dt) {
         // （只砸得穿屋頂、柱子這種一塊一塊的，樓板、長樑不算；一口鐘最多砸穿兩樣東西，不會一路鑽到底）
         { const oth = k ? r.a : r.b; if (oth && oth.isBlock && oth.hang && (oth.hangFree || oth.body.getLinearVelocity().y < -4) && !oth.dead && oth !== o && r.vn > 4 && o.st !== S.rubble && !o.hang && !o.seg && (oth.crashN || 0) < 2) { oth.crashN = (oth.crashN || 0) + 1; const by = oth.hitBy !== undefined ? oth.hitBy : o.side === credit ? 2 : credit; blockHurt(o, oth.mass * r.vn * 0.55, K_CRUSH, by, r.x, r.y); if (o.dead) continue; } }
         if (o.boulder) { if (!o.bHit && o.bFly && !o.bIn) { o.bHit = 1; const oth = k ? r.a : r.b; ev('thunk', r.x, r.y, r.J); if (oth && oth.bigBell && !guard1(0, o.bSide)) bellPush(o.bSide); if (oth && oth.isBlock && !oth.dead && oth !== o) blockHurt(oth, o.bW.dmg * o.bMul, K_HEAVY, o.bSide, r.x, r.y); else if (oth && oth.isUnit && oth.alive && oth.side !== o.bSide) hurtUnit(oth, o.bW.ud * o.bMul, o.bSide, K_CRUSH); } continue; }
-        const d = (dv - (MAT[o.mat].imp || IMP_V0)) * IMP_K * MAT[o.mat].frag * ((o.st.def && o.st.def.impK) || 1);
+        const d = (dv - (MAT[o.mat].imp || IMP_V0)) * IMP_K * MAT[o.mat].frag * (o.impK || 1);
         if (d > 0) blockHurt(o, Math.min(d, (o.seg ? o.segM : o.hm) * 0.9 + 6), K_CRUSH, o.side === credit ? 2 : credit, r.x, r.y);
       } else if (o.alive) {
         // 屋瓦砸在兵（或魔王）頭上：瓦是脆的，當場碎掉、順著頭兩邊滑下去。該痛的照痛（下面照撞擊的力道算），

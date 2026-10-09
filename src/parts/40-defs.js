@@ -119,7 +119,7 @@ const CASTLES = {
     ' SuS |.4.D'] },
   /* 第三關：冰崖城。冰城蓋在懸崖腳下，崖頂伸出一塊冰棚，上面壓著一大堆積雪。冰棚的內端架在岩壁上，外端靠兩根冰柱撐著，
      冰柱就立在城頂的屋瓦上：把冰柱、屋頂打掉，冰棚一歪，積雪整片崩下來，砸穿屋頂、把兵埋掉 */
-  ICE: { skin: 'frost', r1hold: 13, stressK: 1.35, impK: 0.5, map: [
+  ICE: { skin: 'frost', r1hold: 13, stressK: 1.35, impK: 0.5, softTop: 7, map: [
     'AA *****   ',
     'AA *****   ',
     'AALLLLLLL  ',

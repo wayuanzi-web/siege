@@ -339,7 +339,7 @@ function stressCalib(k) {
   for (const b of S.blocks) {
     b.sL = 0; b.sT = 0; b.sJ = 0; b.sX = 0; b.sY = 0; b.sW = 0;
     const m = MAT[b.mat]; b.cap = 0;
-    if (S.lv.stress && m.stress && !b.prop && !b.frag && !b.base && !b.beam && !b.deco) b.cap = Math.max(b.sAcc / k * (b.sk || m.stress) * ((b.st.def && b.st.def.stressK) || 1), b.mass * GRAV * 1.2 + 60);
+    if (S.lv.stress && m.stress && !b.prop && !b.frag && !b.base && !b.beam && !b.deco) b.cap = Math.max(b.sAcc / k * (b.sk || m.stress) * (b.skK || 1), b.mass * GRAV * 1.2 + 60);
     b.sAcc = 0;
   }
   // 吊殿的鐵鍊（stay）餘裕少：上面那間殿砸下來壓在這間上，它就繃斷
