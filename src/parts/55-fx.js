@@ -39,7 +39,9 @@ function ring(x, y, r0, r1, life, col, lw) { if (FX.rings.length < 40) FX.rings.
 function pop(x, y, txt, col, size, life) {
   if (FX.pops.length > 14) FX.pops.shift();
   size = size || 3.4;
-  for (let k = 0; k < 4; k++) { let hit = false; for (const q of FX.pops) if (q.t < q.max * 0.75 && Math.abs(q.x - x) < (q.txt.length + txt.length) * 0.5 * Math.max(q.size, size) * 0.62 && Math.abs(q.y - y) < (q.size + size) * 0.52) { hit = true; y = q.y + (q.size + size) * 0.56; } if (!hit) break; }
+  for (const q of FX.pops) if (q.txt === txt && q.t < 0.45 && Math.abs(q.x - x) < 16 && Math.abs(q.y - y) < 14) return;          // 同一句話剛剛才在旁邊跳過：不再疊一句
+  const tw = (t, sz) => { let w = 0; for (const ch of t) w += ch.charCodeAt(0) > 0xff ? 1 : 0.62; return w * sz; };          // 中文字一個字一格寬
+  for (let k = 0; k < 4; k++) { let hit = false; for (const q of FX.pops) if (q.t < q.max * 0.75 && Math.abs(q.x - x) < (tw(q.txt, q.size) + tw(txt, size)) * 0.5 && Math.abs(q.y - y) < (q.size + size) * 0.52) { hit = true; y = q.y + (q.size + size) * 0.56; } if (!hit) break; }
   FX.pops.push({ x, y, txt, col: col || '#fff', size, t: 0, max: life || 1.0 });
 }
 function shake(a) { if (FX.calm) return; if (a > FX.shake) FX.shake = Math.min(a, 2.2); }
@@ -228,6 +230,7 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'rockwarn': sfx('warn'); break;
     case 'rockstop': burst(P_DEBRIS, a, b, 10, 30, 0.8, 0.8, C_GRAY, 8); burst(P_DUST, a, b, 4, 8, 0.6, 2.4, C_SAND); pop(a, b + 4, '擋住了！', c === 0 ? '#cfe6ff' : '#ffc4b8', 3, 0.9); sfx('crumble'); break;
     case 'rumble': shake(0.5); sfx('rumble'); break;
+    case 'slam': ring(a, b, 1, 9, 0.5, '#f3e2c0', 0.6); for (let i = 0; i < 9; i++) part(P_DUST, a + rndS() * 4, b + Math.random() * 1.5, rndS() * 26, 3 + Math.random() * 8, 0.9 + Math.random() * 0.5, 2.6 + Math.random() * 1.6, C_SAND); burst(P_DEBRIS, a, b + 1, 8, 24, 0.9, 0.9, '#9a9488', 6); shake(0.7); sfx('rumble'); vibrate(60); break;          // 石碑整塊砸進城裡
     case 'dirt': burst(P_DUST, a, b + 0.5, 3, 10, 0.5, 1.6, C_SAND, 4); break;
     case 'tick': burst(P_SPARK, a, b, 2, 12, 0.2, 0.4, C_WHITEHOT); sfx('tick'); break;
     // 第二篇

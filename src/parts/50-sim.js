@@ -288,13 +288,13 @@ function unitsStep(dt) {
        魔王撐得住，不算（他另外有「被屋頂、樓板砸到頭」的傷害）。
        掉下來的屋瓦是脆的：壓在頭上就碎掉、順著頭兩邊滑下去，不會整片完好地蓋在頭上把人壓扁
        （屋頂還好好的在原位、是兵自己被震得跳起來撞到的，不算——那樣屋頂不會碎） */
-    if (u.roofOn) { const r = u.roofOn; u.roofOn = null; if (act && !r.dead && roofDown(r)) blockKill(r, S.phase === 'hazard' || r.side === S.turn ? 2 : S.turn, K_CRUSH); }
+    if (u.roofOn) { const r = u.roofOn; u.roofOn = null; if (act && !r.dead && roofDown(r) && !r1Keep(r)) blockKill(r, S.phase === 'hazard' || r.side === S.turn ? 2 : S.turn, K_CRUSH); }
     if (u.body.isAwake()) u.load += (u.loadJ / (dt * u.mass * GRAV) - u.load) * 0.3;
     u.loadJ = 0;
     if (act) {
       if (!u.def.big && u.load > CRUSH_LOAD) { u.loadT += dt; if (u.loadT > 0.3) {
         // 第二篇第一回合（敵軍的第一輪）：壓在我方兵頭上的碎磚直接裂開掉下去，不會還沒開打就被壓扁
-        if (u.side === 0 && S.round <= 1 && S.lv.foe.open && headClearUnit(u)) { u.loadT = 0; continue; }
+        if (u.side === 0 && S.round <= 1 && S.lv.foe.open) { headClearUnit(u); u.loadT = 0; continue; }          // 清不掉（還在原位、往下沉的天花板）也不扣血
         hurtUnit(u, 120 * dt, S.phase === 'hazard' ? 2 : 1 - u.side, K_CRUSH); if (!u.alive) continue; } }
       else if (u.loadT > 0) u.loadT = Math.max(0, u.loadT - dt * 2);
     }
@@ -320,12 +320,12 @@ function unitsStep(dt) {
       else if (!u.edge && u.edgeT > 0) u.edgeT = Math.max(0, u.edgeT - dt * 0.3);
     } else if (!act) u.edge = 0;
     // 掉下深淵、飛出戰場兩邊：出局
-    if (u.y < -26 || u.x < -GUT + 1.5 || u.x > VIEW_W + GUT - 1.5) { if (u.def.big) bossReturn(u); else killUnit(u, 1 - u.side, u.y < -26 ? 4 : 6); continue; }
+    if (u.y < -26 || u.x < -GUT + 1.5 || u.x > VIEW_W + GUT - 1.5) { if (u.def.big) bossReturn(u); else if (r1Unit(u)) unitHome(u); else killUnit(u, 1 - u.side, u.y < -26 ? 4 : 6); continue; }
     // 掉進河裡：被水沖走（身體一半泡進水裡、泡了一下子）
     if (u.wet > 0.45) { u.wetT = (u.wetT || 0) + dt; if (u.wetT > 0.5) { if (u.def.big) bossReturn(u); else killUnit(u, 1 - u.side, 7); continue; } } else if (u.wetT) u.wetT = 0;
     // 被轟出自己的城、落地站定了：也算出局（守不了城了）。魔王會自己飛回去
     const st = u.st, ux = st.plat ? platLocal(st, u.x, u.y).x : u.x;
-    if ((ux < st.x0 - OUT_M || ux > st.x1 + OUT_M) && !u.air) { u.outT += dt; if (u.outT > 0.6) { if (u.def.big) bossReturn(u); else killUnit(u, 1 - u.side, 5); } } else u.outT = 0;
+    if ((ux < st.x0 - OUT_M || ux > st.x1 + OUT_M) && !u.air) { u.outT += dt; if (u.outT > 0.6) { if (u.def.big) bossReturn(u); else if (r1Unit(u)) unitHome(u); else killUnit(u, 1 - u.side, 5); } } else u.outT = 0;
   }
   /* 兵跟兵不碰撞，所以掉到同一個地方會疊在一起：往兩邊慢慢推開（魔王不動，推小兵）。只在砲擊進行中推。
      推的方向前面沒有地可以踩就不推（寧可兩個人擠著，也不要把人推下去）；推了兩秒還分不開（被瓦礫擋住、擠在一格寬的小隔間裡）
@@ -795,6 +795,7 @@ function simAim(side, vx, vy) { if (!(vx === vx) || !(vy === vy)) return; const 
 /* ---------- 回合 ---------- */
 function startTurn(side) {
   S.turn = side; S.phase = 'aim'; S.phaseT = 0; S.quietT = 0; S.chain = 0;
+  r1Hold(side === 1 && S.round <= 1);          // 敵軍的第一輪：我方的機關磚定住
   const T = S.team[side];
   if (T.shield.on) { T.shield.on = false; ev('shieldoff', side); }
   ev('turn', side, S.round);
@@ -879,7 +880,7 @@ function headClearUnit(u) {
   for (let ce = u.body.getContactList(); ce; ce = ce.next) {
     const ct = ce.contact; if (!ct.isTouching()) continue;
     const o = ce.other.getUserData();
-    if (!o || !o.isBlock || o.dead || o.inPlace || o.mat === M_KEG || o.kind === 'ball' || (o.mat === M_ROOF && !o.frag && !roofDown(o))) continue;
+    if (!o || !o.isBlock || o.dead || o.inPlace || o.mat === M_KEG || o.kind === 'ball' || (o.mat === M_ROOF && !o.frag && !roofDown(o)) || r1Keep(o)) continue;
     const wm = ct.getWorldManifold(null); if (!wm || !wm.pointCount) continue;
     const pt = wm.points[0]; if (pt.y <= p.y + u.bh * 0.25) continue;          // 碰在肩膀以上
     u.hcN++;
@@ -943,6 +944,13 @@ function rockMarks(n, big, foe) {
 
 /* ---------- 魔王 ---------- */
 // 魔王掉出戰場：不會就這樣死掉，扣一截血之後飛回自己的城頂
+// 敵軍的第一輪把我方的兵轟出城、掉下去：開場護符把他送回原本站的地方（不會還沒開打就先少一個）
+function r1Unit(u) { return u.side === 0 && S.round <= 1 && S.turn === 1 && !!S.lv.foe.open; }
+function unitHome(u) {
+  const P = platWorld(u.st, u.hx0, u.hy0), x = P.x, y = P.y;
+  u.body.setTransform({ x, y: y + u.bh / 2 + 0.2 }, 0); u.body.setLinearVelocity({ x: 0, y: 0 }); u.body.setAwake(true); u.outT = 0; u.airT = 0;
+  ev('revive', x, y, u.side, u.slot);
+}
 function bossReturn(u) {
   const st = u.st; let top = st.y0 + CS;
   for (const b of st.blocks) if (!b.dead && !b.frag) { const p = b.body.getPosition(); if (Math.abs(p.x - st.cx) < CS * 2.2 && p.y + b.h / 2 > top && p.y < st.y1 + 6) top = p.y + b.h / 2; }
@@ -1017,7 +1025,7 @@ function simInit(idx, up, seed, diff, opts) {
   S.structs = []; S.blocks = []; S.balls = []; S.units = []; S.gates = []; S.gsp = []; S.objs = []; S.marks = []; S.pend = []; S.bitUse.fill(0);
   S.wind = 0; S.rage = 1; S.sudden = false; S.nburn = 0; S.burnT = 0; S.chain = 0; S.chainT = -99; S.vol = 0; S.nfrag = 0; S.bid = 0; S.hz = 0; S.endBar[0] = S.endBar[1] = 0;
   S.gpts = lv.ground || null; S.voids = lv.voids || null;
-  S.ropes = []; S.pivots = []; S.pins = []; S.plats = []; S.rollers = []; S.bell = null; S.water = lv.water ? Object.assign({ rho: 0.85, cur: 2.2 }, lv.water) : null;
+  S.ropes = []; S.pivots = []; S.pins = []; S.plats = []; S.rollers = []; S.bell = null; S.r1held = []; S.r1on = false; S.doms = []; S.water = lv.water ? Object.assign({ rho: 0.85, cur: 2.2 }, lv.water) : null;
   S.stat = { fired: 0, peak: 0, swarm: 1, cells: 0, kills: 0, gates: 0, lost: 0, chain: 0 };
   physNew();
   const A = S.team[0] = mkTeam(0), B = S.team[1] = mkTeam(1);
@@ -1042,6 +1050,7 @@ function simInit(idx, up, seed, diff, opts) {
   for (const P of S.plats) platCalib(P);              // 浮島、船：兵都上去了，算氣球要吊多重、船要多少浮力
   if (lv.rollers) for (const d of lv.rollers) { const R = { d, to: d.to, ball: null, stake: null, go: false, goR: 0, by: 2, n: 0 }; S.rollers.push(R); rollerSpawn(R); }
   if (lv.bell) bellInit(lv.bell);
+  r1Mark();
   // 一開始的砲口：大概往對面，但不準，要自己調
   A.aim = clampAim(Math.cos(0.95) * 46, Math.sin(0.95) * 46, 1);
   B.aim = clampAim(-Math.cos(0.9) * 50, Math.sin(0.9) * 50, -1);
@@ -1059,7 +1068,7 @@ function simInit(idx, up, seed, diff, opts) {
   if (opts && opts.mute !== undefined) S.team[opts.mute].mute = true;
   // 先走一步讓每一塊磚跟鄰居「接上」，再全部擺回原位、設成靜止：開場時整座城紋風不動，被打到才會醒。
   // 第二篇（有超載、繩索的關卡）多走幾步，順便量每一塊磚撐著多重、每一條繩子吊著多重
-  if (lv.stress || S.ropes.length || S.plats.length) stressCalib(12); else physStep(STEP);
+  if (lv.stress || S.ropes.length || S.plats.length) { stressCalib(12); symCalib(); } else physStep(STEP);
   for (const b of S.blocks) { b.body.setTransform({ x: b.x0, y: b.y0 }, b.a0 || 0); b.body.setLinearVelocity({ x: 0, y: 0 }); b.body.setAngularVelocity(0); b.body.setAwake(false); }
   for (const u of S.units) { u.body.setTransform({ x: u.hx, y: u.hy + u.bh / 2 }, 0); u.body.setLinearVelocity({ x: 0, y: 0 }); u.body.setAwake(false); }
   for (const P of S.plats) { P.body.setTransform({ x: P.x0, y: P.y0 }, P.a0); P.body.setLinearVelocity({ x: 0, y: 0 }); P.body.setAngularVelocity(0); P.body.setAwake(false); }

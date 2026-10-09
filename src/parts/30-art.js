@@ -19,7 +19,9 @@ const SKINS = {
 };
 // 每一關雙方的城樓一模一樣，只有屋瓦和旗子分顏色：我方藍、敵方紅（藍圖的外觀名稱後面接 @0、@1）
 const ROOF_TEAM = [['#78b2ff', '#2f6fe0', '#1a429c'], ['#ff8a6c', '#d43c2a', '#86180f']], FLAG_TEAM = [['#2f7bff', '#1b46b8'], ['#dc3a2e', '#8f1418']];
-for (const k of Object.keys(SKINS)) for (let sd = 0; sd < 2; sd++) SKINS[k + '@' + sd] = Object.assign({}, SKINS[k], { roof: ROOF_TEAM[sd], flag: FLAG_TEAM[sd][0], flagDk: FLAG_TEAM[sd][1] });
+// 懸空寺的柱子、樑是朱漆（紅色）：我方那一座改成藍漆，不然整座看起來像敵軍的
+const WOOD_TEAM = { temple: [{ wood: ['#5a86cc', '#3b63a8', '#213c6e'], panel: ['#1f2c48', '#172138'] }, null] };
+for (const k of Object.keys(SKINS)) for (let sd = 0; sd < 2; sd++) SKINS[k + '@' + sd] = Object.assign({}, SKINS[k], { roof: ROOF_TEAM[sd], flag: FLAG_TEAM[sd][0], flagDk: FLAG_TEAM[sd][1] }, (WOOD_TEAM[k] && WOOD_TEAM[k][sd]) || {});
 const PAL_GLASS = ['#e9fdff', '#a5eef6', '#5ccbdc', '#2a8fa6'];
 const PAL_BAMBOO = ['#cfe58c', '#9cc457', '#6b9a33', '#40651c'];
 const PAL_ICE = ['#e6f8ff', '#a8e0f8', '#62b6e4', '#3c8cc0'];

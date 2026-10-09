@@ -249,6 +249,7 @@ function segDmg(b, k, d, side) {
 }
 // 爆炸：每一段照自己離爆炸中心多遠算傷害（direct：這一塊是被直接打中的，最近的那一段吃全額）
 function segBlast(b, x, y, r, dmg, kind, side, direct, sootK) {
+  if (r1Guard(b, side)) return;                              // 開場護符：吊著東西的樓板、屋頂，敵軍第一輪打不斷
   let m = DM[kind][b.mat]; if (b.brit > 0) m *= 1.6;
   if (m <= 0) return;
   const p = b.body.getPosition(), a = b.body.getAngle(), cs = Math.cos(a), sn = Math.sin(a);
@@ -310,6 +311,7 @@ function segSplit(b, side, kind) {
 function blockHurt(b, dmg, kind, side, x, y) {
   if (b.dead || dmg <= 0) return;
   if (b.fuseKeg) return;                                     // 接著引信的火藥桶：砲彈、火都打不爆，只有引信燒到才會爆
+  if (r1Guard(b, side)) return;                              // 開場護符：敵軍第一輪打不壞我方的機關磚
   if (b.stake && (side !== 1 - b.stake.to || guard1(b.stake.to, side))) return;          // 擋滾石的木樁：只有「石頭滾下去會砸到對方」的那一邊打得斷（第一回合敵軍打不斷我方這邊的）
   let d = dmg * DM[kind][b.mat]; if (b.brit > 0) d *= 1.6;
   if (d <= 0) return;
@@ -328,6 +330,7 @@ function blockHurt(b, dmg, kind, side, x, y) {
 // by：誰放的火（延燒出去、燒到火藥桶，功勞都算他的）
 function ignite(b, dur, by) {
   if (b.dead || !MAT[b.mat].burn || b.fuseKeg) return;          // 接著引信的火藥桶封得很緊：只有引信燒到才會爆
+  if (r1Guard(b, by)) return;                                  // 開場護符：敵軍第一輪點不著我方的機關磚
   if (by === undefined || by === b.side) by = 2;
   if (b.mat === M_KEG) { blockKill(b, by, K_FIRE); return; }
   if (b.burn <= 0) { S.nburn++; b.burnBy = by; const p = b.body.getPosition(); ev('ignite', p.x, p.y); }
@@ -394,8 +397,13 @@ function physStep(dt) {
       if (sm && o && !o.smash && r.vn > 4.5) {
         const by = sm.smashBy === undefined ? 2 : sm.smashBy;
         const k1 = sm.bigBell && S.bell.round1 && o.side === 0 ? 0.25 : 1;          // 第一回合敵軍推過來的大鐘：撞得輕一點
-        if (o.isBlock && !o.dead && o.st !== S.mech && !(S.time < (o.smCd || 0))) { o.smCd = S.time + 0.25; blockHurt(o, sm.mass * r.vn * SMASH_K * k1, K_CRUSH, by === o.side ? 2 : by, r.x, r.y); if (!o.dead) ev('thud', r.x, r.y, r.J, r.vn); }
-        else if (o.isUnit && o.alive && !(S.time < (o.smCd || 0))) { o.smCd = S.time + 0.6; ev('bonk', r.x, r.y, sm.bigBell ? 'bell' : 'rock'); hurtUnit(o, Math.min(o.def.big ? o.hpMax * 0.12 : 160, sm.mass * r.vn * 0.22), by === o.side ? 2 : by, K_CRUSH); }
+        if (o.isBlock && !o.dead && o.st !== S.mech && !(sm.dom && o.dom) && !(S.time < (o.smCd || 0))) { o.smCd = S.time + 0.25; blockHurt(o, sm.mass * r.vn * SMASH_K * k1, K_CRUSH, by === o.side ? 2 : by, r.x, r.y); if (!o.dead) ev('thud', r.x, r.y, r.J, r.vn); }
+        else if (o.isUnit && o.alive && !(S.time < (o.smCd || 0))) { o.smCd = S.time + 0.6; ev('bonk', r.x, r.y, sm.bigBell ? 'bell' : 'rock'); hurtUnit(o, Math.min(o.def.big ? o.hpMax * 0.12 : sm.snow || sm.noCalm ? 60 : 160, sm.mass * r.vn * 0.22), by === o.side ? 2 : by, K_CRUSH); }
+        // 石碑整塊砸進城裡：落下的那一下震得周圍的人都受傷（一塊石碑只算一次）
+        if (sm.dom && !sm.domHit && o.isBlock && o.st !== sm.st && !o.dom && r.vn > 6) {
+          sm.domHit = 1; ev('slam', r.x, r.y, r.vn);
+          for (const u of S.units) if (u.alive && Math.hypot(u.x - r.x, u.y + 1 - r.y) < 5.5) hurtUnit(u, Math.min(55, sm.mass * r.vn * 0.16), by === u.side ? 2 : by, K_CRUSH);
+        }
       } }
     // 吊鐘、吊燈砸下來（吊它的繩子斷了、掛它的那塊垮了，或它自己正往下掉）砸在兵頭上：重的東西整個砸在頭上，特別痛。
     // 先算這一下（琉璃吊燈撞到東西就碎，碎了就來不及算了）
@@ -418,14 +426,14 @@ function physStep(dt) {
         // 吊鐘、吊燈掉下來砸到東西：整個重量砸上去，屋頂、樓板一砸就穿
         // （只砸得穿屋頂、柱子這種一塊一塊的，樓板、長樑不算；一口鐘最多砸穿兩樣東西，不會一路鑽到底）
         { const oth = k ? r.a : r.b; if (oth && oth.isBlock && oth.hang && (oth.hangFree || oth.body.getLinearVelocity().y < -4) && !oth.dead && oth !== o && r.vn > 4 && o.st !== S.rubble && !o.hang && !o.seg && (oth.crashN || 0) < 2) { oth.crashN = (oth.crashN || 0) + 1; const by = oth.hitBy !== undefined ? oth.hitBy : o.side === credit ? 2 : credit; blockHurt(o, oth.mass * r.vn * 0.55, K_CRUSH, by, r.x, r.y); if (o.dead) continue; } }
-        if (o.boulder) { if (!o.bHit && o.bFly && !o.bIn) { o.bHit = 1; const oth = k ? r.a : r.b; ev('thunk', r.x, r.y, r.J); if (oth && oth.isBlock && !oth.dead && oth !== o) blockHurt(oth, o.bW.dmg * o.bMul, K_HEAVY, o.bSide, r.x, r.y); else if (oth && oth.isUnit && oth.alive && oth.side !== o.bSide) hurtUnit(oth, o.bW.ud * o.bMul, o.bSide, K_CRUSH); } continue; }
-        const d = (dv - (MAT[o.mat].imp || IMP_V0)) * IMP_K * MAT[o.mat].frag;
+        if (o.boulder) { if (!o.bHit && o.bFly && !o.bIn) { o.bHit = 1; const oth = k ? r.a : r.b; ev('thunk', r.x, r.y, r.J); if (oth && oth.bigBell && !guard1(0, o.bSide)) bellPush(o.bSide); if (oth && oth.isBlock && !oth.dead && oth !== o) blockHurt(oth, o.bW.dmg * o.bMul, K_HEAVY, o.bSide, r.x, r.y); else if (oth && oth.isUnit && oth.alive && oth.side !== o.bSide) hurtUnit(oth, o.bW.ud * o.bMul, o.bSide, K_CRUSH); } continue; }
+        const d = (dv - (MAT[o.mat].imp || IMP_V0)) * IMP_K * MAT[o.mat].frag * ((o.st.def && o.st.def.impK) || 1);
         if (d > 0) blockHurt(o, Math.min(d, (o.seg ? o.segM : o.hm) * 0.9 + 6), K_CRUSH, o.side === credit ? 2 : credit, r.x, r.y);
       } else if (o.alive) {
         // 屋瓦砸在兵（或魔王）頭上：瓦是脆的，當場碎掉、順著頭兩邊滑下去。該痛的照痛（下面照撞擊的力道算），
         // 但不會整片屋頂完好地蓋在頭上、一路把人壓到扁——頂樓的兵不該因為亭子的柱子斷了就必死
         // （屋頂還好好的在原位、是兵自己被震得跳起來撞到的不算：屋頂不會因為這樣就碎）
-        { const oth = k ? r.a : r.b; if (oth && oth.isBlock && oth.mat === M_ROOF && !oth.dead && !oth.frag && (k ? -r.ny : r.ny) > 0.3 && roofDown(oth)) blockKill(oth, oth.side === credit ? 2 : credit, K_CRUSH); }
+        { const oth = k ? r.a : r.b; if (oth && oth.isBlock && oth.mat === M_ROOF && !oth.dead && !oth.frag && (k ? -r.ny : r.ny) > 0.3 && roofDown(oth) && !r1Keep(oth)) blockKill(oth, oth.side === credit ? 2 : credit, K_CRUSH); }
         if (!o.alive) continue;
         if (o.def.big) {
           // 魔王皮厚：摔不死。但是摔一層、被掉下來的屋頂或樓板砸到頭，每一下至少扣半成血（一下之後隔一會才會再算）。
@@ -545,7 +553,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
       continue;
     }
     if (o.isBlock) {
-      if (o.dead) continue;
+      if (o.dead || r1Guard(o, side)) continue;          // 開場護符：敵軍第一輪炸不動、打不傷我方的機關磚
       const d = blockDist(o, x, y); let f = o === hit ? 1 : 1 - d / r; if (f <= 0) continue; if (f > 1) f = 1;
       if (o.bigBell) { if (guard1(0, side)) continue; bellPush(side); }          // 第一回合敵軍推不動大鐘（不會開場就撞過來）
       // 推：從爆炸中心往外，作用在最近的那一點（所以磚會轉）

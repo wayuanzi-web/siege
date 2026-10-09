@@ -62,7 +62,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 #roundTxt { color: var(--bone); font-variant-numeric: tabular-nums; }
 #windBox { display: flex; align-items: center; gap: calc(var(--u) * 1); font-size: calc(var(--u) * 2.9); letter-spacing: .06em; color: var(--gold-lt); white-space: nowrap; font-variant-numeric: tabular-nums; }
 #windBox i { display: block; width: calc(var(--u) * 6); height: calc(var(--u) * 2.2); background: var(--gold); clip-path: polygon(0 32%, 62% 32%, 62% 0, 100% 50%, 62% 100%, 62% 68%, 0 68%); transition: transform .5s ease; }
-#windBox.calm i { opacity: .25; }
+#windBox.calm i { display: none; }
 .hud-bot { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: calc(var(--u) * 2);
   padding: calc(var(--u) * 2) calc(var(--u) * 1.5 + var(--pr)) calc(var(--u) * 2) calc(var(--u) * 2 + var(--pl)); }
 .aimbox { grid-column: 1; display: flex; align-items: flex-end; gap: calc(var(--u) * 1.6); justify-self: start; }
@@ -273,7 +273,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
           <div class="crew" id="crewA"></div>
           <div class="hpbar chamfer" id="hpA"><i id="barA"></i><b id="pctA">100%</b><small>我方</small></div>
         </div>
-        <div class="vs"><b id="hudName">青丘試砲</b><span class="sub"><span id="roundTxt"></span><span id="windBox" hidden><span id="windTxt">無風</span><i id="windArr"></i></span></span></div>
+        <div class="vs"><b id="hudName">望樓對峙</b><span class="sub"><span id="roundTxt"></span><span id="windBox" hidden><span id="windTxt">無風</span><i id="windArr"></i></span></span></div>
         <div class="side foe">
           <div class="hpbar chamfer" id="hpB"><i id="barB"></i><b id="pctB">100%</b><small id="foeLbl">敵城</small></div>
           <div class="crew" id="crewB"></div>

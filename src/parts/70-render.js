@@ -1062,6 +1062,7 @@ function fxDraw(c) {
   c.setTransform(1, 0, 0, 1, sx, sy); c.globalAlpha = 1;
   // 跳出來的字
   c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+  const placed = RD.popRects || (RD.popRects = []); placed.length = 0;
   for (const p of FX.pops) {
     const f = p.t / p.max, sc = f < 0.12 ? 0.6 + f / 0.12 * 0.5 : 1.1 - Math.min(0.1, (f - 0.12) * 0.5), fz = p.size * s * sc;
     c.globalAlpha = f > 0.7 ? (1 - f) / 0.3 : 1;
@@ -1070,6 +1071,9 @@ function fxDraw(c) {
     const hw = c.measureText(p.txt).width / 2 + fz * 0.15, x = clamp(X(p.x), hw + 2, Math.max(hw + 2, V.W - hw - 2));
     let y = clamp(Y(p.y) - f * s * 3.5, V.hud + fz * 0.9, V.H - fz * 0.8);
     for (const r of RD.avoid) if (x + hw > r[0] && x - hw < r[2] && y + fz * 0.6 > r[1] && y - fz * 0.6 < r[3]) y = Math.max(V.hud + fz * 0.9, r[1] - fz * 0.7);
+    // 跟這一幀已經畫好的字疊在一起（貼著畫面邊緣被擠到同一處的那幾句）：往上挪開，最多挪幾次
+    for (let k = 0; k < 6; k++) { let hit = null; for (const q of placed) if (Math.abs(q[0] - x) < q[2] + hw && Math.abs(q[1] - y) < (q[3] + fz) * 0.55) { hit = q; break; } if (!hit) break; y = hit[1] - (hit[3] + fz) * 0.6; if (y < V.hud + fz * 0.9) { y = V.hud + fz * 0.9; break; } }
+    placed.push([x, y, hw, fz]);
     c.lineWidth = fz * 0.22; c.strokeStyle = 'rgba(16,10,26,.9)'; c.strokeText(p.txt, x, y); c.fillStyle = p.col; c.fillText(p.txt, x, y);
   }
   c.globalAlpha = 1;

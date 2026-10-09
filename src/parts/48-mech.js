@@ -86,12 +86,33 @@ function mkHang(st, h) {
   b.hang = h.t; b.cx = P.cx; b.cy = P.cy; b.cw = 1; b.ch = 1; if (h.bal) b.bal = 1;
   b.wt = 0;                                               // 吊著的東西不算城防
   b.body.setAngularDamping(1.2);
-  if (h.hp) { b.hp = b.hm = h.hp * (st.hpMul || 1); }
+  // 配重籃、吊鐘打不壞（要斷的是吊它的繩子、鐵鍊）；吊燈打得碎，但要好幾發（不會被一發擦過的砲彈打掉，害吊燈砸不下來）
+  b.hp = b.hm = h.hp ? h.hp * (st.hpMul || 1) : kind === 'lamp' ? (mat === M_IRON ? 250 : 120) * (st.hpMul || 1) : 1e6;
   return mkRope(st, { b: top, x: P.x, y: P.y }, { b, x: P.x, y: y + hh / 2 }, { kind: h.chain ? 'chain' : 'rope', hp: h.rhp, aw: h.aw, tag: h.tag || h.t, hang: b });
 }
 // 第一回合（敵軍的第一輪）：我方的機關（繩索、鐵鍊、氣球、船艙、引信、擋滾石的木樁）還有護符護著，敵軍打不壞。
 // 第二回合起就沒有了（開場不會還沒打就先被敵軍一輪打斷要害）
 function guard1(victim, side) { return S.round <= 1 && victim === 0 && side === 1 && !!S.lv.foe.open; }
+/* 開場護符也護著「機關磚」：共鳴晶柱、吊著的東西（配重籃、吊燈、吊鐘）和吊它的那塊、懸臂樑插銷的那根樑、
+   城樓藍圖標了 r1hold 的最上面幾列（冰崖頂上的冰棚、積雪、撐著它的冰柱和屋頂），還有戰場中間會倒向我方的那一排石碑。
+   敵軍第一輪打不傷、炸不動它們；會倒向我方的石碑和中間的大鐘在敵軍第一輪的時候整塊定住（投石兵的大石頭也推不倒），第二回合一開始放開 */
+function r1mech(b) { return !!(b.reso || b.hang || b.ropes || b.pins || b.r1hold || (b.dom && b.side === 2 && b.x0 < MID)); }
+function r1Guard(b, side) { return side === 1 && (b.side === 0 || b.side === 2) && S.round <= 1 && !!S.lv.foe.open && r1mech(b); }
+// 敵軍的第一輪裡，我方的機關磚也不會因為「掉在兵頭上碎掉」這類規則被拿掉（不管是誰的功勞）
+function r1Keep(b) { return S.turn === 1 && r1Guard(b, 1); }
+function r1Mark() {
+  S.r1held = []; S.doms = []; for (const b of S.blocks) if (b.dom && !b.dead) S.doms.push(b);
+  if (!S.lv.foe.open) return;
+  const st = S.st[0], hr = st.def.r1hold || 0;
+  if (hr) for (const b of st.blocks) if (!b.dead && !b.prop && b.body.isDynamic() && b.cy + b.ch > st.rows - hr) b.r1hold = 1;          // 只標記（打不傷、炸不動），不定住：定住再放開，被擠進去的磚會把整座城彈開
+  for (const q of S.structs) if (q.side === 2 && !q.loose) for (const b of q.blocks) if (!b.dead && b.dom && b.x0 < MID) S.r1held.push(b);
+  if (S.bell) S.r1held.push(S.bell.b);          // 大鐘：敵軍的第一輪（連投石兵的大石頭）推不動它
+}
+function r1Hold(on) {
+  if (!S.r1held || !S.r1held.length || !!S.r1on === on) return;
+  S.r1on = on;
+  for (const b of S.r1held) { if (b.dead || !b.body) continue; b.body.setType(on ? 'static' : 'dynamic'); if (!on) b.body.setAwake(true); }
+}
 function ropeHurt(r, d, kind, side) {
   if (r.cut || d <= 0 || guard1(r.side, side)) return;
   d *= (r.kind === 'chain' ? CHAIN_DM : ROPE_DM)[kind] || 0; if (d <= 0) return;
@@ -318,12 +339,26 @@ function stressCalib(k) {
   for (const b of S.blocks) {
     b.sL = 0; b.sT = 0; b.sJ = 0; b.sX = 0; b.sY = 0; b.sW = 0;
     const m = MAT[b.mat]; b.cap = 0;
-    if (S.lv.stress && m.stress && !b.prop && !b.frag && !b.base && !b.beam && !b.deco) b.cap = Math.max(b.sAcc / k * (b.sk || m.stress), b.mass * GRAV * 1.2 + 60);
+    if (S.lv.stress && m.stress && !b.prop && !b.frag && !b.base && !b.beam && !b.deco) b.cap = Math.max(b.sAcc / k * (b.sk || m.stress) * ((b.st.def && b.st.def.stressK) || 1), b.mass * GRAV * 1.2 + 60);
     b.sAcc = 0;
   }
   // 吊殿的鐵鍊（stay）餘裕少：上面那間殿砸下來壓在這間上，它就繃斷
   // 麻繩（索橋）一被扯緊就斷：一棟倒了，不會把另一棟整個拖下去（只會晃一下）
   for (const r of S.ropes) r.tmax = Math.max(r.t0 * (r.tag === 'stay' ? 2.6 : r.kind === 'chain' ? 4.2 : 2.5), r.kind === 'chain' ? 1800 : r.hang ? 700 : 420);
+}
+/* 兩座城是同一張藍圖（敵城左右鏡射）：開場量出來的「撐得住多重」也要一樣。
+   物理引擎解接觸力的時候有左右的偏差，同一根柱子在兩邊量起來會差一兩成——取兩邊的平均，鏡射對應的那一塊、那一條、那一根插銷都設成一樣 */
+function symCalib() {
+  const A = S.st[0], B = S.st[1]; if (!A || !B || A.def !== B.def) return;
+  for (const b of B.blocks) {
+    if (!b.cap || b.cx === undefined) continue;
+    const a = A.cellB[b.cy * A.cols + (A.cols - b.cx - b.cw)];
+    if (a && a.cap && a.cw === b.cw && a.ch === b.ch && a.mat === b.mat) { const m = (a.cap + b.cap) / 2; a.cap = m; b.cap = m; }
+  }
+  const pair = (list, sideOf, fn) => { const L0 = list.filter((o) => sideOf(o) === 0), L1 = list.filter((o) => sideOf(o) === 1); for (let i = 0; i < Math.min(L0.length, L1.length); i++) fn(L0[i], L1[i]); };
+  pair(S.ropes, (r) => r.side, (p, q) => { if (p.tag === q.tag) { const m = (p.tmax + q.tmax) / 2; p.tmax = m; q.tmax = m; } });
+  pair(S.pins, (o) => o.st.side, (p, q) => { const m = (p.tq + q.tq) / 2; p.tq = m; q.tq = m; if (p.full !== undefined) { const f = (p.full + q.full) / 2; p.full = f; q.full = f; } for (const o of [p, q]) if (o.j) o.j.setMaxMotorTorque(o.tq); });
+  pair(S.pivots, (o) => o.st.side, (p, q) => { const m = (p.tq + q.tq) / 2; p.tq = m; q.tq = m; for (const o of [p, q]) if (o.j) o.j.setMaxMotorTorque(o.tq); });
 }
 function stressStep(dt, act) {
   const credit = S.phase === 'hazard' ? 2 : S.turn;
@@ -393,6 +428,14 @@ function mechStep(dt) {
   boulderStep(dt);
   if (S.plats.length) platStep(dt, act);
   // 崩下來的冰棚、積雪：掉得快的時候整塊的重量砸上去（跟滾石一樣），砸穿屋頂、把人埋掉
+  // 倒下來的石碑（第七關）：倒得快的時候整塊的重量砸上去（跟滾石一樣），最高的那塊砸進城裡砸得垮亭子、砸得傷人。
+  // 石碑撞石碑不算（那是骨牌一塊推一塊，要的是推倒，不是砸碎）
+  if (S.doms.length) for (const b of S.doms) {
+    if (b.dead || !b.body) continue;
+    const v = b.body.getLinearVelocity(), w = Math.abs(b.body.getAngularVelocity()), fast = act && !b.inPlace && (v.x * v.x + v.y * v.y > 30 || w * b.h * 0.5 > 5.5);
+    if (fast && !b.smash) b.smashBy = S.phase === 'hazard' ? 2 : S.turn;
+    b.smash = fast ? 1 : 0;
+  }
   if (S.lv.snow) for (let k = 0; k < 2; k++) for (const b of S.st[k].blocks) {
     if (b.dead || !(b.snow || b.noCalm)) continue;
     const v = b.body.getLinearVelocity(), sp = v.x * v.x + v.y * v.y, fast = act && sp > (b.snow ? 49 : 30) && !b.inPlace;
@@ -585,7 +628,7 @@ function hullHurt(c, d, kind, side) {
 }
 // 浮島氣球被打破
 function tetherPop(o, side) {
-  if (o.hp > 0 && o.cutT > 0) return;
+  if (o.hp <= 0 && o.cutT > 0) return;          // 已經破了
   if (guard1(o.side, side)) { o.hp = Math.max(o.hp, o.hm * 0.2); return; }
   o.hp = 0; o.cutT = S.time; o.by = side;
   const P = o.plat; if (P && !P.dead) P.body.setAwake(true);
@@ -626,7 +669,7 @@ function mkFuse(st, d) {
   const xs = [], ys = [], s = [0];
   for (const a of d.pts) { const P = cellPt(st, a); xs.push(P.x); ys.push(P.y); }
   for (let i = 1; i < xs.length; i++) s.push(s[i - 1] + Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]));
-  const len = s[s.length - 1], F = { st, side: st.side, x: xs, y: ys, s, len, open: d.open || 1, fronts: [], bin: new Uint8Array(Math.ceil(len / 0.25) + 1), kegs: [], by: 2, done: false, lit: 0 };
+  const len = s[s.length - 1], F = { st, side: st.side, x: xs, y: ys, s, len, open: d.open || 1, fronts: [], bin: new Uint8Array(Math.round(len / 0.25) + 1), kegs: [], by: 2, done: false, lit: 0 };
   for (const b of st.blocks) if (b.mat === M_KEG && !b.prop) { const q = fuseNear(F, b.x0, b.y0, 0); if (q.d < 1.8) { F.kegs.push({ b, s: q.s }); b.fuseKeg = 1; } }
   // 每一小段貼著哪一塊磚（最近的那塊；離每塊都遠的，例如垂在窗外的引信頭，跟著沿線最近有貼著的那一段）
   const n = F.bin.length; F.anc = new Array(n).fill(null); F.bT = new Float32Array(n);
