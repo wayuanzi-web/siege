@@ -451,7 +451,8 @@ function mechStep(dt) {
   for (const o of S.pivots) if (o.b && !o.b.dead) {
     const a = o.b.body.getAngle(), w = o.b.body.getAngularVelocity();
     // 瞄準的時候天秤卡死。轉軸是「靜摩擦大、動摩擦小」：一旦開始翻（歪了快兩度），摩擦只剩三成，一路翻到底
-    if (o.tq) o.j.setMaxMotorTorque(!act ? 1e9 : Math.abs(a) > 0.012 && Math.abs(w) > 0.004 ? o.tq * 0.3 : o.tq);
+    const r1 = o.st.side === 0 && S.round <= 1 && S.turn === 1 && !!S.lv.foe.open;          // 敵軍的第一輪：我方的天秤卡住（開場護符）
+    if (o.tq) o.j.setMaxMotorTorque(!act || r1 ? 1e9 : Math.abs(a) > 0.012 && Math.abs(w) > 0.004 ? o.tq * 0.3 : o.tq);
     // 大樑開始翻：嘎——的一聲（一次翻動只響一次）
     if (Math.abs(w) > 0.01 && act) S.chainT = S.time;          // 還在翻：回合先別結束
     if (Math.abs(w) > 0.25 && !o.tip && act) { o.tip = 1; ev('tilt', o.x, o.y, w); }
