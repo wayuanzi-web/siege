@@ -16,6 +16,10 @@ for (let sd = 0; sd < N; sd++) {
     if (t === 'roll' && c === 0) evs.add('roll->player');
     if (t === 'reso' && c === 1) evs.add('reso(by enemy)');
     if (t === 'tilt') evs.add('tilt');
+    if (t === 'liftbreak' && c === 0) evs.add('liftbreak');
+    if (t === 'magboom' && c === 0) evs.add('magboom');
+    if (t === 'brake' && c === 0) evs.add('brake');
+    if (t === 'bellring' && c === 1) evs.add('bellring(by enemy)');
   };
   const hp0 = S.team[0].units.reduce((a, u) => a + u.hp, 0);
   const cut0 = new Set(S.ropes.filter((r) => r.side === 0 && r.cut));
@@ -29,6 +33,9 @@ for (let sd = 0; sd < N; sd++) {
   if (S.bell) { const p = S.bell.b.body.getPosition(); if (p.x < MID - 3) evs.add('bellMovedToPlayer'); }
   for (const q of S.structs) if (q.side === 2 && !q.loose) for (const b of q.blocks) if (b.dom && (b.dead || !b.inPlace) && b.x0 < MID) { evs.add('steleDown(left row)'); break; }
   const P = S.st[0].plat; if (P && P.comps) for (const c of P.comps) if (c.hp < c.hm) evs.add('hullHurt'); if (P && P.teth.length) for (const o of P.teth) if (o.hp < o.hm) evs.add('tetherHurt');
+  if (P && P.lifts) for (const o of P.lifts) if (o.hp < o.hm) evs.add('liftHurt');
+  for (const b of S.st[0].blocks) { if (!(b.mat === 7 || b.rod || b.tslab || b.heart || b.brake || b.core)) continue; if (b.dead || !b.inPlace || b.hp < b.hm) evs.add((b.mat === 7 ? 'keg' : b.rod ? 'rod' : b.tslab ? 'tslab' : b.heart ? 'heart' : b.brake ? 'brake' : 'core') + (b.dead ? 'Dead' : !b.inPlace ? 'Moved' : 'Hurt')); }
+  if (S.st[0].pulley && S.st[0].pulley.mode !== 'lock') evs.add('pulleyFree');
   const hp1 = S.team[0].units.reduce((a, u) => a + (u.alive ? u.hp : 0), 0);
   hpLost += hp0 - hp1; deaths += S.team[0].units.length - S.team[0].alive;
   for (const k of evs) add(k);

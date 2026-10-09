@@ -88,7 +88,7 @@ function finishLevel() {
   G.mode = 'result'; sayClear(); musStop(); sfx(won ? 'win' : 'lose');
   if (won || G.lossAt !== idx) G.lossN = 0;
   if (!won) { G.lossAt = idx; G.lossN = (G.lossN || 0) + 1; }         // 同一關連輸幾場
-  showResult(won, { idx, stars, bar, lost, rounds: S.round, chain: S.stat.chain, swarm: S.stat.swarm, coins, streak: won ? 0 : G.lossN });
+  showResult(won, { idx, stars, bar, lost, rounds: S.round, chain: S.stat.chain, swarm: S.stat.swarm, amp: S.stat.amp, coins, streak: won ? 0 : G.lossN });
 }
 // 模擬事件裡跟介面有關的：橫幅、提示
 function uiEvent(t, a, b, c, d, e) {
@@ -133,7 +133,7 @@ function uiEvent(t, a, b, c, d, e) {
       break;
     case 'wind': once('wind', '起風了！每回合的風都不一樣，虛線已經把風算進去'); break;
     case 'ultarm': if (c === 1) { const T = S.team[0]; say(T.shield.c >= T.shield.need && !T.shield.on ? '敵軍連珠砲上膛了，這一輪打三次：快開護罩！' : '敵軍連珠砲上膛了，這一輪打三次！', 1); } break;
-    case 'phase': if (a === 2) { banner('魔王結界', 'boss', '第二階段'); later(1900, () => say('魔王張開結界了！結界分三段，每回合換缺口：從沒有光牆的地方打進去', 1)); } else { banner('魔王暴怒', 'boss', '最終階段'); later(1900, () => say('魔王暴怒了：每回合多砸一顆隕石。下一回合會出現 ×20 的倍增符', 1)); } break;
+    case 'phase': if (a === 2) { banner('魔王結界', 'boss', '第二階段'); later(1900, () => say('魔王張開結界了！結界分三段、每回合換缺口；戰場中間還裂開一個黑洞，會把砲彈吸彎', 1)); } else { banner('魔王暴怒', 'boss', '最終階段'); later(1900, () => say('魔王暴怒了：結界改開兩個缺口，還會放隕石雨（紅圈是落點，開護罩擋）', 1)); } break;
     case 'bossback': once('bback', '魔王摔下去又飛回來了，不過摔一次扣不少血'); break;
     case 'rockstop': if (c === 0) once('rstop', '護罩把落石擋下來了'); break;
     case 'sudden': banner('決戰時刻', 'red'); later(1900, () => say('拖太久了，雙方的砲火越來越猛', 1)); break;
@@ -143,7 +143,7 @@ function uiEvent(t, a, b, c, d, e) {
       // d 幾倍。高倍數的符只出現一回合：出現的那一刻才講（太早講，玩家找不到它在哪）
       const there = () => S.gates.some((g) => !g.dead && g.owner === c && g.mult === d);
       if (c === 1) once('rg', '敵軍的赤符：會擋住你的砲彈，也讓他們的砲彈變多。可以打掉它', 1, there);
-      else if (c === 2) once('gg', '黃金符：倍數很高，兩邊都能用，而且只出現一回合', 0, there);
+      else if (c === 2) once('gg', '聖光符繞著黑洞轉，兩邊都能用：穿過去一發變三發', 0, there);
       else if (c === 3) once('hz', '紫色的折損符會吃掉一半砲彈，別穿過去', 0, there);
       else if (c === 0 && d >= 10) say('×' + d + ' 的倍增符出現了！只出現這一回合：穿過去，一發變' + (d === 20 ? '二十' : d === 10 ? '十' : d) + '發', 1, 'big' + d, there);       // 只有這一回合：插隊先講
       break;
@@ -152,14 +152,13 @@ function uiEvent(t, a, b, c, d, e) {
     case 'orb': once('orb', '毀滅光球！它先停在半空中，下一輪砸過來：現在打爆它，它會掉頭砸在魔王自己身上', 1, () => S.objs.some((o) => o.t === 'orb' && o.hp > 0 && (o.st === 'out' || o.st === 'hover'))); break;
     case 'orbback': once('orbb', '漂亮！光球打爆了會掉頭砸回魔王身上，連結界都擋不住'); break;
     case 'lantern': once('lan', '天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走', 0, () => S.objs.some((o) => o.t === 'lantern' && o.hp > 0)); break;
-    // 魔王關的隕石跟 ×20 的符同一回合開始出現：讓符先講（它只出現一回合），紅圈晚幾秒再講
-    case 'rockwarn': { const f = () => once('rock', '紅圈是這一回合結束時落石的位置，會砸到你就開護罩', 1, () => S.phase !== 'hazard'); if (S.lv.boss && !G.said.rock) later(3400, f); else f(); break; }
+    case 'rockwarn': once('rock', S.lv.boss ? '紅圈是隕石雨的落點：這一回合結束時砸下來，會砸到你就開護罩' : '紅圈是這一回合結束時落石的位置，會砸到你就開護罩', 1, () => S.marks.length > 0 && S.phase !== 'hazard'); break;          // 紅圈已經砸完了就不講
     case 'erupt': if (!G.said.gey) later(3200, () => once('gey', '地火噴發：砲彈穿過火柱會著火，威力多五成')); break;        // 晚一點講，先讓這一關的訣竅講完
     case 'freeze': if (c === 0) once('frz', '兵被凍住了，下一輪不能開火；開護罩可以立刻解凍', 1); break;
     case 'udie': if (c === 0) once('lost', '有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住', 1); else if (S.idx === 0 && S.team[1].alive > 0) once('kill', '打倒一個守軍！守軍全倒，城就破了'); break;
     case 'chain': if (b === 0 && a >= 10) once('chain', '漂亮的坍塌！一次垮得越多，「連珠」集得越快'); break;
     // 新的機關：第一次發生的時候講一句
-    case 'tpop': if (c === 0) once('tp0', '我方浮島的氣球破了！同一頭兩顆都破，浮島就會歪下去', 1); else once('tp1', '打破一顆了！再打同一頭的另一顆，浮島就歪下去', 0, () => tethersLeft(1) >= 3); break;
+    case 'tpop': if (c === 0) once('tp0', '我方浮島的氣球破了！護好那一頭底下的浮空晶石，碎了浮島就盪下去', 1); else once('tp1', '打破一顆了！再打碎那一頭底下的浮空晶石，整座島就盪下去', 0, () => liftsLeft(1) > 0 && tethersLeft(1) > 0); break;
     case 'leak': if (c === 0) once('lk0', '我方的船艙進水了，那一頭會往下沉', 1); else once('lk1', '敵船進水了！繼續打同一頭，兩個船艙都進水，那一頭就栽進海裡'); break;
     case 'fuse': if (c === 0) once('fz0', '我方的引信著火了！火會一路燒到每一層的火藥桶', 1); else once('fz1', '敵塔的引信點著了：火順著引信一層一層往下炸'); break;
     case 'roll': if (c === 0) once('rl0', '滾石往我方衝過來了！', 1); else once('rl1', '滾石衝下去了！'); break;
@@ -202,9 +201,9 @@ function fireNow() {
   // 記下這一輪帶頭那一發會怎麼飛（下一輪瞄準時畫出來當參考）
   for (const u of T.units) {
     if (!u.alive || !u.w || u.frozen > 0 || u.stun > 0) continue;
-    const mx = u.x + 1.3, my = u.y + 2.3, vx = T.aim[0], vy = T.aim[1], w = S.wind, R = simTrace(0, mx, my, vx, vy, w, S.time), tr = RD.trail || (RD.trail = { x: new Float32Array(90), y: new Float32Array(90), n: 0 });
+    const mx = u.x + 1.3, my = u.y + 2.3, vx = T.aim[0], vy = T.aim[1], P = [], R = simTrace(0, mx, my, vx, vy, S.wind, S.time, undefined, u.w.i, P), tr = RD.trail || (RD.trail = { x: new Float32Array(90), y: new Float32Array(90), n: 0 });
     const box = S.st[0]; tr.n = 0;
-    for (let tt = 0.1; tt < R.t && tr.n < 89; tt += 0.075) { const x = mx + vx * tt + 0.5 * w * tt * (tt + STEP), y = my + vy * tt - 0.5 * GRAV * tt * (tt + STEP); if (x > box.x0 - 1 && x < box.x1 + 1.2 && y < box.y1 + 2.5) continue; tr.x[tr.n] = x; tr.y[tr.n] = y; tr.n++; }
+    for (let tt = 0.1; tt < R.t && tr.n < 89; tt += 0.075) { const q = pathAt(P, mx, my, tt), x = q[0], y = q[1]; if (x > box.x0 - 1 && x < box.x1 + 1.2 && y < box.y1 + 2.5) continue; tr.x[tr.n] = x; tr.y[tr.n] = y; tr.n++; }
     tr.x[tr.n] = R.x; tr.y[tr.n] = R.y; tr.n++;
     break;
   }
@@ -372,7 +371,7 @@ function boot() {
   // 字型晚一點才載到的話重新排一次
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { layout(); }).catch(() => { });
 }
-window.__qp = { S, SH, FX, G, V, SV, AU, RD, UI, PH, LEVELS, BOTS, simInit, simStep, simAim, simFire, simSkill, aiInit, teamBar, startLevel, goHome, layout, renderFrame, fxStep, hudUpdate, sfx, musStart, physExplode, blockKill, killUnit, WPN, blockDist, homeRender, demoStart, ropeCut, tetherPop, fuseIgnite, castleB, bellPush, rollerSpawn,
+window.__qp = { S, SH, FX, G, V, SV, AU, RD, UI, PH, LEVELS, BOTS, simInit, simStep, simAim, simFire, simSkill, aiInit, teamBar, startLevel, goHome, layout, renderFrame, fxStep, hudUpdate, sfx, musStart, physExplode, blockKill, killUnit, WPN, blockDist, homeRender, demoStart, ropeCut, tetherPop, fuseIgnite, castleB, bellPush, rollerSpawn, simTrace, aimFor, ampAims, liftBreak, AMP, groundYRaw,
   // 測試用：凍結即時迴圈後，手動把戰局往前推 sec 秒
   advance(sec) { const n = Math.round(sec / STEP); let acc = 0; for (let i = 0; i < n; i++) { simStep(STEP); fxStep(STEP, STEP); acc += STEP; if (G.mode === 'play' && S.state !== 'play') G.endT += STEP; if (acc >= 0.05 && i < n - 1) { renderFrame(acc, acc); acc = 0; } } if (G.mode === 'play') hudUpdate(); renderFrame(acc || STEP, acc || STEP); }
 };

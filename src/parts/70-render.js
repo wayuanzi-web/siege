@@ -440,17 +440,20 @@ function backSprite(st) {
   st._bk = cv; st._bkT = T; return cv;
 }
 function drawBackdrop(c, st, rdt) {
-  const { cols, rows, back, backTo, n } = st; if (!n || st.side > 1) return;
+  const { cols, rows, back, backTo, n } = st; if (!n || st.side > 1 || (st.def && st.def.swingy)) return;          // 吊著會盪的殿：屋裡不畫暗色（殿在晃，畫在原位的暗色會對不上）
   let any = false; const k = Math.min(1, rdt * 7);
   for (let i = 0; i < n; i++) { let v = back[i]; const to = backTo[i]; if (v !== to) { v += (to - v) * k; if (Math.abs(v - to) < 0.03) v = to; back[i] = v; } if (v > 0) any = true; }
   if (!any) return;
   if (st.plat && !platXform(c, st.plat)) return;
+  // 吊籠裡面那幾格不畫（籠子會沉、會掉，畫在原位的暗色會留在半空中；籠子自己畫了暗色的底）
+  if (st.parts && !st.partMask) { st.partMask = new Uint8Array(n); for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) { const x = st.x0 + (cx + 0.5) * CS, y = st.y0 + (cy + 0.5) * CS; for (const P of st.parts) if (x > P.xa && x < P.xb && y > P.ya && y < P.yb) st.partMask[cy * cols + cx] = 1; } }
+  const pm = st.partMask, bv = (i) => (pm && pm[i] ? 0 : back[i]);
   const sp = backSprite(st), T = V.T, bx = X(st.x0), by = Y(st.y1);
   for (let cy = 0; cy < rows; cy++) {
     const sy = (rows - 1 - cy) * T; let cx = 0;
     while (cx < cols) {
-      const v = back[cy * cols + cx]; if (v <= 0) { cx++; continue; }
-      let e = cx + 1; while (e < cols && Math.abs(back[cy * cols + e] - v) < 0.01) e++;
+      const v = bv(cy * cols + cx); if (v <= 0) { cx++; continue; }
+      let e = cx + 1; while (e < cols && Math.abs(bv(cy * cols + e) - v) < 0.01) e++;
       c.globalAlpha = v; c.drawImage(sp, cx * T, sy, (e - cx) * T, T, bx + cx * T, by + sy, (e - cx) * T, T);
       cx = e;
     }
@@ -471,6 +474,7 @@ function drawPlats(c, t) {
   for (const P of S.plats) {
     if (P.dead) continue;
     const st = P.st;
+    if (P.kind === 'cage' || P.kind === 'pan') { drawPart(c, P, t, false); continue; }
     if (P.kind === 'island') {
       // 吊著浮島的繩子（畫在島的後面）
       for (const o of P.teth) {
@@ -515,6 +519,54 @@ function drawPlats(c, t) {
     c.fillStyle = '#e04a2c'; c.fillRect(P.hull.reduce((m, v, i) => (i & 1 ? m : Math.min(m, v)), 1e9) * s, -(yhi - 0.9) * s, (P.xb - P.xa) * s, Math.max(1.5, s * 0.3));
     c.restore();
   }
+}
+/* ---------- 吊籠寨：鐵籠、配重桶、滑輪 ---------- */
+// front：畫在兵前面的那幾根鐵條（兵站在籠子裡）
+function drawPart(c, P, t, front) {
+  const s = V.s, st = P.st;
+  if (!front && P.kind === 'cage') {
+    // 滑輪和兩個輪子之間那一段鋼纜（吊籠上面那一段是 S.ropes 裡的 cable，另外畫）
+    const PU = st.pulley;
+    if (PU) {
+      const pa = PU.pan.body.getWorldPoint(PU.lp);
+      if (!PU.cut) { ropeLine(c, X(PU.ax), Y(PU.ay), X(PU.bx), Y(PU.by), 0, 'chain', 0, 0); ropeLine(c, X(PU.bx), Y(PU.by), X(pa.x), Y(pa.y), 0, 'chain', 0, 0); }
+      for (const [wx, wy] of [[PU.ax, PU.ay], [PU.bx, PU.by]]) {
+        const x = X(wx), y = Y(wy) + s * 0.7, r = s * 1.05, a = PU.mode === 'free' ? -PU.cage.body.getPosition().y * 0.8 : 0;
+        c.fillStyle = '#2c2833'; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); c.strokeStyle = '#8a8496'; c.lineWidth = Math.max(1, s * 0.22); c.stroke();
+        c.strokeStyle = '#5a5464'; c.lineWidth = Math.max(1, s * 0.16); c.beginPath(); for (let k = 0; k < 3; k++) { const q = a + k * TAU / 3; c.moveTo(x, y); c.lineTo(x + Math.cos(q) * r * 0.9, y + Math.sin(q) * r * 0.9); } c.stroke();
+        c.fillStyle = '#ffc93c'; c.beginPath(); c.arc(x, y, r * 0.25, 0, TAU); c.fill();
+      }
+    }
+  }
+  if (!platXform(c, P)) return;
+  if (P.kind === 'cage') {
+    const x0 = X(P.xa), x1 = X(P.xb), y0 = Y(P.yb), y1 = Y(P.ya), th = s * 0.75, n = Math.round((P.xb - P.xa) / 1.15);
+    if (!front) {
+      // 籠子的底板、頂板（厚鐵板）、兩邊的粗鐵條、後面一排細鐵條（暗一點）
+      c.fillStyle = 'rgba(20,16,26,.35)'; c.fillRect(x0, y0, x1 - x0, y1 - y0);
+      c.strokeStyle = '#3a3440'; c.lineWidth = Math.max(1, s * 0.16); c.beginPath(); for (let k = 1; k < n; k++) { const x = lerp(x0, x1, k / n) + s * 0.25; c.moveTo(x, y0 + th); c.lineTo(x, y1 - th); } c.stroke();
+      for (const [ya, yb] of [[y0, y0 + th], [y1 - th * 1.3, y1]]) { c.fillStyle = lg(c, 0, ya, 0, yb, [0, '#6a6474', 0.5, '#3a3442', 1, '#1c1822']); c.fillRect(x0, ya, x1 - x0, yb - ya); c.strokeStyle = INK; c.lineWidth = Math.max(1, s * 0.16); c.strokeRect(x0, ya, x1 - x0, yb - ya); for (let k = 0; k < n + 1; k++) { c.fillStyle = '#c9c0d4'; c.beginPath(); c.arc(lerp(x0 + s * 0.4, x1 - s * 0.4, k / n), (ya + yb) / 2, s * 0.13, 0, TAU); c.fill(); } }
+      for (const x of [x0 + s * 0.3, x1 - s * 0.3]) { c.strokeStyle = '#1c1822'; c.lineWidth = s * 0.62; c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y1); c.stroke(); c.strokeStyle = '#6a6474'; c.lineWidth = s * 0.3; c.stroke(); }
+      // 頂上的吊環
+      c.strokeStyle = '#3a3440'; c.lineWidth = Math.max(1.2, s * 0.3); c.beginPath(); c.arc((x0 + x1) / 2, y0 - s * 0.4, s * 0.55, Math.PI, TAU); c.stroke();
+    } else {
+      // 前面一排細鐵條（畫在兵前面）
+      c.strokeStyle = 'rgba(40,34,48,.85)'; c.lineWidth = Math.max(1, s * 0.2); c.beginPath(); for (let k = 1; k < n; k++) { const x = lerp(x0, x1, k / n); c.moveTo(x, y0 + th); c.lineTo(x, y1 - th * 1.3); } c.stroke();
+      c.strokeStyle = 'rgba(200,190,215,.35)'; c.lineWidth = Math.max(1, s * 0.07); c.stroke();
+    }
+  } else if (P.kind === 'pan' && !front) {
+    // 配重桶：木桶、兩道鐵箍
+    const x0 = X(P.xa), x1 = X(P.xb), y0 = Y(P.yb), y1 = Y(P.ya), w = x1 - x0;
+    c.fillStyle = lg(c, x0, 0, x1, 0, [0, '#5a3a1e', 0.35, '#8a5c30', 0.7, '#6e4624', 1, '#3e2612']); c.fillRect(x0, y0 + s * 0.2, w, y1 - y0 - s * 0.2);
+    c.strokeStyle = INK; c.lineWidth = Math.max(1, s * 0.2); c.strokeRect(x0, y0 + s * 0.2, w, y1 - y0 - s * 0.2);
+    c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(x0 + s * 0.3, y0 + s * 0.2, w - s * 0.6, (y1 - y0) * 0.55);
+    for (const f of [0.18, 0.82]) { const y = lerp(y0, y1, f); c.fillStyle = '#3a3440'; c.fillRect(x0 - s * 0.1, y - s * 0.22, w + s * 0.2, s * 0.44); c.fillStyle = '#8a8496'; c.fillRect(x0 - s * 0.1, y - s * 0.22, w + s * 0.2, s * 0.1); }
+    // 桶蓋：一塊厚木板，中間一個鐵環掛在鋼纜上
+    c.fillStyle = lg(c, 0, y0, 0, y0 + s * 0.62, [0, '#a0703c', 0.5, '#7a5028', 1, '#4a2e14']); c.fillRect(x0 - s * 0.18, y0, w + s * 0.36, s * 0.62);
+    c.strokeStyle = INK; c.lineWidth = Math.max(1, s * 0.18); c.strokeRect(x0 - s * 0.18, y0, w + s * 0.36, s * 0.62);
+    c.strokeStyle = '#3a3440'; c.lineWidth = Math.max(1.2, s * 0.26); c.beginPath(); c.arc((x0 + x1) / 2, y0 - s * 0.05, s * 0.4, Math.PI, TAU); c.stroke();
+  }
+  c.restore();
 }
 /* ---------- 引信 ---------- */
 function drawFuses(c, t) {
@@ -606,6 +658,10 @@ function drawBlocks(c, t, rdt, hp) {
     }
     // 被冰術士打到、變脆的磚：罩一層淡淡的冰藍（不是整塊變白）
     if (b.brit > 0 && !b.frag) { const fr = frostSprite(sp); c.globalAlpha = 0.34; c.drawImage(fr, -sp.ax, -sp.ay); c.globalAlpha = 1; }
+    // 避雷針：頂上一顆亮點（雷就是劈在這裡）
+    if (b.rod) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.55 + 0.3 * Math.sin(t * 6 + b.id) + (b.flash > 0 ? 0.5 : 0); const g = glowSprite(C_YELLOW), r = V.T * 0.45; c.drawImage(g, -r, -sp.ay + sp.ax * 0 - r * 0.2 - r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
+    // 魔晶：紫紅色的光一脹一縮
+    if (b.core) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.4 + 0.25 * Math.sin(t * 3 + b.id); const g = glowSprite(C_PINK), r = V.T * 1.15; c.drawImage(g, -r, -r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
     // 共鳴晶柱：一閃一閃的紫光；吊燈：一團暖光
     if ((b.reso && !b.resoDone) || b.kind === 'lamp') { c.globalCompositeOperation = 'lighter'; c.globalAlpha = b.reso ? 0.35 + 0.25 * Math.sin(t * 3.4) : 0.45; const g = glowSprite(b.reso || b.mat === M_IRON ? C_PURPLE : C_GOLD), r = V.T * (b.reso ? 1.1 : 1.3); c.drawImage(g, -r, -r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
     if (b.burn > 0) burn.push(b);
@@ -888,6 +944,12 @@ function drawObjs(c, t) {
       case 'mirror': {
         const x0 = X(o.x - o.dx), y0 = Y(o.y - o.dy), x1 = X(o.x + o.dx), y1 = Y(o.y + o.dy);
         c.lineCap = 'round';
+        if (o.one) {
+          // 單面的冰鏡：背面是一層粗糙的厚冰（打到會擋下），亮面朝著要反彈的方向
+          const nx = -o.dy / o.len, ny = o.dx / o.len, bx = nx * s * 0.9, by = -ny * s * 0.9;
+          c.strokeStyle = '#3a6f9a'; c.lineWidth = s * 1.5; c.beginPath(); c.moveTo(x0 - bx, y0 - by); c.lineTo(x1 - bx, y1 - by); c.stroke();
+          c.strokeStyle = 'rgba(200,235,255,.5)'; c.lineWidth = s * 0.5; c.setLineDash([s * 0.5, s * 0.7]); c.stroke(); c.setLineDash([]);
+        }
         c.strokeStyle = 'rgba(120,200,255,.35)'; c.lineWidth = s * 1.9; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
         c.strokeStyle = '#5fb6e4'; c.lineWidth = s * 0.95; c.stroke();
         c.strokeStyle = o.flash > 0 ? '#ffffff' : '#e6f8ff'; c.lineWidth = s * 0.42; c.stroke();
@@ -1000,7 +1062,7 @@ function drawShots(c) {
   const sx = FX.shx, sy = FX.shy;
   for (let i = 0; i < n; i++) {
     // 分裂過的砲彈比較小顆（威力也比較小），合併的比較大顆
-    const sp = shotSprite(SH.w[i], SH.side[i]), a = Math.atan2(-SH.vy[i], SH.vx[i]), ms = SH.mass[i], m = ms > 1 ? Math.min(2, Math.sqrt(ms)) : Math.max(0.6, Math.pow(ms, 0.2)), cs = Math.cos(a) * m, sn = Math.sin(a) * m;
+    const sp = shotSprite(SH.w[i], SH.side[i]), a = SH.flag[i] & F_ROLL ? -SH.x[i] * 1.7 : Math.atan2(-SH.vy[i], SH.vx[i]), ms = SH.mass[i], m = ms > 1 ? Math.min(2, Math.sqrt(ms)) : Math.max(0.6, Math.pow(ms, 0.2)), cs = Math.cos(a) * m, sn = Math.sin(a) * m;
     c.setTransform(cs, sn, -sn, cs, X(SH.x[i]) + sx, Y(SH.y[i]) + sy);
     c.drawImage(sp.cv, -sp.w / 2, -sp.h / 2);
   }
@@ -1106,6 +1168,24 @@ function aimDots(c, mx, my, vx, vy, t0, t1, tMax, r0, r1, box, inside) {
   }
   return n;
 }
+// 照 simTrace 錄下來的路線畫圓點（會跟著冰鏡、噴流、黑洞轉彎）：路線每 1/30 秒一個點，tt 秒的位置用前後兩點內插
+const _pa = [0, 0];
+function pathAt(P, mx, my, tt) {
+  const n = P.length >> 1, f = tt * 30 - 1;
+  if (f < 0 || n < 1) { const u = clamp(tt * 30, 0, 1); _pa[0] = lerp(mx, n ? P[0] : mx, u); _pa[1] = lerp(my, n ? P[1] : my, u); return _pa; }
+  const i = Math.min(n - 1, Math.floor(f)), j = Math.min(n - 1, i + 1), u = clamp(f - i, 0, 1);
+  _pa[0] = lerp(P[i * 2], P[j * 2], u); _pa[1] = lerp(P[i * 2 + 1], P[j * 2 + 1], u); return _pa;
+}
+function pathDots(c, P, mx, my, t0, t1, tMax, r0, r1, box, inside) {
+  const s = V.s; let n = 0;
+  for (let tt = t0; tt <= t1; tt += 0.065) {
+    const q = pathAt(P, mx, my, tt), x = q[0], y = q[1];
+    if (box && (x > box.x0 - 1 && x < box.x1 + 1.2 && y < box.y1 + 2.5) !== !!inside) continue;
+    const px = X(x), py = Y(y), r = Math.max(1.3, s * lerp(r0, r1, tt / tMax));
+    c.moveTo(px + r, py); c.arc(px, py, r, 0, TAU); n++;
+  }
+  return n;
+}
 function drawAim(c, t) {
   RD.aimMask = 0;
   if (!RD.showAim || S.state !== 'play') return;
@@ -1125,16 +1205,18 @@ function drawAim(c, t) {
     for (const u of T.units) {
       if (!u.alive || !u.w || u.frozen > 0 || u.stun > 0) continue;
       const mx = u.x + 1.3, my = u.y + 2.3, inBox = u.x > box.x0 - 1 && u.x < box.x1 + 1 ? box : null;
-      let end = maxT;
+      let end = maxT; const P = RD.path || (RD.path = []);
+      // 照試射的路線畫（碰到冰鏡、噴流、水面、山坡會轉彎）；不是自己瞄準的時候（看示範戰局）照拋物線
+      const R = simTrace(0, mx, my, vx, vy, S.wind, S.time, kmax, u.w.i, P);
       if (mine) {
-        const R = simTrace(0, mx, my, vx, vy, S.wind, S.time, kmax); RD.aimMask |= R.gm; if (R.hit && R.t < end) end = R.t;
+        RD.aimMask |= R.gm; if (R.hit && R.t < end) end = R.t;
         // 帶頭那一發的整條彈道會穿過哪些符（虛線畫不到那麼遠的也算）：符會亮起來。每四幀算一次就夠
-        if (first) { if ((RD.frame & 3) === 0) RD.aimFar = R.hit ? R.gm : simTrace(0, mx, my, vx, vy, S.wind, S.time).gm; RD.aimMask |= RD.aimFar; }
+        if (first) { if ((RD.frame & 3) === 0) RD.aimFar = R.hit ? R.gm : simTrace(0, mx, my, vx, vy, S.wind, S.time, undefined, u.w.i).gm; RD.aimMask |= RD.aimFar; }
       }
       // 帶頭那一發在自己城裡的那一段：畫淡淡的小點（吊高打的時候，起頭那一段幾乎都在城裡，不畫就看不出自己瞄哪）
-      if (first && inBox && mine) { c.beginPath(); if (aimDots(c, mx, my, vx, vy, 0.05 + flow, end, maxT, 0.4, 0.3, inBox, true)) { c.fillStyle = 'rgba(255,255,255,.42)'; c.fill(); } }
+      if (first && inBox && mine) { c.beginPath(); if (pathDots(c, P, mx, my, 0.05 + flow, end, maxT, 0.4, 0.3, inBox, true)) { c.fillStyle = 'rgba(255,255,255,.42)'; c.fill(); } }
       c.beginPath();
-      if (!aimDots(c, mx, my, vx, vy, 0.05 + flow, end, maxT, first ? 0.6 : 0.36, first ? 0.26 : 0.18, inBox)) { first = false; continue; }
+      if (!pathDots(c, P, mx, my, 0.05 + flow, end, maxT, first ? 0.6 : 0.36, first ? 0.26 : 0.18, inBox)) { first = false; continue; }
       c.fillStyle = mine ? (first ? 'rgba(255,255,255,.97)' : 'rgba(255,255,255,.55)') : 'rgba(255,255,255,.4)'; c.fill();
       if (mine && first) { c.strokeStyle = 'rgba(15,42,120,.85)'; c.lineWidth = Math.max(1, s * 0.16); c.stroke(); }
       first = false;
@@ -1162,19 +1244,26 @@ function renderFrame(dt, rdt) {
   drawRocks(c);
   if (S.plats.length) drawPlats(c, t);
   drawObjs(c, t);
+  drawAmp(c, t);
   for (const st of S.structs) drawBackdrop(c, st, rdt);
   drawBlocks(c, t, rdt);
   drawFuses(c, t);
   drawRopes(c, t);
   drawGates(c, t);
   drawUnits(c, t);
+  for (const P of S.plats) if (P.kind === 'cage' && !P.dead) drawPart(c, P, t, true);
   if (S.ropes.length) { drawBlocks(c, t, rdt, 1); c.setTransform(1, 0, 0, 1, FX.shx, FX.shy); }
   drawWater(c, t);
+  if (S.plats.length) drawShipMag(c);
   drawFlyers(c, t);
+  drawBellGauge(c, t);
   drawShots(c);
+  drawShotFx(c);
   fxDraw(c);
   drawShields(c, t, rdt);
+  drawBossUI(c, t);
   drawAim(c, t);
+  RD.dt = rdt; drawBubbles(c);
   sceneFront(c, t, dt);
   c.setTransform(1, 0, 0, 1, 0, 0);
   if (S.sudden && S.state === 'play') { c.fillStyle = 'rgba(255,60,20,' + (0.05 + 0.03 * Math.sin(t * 5)) + ')'; c.fillRect(0, 0, V.W, V.H); }

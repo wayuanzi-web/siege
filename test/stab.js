@@ -13,7 +13,7 @@ for (let li = 0; li < LEVELS.length; li++) {
   for (let i = 0; i < 1200; i++) {
     n++;
     const t0 = process.hrtime.bigint(); physStep(1 / 60); const ms = Number(process.hrtime.bigint() - t0) / 1e6; tot += ms; if (ms > worst) worst = ms;
-    let aw = 0; for (const r of rec) if (r.o.body && r.o.body.isDynamic() && r.o.body.isAwake()) aw++;
+    let aw = 0; for (const r of rec) if (r.o.body && r.o.body.isDynamic() && r.o.body.isAwake() && (r.o.body.getLinearVelocity().lengthSquared() > 1e-4 || Math.abs(r.o.body.getAngularVelocity()) > 1e-3)) aw++;          // 醒著但完全不動的（吊在繩子上的配重桶）不算
     if (!aw && slept < 0) { slept = (i + 1) / 60; break; }
   }
   const out = [];

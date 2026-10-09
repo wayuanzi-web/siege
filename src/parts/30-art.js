@@ -30,7 +30,7 @@ const PAL_ROCK = ['#8e8794', '#665f70', '#403a49', '#2a2532'];
 /* ---------- 磚塊：每一塊一張貼圖（依外觀、材質、形狀、大小、破損程度），第一次用到時才畫 ---------- */
 const BSPR = {};
 function blockSprite(b, ds) {
-  const key = b.skin + ':' + b.mat + ':' + b.kind + ':' + Math.round(b.w * 10) + ':' + Math.round(b.h * 10) + ':' + Math.round(b.il * 10) + ':' + Math.round(b.ir * 10) + ':' + b.deco + ':' + ds + ':' + (b.vr & 1) + (b.hot ? 'h' : '') + (b.prop ? 'p' : '') + (b.seg ? 's' : '') + (b.dom ? 'd' : '') + (b.beam ? 'b' : '') + (b.reso ? 'r' : '');
+  const key = b.skin + ':' + b.mat + ':' + b.kind + ':' + Math.round(b.w * 10) + ':' + Math.round(b.h * 10) + ':' + Math.round(b.il * 10) + ':' + Math.round(b.ir * 10) + ':' + b.deco + ':' + ds + ':' + (b.vr & 1) + (b.hot ? 'h' : '') + (b.prop ? 'p' : '') + (b.seg ? 's' : '') + (b.dom ? 'd' : '') + (b.beam ? 'b' : '') + (b.reso ? 'r' : '') + (b.mag ? 'm' : '') + (b.core ? 'c' : '') + (b.heart ? 'H' : '') + (b.brake ? 'k' : '');
   let s = BSPR[key]; if (s) return s;
   const sc = V.s, w = b.w * sc, h = b.h * sc, roof = b.kind === 'roof';
   const padX = Math.ceil((roof ? 0.62 : 0.14) * CS * sc), padY = Math.ceil((roof ? 0.5 : 0.14) * CS * sc);
@@ -71,7 +71,7 @@ function paintBlock(c, b, ds, w, h, sc) {
     }
     else if (b.kind === 'bell') { c.beginPath(); c.moveTo(0, h); c.lineTo(w, h); c.quadraticCurveTo(w * 0.86, h * 0.62, w * 0.81, h * 0.36); c.quadraticCurveTo(w * 0.76, 0, w * 0.5, 0); c.quadraticCurveTo(w * 0.24, 0, w * 0.19, h * 0.36); c.quadraticCurveTo(w * 0.14, h * 0.62, 0, h); c.closePath(); }
     else if (b.dom) { const r = w * 0.48; c.beginPath(); c.moveTo(0, h); c.lineTo(0, r); c.quadraticCurveTo(0, 0, r, 0); c.lineTo(w - r, 0); c.quadraticCurveTo(w, 0, w, r); c.lineTo(w, h); c.closePath(); }      // 石碑：圓頂
-    else if (b.reso) { c.beginPath(); c.moveTo(w * 0.5, 0); c.lineTo(w * 0.95, h * 0.2); c.lineTo(w * 0.95, h * 0.86); c.lineTo(w * 0.5, h); c.lineTo(w * 0.05, h * 0.86); c.lineTo(w * 0.05, h * 0.2); c.closePath(); }
+    else if (b.reso || b.core) { c.beginPath(); c.moveTo(w * 0.5, 0); c.lineTo(w * 0.95, h * 0.2); c.lineTo(w * 0.95, h * 0.86); c.lineTo(w * 0.5, h); c.lineTo(w * 0.05, h * 0.86); c.lineTo(w * 0.05, h * 0.2); c.closePath(); }
     else if (b.mat === M_SNOW) { c.beginPath(); c.moveTo(0, h); c.lineTo(0, h * 0.3); c.quadraticCurveTo(w * 0.05, 0, w * 0.3, h * 0.06); c.quadraticCurveTo(w * 0.5, -h * 0.04, w * 0.68, h * 0.07); c.quadraticCurveTo(w * 0.97, h * 0.02, w, h * 0.32); c.lineTo(w, h); c.closePath(); }      // 積雪：上緣蓬蓬的
     else rrect(c, 0, 0, w, h, Math.min(w, h) * 0.09);
   };
@@ -108,6 +108,22 @@ function paintBlock(c, b, ds, w, h, sc) {
       break;
     }
     case M_WOOD: {
+      if (b.heart) {
+        // 五重塔的心柱：朱漆、上下兩道金箍
+        c.fillStyle = lg(c, 0, 0, w, 0, [0, '#6a1410', 0.3, '#b8281c', 0.55, '#d8402a', 0.8, '#b8281c', 1, '#6a1410']); c.fillRect(0, 0, w, h);
+        c.fillStyle = '#ffc93c'; for (const f of [0.08, 0.92]) c.fillRect(0, h * f - u * 0.08, w, u * 0.16);
+        c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(w * 0.18, 0, w * 0.12, h);
+        break;
+      }
+      if (b.brake) {
+        // 閘：木頭底座上一個絞盤（捲著鋼纜的圓筒）、一根煞車桿
+        const p = P.wood; c.fillStyle = lg(c, 0, 0, 0, h, [0, p[0], 1, p[2]]); c.fillRect(0, 0, w, h);
+        c.fillStyle = '#3a3440'; c.beginPath(); c.arc(w * 0.5, h * 0.45, w * 0.32, 0, TAU); c.fill(); c.strokeStyle = '#8a8496'; c.lineWidth = Math.max(1, u * 0.06); c.stroke();
+        c.strokeStyle = '#c9c0d4'; c.lineWidth = Math.max(1, u * 0.04); for (let k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(w * 0.5 + k * w * 0.1, h * 0.17); c.lineTo(w * 0.5 + k * w * 0.1, h * 0.73); c.stroke(); }
+        c.strokeStyle = '#2a1608'; c.lineWidth = Math.max(1.5, u * 0.1); c.beginPath(); c.moveTo(w * 0.2, h * 0.95); c.lineTo(w * 0.85, h * 0.1); c.stroke();
+        c.fillStyle = '#e23a2a'; c.beginPath(); c.arc(w * 0.85, h * 0.1, Math.max(1.5, u * 0.09), 0, TAU); c.fill();
+        break;
+      }
       if (ball) {
         // 木桶（看到的是桶底）：一圈鐵箍、幾片桶板、中間一個塞子
         const p = P.wood, r = w / 2;
@@ -199,6 +215,12 @@ function paintBlock(c, b, ds, w, h, sc) {
       break;
     }
     case M_GLASS: {
+      if (b.core) {
+        // 魔王城城腳的魔晶：紫紅色、一道一道的亮紋
+        c.fillStyle = lg(c, 0, 0, w, h, [0, '#ffd0f4', 0.35, '#d24adc', 0.75, '#6a1a9c', 1, '#2a0a4a']); c.fillRect(0, 0, w, h);
+        c.strokeStyle = 'rgba(255,230,255,.8)'; c.lineWidth = Math.max(1, u * 0.06); c.beginPath(); c.moveTo(w * 0.5, 0); c.lineTo(w * 0.5, h); c.moveTo(w * 0.05, h * 0.2); c.lineTo(w * 0.5, h * 0.45); c.lineTo(w * 0.95, h * 0.2); c.stroke();
+        break;
+      }
       // 琉璃：半透明，邊上亮、斜著兩道反光
       const p = PAL_GLASS;
       c.fillStyle = lg(c, 0, 0, w, h, [0, rgba(p[0], 0.75), 0.45, rgba(p[1], 0.55), 1, rgba(p[2], 0.7)]); c.fillRect(0, 0, w, h);
@@ -230,6 +252,15 @@ function paintBlock(c, b, ds, w, h, sc) {
       break;
     }
     case M_KEG: {
+      if (b.mag) {
+        // 地窖火藥庫的大桶：深色的桶身、三道鐵箍、正中一個黃底紅字的「火」
+        c.fillStyle = lg(c, 0, 0, w, 0, [0, '#2e1a0c', 0.3, '#5c3418', 0.55, '#7a4822', 0.8, '#5c3418', 1, '#2e1a0c']); c.fillRect(0, 0, w, h);
+        c.fillStyle = '#1c1c24'; for (const f of [0.1, 0.5, 0.86]) c.fillRect(0, h * f - h * 0.05, w, h * 0.1);
+        c.fillStyle = '#8a8496'; for (const f of [0.1, 0.5, 0.86]) c.fillRect(0, h * f - h * 0.05, w, h * 0.025);
+        c.fillStyle = '#ffd34a'; c.beginPath(); c.arc(w * 0.5, h * 0.3, w * 0.2, 0, TAU); c.fill(); c.strokeStyle = '#2a1608'; c.lineWidth = Math.max(1, u * 0.04); c.stroke();
+        c.fillStyle = '#c8241a'; c.font = '900 ' + Math.round(w * 0.3) + 'px serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('火', w * 0.5, h * 0.31);
+        break;
+      }
       c.fillStyle = lg(c, 0, 0, w, 0, [0, '#5a3418', 0.28, '#a8672e', 0.55, '#cf8a46', 0.8, '#a8672e', 1, '#5a3418']); c.fillRect(0, 0, w, h);
       c.strokeStyle = 'rgba(60,30,10,.55)'; c.lineWidth = Math.max(1, u * 0.035); for (let k = 1; k < 5; k++) { c.beginPath(); c.moveTo(w * k / 5, 0); c.lineTo(w * k / 5, h); c.stroke(); }
       c.fillStyle = '#2b2b33'; c.fillRect(0, h * 0.14, w, h * 0.1); c.fillRect(0, h * 0.76, w, h * 0.1);

@@ -20,7 +20,9 @@ function debrisCol(skin, m) {
   const hex = m === M_WOOD ? P.wood[1] : m === M_STONE ? P.stone[1] : m === M_IRON ? P.iron[1] : m === M_ROOF ? P.roof[1] : m === M_ICE ? PAL_ICE[1] : m === M_ROCK ? PAL_ROCK[1] : m === M_KEG ? '#a8672e' : m === M_CLAY ? '#c8743c' : m === M_SNOW ? '#f2f8ff' : P.panel[0];
   i = PCOL.length; PCOL.push(hex); DEBRIS_COL[key] = i; return i;
 }
-function fxReset() { FX.n = 0; FX.glare = 0; FX.rings.length = 0; FX.bolts.length = 0; FX.pops.length = 0; FX.flung.length = 0; FX.tracers.length = 0; FX.shake = 0; FX.flash = 0; FX.slow = 1; FX.slowT = 0; FX.slowCd = 0; FX.chainRef = 0; FX.chainT = 0; FX.stop = 0; FX.gpop = {}; FX.heat = 0; }
+// 同一種提示短時間內只出一次（一輪幾十發同時彈、同時加速，不要整片都是字、都是聲音）
+function thr(k, ms) { const now = performance.now(), m = FX.thr || (FX.thr = {}); if (now - (m[k] || 0) < ms) return false; m[k] = now; return true; }
+function fxReset() { if (FX.bubbles) FX.bubbles.length = 0; FX.n = 0; FX.glare = 0; FX.rings.length = 0; FX.bolts.length = 0; FX.pops.length = 0; FX.flung.length = 0; FX.tracers.length = 0; FX.shake = 0; FX.flash = 0; FX.slow = 1; FX.slowT = 0; FX.slowCd = 0; FX.chainRef = 0; FX.chainT = 0; FX.stop = 0; FX.gpop = {}; FX.heat = 0; }
 // 慢動作：精彩的瞬間（連環爆、大坍塌）放慢一下才看得清楚。k 放慢到幾成速度、dur 持續幾秒（真實時間）；不會連續觸發
 function slowmo(k, dur, force) { if (FX.slowCd > 0 && !force) return; FX.slowT = dur; FX.slowK = k; FX.slow = k; FX.slowCd = dur + 2.5; }
 function part(type, x, y, vx, vy, life, size, col) {
@@ -205,7 +207,7 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'lanternoff': burst(P_SMOKE, a, b, 3, 4, 0.5, 1.2, C_WHITE); break;
     case 'orbgo': sfx('orb'); break;
     case 'port': burst(P_SPARK, a, b, 3, 12, 0.3, 0.5, c === 0 ? C_SKY : C_SALMON); if (d === 0) sfx('port'); break;
-    case 'ping': part(P_FLASH, a, b, 0, 0, 0.12, 2.6, C_ICE); burst(P_SPARK, a, b, 3, 14, 0.25, 0.4, C_ICE); sfx('ping'); break;
+    case 'ping': part(P_FLASH, a, b, 0, 0, 0.12, 2.6, C_ICE); burst(P_SPARK, a, b, 3, 14, 0.25, 0.4, C_ICE); if (thr('ping', 90)) sfx('ping'); if (e) { burst(P_SHARD, a, b, 5, 16, 0.5, 0.45, C_ICE, 4); if (thr('frostpop', 700)) pop(a, b + 3.5, '結霜！', '#cfeeff', 2.8, 0.9); } break;          // 冰鏡反彈（e：結霜）
     case 'flak': FX.tracers.push({ x0: a, y0: b, x1: c, y1: d, t: 0, side: e }); if (f) { part(P_FLASH, c, d, 0, 0, 0.1, 1.8, C_WHITEHOT); burst(P_SMOKE, c, d, 2, 4, 0.4, 1.0, C_DARK); } sfx('flak'); break;
     case 'pop': burst(P_CONF, a, b, 16, 30, 1.0, 0.7, d === 1 ? C_RED : C_SKY, 6); burst(P_SMOKE, a, b, 4, 8, 0.6, 1.8, C_GRAY); ring(a, b, 1, 7, 0.3, '#ffffff', 0.4); pop(a, b + 4, '擊落！', '#ffe14a', 3.2, 0.9); sfx('pop'); break;
     case 'launch': burst(P_SMOKE, a, b, 4, 6, 0.6, 1.4, C_WHITE); sfx('launch'); break;
@@ -321,6 +323,62 @@ function fxOn(t, a, b, c, d, e, f) {
       shake(0.2 + k * 0.5); sfx('thunk');
       break;
     }
+    // ---- 戰場中間的放大（49-amp） ----
+    case 'rollgo': burst(P_DUST, a, b, 4, 9, 0.6, 1.8, C_SAND, 2); burst(P_DEBRIS, a, b, 3, 12, 0.5, 0.4, C_TAN, 6); if (thr('rollgo', 120)) sfx('thud'); break;
+    case 'rollhit': {
+      // c：這一發滾到最後變成幾倍
+      if (c >= 1.25 && thr('rollhit' + (c * 10 | 0), 300)) pop(a, b + 3.5, '×' + c.toFixed(1), c >= 2 ? '#ffe14a' : '#fff0c0', 2.6 + Math.min(1.6, c * 0.5), 0.8);
+      if (c >= 1.8) { ring(a, b, 0.8, 4 + c, 0.3, '#fff0b0', 0.45); shake(0.15 + c * 0.05); }
+      break;
+    }
+    case 'hop': burst(P_DUST, a, b, 3, 8, 0.5, 1.4, C_SAND, 3); if (thr('hop', 150)) sfx('tick'); break;
+    case 'rollsmash': burst(P_DEBRIS, a, b, 8, 20, 0.7, 0.6, C_TAN, 6); pop(a, b + 4, '撞斷了！', '#ffe14a', 3, 1.0); sfx('crack'); shake(0.2); break;
+    case 'wskip': {
+      // c 第幾跳；d 誰的；e 現在幾倍
+      ring(a, b, 0.4, 2.6 + c * 0.6, 0.35, '#e8fbff', 0.4);
+      for (let k = 0; k < 5; k++) part(P_SHARD, a + rndS() * 1.5, b, rndS() * 10, 8 + Math.random() * 10, 0.5, 0.4, k & 1 ? C_WHITE : C_SKY);
+      if (thr('wskip' + c, 260)) { pop(a, b + 2.6 + c * 0.6, '×' + e.toFixed(1), c >= 3 ? '#ffe14a' : '#cfeeff', 2.4 + c * 0.3, 0.7); sfx('splash'); }
+      break;
+    }
+    case 'boost': burst(P_SPARK, a, b, 4, 16, 0.3, 0.5, C_WHITE); if (thr('boost', 380)) { pop(a, b + 3, '加速 ×' + (+d || 1).toFixed(1), '#e8f6ff', 2.8, 0.8); sfx('whoosh'); } break;          // d：現在幾倍
+    case 'jet': if (S.state === 'play') sfx('gust'); break;
+    case 'spring': ring(a, b, 0.5, 3.4, 0.25, '#ffe9a0', 0.45); burst(P_SPARK, a, b, 5, 18, 0.3, 0.5, C_GOLD); if (thr('spring', 140)) sfx('ping'); if (d >= 2 && thr('spring2', 400)) pop(a, b + 3, '彈 ×' + d, '#ffe14a', 2.8, 0.8); break;
+    case 'prism': {
+      for (const col of [C_ORANGE, C_YELLOW, C_SKY]) burst(P_SPARK, a, b, 3, 20, 0.4, 0.5, col);
+      ring(a, b, 1, 6, 0.3, '#ffffff', 0.4); if (thr('prism', 160)) sfx('chime');
+      break;
+    }
+    case 'charge': burst(P_SPARK, a, b, 3, 14, 0.25, 0.4, C_YELLOW); if (thr('charge', 220)) sfx('charge'); break;
+    case 'swallow': burst(P_SPARK, a, b, 6, 10, 0.35, 0.5, C_PURPLE); if (thr('swallow', 300)) { pop(a, b + 3, '被吞了', '#d8b8ff', 2.4, 0.7); sfx('dark'); } break;
+    case 'rodzap': {
+      // 雷劈在避雷針上（c 從多高劈下來；d 哪一邊的針）
+      const pts = []; const n = 7; for (let k = 0; k <= n; k++) pts.push(k === 0 || k === n ? a : a + rndS() * 4, lerp(c, b, k / n));
+      FX.bolts.push({ pts, t: 0, max: 0.18, col: '#fff7c0' }); part(P_FLASH, a, b, 0, 0, 0.14, 4, C_YELLOW); burst(P_SPARK, a, b, 8, 22, 0.35, 0.5, C_YELLOW);
+      flash(0.12, '#fff8d8'); sfx('thunder');
+      if (S.state === 'play' && thr('rodzap', 1200)) pop(a, b + 4, d === 1 ? '避雷針把雷引走了' : '我方避雷針引走了雷', d === 1 ? '#ffc4b8' : '#cfe6ff', 2.8, 1.1);
+      break;
+    }
+    case 'liftbreak': {
+      burst(P_SHARD, a, b, 22, 36, 1.0, 0.7, C_ICE, 6); burst(P_SPARK, a, b, 14, 30, 0.6, 0.6, C_PURPLE); ring(a, b, 1, 12, 0.45, '#e8d8ff', 0.6);
+      if (S.state === 'play') pop(a, b + 4.5, c === 1 ? '浮空晶石碎了！' : '我方的浮空晶石碎了', c === 1 ? '#ffe14a' : '#ff8a7a', 3.4, 1.3);
+      sfx('glass'); sfx('groan'); shake(0.45); vibrate(50);
+      break;
+    }
+    case 'magboom': if (S.state === 'play') pop(a, b + 6, c === 1 ? '火藥庫爆炸！' : '我方火藥庫爆炸了', c === 1 ? '#ffe14a' : '#ff8a7a', 4, 1.5); slowmo(0.4, 1.4); break;
+    // 魔王、大鐘、吊籠
+    case 'bosssay': { const bu = typeof bossUnit === 'function' ? bossUnit() : null; (FX.bubbles || (FX.bubbles = [])).length = 0; FX.bubbles.push({ txt: c, x: a, y: b, who: bu && bu.alive ? bu : null, t: 0, max: clamp(1.4 + c.length * 0.16, 2.2, 4.2) }); break; }
+    case 'bossnext': sfx(c === 'meteor' ? 'warn' : c === 'orb' ? 'orb' : 'dark'); ring(a, b, 1, 7, 0.4, c === 'meteor' ? '#ffb07a' : '#ff9ad8', 0.5); break;
+    case 'bosstired': ring(a, b, 9, 1.5, 0.5, '#ffe14a', 0.7); pop(a, b + 7, '破綻！傷害加倍', '#ffe14a', 3.4, 1.6); sfx('star'); break;
+    case 'bossheal': if (c >= 4) pop(a, b + 5, '+' + Math.round(c), '#b8ff9a', 2.6, 0.9); burst(P_SPARK, a, b, 8, 14, 0.6, 0.5, C_GREEN); break;
+    case 'summon': ring(a, b, 1, 9, 0.5, '#b8ff9a', 0.6); burst(P_SMOKE, a, b, 6, 8, 0.8, 2.2, C_PURPLE); sfx('dark'); break;
+    case 'bellring': {
+      // 鐘鳴：一圈一圈的金色聲波往對面那座塔推過去（d：心柱還在）
+      for (let k = 0; k < 5; k++) ring(a + (c === 0 ? 1 : -1) * k * 3, b - k * 2, 2 + k * 2, 40, 0.7 + k * 0.12, '#ffe08a', 0.7);
+      flash(0.15, '#fff2c8'); shake(0.8); sfx('bong'); sfx('chime'); vibrate(80);
+      if (S.state === 'play') pop(a, b + 7, c === 0 ? (d ? '鐘鳴！（心柱擋掉大半）' : '鐘鳴！') : (d ? '敵軍敲響了大鐘' : '敵軍的鐘鳴！'), c === 0 ? '#ffe14a' : '#ff8a7a', 3.8, 1.5);
+      break;
+    }
+    case 'brake': burst(P_DEBRIS, a, b, 8, 16, 0.6, 0.5, C_TAN, 4); if (S.state === 'play') pop(a, b - 3, c === 1 ? '閘斷了！吊籠在往下沉' : '我方的閘斷了！', c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.5); sfx('chainsnap'); sfx('groan'); shake(0.3); break;
     case 'end': {
       slowmo(0.3, 1.8, true); shake(2.0); flash(0.3, '#fff6d8'); sfx('collapse'); vibrate(200);
       ring(a, b, 2, 16, 0.6, '#fff0b0', 0.7);         // 只留一圈小的，別把整座城垮下來的樣子蓋住
