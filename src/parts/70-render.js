@@ -522,17 +522,19 @@ function drawFuses(c, t) {
   for (let k = 0; k < 2; k++) {
     const F = S.st[k] && S.st[k].fuse; if (!F) continue;
     c.lineCap = 'round'; c.lineJoin = 'round';
-    // 還沒燒的引信：深色的繩子；燒過的：一條灰白的灰
+    // 還沒燒的引信：深色的繩子；燒過的：一條灰白的灰，幾秒後散掉。貼著的那塊磚垮了、移位了，那一段就不畫
     const seg = (i0, i1, col, w) => { c.strokeStyle = col; c.lineWidth = w; c.beginPath(); for (let i = i0; i <= i1; i++) { const p = fusePt(F, i * 0.25); if (i === i0) c.moveTo(X(p.x), Y(p.y)); else c.lineTo(X(p.x), Y(p.y)); } c.stroke(); };
+    // 每一小段的樣子：0 不畫、1 還沒燒、2 燒過的灰（灰再分幾檔透明度，同一檔的連成一筆畫）
+    const look = (i) => !fuseOn(F, i) || !fuseOn(F, i + 1) ? 0 : !F.bin[i] ? 1 : Math.min(9, 2 + Math.floor((S.time - F.bT[i]) / 0.5));
     let i = 0; const n = F.bin.length;
     while (i < n - 1) {
-      const b = F.bin[i]; let e = i + 1; while (e < n - 1 && F.bin[e] === b) e++;
-      if (b) { seg(i, e, 'rgba(70,64,60,.8)', Math.max(1, s * 0.22)); }
-      else { seg(i, e, '#2a1a10', Math.max(1.5, s * 0.42)); seg(i, e, '#b98a4a', Math.max(1, s * 0.18)); }
+      const b = look(i); let e = i + 1; while (e < n - 1 && look(e) === b) e++;
+      if (b === 1) { seg(i, e, '#2a1a10', Math.max(1.5, s * 0.42)); seg(i, e, '#b98a4a', Math.max(1, s * 0.18)); }
+      else if (b >= 2 && b < 9) seg(i, e, `rgba(70,64,60,${(0.8 * (1 - (b - 2) / 7)).toFixed(2)})`, Math.max(1, s * 0.22));
       i = e;
     }
     // 引信頭：露在城外的那一截，閃一點火光提示（還沒點著才閃）
-    if (!F.fronts.length && !F.done && !F.bin[0]) { const g = glowSprite(C_GOLD), r = s * (1.3 + 0.3 * Math.sin(t * 5 + k)); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.5; c.drawImage(g, X(F.x[0]) - r, Y(F.y[0]) - r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
+    if (!F.fronts.length && !F.done && !F.bin[0] && fuseOn(F, 0)) { const g = glowSprite(C_GOLD), r = s * (1.3 + 0.3 * Math.sin(t * 5 + k)); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.5; c.drawImage(g, X(F.x[0]) - r, Y(F.y[0]) - r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
     // 燒著的火頭
     for (const f of F.fronts) {
       const p = fusePt(F, f.s), x = X(p.x), y = Y(p.y), r = s * (1.5 + 0.4 * Math.sin(t * 30 + f.s));

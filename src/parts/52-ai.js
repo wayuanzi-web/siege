@@ -95,6 +95,12 @@ function aiBegin(T) {
   let lead = null, bv = -1;
   for (const u of T.units) { if (!u.alive || !u.w || u.frozen > 0 || u.stun > 0) continue; const v = u.w.dmg * (u.w.n || 1) * (u.w.fan || 1) + rnd() * 6; if (v > bv) { bv = v; lead = u; } }
   if (!lead) for (const u of T.units) if (u.alive) { lead = u; break; }
+  // 對面垂著引信頭：有時候這一輪改由火油兵帶頭，專瞄引信頭（其他兵照同一個角度跟著打）。敵軍第一回合不會
+  const F = fst.fuse; let fuseMode = false;
+  if (F && !F.done && !F.fronts.length && fuseOn(F, 0) && !(side === 1 && S.round <= 1 && S.lv.foe.open) && rnd() < 0.45 + (A.sap || 0) * 0.3) {
+    const fu = T.units.find((u) => u.alive && u.w && u.w.kind === K_FIRE && u.frozen <= 0 && u.stun <= 0);
+    if (fu) { lead = fu; fuseMode = true; }
+  }
   A.lead = lead; if (!lead) return;
   const big = lead.def.big ? MUZ_BIG : 1, mx = lead.x + dir * 1.3 * big, my = lead.y + 2.3 * big;
   const tg = [];
@@ -132,12 +138,13 @@ function aiBegin(T) {
     tg.push({ x: p.x, y: p.y + R.stake.h * 0.2, w: 1.15 + 0.3 * Math.min(n, 2), blk: R.stake });
   }
   if (S.bell && S.bell.b.body) { const B = S.bell, p = B.b.body.getPosition(), v = B.b.body.getLinearVelocity(); if (v.x * v.x + v.y * v.y < 2) tg.push({ x: p.x - dir * B.b.w * 0.3, y: p.y, w: 1.0, blk: B.b }); }
-  { const F = fst.fuse; if (F && !F.done && !F.fronts.length && T.units.some((u) => u.alive && u.w && u.w.kind === K_FIRE && u.frozen <= 0 && u.stun <= 0)) tg.push({ x: F.x[0], y: F.y[0] + 0.6, w: 1.5, fuse: F }); }
+  { const F = fst.fuse; if (F && !F.done && !F.fronts.length && fuseOn(F, 0) && T.units.some((u) => u.alive && u.w && u.w.kind === K_FIRE && u.frozen <= 0 && u.stun <= 0)) tg.push({ x: F.x[0], y: F.y[0] + 0.6, w: 1.5, fuse: F }); }
   if (fst.plat && fst.plat.comps && rnd() < A.sap + 0.35) for (const c of fst.plat.comps) {
     if (c.hp <= 0) continue;
     const q = polyCentroid(c.pts), wp = fst.plat.body.getWorldPoint({ x: q[0], y: q[1] }), wy = S.water ? S.water.y : 0;
     tg.push({ x: wp.x, y: Math.max(wy + 1.2, wp.y + 1), w: c.bow ? 0.95 : 0.7, hull: c });
   }
+  if (fuseMode) { tg.length = 0; tg.push({ x: F.x[0], y: F.y[0] + 0.6, w: 1.5, fuse: F }); }
   for (const t of tg) for (let tau = 0.7; tau <= 3.41; tau += 0.1) {
     aimFor(mx, my, t.x, t.y, tau, wind, _av);
     if (aimOk(_av[0], _av[1], dir)) A.cand.push({ vx: _av[0], vy: _av[1], tau, t });

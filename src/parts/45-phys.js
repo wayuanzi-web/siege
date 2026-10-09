@@ -533,7 +533,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
     return;
   }
   if (hit && hit.isBlock && !hit.dead && hit.mat === M_ROCK && hit.kind === 'ball') rockPass(hit, dmg * 0.6, kind, side);
-  const list = physQuery(x, y, r + 1), n = list.length;
+  const list = physQuery(x, y, Math.max(r, w.room || 0) + 1), n = list.length;
   PH.ek = 1; PH.ex = x; PH.ey = y;
   for (let i = 0; i < n; i++) {
     const o = list[i];
@@ -564,6 +564,8 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
     } else if (o.alive) {
       if (o.side === side) continue;                          // 自己的砲不傷自己的兵
       const bp = o.body.getPosition(), dx = bp.x - x, dy = bp.y - y, d = Math.hypot(dx, dy);
+      // 關在石室裡炸開的火藥桶（room）：同一層樓、左右 room 以內的人都被震到，越遠越輕
+      if (w.room) { if (Math.abs(dy) > 2.6 || Math.abs(dx) > w.room) continue; const fr = 1 - 0.4 * Math.abs(dx) / w.room, jr = Math.min(Jw * UKB_K * fr, o.mass * UKB_V), k = pushScale(o.body, o.mass, Math.sign(dx) * jr, jr * 0.3, UKB_V); if (k > 0) o.body.applyLinearImpulse({ x: Math.sign(dx) * jr * k, y: jr * 0.3 * k }, o.body.getWorldCenter(), true); hurtUnit(o, ud * fr, side, kind); continue; }
       let f = o === hit ? 1 : 1 - Math.max(0, d - 1.3 * (o.def.big ? MUZ_BIG : 1)) / r; if (f <= 0) continue; if (f > 1) f = 1;       // 離身體表面多遠（魔王的身體比較大）
       // 推兵：一輪幾十發小砲彈接連炸在旁邊，力道不能一直疊上去（不然人會像砲彈一樣飛出城）。已經被推到多快，就少推多少
       const dl = d || 1, j = Math.min(Jw * UKB_K * f, o.mass * UKB_V) * (open1(o, side) ? 0.35 : 1), jx = dx / dl * j, jy = dy / dl * j + j * 0.3, k = pushScale(o.body, o.mass, jx, jy, UKB_V);

@@ -45,7 +45,7 @@ const WL = [
   // 以下不是兵射的：氣球炸彈、火藥桶、毀滅光球
   { id: 'drop', dmg: 34, r: 5.0, J: 700, ud: 18, kind: K_HEAVY },
   { id: 'keg', dmg: 34, r: 6.6, J: 950, ud: 18, kind: K_HEAVY },
-  { id: 'powder', dmg: 24, r: 4.6, J: 620, ud: 14, kind: K_HEAVY },          // 引信串著的火藥桶：小一點（一層一層炸，不會一桶就把整座塔掀掉）
+  { id: 'powder', dmg: 24, r: 4.6, J: 620, ud: 60, room: 11, kind: K_HEAVY },          // 引信串著的火藥桶：炸開的範圍小（一層一層炸，不會一桶就把整座塔掀掉），但關在石室裡炸：同一層的人都被震傷（room：左右多遠）
   { id: 'doom', dmg: 80, r: 9.0, J: 2200, ud: 36, kind: K_DARK }
 ];
 const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; });

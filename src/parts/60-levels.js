@@ -114,12 +114,12 @@ const LEVELS = [
   {
     name: '引信火藥塔', tag: '引信・火藥・地火', theme: 3, castle: 'POWDER',
     tip: '塔裡每一層都擺著火藥桶，一條引信從塔頂窗口垂出來串著它們。只有火油兵的火點得著引信頭：一點著，火順著引信一路往下燒，一層炸完炸下一層',
-    hints: [{ r: 1, t: '敵城塔頂的窗口外面垂著引信頭：讓火油兵的火燒到它，引信就點著了（別的砲彈炸不爆裡面的火藥桶）', ok: () => !fuseLit(1) },
+    hints: [{ r: 1, t: '敵城塔頂的窗口外面垂著引信頭：用最上面那個火油兵的虛線瞄它，火一燒到就點著了（別的砲彈炸不爆裡面的火藥桶）', ok: () => !fuseLit(1) && sideAt(0, 1) },
       { r: 2, t: '讓砲彈從正在噴的地火裡穿過去：會著火，打磚、打兵威力多五成（但點不著引信）' },
       { r: 3, t: '你的塔頂也垂著一條引信：敵軍的火油兵會瞄它。先把他們打倒，你的火藥就安全了', ok: () => !fuseLit(0) && foeHas('fire') }],
     ground: [[-40, 5], [0, 0], [38, 0], [41, -3.5], [71, -3.5], [74, 0], [112, 0], [152, 5]],
     me: { crew: ['fire', 'rocket', 'bomb', 'ice'] },
-    foe: { crew: ['fire', 'bomb', 'rocket', 'fire'], hp: 1.4, dmg: 1.25, open: 0.55, ai: { err: 4.6, think: 1.1, gate: 0.65, hate: 0.2, skill: 0.5, sap: 0.45, warm: 2.2 } },
+    foe: { crew: ['fire', 'bomb', 'rocket', 'fire'], hp: 1.55, dmg: 1.4, open: 0.55, ai: { err: 4.4, think: 1.1, gate: 0.65, hate: 0.2, skill: 0.5, sap: 0.45, warm: 2.2 } },
     objs: [
       { t: 'geyser', x: 46, w: 2.8, hgt: 45 },
       { t: 'geyser', x: 56, w: 2.8, hgt: 48 },
@@ -206,7 +206,7 @@ const LEVELS = [
     ground: [[-40, 3], [0, 0], [112, 0], [152, 3]],
     voids: [[13.8, 98.2]],
     me: { crew: ['rocket', 'zap', 'bolt', 'bomb'] },
-    foe: { crew: ['fire', 'bomb', 'zap', 'bolt'], hp: 1.35, dmg: 2.1, open: 0.55, ai: { err: 2.5, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.0 } },
+    foe: { crew: ['fire', 'bomb', 'zap', 'bolt'], hp: 1.35, dmg: 1.95, open: 0.55, ai: { err: 2.5, think: 1.1, gate: 0.85, hate: 0.3, skill: 0.85, sap: 0.6, warm: 2.0 } },
     weak: (side) => tgC(side, [[3, 11], [3, 7], [8, 10], [7, 6]], 0.95),
     gates: [
       { owner: 0, mult: 3, h: 5.5, spots: [[48, 40]], move: { t: 'bob', a: 4, per: 8 } },
@@ -278,7 +278,7 @@ const LEVELS = [
     ground: [[-40, 3], [0, 0], [112, 0], [152, 3]],
     voids: [[41.5, 70.5]],
     me: { crew: ['rocket', 'zap', 'bomb', 'fire'] },
-    foe: { crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 1.1, dmg: 1.4, open: 0.55, ai: { err: 4.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 1.8 } },
+    foe: { crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 1.1, dmg: 1.3, open: 0.55, ai: { err: 4.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 1.8 } },
     weak: (side) => side === 1 ? tgC(side, [[4, 2], [6, 2]], 0.7) : [],
     boss: { p2: 0.8, p3: 0.45, segHp: 60, regen: 2, orbHp: 30, orbGap: [3, 2], meteors: 1 },
     gates: [

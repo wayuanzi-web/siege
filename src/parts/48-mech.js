@@ -617,9 +617,10 @@ function platStep(dt, act) {
 }
 
 /* ---------- 引信（第四關）：一條從塔頂窗口垂到外面的繩子，一路串著每一層的火藥桶 ----------
-   火燒到露在外面的那一截（火油兵的火、穿過地火的砲彈），或是火藥桶在旁邊炸開，引信就點著了：
-   火從點著的地方往兩頭燒，燒到哪一桶火藥，那一桶就爆 */
-const FUSE_R = 1.2;            // 火要燒到離引信頭這麼近才點得著（要瞄得準）
+   火燒到露在外面的那一截（只有火油兵的火），或是火藥桶在旁邊炸開，引信就點著了：
+   火從點著的地方往兩頭燒，燒到哪一桶火藥，那一桶就爆。
+   引信沿著牆、樓板走：每一小段記住它貼著的那塊磚（anc），那塊垮了、移位了，那一段就跟著不見（不會整條吊在半空中） */
+const FUSE_R = 1.0;            // 火要燒到離引信頭這麼近才點得著（要瞄得準）
 const FUSE_V = 8.5;            // 引信一秒燒多長
 function mkFuse(st, d) {
   const xs = [], ys = [], s = [0];
@@ -627,9 +628,15 @@ function mkFuse(st, d) {
   for (let i = 1; i < xs.length; i++) s.push(s[i - 1] + Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]));
   const len = s[s.length - 1], F = { st, side: st.side, x: xs, y: ys, s, len, open: d.open || 1, fronts: [], bin: new Uint8Array(Math.ceil(len / 0.25) + 1), kegs: [], by: 2, done: false, lit: 0 };
   for (const b of st.blocks) if (b.mat === M_KEG && !b.prop) { const q = fuseNear(F, b.x0, b.y0, 0); if (q.d < 1.8) { F.kegs.push({ b, s: q.s }); b.fuseKeg = 1; } }
+  // 每一小段貼著哪一塊磚（最近的那塊；離每塊都遠的，例如垂在窗外的引信頭，跟著沿線最近有貼著的那一段）
+  const n = F.bin.length; F.anc = new Array(n).fill(null); F.bT = new Float32Array(n);
+  for (let i = 0; i < n; i++) { const p = fusePt(F, i * 0.25); let best = null, bd = 1.6; for (const b of st.blocks) { if (b.prop || b.mat === M_KEG) continue; const d = blockDist(b, p.x, p.y); if (d < bd) { bd = d; best = b; } } F.anc[i] = best; }
+  for (let i = 0; i < n; i++) if (!F.anc[i]) { for (let k = 1; k < n; k++) { const q = (i + k < n && F.anc[i + k]) || (i - k >= 0 && F.anc[i - k]); if (q) { F.anc[i] = q; break; } } }
   st.fuse = F;
   return F;
 }
+// 引信第 i 小段（每 0.25 一段）還在不在：貼著的那塊磚垮了、移位了，那一段就不畫（引信頭沒了也就點不著了）
+function fuseOn(F, i) { const a = F.anc && F.anc[i]; return !a || (!a.dead && a.inPlace); }
 // 引信上離 (x, y) 最近的一點；segs 只看前幾段（0 = 整條）
 const _fn = { d: 0, s: 0, x: 0, y: 0 };
 function fuseNear(F, x, y, segs) {
@@ -657,7 +664,7 @@ function fuseBlast(x, y, r, fire, keg, side) {
   for (let k = 0; k < 2; k++) {
     const F = S.st[k] && S.st[k].fuse; if (!F || F.done) continue;
     if (keg) { const q = fuseNear(F, x, y, 0); if (q.d < Math.min(4.5, r * 0.7)) fuseIgnite(F, q.s, F.by !== 2 && F.fronts.length ? F.by : side); }
-    else if (fire && side !== F.side) { const q = fuseNear(F, x, y, F.open); if (q.d < FUSE_R) fuseIgnite(F, q.s, side); }
+    else if (fire && side !== F.side) { const q = fuseNear(F, x, y, F.open); if (q.d < FUSE_R && fuseOn(F, clamp(Math.round(q.s / 0.25), 0, F.bin.length - 1))) fuseIgnite(F, q.s, side); }
   }
 }
 function fusesBurning() { for (let k = 0; k < 2; k++) { const F = S.st[k] && S.st[k].fuse; if (F && F.fronts.length) return true; } return false; }
@@ -669,7 +676,7 @@ function fuseStep(dt, act) {
       const s0 = f.s; f.s = clamp(f.s + f.d * FUSE_V * dt, 0, F.len);
       // 這一段燒過了；前面已經燒過的（另一頭燒過來的火）就停
       const a = Math.round(s0 / 0.25), b = Math.round(f.s / 0.25);
-      for (let i = Math.min(a, b); i <= Math.max(a, b); i++) { if (i < 0 || i >= F.bin.length) continue; if (F.bin[i] && i !== a && Math.abs(i - a) > 1) f.dead = 1; F.bin[i] = 1; }
+      for (let i = Math.min(a, b); i <= Math.max(a, b); i++) { if (i < 0 || i >= F.bin.length) continue; if (F.bin[i] && i !== a && Math.abs(i - a) > 1) f.dead = 1; if (!F.bin[i]) F.bT[i] = S.time; F.bin[i] = 1; }       // 塔垮了也照樣燒下去（火藥桶一層炸完炸下一層，不會因為炸歪了一面牆就熄掉）
       for (const kg of F.kegs) if (!kg.boom && (kg.s - s0) * (kg.s - f.s) <= 0) { kg.boom = 1; if (!kg.b.dead) blockKill(kg.b, F.by, K_FIRE); }
       if (f.s <= 0 || f.s >= F.len) f.dead = 1;
     }
