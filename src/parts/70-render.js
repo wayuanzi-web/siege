@@ -1200,11 +1200,17 @@ function drawAim(c, t) {
     c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = Math.max(1.5, s * 0.26); c.lineCap = 'round'; c.beginPath(); c.moveTo(ex - q, ey - q); c.lineTo(ex + q, ey + q); c.moveTo(ex + q, ey - q); c.lineTo(ex - q, ey + q); c.stroke();
   }
   if (mine || RD.aimOn) {
-    const vx = T.aim[0], vy = T.aim[1], maxT = RD.aimT, flow = mine ? (t * 0.9) % 1 * 0.065 : 0, kmax = Math.ceil(maxT * 30) + 1;
+    const ax = T.aim[0], ay = T.aim[1], maxT = RD.aimT, flow = mine ? (t * 0.9) % 1 * 0.065 : 0, kmax = Math.ceil(maxT * 30) + 1;
     let first = true; const box = S.st[0];
-    for (const u of T.units) {
-      if (!u.alive || !u.w || u.frozen > 0 || u.stun > 0) continue;
-      const mx = u.x + 1.3, my = u.y + 2.3, inBox = u.x > box.x0 - 1 && u.x < box.x1 + 1 ? box : null;
+    // 全隊打同一個點：帶頭的照瞄準的角度打，其他兵瞄帶頭那一發的落點（跟 simFire 一樣算）
+    const lead = volleyLead(T), E0 = lead ? volleyEvent(0, lead, ax, ay) : null, E = RD.aimE || (RD.aimE = { ok: false, x: 0, y: 0, vx: 0, vy: 0 }), cv = RD.aimV || (RD.aimV = [0, 0]);
+    if (E0) { E.ok = E0.ok; E.x = E0.x; E.y = E0.y; E.vx = E0.vx; E.vy = E0.vy; } else E.ok = false;
+    const order = lead ? [lead].concat(T.units.filter((u) => u !== lead)) : T.units;
+    for (const u of order) {
+      if (!ableUnit(u)) continue;
+      const m = muzzle(u, 1), mx = m[0], my = m[1], inBox = u.x > box.x0 - 1 && u.x < box.x1 + 1 ? box : null;
+      if (u === lead) { cv[0] = ax; cv[1] = ay; } else volleyAim(0, u, ax, ay, E, cv);
+      const vx = cv[0], vy = cv[1];
       let end = maxT; const P = RD.path || (RD.path = []);
       // 照試射的路線畫（碰到冰鏡、噴流、水面、山坡會轉彎）；不是自己瞄準的時候（看示範戰局）照拋物線
       const R = simTrace(0, mx, my, vx, vy, S.wind, S.time, kmax, u.w.i, P);

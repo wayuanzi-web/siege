@@ -76,15 +76,15 @@ const shelfUp = (side) => S.st[side].blocks.some((b) => !b.dead && b.mat === M_S
 
 const LEVELS = [
   {
-    name: '望樓對峙', tag: '基本玩法・倍增符・火藥桶', theme: 0, castle: 'TOWER',
+    name: '望樓對峙', tag: '基本玩法・倍增符・火藥桶', theme: 0, castle: 'TOWER', fall: 0.3,
     tip: '雙方輪流開火。拖曳瞄準、放開發射；穿過藍色倍增符，一發變多發。望樓最底下兩隻細腳中間夾著一桶火藥：打爆它，整座望樓連人倒下來',
     hints: [{ r: 1, t: '敵軍望樓腳下夾著一桶火藥：打中它，炸斷細腳，上面兩層連人一起倒下來', ok: () => foeKeg() },
       { r: 2, t: '砲彈穿過藍色倍增符會變多發：拖曳的時候看虛線有沒有穿過符', ok: () => foeHome(1) || foeHome(3) },
-      { r: 3, t: '把守軍全部打倒就破城；你的兵全倒就輸了' }],
-    ground: [[-40, 3], [0, 0], [36, 0], [44, -2.5], [56, -3.8], [68, -2.5], [76, 0], [112, 0], [152, 3]],
+      { r: 3, t: '把敵城打塌（上面的城防條歸零）或把守軍全部打倒就贏；你的城塌了、兵全倒了就輸' }],
+    ground: [[-40, 3], [0, 0], [42, 0], [46.5, 1.3], [51, 5.6], [56, 7.2], [61, 5.6], [65.5, 1.3], [70, 0], [112, 0], [152, 3]],
     me: { crew: ['rocket', 'bolt', 'rocket'] },
     foe: { crew: ['rocket', 'rocket', 'bolt'], hp: 1.0, dmg: 0.85, open: 0.5, ai: { err: 7.5, think: 1.3, gate: 0, sap: 0, guard: 0, warm: 1.6 } },
-    weak: (side) => tgC(side, [[6, 6], [8, 6]], 0.9),
+    weak: (side) => tgC(side, [[8, 8], [10, 8]], 0.9).concat(tgC(side, [[1, 7], [5, 7], [1, 5], [5, 5]], 0.7)),
     gates: [
       { owner: 0, mult: 3, h: 6.5, spots: [[50, 36]] },
       { owner: 0, mult: 5, h: 5.5, spots: [[60, 44], [58, 31], [64, 38]], at: 2, hop: true }
@@ -104,13 +104,13 @@ const LEVELS = [
     wind: { max: 6, at: 2 }, sudden: 8,
     rollers: [{ x: 49.1, r: 2.35, stake: 45.9, to: 0, every: 2 }, { x: 62.9, r: 2.35, stake: 66.1, to: 1, every: 2 }],
     // 滾地砲：落在山坡往對方那一面的砲彈一路滾下去（每往下滾一格高度威力多 k 倍，最多 max 倍）
-    roll: { x0: 41, x1: 71, k: 0.15, max: 2.6 },
+    roll: { x0: 41, x1: 71, k: 0.15, max: 2.6, top: 10.8 },
     ampAim: (side) => { const d = side === 0 ? 1 : -1, out = []; for (const dx of [1.4, 3, 4.6, 6.2]) { const x = MID + d * dx; out.push({ x, y: groundYRaw(x) + 0.4, lo: 0.9, hi: 2.9 }); } return out; },
     weak: (side) => tgC(side, [[9, 6], [5, 6]], 0.8),
     lantern: { at: 3, every: 3, spots: [[56, 48], [50, 30], [62, 28]] }
   },
   {
-    name: '冰崖雪崩', tag: '冰鏡・結霜・雪崩', theme: 2, castle: 'ICE', stress: 1, snow: 1,
+    name: '冰崖雪崩', tag: '冰鏡・結霜・雪崩', theme: 2, castle: 'ICE', stress: 1, snow: 1, smashK: 0.35,
     tip: '戰場中間兩邊各有一面冰鏡：吊高打在亮面上，砲彈被彈成平射、打進敵城最底層，還會結霜（打到的磚變脆）。崖頂的冰棚壓著一大片積雪',
     hints: [{ r: 1, t: '左邊那面冰鏡的亮面朝上：砲彈打上去會被彈平，直直打進敵城最底層（那裡有兩個兵、前牆很薄）' },
       { r: 2, t: '冰鏡彈過的砲彈會結霜：炸到的磚變脆（之後打它傷害多六成），直接炸到的兵會被凍住一輪' },

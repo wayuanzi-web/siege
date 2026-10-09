@@ -119,7 +119,7 @@ function uiEvent(t, a, b, c, d, e) {
         if (G.tut === 1) { $('hint').hidden = false; }
         else if (G.tut === 2) { G.tut = 3; if (!G.said.gt) say('這次讓虛線穿過藍色的倍增符：一發變三發', 0, '', myAim); }
         else if (G.tut === 3) { G.tut = 4; if (foeHome(1)) say('打斷望樓的細柱子，上面整座會自己倒下來', 0, '', () => myAim() && foeHome(1)); }
-        else if (G.tut === 4) { G.tut = 5; if (!G.said.kill) say('把守軍全部打倒就破城；上面的頭像是雙方還站著的兵'); }
+        else if (G.tut === 4) { G.tut = 5; if (!G.said.kill) say('上面的城防條是城樓還站著多少：打到歸零，敵城就塌了。守軍全倒也算贏'); }
         // 這一關的訣竅：一回合最多講一句，而且要還用得上才講（該打的東西已經不在了就跳過）。第一次玩第一關的時候讓教學先講
         const hs = S.lv.hints;
         if (!G.tut && hs) for (let i = 0; i < hs.length; i++) { const h = hs[i]; if (G.hinted[i] || b < h.r || (h.ok && !h.ok())) continue; G.hinted[i] = 1; say(h.t, 0, 'hint' + i, h.ok ? () => S.state === 'play' && h.ok() : null); break; }
@@ -137,7 +137,7 @@ function uiEvent(t, a, b, c, d, e) {
     case 'bossback': once('bback', '魔王摔下去又飛回來了，不過摔一次扣不少血'); break;
     case 'rockstop': if (c === 0) once('rstop', '護罩把落石擋下來了'); break;
     case 'sudden': banner('決戰時刻', 'red'); later(1900, () => say('拖太久了，雙方的砲火越來越猛', 1)); break;
-    case 'end': sayClear(); banner(c === 1 ? (S.lv.boss ? '魔王伏誅' : '敵城攻破') : '城樓失守', c === 1 ? 'gold' : 'red', d ? (c === 1 ? '守軍全滅' : '我軍全滅') : ''); $('hint').hidden = true; break;
+    case 'end': sayClear(); banner(c === 1 ? (S.lv.boss ? '魔王伏誅' : '敵城攻破') : '城樓失守', c === 1 ? 'gold' : 'red', d === 2 ? (c === 1 ? '敵城塌了，帥旗倒下' : '我方城樓塌了') : d ? (c === 1 ? '守軍全滅' : '我軍全滅') : ''); $('hint').hidden = true; break;
     case 'gate': if (e === 0 && G.tut >= 1 && G.tut <= 3 && !G.said.gt) { G.said.gt = 1; say('就是這樣！穿過倍增符，砲彈變多了'); } break;
     case 'gspawn': {
       // d 幾倍。高倍數的符只出現一回合：出現的那一刻才講（太早講，玩家找不到它在哪）
@@ -155,7 +155,8 @@ function uiEvent(t, a, b, c, d, e) {
     case 'rockwarn': once('rock', S.lv.boss ? '紅圈是隕石雨的落點：這一回合結束時砸下來，會砸到你就開護罩' : '紅圈是這一回合結束時落石的位置，會砸到你就開護罩', 1, () => S.marks.length > 0 && S.phase !== 'hazard'); break;          // 紅圈已經砸完了就不講
     case 'erupt': if (!G.said.gey) later(3200, () => once('gey', '地火噴發：砲彈穿過火柱會著火，威力多五成')); break;        // 晚一點講，先讓這一關的訣竅講完
     case 'freeze': if (c === 0) once('frz', '兵被凍住了，下一輪不能開火；開護罩可以立刻解凍', 1); break;
-    case 'udie': if (c === 0) once('lost', '有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住', 1); else if (S.idx === 0 && S.team[1].alive > 0) once('kill', '打倒一個守軍！守軍全倒，城就破了'); break;
+    case 'udie': if (c === 0) once('lost', '有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住', 1); else if (S.idx === 0 && S.team[1].alive > 0) once('kill', '打倒一個守軍！守軍全倒也算破城'); break;
+    case 'landout': once('out', c === 1 ? '敵兵摔出城外了：沒死，站在哪裡就從哪裡繼續打' : '你的兵摔出城外了：沒死，站在哪裡就從哪裡繼續打'); break;
     case 'chain': if (b === 0 && a >= 10) once('chain', '漂亮的坍塌！一次垮得越多，「連珠」集得越快'); break;
     // 新的機關：第一次發生的時候講一句
     case 'tpop': if (c === 0) once('tp0', '我方浮島的氣球破了！護好那一頭底下的浮空晶石，碎了浮島就盪下去', 1); else once('tp1', '打破一顆了！再打碎那一頭底下的浮空晶石，整座島就盪下去', 0, () => liftsLeft(1) > 0 && tethersLeft(1) > 0); break;

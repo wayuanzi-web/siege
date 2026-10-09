@@ -176,6 +176,7 @@ function fxOn(t, a, b, c, d, e, f) {
     }
     case 'yelp': pop(a, b, c ? '哇啊！' : '哇！', '#ffffff', 2.5, 0.8); FX.pops[FX.pops.length - 1].yelp = 1; break;
     case 'uland': burst(P_DUST, a, b, 3, 8, 0.4, 1.4, C_SAND); break;
+    case 'landout': burst(P_DUST, a, b, 6, 10, 0.5, 1.6, C_SAND); if (S.state === 'play') pop(a, b + 3.5, c === 1 ? '摔出城外！' : '摔出城外', c === 1 ? '#ffe14a' : '#ffb08a', 2.8, 1.0); break;
     case 'zap': {
       // a 欄位中心 x；b 劈到的高度；c 從多高劈下來
       const pts = []; let x = a, y = c; const n = 9;
