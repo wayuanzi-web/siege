@@ -29,8 +29,8 @@ const CRUSH_LOAD = 1.5;   // 兵頭上壓著超過自己體重幾倍的東西，
 const FALL_TH = 0.3;       // 城破：城樓完整度（還在原位、沒打壞的磚，照耐久算）掉到這個比例以下，那一邊就輸了（關卡可以自己訂 fall）
 const BASE_HP = 4;         // 城基的石磚特別厚：一輪齊射打不穿（不然轟一下牆腳，整座城連人一起倒，沒得打）
 const STAND_K = 0.25;      // 城樓完整度：還站在原位的磚，打得再裂也先算這麼多（其餘照剩下的耐久算）
-const CASTLE_HP = 2.0;
-const ULT_BLK = 0.45;       // 打磚集連珠的速度（城樓的磚耐打了，打掉的耐久變多；不打折的話兩輪就集滿）     // 城樓的磚比砲彈耐打（城破才是勝負）：硬轟要轟很多輪，靠機關（火藥桶、繩子、引信、晶石……）一次垮一大段才快。機關本身的耐久不乘
+const CASTLE_HP = 2.0;     // 城樓的磚比砲彈耐打（城破才是勝負）：硬轟要轟很多輪，靠機關（火藥桶、繩子、引信、晶石……）一次垮一大段（關卡可以自己訂 blockHp）
+const ULT_BLK = 0.45;       // 打磚集連珠的速度（城樓的磚耐打了，打掉的耐久變多；不打折的話兩輪就集滿）才快。機關本身的耐久不乘
 const BOSS_SOFT = 0.35;     // 魔王跨過換階段門檻的那一輪，超過門檻的傷害打幾折
 const BASE_WT = 0;         // 城基的磚不算進城樓完整度（打不太動的地基；要垮的是上面的樓閣）
 const SPLIT_P = 0.6;       // 砲彈穿過倍增符後，每一發的威力打幾折：數量 ×n，總威力大約 ×n^(1-SPLIT_P)
@@ -210,6 +210,10 @@ function castleScan(st) {
       const v = b.body.getLinearVelocity(), down = b.y0 - py;
       if (!(was && v.x * v.x + v.y * v.y > 3 && !b.gone)) b.inPlace = !b.gone && (was ? dx < CS * 2.6 && down < CS * 1.2 && a < 0.7 : dx < CS * 1.2 && down < CS * 0.25 && a < 0.15);
     }
+    else if (b.welds && b.welds.some((w) => w.j)) {          // 榫接著的（五重塔）：整座一起晃、一起歪一點不算塌；晃的時候不算（停下來再量），掉下去一截、歪太多才算
+      const v = b.body.getLinearVelocity();
+      if (!(was && v.x * v.x + v.y * v.y > 2 && !b.gone)) b.inPlace = !b.gone && (was ? dx < CS * 4 && b.y0 - py < CS && a < 0.45 : dx < CS * 0.4 && dy < CS * 0.3 && a < 0.15);          // 整座推開一點、歪一下又回正都還算站著
+    }
     else b.inPlace = !b.gone && (was ? dx < CS * 0.5 && dy < CS * 0.5 && a < 0.4 : dx < CS * 0.2 && dy < CS * 0.2 && a < 0.15);
     b.snug = b.inPlace && dx < CS * 0.25 && dy < CS * 0.25 && a < 0.1;          // 幾乎沒動：背後的屋內暗色才畫（滑開了、歪了就看得到天）
     if (was && !b.inPlace) { chainCount(b); st.ver++; b.lost = true; }
@@ -217,7 +221,7 @@ function castleScan(st) {
     if (b.inPlace && !b.lost) hp += b.wt * (STAND_K + (1 - STAND_K) * clamp(b.hp / b.hm, 0, 1));          // 還站著就先算 STAND_K；其餘看打裂了多少
   }
   if (P && P.comps) for (const c of P.comps) if (c.wt) hp += P.dead ? 0 : c.wt * clamp(c.hp / c.hm, 0, 1) * (1 - 0.5 * c.flood);          // 船身：打破的、進水的船艙少算
-  if (st.cageWt) { const PU = st.pulley, cb = PU.cage; if (!PU.cut && !cb.dead && cb.body) hp += st.cageWt * clamp(1 - (cb.y0 - cb.body.getPosition().y) / (PU.maxSink || 20), 0, 1); }          // 吊籠：沉得越深算得越少
+  if (st.cageWt) { const PU = st.pulley, cb = PU.cage; if (!PU.cut && !cb.dead && cb.body) { PU.sunk = Math.max(PU.sunk || 0, cb.y0 - cb.body.getPosition().y); hp += st.cageWt * clamp(1 - PU.sunk / (PU.maxSink || 20), 0, 1); } }          // 吊籠：沉得越深算得越少（照沉到最深的那一次算：籠裡的兵倒了、籠子變輕升回來，城防也不會漲回去）
   st.hpNow = hp;
   // 屋內的暗色背景：頭頂上還有東西蓋著的格子才畫。地板破了一格不影響（還是在屋裡），天花板那一格沒了就透天
   for (let cx = 0; cx < cols; cx++) {
@@ -231,7 +235,7 @@ function castleScan(st) {
 }
 // 一塊磚有幾格大（斜屋頂照梯形、圓的照圓面積）
 function blockArea(b) { return b.kind === 'ball' ? Math.PI * b.r * b.r / (CS * CS) : b.kind === 'roof' ? (b.w - (b.il + b.ir) / 2) * b.h / (CS * CS) : b.w * b.h / (CS * CS); }
-// 城樓完整度（0..1）：還留在原位的磚（照大小算）佔開場的幾成；還站著的磚算一半，另一半看還剩幾成耐久
+// 城樓完整度（0..1）：還留在原位的磚（照大小算）佔開場的幾成；還站著的磚先算 STAND_K（兩成五），其餘看還剩幾成耐久
 function structFrac(side) { const st = S.st[side]; return st.hp0 > 0 ? st.hpNow / st.hp0 : 1; }
 function fallTh() { return S.lv.fall || FALL_TH; }
 // 城防條（0..1）：完整度從 100% 掉到城破的門檻，這一條從滿格掉到 0。歸零就城破
@@ -264,8 +268,9 @@ function mkUnit(side, type, st, slot, hpMul) {
 function hurtUnit(u, d, side, kind) {
   if (!u.alive || d <= 0) return;
   if (S.state !== 'play' && u.side !== S.loser) return;          // 勝負已分：贏的那一邊不會再受傷（星數、損兵都以分出勝負那一刻為準）
-  // 開場護符：第一回合，挨對方第一輪的兵只受幾成傷（雙方一樣：開場不會還沒打就先倒一個）
-  if (side < 2 && side !== u.side && r1v(u.side)) d *= S.lv.foe.open * (kind === K_CRUSH ? 0.5 : 1);
+  /* 開場護符：挨了對方第一輪的兵只受幾成傷，而且不會因此倒下（雙方一樣：開場不會還沒打就先倒一個）。
+     護到這一邊自己打完下一輪為止：第一輪留下來的火、引信、還在垮的樓（算不到誰頭上的也一樣）都弄不死他 */
+  if (side !== u.side && r1v(u.side)) { d = Math.min(d * S.lv.foe.open * (kind === K_CRUSH ? 0.5 : 1), u.hp - 1); if (d <= 0) return; }
   const boss = u.def.big && S.boss ? S.boss : null;
   if (boss && boss.tired && side === 0) d *= 2;          // 破綻：他放完大招累了（暗黑連射、隕石雨、城塌了摔下來），這一回合打他加倍
   if (boss) {
@@ -372,7 +377,7 @@ function unitsStep(dt) {
     /* 被轟出自己的城、落地站定了：不會死，站在哪裡就從哪裡繼續打（out 標記在城外）。
        魔王會自己飛回去；開場護符那一輪被轟出去的兵送回原位 */
     const st = u.st, ux = u.fr ? frLocal(u.fr, u.x, u.y).x : st.plat ? platLocal(st, u.x, u.y).x : u.x, outNow = (ux < st.x0 - OUT_M || ux > st.x1 + OUT_M) && !u.air;
-    if (outNow && (u.def.big || r1Unit(u))) { u.outT += dt; if (u.outT > 0.6) { if (u.def.big) bossReturn(u); else unitHome(u); } } else u.outT = 0;
+    if (outNow && (u.def.big || (r1Unit(u) && u.outOk !== S.vol))) { u.outT += dt; if (u.outT > 0.6) { if (u.def.big) bossReturn(u); else unitHome(u); } } else u.outT = 0;
     if (outNow && !u.out) { u.out = 1; ev('landout', u.x, u.y, u.side, u.slot); } else if (!outNow && !u.air) u.out = 0;
   }
   /* 兵跟兵不碰撞，所以掉到同一個地方會疊在一起：往兩邊慢慢推開（魔王不動，推小兵）。只在砲擊進行中推。
@@ -980,7 +985,7 @@ function endTurn() {
   endCheck(true); if (S.state !== 'play') return;
   if (S.turn === 0) startTurn(1); else roundEnd();
 }
-/* 搖搖欲墜：城防條快見底（剩不到 12%）、或拖太久（到了 sudden 回合）的城，每回合結束自己再塌一點（隨便幾塊磚裂開）。魔王城不會。
+/* 搖搖欲墜：城防條快見底（剩不到 12%）、或拖太久（到了 sudden 回合）的城，每回合結束自己再塌一點（隨便幾塊磚裂開）。魔王城不會，第一回合也不會。
    不會停在「城塌得只剩一個角、兩邊殘兵對射」的局面拖下去 */
 const CRUMBLE = 0.06;
 function crumble(st) {
@@ -999,7 +1004,7 @@ function crumble(st) {
 function roundEnd() {
   let wait = false;
   mechRoundEnd();
-  for (let s = 0; s < 2; s++) if (!(s === 1 && S.boss) && (structBar(s) < 0.12 || S.round >= (S.lv.sudden || 10)) && crumble(S.st[s])) wait = true;
+  if (S.round >= 2) for (let s = 0; s < 2; s++) if (!(s === 1 && S.boss) && (structBar(s) < 0.12 || S.round >= (S.lv.sudden || 10)) && crumble(S.st[s])) wait = true;          // 第一回合不會（不會第一回合就分出勝負）
   if (S.nfrag > FRAG_KEEP) { for (const b of S.blocks) { if (S.nfrag <= FRAG_KEEP) break; if (b.frag && !b.dead) { blockKill(b, 2, K_CRUSH, true); wait = true; } } }
   S.hz = 0;
   if (S.marks.length) { for (const m of S.marks) dropRock(m.x, m.big); S.marks.length = 0; wait = true; S.hz = 1; ev('rumble'); }
@@ -1045,16 +1050,22 @@ function rockMarks(n, big, foe) {
 // 魔王掉出戰場：不會就這樣死掉，扣一截血之後飛回自己的城頂
 // 敵軍的第一輪把我方的兵轟出城、掉下去：開場護符把他送回原本站的地方（不會還沒開打就先少一個）
 function r1Unit(u) { return r1v(u.side); }
-// deadly：掉下深淵、飛出戰場（不送回去就會死）
+// deadly：掉下深淵、飛出戰場、被水沖走（不送回去就會死）
 function unitHome(u, deadly) {
-  const again = u.homeV === S.vol;
-  if (again && !deadly) return;          // 一輪只送回去一次（送回去的地方自己也在晃、在垮的話，就隨它了）
+  let P = null;
+  if (u.homeV === S.vol) {
+    /* 這一輪已經送回去過一次，原位自己也在晃、在垮，又掉出去了：改放到這座城最後面還站得穩的地方。
+       找不到這種地方的話：會死的（深淵、水）還是送回原位；只是被轟到城外的就讓他待在城外（落地不死），這一輪不再送——
+       不然原位一直在垮，就一直送、一直掉（回合結束不了） */
+    P = unitSafe(u);
+    if (!P && !deadly) { u.outOk = S.vol; u.outT = 0; return; }
+  }
   u.homeV = S.vol;
-  let P = u.fr ? frWorld(u.fr, u.hx0, u.hy0) : platWorld(u.st, u.hx0, u.hy0);
-  // 站在吊著的殿、會動的東西上：送回他腳下那塊樓板現在的位置
-  const hb = u.homeB; if (hb && !hb.dead && hb.body && u.st.def.swingy) { const q = hb.body.getWorldPoint(u.homeL); P = { x: q.x, y: q.y }; }
-  // 這一輪已經送回去過一次、原位自己也在垮，又掉下去了：改放到這座城最後面還站得穩的地方
-  if (again) { const q = unitSafe(u); if (q) P = q; }
+  if (!P) {
+    P = u.fr ? frWorld(u.fr, u.hx0, u.hy0) : platWorld(u.st, u.hx0, u.hy0);
+    // 站在吊著的殿、會動的東西上：送回他腳下那塊樓板現在的位置
+    const hb = u.homeB; if (hb && !hb.dead && hb.body && u.st.def.swingy) { const q = hb.body.getWorldPoint(u.homeL); P = { x: q.x, y: q.y }; }
+  }
   const x = P.x, y = P.y;
   u.body.setTransform({ x, y: y + u.bh / 2 + 0.2 }, 0); u.body.setLinearVelocity({ x: 0, y: 0 }); u.body.setAwake(true); u.outT = 0; u.airT = 0;
   ev('revive', x, y, u.side, u.slot);
@@ -1275,7 +1286,7 @@ function simStep(dt) {
     S.pend.splice(i, 1);
     if (p.reso) { const o = p.reso; if (!o.dead) { const q = o.body.getPosition(); ev('resohit', q.x, q.y); blockHurt(o, (o.seg ? o.segM : o.hm) * 0.42 * (p.k || 1), K_CRUSH, p.side); } }       // 共鳴：一圈一圈傳過去，每一塊琉璃都震出裂痕
     else if (p.ring) { const o = p.ring; if (!o.dead) { const q = o.body.getPosition(); if (rnd() < 0.3) ev('crack', q.x, q.y, o.mat); blockHurt(o, BELL_WAVE * p.k * S.rage, K_CRUSH, p.side); if (!o.dead && o.body) o.body.applyLinearImpulse({ x: (p.side === 0 ? 1 : -1) * o.mass * 1.2 * p.k, y: o.mass * 0.6 * p.k }, o.body.getWorldCenter(), true); } }      // 鐘鳴的震波打到塔上的木頭、屋瓦
-    else if (p.ringU) { const u = p.ringU; if (u.alive) { hurtUnit(u, 14 * p.k * S.rage, p.side, K_CRUSH); if (u.alive && !u.immune && p.k >= 1) { u.stun = Math.max(u.stun, 1); u.dazed = 1; ev('skip', u.x, u.y + 4, u.side, 1); } } }       // 鐘鳴震到兵：心柱斷了的塔，兵還會被震暈
+    else if (p.ringU) { const u = p.ringU; if (u.alive) { hurtUnit(u, 14 * p.k * S.rage, p.side, K_CRUSH); if (u.alive && !u.immune && p.k >= 1 && !r1v(u.side)) { u.stun = Math.max(u.stun, 1); u.dazed = 1; ev('skip', u.x, u.y + 4, u.side, 1); } } }       // 鐘鳴震到兵：心柱斷了的塔，兵還會被震暈
     else physExplode(p.x, p.y, p.w, p.side, 1, 0, null, 0, 1);
   }
   gatesStep(dt);
@@ -1334,7 +1345,11 @@ function endCheck(settled) {
   /* 魔王城：魔王的城塌了（完整度掉到門檻以下）不算贏，但魔王從寶座上摔下來：扣一大截血，下一回合是破綻（打他傷害加倍）。只會發生一次 */
   if (settled && S.boss && !S.boss.castleFell && structBar(1) <= 0) {
     const bu = bossUnit(); S.boss.castleFell = 1;
-    if (bu && bu.alive) { ev('bosscastle', S.st[1].cx, S.st[1].y0 + S.st[1].h * 0.5); hurtUnit(bu, bu.hpMax * 0.2, 0, K_CRUSH); S.boss.tiredR = S.round + 1; if (bu.alive) bossSay(BOSS_LINES.castle); }
+    if (bu && bu.alive) {
+      // 固定扣兩成（不吃破綻加倍、開場護符、換階段的減傷）；摔到沒血就倒了
+      ev('bosscastle', S.st[1].cx, S.st[1].y0 + S.st[1].h * 0.5); bu.hp -= bu.hpMax * 0.2; bu.hurtT = 0.25; S.boss.tiredR = S.round + 1;
+      if (bu.hp <= 0) killUnit(bu, 0, 1); else { bossPhase(bu); bossSay(BOSS_LINES.castle); }
+    }
   }
   const how = [0, 0];          // 1 守軍全倒、2 城破
   for (let s = 0; s < 2; s++) {

@@ -39,7 +39,6 @@ function aiStructVal(side, x, y, w, amp) {
   }
   return Math.min(1, v / st.hp0);
 }
-// 打在 (x, y) 的分數：城樓少掉多少（換算成分數）＋炸到幾個兵（正中 1.3，炸到邊上少一點）
 /* 打在 (x, y) 的分數：照「離打贏還差多少」算進度——城樓少掉的完整度佔城防條的幾成，兵少掉的血佔對面全部兵力的幾成，
    兩樣取大的再加一點小的。AI_PK：進度一成值多少分（打中機關、繩子這些特定目標是 1 × 目標的權重） */
 const AI_PK = 10;
@@ -208,7 +207,7 @@ function aiBegin(T) {
   let lead = null, bv = -1;
   for (const u of T.units) { if (!u.alive || !u.w || u.frozen > 0 || u.stun > 0) continue; const v = u.w.dmg * (u.w.n || 1) * (u.w.fan || 1) + rnd() * 6; if (v > bv) { bv = v; lead = u; } }
   if (!lead) for (const u of T.units) if (u.alive) { lead = u; break; }
-  // 對面垂著引信頭：有時候這一輪改由火油兵帶頭，專瞄引信頭（其他兵照同一個角度跟著打）。敵軍第一回合不會
+  // 對面垂著引信頭：有時候這一輪改由火油兵帶頭，專瞄引信頭（其他兵照同一個落點跟著打）
   const F = fst.fuse; let fuseMode = false;
   if (F && !F.done && !F.fronts.length && fuseOn(F, 0) && rnd() < 0.45 + (A.sap || 0) * 0.3) {
     const fu = T.units.find((u) => u.alive && u.w && u.w.kind === K_FIRE && u.frozen <= 0 && u.stun <= 0);

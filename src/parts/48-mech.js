@@ -92,8 +92,13 @@ function mkHang(st, h) {
 }
 /* 開場護符（雙方一樣）：第一回合，每一邊挨的第一輪砲火（敵軍挨我方的第一輪、我方挨敵軍的第一輪）——
    兵只受幾成傷（foe.open）、不會被轟出城或掉下去（送回原位）、不會被凍住電暈、不會被壓扁。
+   護到這一邊自己打完下一輪為止：第一輪留下來的火、引信、還在垮的樓，在自己那一輪也還在燒、還在掉，一樣不會把兵弄死。
+   敵軍：第一回合整回合（含回合結束的落石）；我方：第一回合敵軍那一輪、回合結束、第二回合自己那一輪。
    城樓和機關照常打得壞：第一輪就打得出坍塌（城破要好幾段一起垮，一輪打不完） */
-function r1v(victim) { return victim < 2 && S.round <= 1 && S.turn === 1 - victim && !!S.lv.foe.open; }
+function r1v(victim) {
+  if (victim >= 2 || !S.lv.foe.open) return false;
+  return victim === 1 ? S.round <= 1 : (S.round <= 1 && S.turn === 1) || (S.round === 2 && S.turn === 0);
+}
 function r1Mark() { S.doms = []; for (const b of S.blocks) if (b.dom && !b.dead) S.doms.push(b); }
 function ropeHurt(r, d, kind, side) {
   if (r.cut || d <= 0) return;
@@ -483,7 +488,7 @@ function mechStep(dt) {
   for (const r of S.ropes) if (!r.cut && r.hang && !r.hang.dead && !r.hang.hangFree) { const top = r.a; if (top && (top.dead || !top.inPlace)) r.hang.hangFree = 1; }
 }
 /* 共鳴晶柱被打到：琉璃震出裂痕、震碎（從晶柱一圈一圈傳出去）。晶柱的耐久每掉過一道門檻（RESO_TH）就共鳴一次：
-   共鳴從最高、最薄的琉璃震起——第一次震碎頂樓，第二次震到二樓，晶柱碎掉的那一下整座宮殿一起震：要打三次，宮殿才一層一層垮完 */
+   共鳴從最高、最薄的琉璃震起——第一次震碎頂樓，第二次震到二樓，晶柱碎掉的那一下整座宮殿的琉璃一起震：要打三次，琉璃才一層一層碎完（只震琉璃：石頭骨架還在，城破要另外打） */
 const RESO_TH = [0.62, 0.3, 0.0001];
 function resonate(b, side) {
   const n = b.resoN || 0; if (n >= RESO_TH.length) return;
@@ -793,7 +798,6 @@ function fuseBlast(x, y, r, fire, keg, side) {
     else if (fire && side !== F.side) { const q = fuseNear(F, x, y, F.open); if (q.d < FUSE_R && fuseOn(F, clamp(Math.round(q.s / 0.25), 0, F.bin.length - 1))) fuseIgnite(F, q.s, side); }
   }
 }
-function fusesBurning() { for (let k = 0; k < 2; k++) { const F = S.st[k] && S.st[k].fuse; if (F && F.fronts.length) return true; } return false; }
 function fuseStep(dt, act) {
   for (let k = 0; k < 2; k++) {
     const F = S.st[k] && S.st[k].fuse; if (!F || !F.fronts.length || !act) continue;
@@ -874,7 +878,7 @@ function bellInit(d) {
 // d：這一下打得多重（累積成鐘鳴）
 function bellPush(side, d) {
   const B = S.bell; if (!B) return; B.by = side; B.b.smashBy = side; if (B.damp) { B.damp = false; B.b.body.setLinearDamping(0.04); B.b.body.setAngularDamping(3); }
-  // 共振：打在鐘上的力道累積起來，滿了「噹——」一聲，震波打向對面那座塔（敵軍第一輪不算）
+  // 共振：打在鐘上的力道累積起來，滿了「噹——」一聲，震波打向對面那座塔
   if (B.e && side < 2 && d > 0 && S.state === 'play') { B.e[side] = Math.min(1, B.e[side] + d / (S.lv.bell.e || 220)); B.flash = 1; if (B.e[side] >= 1 && !B.ring) { B.ring = 1; bellRing(side); } }
 }
 const BELL_WAVE = 34;          // 鐘鳴的震波：打在對面塔上每一塊木頭、屋瓦的傷害（心柱還在只剩三分之一：柱子只會震裂；心柱斷了全額，一根根震斷）
@@ -882,7 +886,7 @@ function bellRing(side) {
   const B = S.bell, st = S.st[1 - side], p = B.b.body.getPosition(), heart = st.blocks.some((b) => b.heart && !b.dead && b.inPlace), k = heart ? 0.33 : 1;
   B.e[side] = 0; B.ringK = k;
   ev('bellring', p.x, p.y, side, heart ? 1 : 0);
-  S.chainT = S.time; if (side !== S.turn || S.phase === 'hazard') { /* 不是自己這一輪打的（落石、對方推的）也照樣響 */ }
+  S.chainT = S.time;          // 不是自己這一輪打的（落石、對方推的）也照樣響
   for (const b of st.blocks) { if (b.dead || b.prop || b.heart || (b.mat !== M_WOOD && b.mat !== M_ROOF)) continue; const d = Math.hypot(b.x0 - p.x, b.y0 - p.y); S.pend.push({ t: S.time + 0.15 + d * 0.012, ring: b, side, k }); }
   for (const u of st.units) if (u.alive) { const d = Math.hypot(u.x - p.x, u.y - p.y); S.pend.push({ t: S.time + 0.15 + d * 0.012, ringU: u, side, k }); }
   B.ring = 0;
