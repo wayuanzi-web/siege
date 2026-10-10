@@ -148,13 +148,13 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
         const dx = nx - o.x, dy = ny - o.y; if (dx * dx + dy * dy < o.r * o.r) { R.obj = o; R.x = nx; R.y = ny; return end(4); }
       } else if (o.t === 'charge') {
         if (o.side === side || o.hp <= 0 || o.go) continue;
-        const dx = nx - o.x, dy = ny - o.y; if (dx * dx + dy * dy < o.r * o.r) { R.obj = o; R.x = nx; R.y = ny; return end(4); }
+        if (segDist(o.x, o.y, x, y, nx, ny) < o.r) { R.obj = o; R.x = nx; R.y = ny; return end(4); }
       } else if (o.t === 'barrier' && side === 0) {
         const d0 = Math.hypot(x - o.x, y - o.y), d1 = Math.hypot(nx - o.x, ny - o.y);
         if (d0 > o.R && d1 <= o.R && barrierSeg(o, nx, ny)) { R.x = nx; R.y = ny; return end(5); }
       }
     }
-    if (S.ropes.length) { const rc = ropeCross(x, y, nx, ny, side); if (rc) { R.rope = rc.r; R.x = x + (nx - x) * rc.t; R.y = y + (ny - y) * rc.t; return end(6); } }
+    if (S.ropes.length && !W.stick && !W.drill) { const rc = ropeCross(x, y, nx, ny, side); if (rc) { R.rope = rc.r; R.x = x + (nx - x) * rc.t; R.y = y + (ny - y) * rc.t; return end(6); } }          // 黏性炸藥、鑽頭穿過繩子（跟戰局一樣）
     if (foeT.shield.on && inBubble(fst, nx, ny)) { R.x = nx; R.y = ny; return end(5); }
     const h = rayShot(x, y, nx, ny, side, inOwn);
     const wt = S.water ? waterCross(x, y, nx, ny) : -1;
@@ -228,8 +228,7 @@ function aiBegin(T) {
   const big = lead.def.big ? MUZ_BIG : 1, mx = lead.x + dir * 1.3 * big, my = lead.y + 2.3 * big;
   const tg = [];
   for (const u of foeT.units) if (u.alive) tg.push({ x: u.x, y: u.y + 1.6 * (u.def.big ? MUZ_BIG : 1), w: 1.15 + (u.type === 'boss' ? BOSS_W : 0) + (u.hp < u.hpMax * 0.4 ? 0.25 : 0) });
-  // 對方黏在自己城上的炸藥：下一輪就爆，打得掉就先打掉
-  for (const o of S.objs) if (o.t === 'charge' && o.side !== side && o.hp > 0 && !o.go && chargeOn(o) === side) tg.push({ x: o.x, y: o.y, w: 1.6 * Math.min(2, o.mass), obj: o });
+  // 對方黏在自己城上的炸藥：不拿砲打（全隊的砲會砸在自己城前），靠工兵拆、對方開火時開護罩悶熄（aiReact）
   if (A.guard > 0 && rnd() < A.guard) for (const o of S.objs) {
     if (o.t === 'lantern') tg.push({ x: o.x, y: o.y, w: 1.0, obj: o });
     else if ((o.t === 'balloon' || o.t === 'orb') && o.side !== side && o.hp > 0 && o.st === 'hover') tg.push({ x: o.x, y: o.y, w: o.t === 'orb' ? 3 : 1.9, obj: o });
@@ -315,14 +314,14 @@ function aiScore(T, t, R) {
 const AI_ROB = 3;          // 看起來不錯的打法，照自己手抖的程度再多試射幾發，取平均（小小的目標、擦邊才打得到的，平均下來就不划算）
 // 每一步試幾種（分散在好幾幀，不會卡）
 function aiEval(T, budget) {
-  const A = T.ai, side = T.side, wind = S.wind, wi = A.lead && A.lead.w ? A.lead.w.i : 0;
+  const A = T.ai, side = T.side, wind = S.wind, wi = A.lead && A.lead.w ? A.lead.w.i : 0, sp = (A.lead && A.lead.w && A.lead.w.spd) || 1;          // sp：狙擊彈打出去比瞄準的快，手抖也要照比例縮（落點偏得一樣多）
   while (budget-- > 0 && A.ci < A.cand.length) {
     const c = A.cand[A.ci++], t = c.t, R = simTrace(side, A.mx, A.my, c.vx, c.vy, wind, A.fireAt, undefined, wi);
     let sc = aiScore(T, t, R); const mult = R.mult;
     if (sc <= 0) continue;
     if (sc > A.bs * 0.55 && A.err > 0.5) {
       const k = S.round <= 1 ? A.warm : 1; let acc = sc; budget -= AI_ROB;
-      for (let j = 0; j < AI_ROB; j++) { const a = clampAim(c.vx + gauss() * A.err * k / c.tau, c.vy + gauss() * A.err * 0.7 * k / c.tau, T.dir); acc += aiScore(T, t, simTrace(side, A.mx, A.my, a[0], a[1], wind, A.fireAt, undefined, wi)); }
+      for (let j = 0; j < AI_ROB; j++) { const a = clampAim(c.vx + gauss() * A.err * k / (c.tau * sp), c.vy + gauss() * A.err * 0.7 * k / (c.tau * sp), T.dir); acc += aiScore(T, t, simTrace(side, A.mx, A.my, a[0], a[1], wind, A.fireAt, undefined, wi)); }
       sc = acc / (AI_ROB + 1);
     }
     sc *= (1 - 0.03 * Math.abs(c.tau - 1.8)) * (1 + A.lob * (c.tau - 1.6) * 0.25) * (0.9 + rnd() * 0.2);
@@ -369,8 +368,8 @@ function aiChoose(T) {
     b = { vx: a[0], vy: a[1], tau: 2.0, t: { x: fst.cx, y: fst.y0 + fst.h * 0.5 } }; A.mult = 1;
   }
   // 手抖：落點偏掉一些
-  const k = S.round <= 1 ? A.warm : 1, ex = gauss() * A.err * k, ey = gauss() * A.err * 0.7 * k;
-  let a = clampAim(b.vx + ex / b.tau, b.vy + ey / b.tau, dir);
+  const k = S.round <= 1 ? A.warm : 1, ex = gauss() * A.err * k, ey = gauss() * A.err * 0.7 * k, sp = (A.lead && A.lead.w && A.lead.w.spd) || 1;
+  let a = clampAim(b.vx + ex / (b.tau * sp), b.vy + ey / (b.tau * sp), dir);
   // 真的要打出去的這個角度（手抖之後），每個開得了火的兵各試射一發：最多會穿過幾倍的符。畫面上拿來預警「敵軍瞄準了倍增符」
   let v = aiVolley(T, a[0], a[1]);
   if (v.own) { const a2 = clampAim(b.vx, b.vy, dir), v2 = aiVolley(T, a2[0], a2[1]); if (!v2.own) { a = a2; v = v2; } }        // 手一抖就會砸到自己的城：這一發不抖
@@ -394,6 +393,7 @@ function aiReact(T) {
   const A = T.ai; if (!A || A.sh <= 0 || T.shield.c < T.shield.need || T.shield.on) return;
   // 魔王城：看得到魔王預告的招式，連射、隕石雨的那一輪才開護罩（其他回合省著）
   let p = A.sh * 0.8;
+  if (S.objs.some((o) => o.t === 'charge' && o.hp > 0 && o.side !== T.side && chargeOn(o) === T.side)) p = Math.min(1, A.sh * 1.6);          // 城上黏著對方的炸藥：開罩悶熄它
   if (S.boss && T.side === 0) p = S.boss.next === 'barrage' || S.boss.next === 'meteor' ? Math.min(1, A.sh * 1.6) : A.sh * 0.25;
   if (rnd() < p) simSkill(T.side, 'shield');
 }

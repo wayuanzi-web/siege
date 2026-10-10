@@ -125,6 +125,9 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 .screen { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 37fr) minmax(0, 30fr) minmax(0, 33fr); gap: calc(var(--u) * 3);
   padding: calc(var(--u) * 4) calc(var(--u) * 4 + var(--pr)) calc(var(--u) * 4) calc(var(--u) * 4 + var(--pl));
   background: linear-gradient(90deg, rgba(14, 10, 28, .9) 0%, rgba(14, 10, 28, .72) 30%, rgba(14, 10, 28, .1) 44%, rgba(14, 10, 28, .1) 60%, rgba(14, 10, 28, .72) 70%, rgba(14, 10, 28, .9) 100%); }
+#home.pmode { grid-template-columns: minmax(0, 31fr) minmax(0, 39fr) minmax(0, 30fr); }          /* 演武場：中間的卡片要放兩排各六個頭像，寬一點（左邊的招牌跟著縮） */
+#home.pmode .logo h1 { font-size: min(calc(var(--u) * 15.5), calc(var(--w) * 6.2)); }
+#home.pmode .logo .tagline { font-size: min(calc(var(--u) * 3), calc(var(--w) * 1.4)); }
 .home-l { display: flex; flex-direction: column; justify-content: space-between; gap: calc(var(--u) * 2); min-width: 0; }
 .home-m { display: flex; flex-direction: column; justify-content: flex-end; min-width: 0; }
 .home-r { display: flex; flex-direction: column; justify-content: center; gap: calc(var(--u) * 2); min-width: 0; }
@@ -141,10 +144,10 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 .lvls { display: grid; gap: calc(var(--u) * 1.5); }
 /* 兩篇的分頁：一次只列一篇的六關 */
 .chaps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(var(--u) * 1.2); }
-.chap { position: relative; display: flex; align-items: baseline; justify-content: center; gap: calc(var(--u) * 1); min-height: max(calc(var(--u) * 8.4), 40px); padding: calc(var(--u) * .6) calc(var(--u) * 1); background: var(--line); --cut: calc(var(--u) * 1.5); color: #a79fc4; font-weight: 700; font-size: calc(var(--u) * 3.3); letter-spacing: .12em; white-space: nowrap; }
+.chap { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; min-height: max(calc(var(--u) * 8.4), 40px); padding: calc(var(--u) * .5) calc(var(--u) * .6); background: var(--line); --cut: calc(var(--u) * 1.5); color: #a79fc4; font-weight: 700; font-size: calc(var(--u) * 3.3); line-height: 1.1; letter-spacing: .12em; text-indent: .12em; white-space: nowrap; }
 .chap::before { content: ""; position: absolute; inset: 2px; background: linear-gradient(180deg, rgba(43, 36, 70, .96), rgba(29, 24, 48, .96)); clip-path: inherit; }
 .chap > * { position: relative; }
-.chap small { font-family: var(--f-num); font-size: calc(var(--u) * 2.8); letter-spacing: 0; opacity: .8; }
+.chap small { font-family: var(--f-num); font-size: calc(var(--u) * 2.5); letter-spacing: 0; text-indent: 0; opacity: .8; }
 .chap[aria-selected="true"] { background: var(--gold); color: var(--gold); }
 .chap[aria-selected="true"]::before { background: linear-gradient(180deg, #4a3c1a, #2a2010); }
 .chap.locked { color: #6a618f; }
@@ -171,15 +174,23 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 .lvinfo .tipbox > p { grid-area: 1 / 1; margin: 0; color: #cfc8e6; font-size: calc(var(--u) * 3.2); line-height: 1.5; text-wrap: pretty; }
 .lvinfo .tipbox > p.sizer { visibility: hidden; }
 .lvinfo p.blurb { color: var(--bone); }
-/* 演武場：戰場、誤傷兩個小開關；兵的頭像點了換人 */
-.prac { display: flex; justify-content: center; align-items: center; gap: calc(var(--u) * 1.6); margin-top: calc(var(--u) * 1.2); flex-wrap: wrap; }
+/* 演武場：戰場、誤傷兩個小開關；兵的頭像點了換人。「◀ 戰場 ▶」一組不拆開（窄的時候戰場名字縮成刪節號） */
+.prac { display: flex; justify-content: center; align-items: center; gap: calc(var(--u) * 1.2) calc(var(--u) * 1.6); margin-top: calc(var(--u) * 1.2); flex-wrap: wrap; }
+.prac .pnav, .prac .popts { display: flex; align-items: center; gap: calc(var(--u) * 1.2); min-width: 0; max-width: 100%; }
+.prac .pnav .pmap { min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
 .prac .pbtn { min-height: max(calc(var(--u) * 8), 34px); min-width: max(calc(var(--u) * 8), 34px); padding: 0 calc(var(--u) * 1.6); font-weight: 700; font-size: calc(var(--u) * 3.1); letter-spacing: .06em; color: var(--bone); background: rgba(255, 255, 255, .1); --cut: calc(var(--u) * 1.2); }
 .prac .pbtn[aria-pressed="true"] { color: var(--gold-ink); background: var(--gold); }
-.prac .pmap { min-width: calc(var(--u) * 26); text-align: center; font-weight: 700; font-size: calc(var(--u) * 3.1); letter-spacing: .06em; white-space: nowrap; }
+.prac .pmap { width: calc(var(--u) * 30); text-align: center; font-weight: 700; font-size: calc(var(--u) * 3.1); letter-spacing: .06em; white-space: nowrap; }
 .lvcrew .cu.add { box-shadow: 0 0 0 calc(var(--u) * .45) var(--gold); }
-.pickgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: calc(var(--u) * 1.4); }
-.pickgrid button { display: grid; justify-items: center; gap: calc(var(--u) * .4); padding: calc(var(--u) * .8) 0; background: rgba(255, 255, 255, .06); --cut: calc(var(--u) * 1.2); font-size: calc(var(--u) * 2.7); font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
-.pickgrid button canvas { width: calc(var(--u) * 10); height: calc(var(--u) * 10); border-radius: 50%; background: #241d3c; }
+/* 換兵的軍牌：十八格要一次放得下（橫拿的手機只有 360 多點高），比別的軍牌緊一點 */
+#pick .plaque { gap: calc(var(--u) * 1.6); padding-top: calc(var(--u) * 3); padding-bottom: calc(var(--u) * 3); }
+#pick .plaque h2 { font-size: calc(var(--u) * 6.2); }
+#pick .plaque .sub { margin-top: calc(var(--u) * -1); }
+#pick .tipline { min-height: 3em; }
+#pick .btn { min-height: max(calc(var(--u) * 9.5), 38px); }
+.pickgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: calc(var(--u) * 1.2); }
+.pickgrid button { display: grid; justify-items: center; gap: calc(var(--u) * .3); padding: calc(var(--u) * .6) 0; background: rgba(255, 255, 255, .06); --cut: calc(var(--u) * 1.2); font-size: calc(var(--u) * 2.7); font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
+.pickgrid button canvas { width: calc(var(--u) * 8.4); height: calc(var(--u) * 8.4); border-radius: 50%; background: #241d3c; }
 .pickgrid button[aria-pressed="true"] { background: rgba(255, 201, 60, .28); box-shadow: inset 0 0 0 2px var(--gold); }
 .pickgrid button.new span::after { content: "新"; margin-left: 2px; padding: 0 3px; border-radius: 3px; background: #e0442e; color: #fff; font-size: .8em; }
 .crew.many .cu { width: calc(var(--u) * 6.2); height: calc(var(--u) * 6.2); }
@@ -190,6 +201,9 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 .lvcrew .cu { padding: 0; border: 0; width: 100%; height: auto; aspect-ratio: 1; cursor: pointer; transition: transform .12s ease; }
 .lvcrew .foe .cu { box-shadow: 0 0 0 calc(var(--u) * .45) var(--red); }
 .lvcrew .cu[aria-pressed="true"] { transform: scale(1.14); box-shadow: 0 0 0 calc(var(--u) * .7) var(--gold); }
+.lvcrew.prac6 { gap: calc(var(--u) * 1); }
+.lvcrew.prac6 .grp { gap: calc(var(--u) * .8); grid-auto-columns: minmax(0, max(calc(var(--u) * 9.4), 40px)); }
+.lvcrew.prac6 small { margin-right: 0; }
 .webbar { display: flex; gap: calc(var(--u) * 2); justify-content: center; }
 #home.web .home-m { justify-content: space-between; }
 .btn.chip { min-height: max(calc(var(--u) * 10.4), 40px); padding: calc(var(--u) * .8) calc(var(--u) * 3); font-size: calc(var(--u) * 3.1); letter-spacing: .1em; text-indent: .1em; color: var(--gold-lt); --cut: calc(var(--u) * 1.6); }
@@ -325,7 +339,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
       </div>
       <div class="home-m">
         <div class="lvinfo chamfer"><h2 id="liName"></h2><small id="liTag" class="chamfer" style="--cut:3px"></small><div id="liTipBox" class="tipbox"><p id="liTip" aria-live="polite"></p></div>
-          <div id="liPrac" class="prac" hidden><button class="pbtn chamfer" id="pMapL" aria-label="上一個戰場">◀</button><span class="pmap" id="pMap"></span><button class="pbtn chamfer" id="pMapR" aria-label="下一個戰場">▶</button><button class="pbtn chamfer" id="pFF" aria-pressed="true">誤傷</button><button class="pbtn chamfer" id="pRand">敵軍隨機</button></div>
+          <div id="liPrac" class="prac" hidden><span class="pnav"><button class="pbtn chamfer" id="pMapL" aria-label="上一個戰場">◀</button><span class="pmap" id="pMap"></span><button class="pbtn chamfer" id="pMapR" aria-label="下一個戰場">▶</button></span><span class="popts"><button class="pbtn chamfer" id="pFF" aria-pressed="true">誤傷</button><button class="pbtn chamfer" id="pRand">敵軍隨機</button></span></div>
           <div id="liCrew" class="lvcrew"></div></div>
       </div>
       <div class="home-r" id="homeR">

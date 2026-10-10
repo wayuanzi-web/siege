@@ -299,7 +299,7 @@ function bindInput() {
       else if (e.code === 'KeyZ') useSkill('shield');
       else if (pk) pauseGame();
     } else if (G.mode === 'pause' && pk) resumeGame();
-    else if (e.code === 'Escape') { for (const id of ['shop', 'opt']) if (!$(id).hidden) { $(id).hidden = true; sfx('click'); if (G.mode === 'home') homeRender(); break; } }
+    else if (e.code === 'Escape') { for (const id of ['pick', 'shop', 'opt']) if (!$(id).hidden) { $(id).hidden = true; sfx('click'); if (G.mode === 'home') homeRender(); if (id === 'pick') pickBack(); break; } }
   });
   window.addEventListener('keyup', (e) => { G.keys[e.code] = false; });
   window.addEventListener('blur', () => { G.keys = {}; G.drag = null; });
@@ -353,7 +353,7 @@ function bindInput() {
     SV.coins = 0; SV.open = 1; SV.seen = false; SV.seenUlt = false; SV.seenSh = false; SV.stars = LEVELS.map(() => 0); for (const k in SV.up) SV.up[k] = 0;
     save(); UI.sel = 0; UI.prac = false; homeRender(); homeDemo(); $('opt').hidden = true; sfx('click');
   });
-  document.querySelectorAll('[data-close]').forEach((b) => onTap(b, () => { sfx('click'); b.closest('.modal').hidden = true; if (G.mode === 'home') homeRender(); }));
+  document.querySelectorAll('[data-close]').forEach((b) => onTap(b, () => { sfx('click'); const m = b.closest('.modal'); m.hidden = true; if (G.mode === 'home') homeRender(); if (m.id === 'pick') pickBack(); }));
   // 有視窗開著的時候，後面的東西不收鍵盤焦點（Tab 不會跑到視窗後面的按鈕去）
   const layers = ['result', 'pick', 'opt', 'shop'];       // 由下到上
   let prevTop = -1, opener = null;

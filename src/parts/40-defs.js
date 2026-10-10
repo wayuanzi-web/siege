@@ -71,7 +71,7 @@ const WL = [
      ai：敵軍估分數用的威力（特殊的打法不是一次炸開，照它大概的效果算） */
   { id: 'chain', n: 1, gap: 0, dmg: 22, r: 0, J: 520, ud: 24, kind: K_HEAVY, chain: { w: 0.9, rope: 3.2, pillar: 2.4, pass: 2 }, ai: { dmg: 34, r: 1.6, ud: 20 } },
   { id: 'drill', n: 1, gap: 0, dmg: 26, r: 3.4, J: 600, ud: 20, kind: K_HEAVY, drill: { n: 3, d: 15, slow: 0.72 }, ai: { dmg: 52, r: 3.4, ud: 20 } },
-  { id: 'cluster', n: 1, gap: 0, dmg: 9, r: 2.4, J: 160, ud: 8, kind: K_BLAST, split: { n: 6, sp: 7.5 }, ai: { dmg: 36, r: 6.5, ud: 24 } },
+  { id: 'cluster', n: 1, gap: 0, dmg: 9, r: 2.4, J: 160, ud: 8, kind: K_BLAST, split: { n: 6, sp: 2.0, k: 0.7 }, ai: { dmg: 36, r: 6.5, ud: 24 } },
   { id: 'bomblet', dmg: 8, r: 2.4, J: 200, ud: 7, kind: K_BLAST },
   { id: 'sticky', n: 1, gap: 0, dmg: 64, r: 5.6, J: 1250, ud: 32, kind: K_HEAVY, stick: { hp: 26 }, ai: { dmg: 58, r: 5.6, ud: 28 } },
   { id: 'magnet', n: 1, gap: 0, dmg: 6, r: 2.2, J: 100, ud: 6, kind: K_MAG, mag: { R: 9.5, J: 1500, d: 34, rope: 0.75, rr: 5.5 }, ai: { dmg: 30, r: 7, ud: 6 } },
@@ -96,8 +96,8 @@ const UNIT = {
   // ---- 第三篇的新兵種 ----
   chain: { name: '鏈彈手', w: 'chain', hp: 100, blurb: '兩顆鐵球連著鐵鍊轉著飛：專斷繩索和細柱子（打斷了還會繼續往前），打到兵會把他纏住、下一輪不能開火' },
   drill: { name: '鑽地手', w: 'drill', hp: 95, blurb: '鑽頭彈鑽穿兩三塊磚，鑽到裡面才炸開：專打厚牆和地窖' },
-  cluster: { name: '子母砲手', w: 'cluster', hp: 95, blurb: '砲彈飛到最高點分成六顆小炸彈，灑下一大片' },
-  sapper: { name: '爆破兵', w: 'sticky', hp: 100, blurb: '黏性炸藥黏在打到的牆上，等你下一輪開火時才爆，威力最大；對方打得掉它' },
+  cluster: { name: '子母砲手', w: 'cluster', hp: 95, blurb: '砲彈過了最高點分成六顆小炸彈，順著彈道往前灑下一大片' },
+  sapper: { name: '爆破兵', w: 'sticky', hp: 100, blurb: '黏性炸藥黏在打到的牆上，等你下一輪開火時才爆，威力最大；對方的工兵拆得掉，開著護罩就炸不開' },
   magnet: { name: '磁暴師', w: 'magnet', hp: 90, blurb: '落點放出磁暴，把附近的鐵磚、鐵鍊一把吸過去：鐵造的城最怕他' },
   wind: { name: '風術士', w: 'wind', hp: 85, blurb: '落點捲起一道龍捲風：輕的木頭、屋瓦和站在外面的兵都會被捲起來甩出去' },
   acid: { name: '酸液兵', w: 'acid', hp: 90, blurb: '酸液沾到的磚一直被蝕，石牆、鐵甲最怕（酸剋石）' },

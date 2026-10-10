@@ -14,7 +14,8 @@ function weakSpot(b, x, y) {
   if (b.core || b.reso || b.heart || b.weak) return true;
   const near = (px, py) => (px - x) * (px - x) + (py - y) * (py - y) < 1.0;
   if (b.ropes) for (const r of b.ropes) { if (r.cut) continue; const e = ropeEnds(r); if ((r.a === b && near(e[0], e[1])) || (r.b === b && near(e[2], e[3]))) return true; }
-  if (b.welds && b.body) for (const w of b.welds) { if (!w.j || !w.la || w.a !== b) continue; const q = b.body.getWorldPoint(w.la); if (near(q.x, q.y)) return true; }
+  // 榫頭：接點記在 a 那一塊的座標裡（a、b 兩塊都算）
+  if (b.welds && b.body) for (const w of b.welds) { if (!w.j || !w.la || !w.a || !w.a.body) continue; const q = w.a.body.getWorldPoint(w.la); if (near(q.x, q.y)) return true; }
   return false;
 }
 function headShot(u, y) { return !!u && u.alive && !u.def.big && y > u.y + u.bh * 0.68; }
@@ -31,13 +32,17 @@ function armsElem(x, y, kind, flag, b) {
   if (t) ev('elem', x, y + 2.2, t);
 }
 
-/* ---------- 子母彈：飛到最高點（往上的速度變成往下的那一刻）分成小炸彈 ---------- */
+/* ---------- 子母彈：過了最高點、飛出自己的城之後分成小炸彈 ----------
+   小炸彈順著彈道往前散（快的落得遠、慢的落得近），不會往回飛砸到自己的城 */
+function clusterOverOwn(side, x) { const st = side < 2 ? S.st[side] : null; return !!st && x > st.x0 - 2 && x < st.x1 + 2; }
 function clusterSplit(i, x, y, vx, vy) {
   const w = WL[SH.w[i]], sp = w.split, side = SH.side[i], bi = WPN.bomblet.i, n = sp.n, m = SH.mass[i], fl = SH.flag[i] & ~F_IN;
+  const dir = vx > 0.01 ? 1 : vx < -0.01 ? -1 : side === 1 ? -1 : 1, ax = Math.abs(vx);
   for (let k = 0; k < n; k++) {
     if (SH.cnt[side] >= SHOT_CAP) break;
     const f = n > 1 ? k / (n - 1) - 0.5 : 0;
-    const j = spawnShot(side, bi, x, y, vx + f * 2 * sp.sp + (rnd() - 0.5) * 0.8, vy - 1 - rnd() * 2, m, fl, SH.mask[i], SH.lin[i]);
+    const bvx = dir * Math.max(ax * 0.35, ax * (1 + f * sp.k) + f * 2 * sp.sp + (rnd() - 0.5) * 0.6);
+    const j = spawnShot(side, bi, x, y, bvx, vy - 1 - rnd() * 2, m, fl, SH.mask[i], SH.lin[i]);
     if (j >= 0) SH.age[j] = SH.age[i];
   }
   if (side === 0 && SH.lin[i] * n > S.stat.swarm) S.stat.swarm = SH.lin[i] * n;
@@ -59,16 +64,25 @@ function chargesGo(side) {
 }
 // 炸藥黏在哪一邊的城上（工兵拆得到自己城上的）
 function chargeOn(o) { return o.host ? o.host.side : o.hostP ? o.hullSide : 2; }
+// 黏著的那塊磚（船身、浮島）沒了：已經在引爆（自己開火了）就照樣炸；還沒輪到就跟著掉下去，不會爆
+function chargeLost(o) {
+  if (o.go) return;
+  o.hp = 0; ev('defuse', o.x, o.y, 2, 1);
+}
 function chargeStep(o, dt) {
   o.age += dt; if (o.flash > 0) o.flash = Math.max(0, o.flash - dt * 4);
   if (o.host) {
-    if (o.host.dead || !o.host.body) { o.host = null; o.go = o.go || S.time; }          // 黏著的那塊磚被打碎了：炸藥被震爆
+    if (o.host.dead || !o.host.body) { o.host = null; chargeLost(o); }
     else { const q = o.host.body.getWorldPoint(o.lp); o.x = q.x; o.y = q.y; }
   } else if (o.hostP) {
-    if (o.hostP.dead || !o.hostP.body) { o.hostP = null; o.go = o.go || S.time; } else { const q = o.hostP.body.getWorldPoint(o.lp); o.x = q.x; o.y = q.y; }
+    if (o.hostP.dead || !o.hostP.body) { o.hostP = null; chargeLost(o); } else { const q = o.hostP.body.getWorldPoint(o.lp); o.x = q.x; o.y = q.y; }
   }
   if (o.hp <= 0) return true;
-  if (o.go && S.time >= o.go) { physExplode(o.x, o.y, WPN.sticky, o.side, o.mass, 0, o.host || null, 0, -1); return true; }
+  if (o.go && S.time >= o.go) {
+    const on = chargeOn(o);
+    if (on < 2 && on !== o.side && S.team[on].shield.on) { o.hp = 0; ev('defuse', o.x, o.y, on, 2); return true; }          // 對方開著護罩：罩住的炸藥悶熄，不會爆
+    physExplode(o.x, o.y, WPN.sticky, o.side, o.mass, 0, o.host || null, 0, -1); return true;
+  }
   return false;
 }
 // 炸藥被打到（對方的砲彈、爆炸）：打掉了就不會爆
@@ -104,8 +118,9 @@ function twisterStep(o, dt) {
       if (b.def.big || (b.side === o.side && !ff)) continue;
       const dx = b.x - o.x, dy = b.y - o.y; if (Math.abs(dx) > R + 0.8 || dy < -2 || dy > H) continue;
       const f = k * (1 - Math.abs(dx) / (R + 0.8) * 0.6), st = S.st[b.side], away = st ? (b.x >= st.cx ? 1 : -1) : (dx >= 0 ? 1 : -1);
-      b.body.setAwake(true); b.body.applyLinearImpulse({ x: away * b.mass * 11 * f * dt, y: b.mass * GRAV * 1.55 * f * dt }, b.body.getWorldCenter(), true);
-      hurtUnit(b, 4 * f * mul * dt, o.side, K_WIND);
+      // 只有站在城外的兵會被捲起來甩出去；城裡的兵有牆擋著，只被風刮一下
+      if (b.out) { b.body.setAwake(true); b.body.applyLinearImpulse({ x: away * b.mass * 11 * f * dt, y: b.mass * GRAV * 1.55 * f * dt }, b.body.getWorldCenter(), true); }
+      hurtUnit(b, 4 * f * mul * dt * (b.side === o.side ? FF_K : 1), o.side, K_WIND);
     }
   }
   return false;
@@ -140,7 +155,7 @@ function acidStep(dt) {
   for (const u of S.units) {
     if (!u.alive || !(u.acid > 0)) continue;
     u.acid -= dt; if (u.acid <= 0) { u.acid = 0; continue; }
-    n++; hurtUnit(u, A.ud * dt, u.acidBy === u.side ? 2 : u.acidBy, K_ACID);
+    n++; hurtUnit(u, A.ud * dt * (u.acidBy === u.side ? FF_K : 1), u.acidBy === u.side ? 2 : u.acidBy, K_ACID);
   }
   S.nacid = n;
 }
@@ -163,12 +178,15 @@ function magPulse(x, y, w, side, mass, mul) {
     const f = 1 - Math.min(1, d / (R + 2)), j = M.J * 0.8 * f, nl = d || 1;
     P.body.setAwake(true); P.body.applyLinearImpulse({ x: dx / nl * j, y: dy / nl * j }, p, true);
   }
-  // 鐵鍊：只扯得動落點附近的（rr 以內；吸鐵磚的範圍大得多），一次扯不斷吊殿的鐵鍊
+  // 鐵鍊：只扯得動落點附近的（rr 以內；吸鐵磚的範圍大得多）。同一輪只扯得動一次：全隊的磁暴打在同一條鐵鍊上，也只算最重的那一下
   const Rr = Math.min(R, M.rr * Math.min(1.3, Math.sqrt(Math.max(0.6, mass))));
   for (const r of S.ropes) {
     if (r.cut || r.kind !== 'chain' || (r.side === side && !ff)) continue;
     const e = r.e, d = segDist(x, y, e[0], e[1], e[2], e[3]); if (d > Rr) continue;
-    ropeHurt(r, M.d * M.rope * (1 - d / Rr) * mul, K_MAG, side === r.side ? 2 : side);
+    const dm = M.d * M.rope * (1 - d / Rr) * mul, had = r.magV === S.vol ? r.magD : 0;
+    if (dm <= had) continue;
+    r.magV = S.vol; r.magD = dm;
+    ropeHurt(r, dm - had, K_MAG, side === r.side ? 2 : side);
   }
   ev('magpulse', x, y, R, side);
 }
@@ -194,10 +212,10 @@ function armsHit(i, w, hit, o, hx, hy, vx, vy) {
       SH.p[i]++; ev('drill', hx, hy, side);
       const k = D.slow, nx = hx + vx / sp * 0.4, ny = hy + vy / sp * 0.4;
       SH.x[i] = nx; SH.y[i] = ny; SH.vx[i] = vx * k; SH.vy[i] = vy * k; SH.flag[i] &= ~F_IN;
-      if (SH.p[i] >= D.n || sp * k < 9) { physExplode(nx, ny, w, side, mass, SH.flag[i], null, vx, vy); return 1; }          // 鑽夠深了（或鑽不動了）：在裡面炸開
+      if (SH.p[i] >= D.n || sp * k < 9) { physExplode(nx, ny, w, side, mass, SH.flag[i] & ~F_FIRE, null, vx, vy); return 1; }          // 鑽夠深了（或鑽不動了）：在裡面炸開（悶在裡面，火燒不起來：點不著地窖的火藥庫）
       return 2;
     }
-    if (hit === 1 && (!o || o.isPlat)) { ev('drill', hx, hy, side); physExplode(hx + vx / sp * 0.6, hy - 1.1, w, side, mass, SH.flag[i], null, vx, vy); return 1; }          // 鑽進地裡（浮島的岩石裡）炸：打得到地窖
+    if (hit === 1 && (!o || o.isPlat)) { ev('drill', hx, hy, side); physExplode(hx + vx / sp * 0.6, hy - 1.1, w, side, mass, SH.flag[i] & ~F_FIRE, null, vx, vy); return 1; }          // 鑽進地裡（浮島的岩石裡）炸：打得到地窖的牆（地底下火燒不起來，火藥庫還是要引信燒進去）
     return 0;
   }
   if (w.chain) {
@@ -246,6 +264,8 @@ function engFix(u) {
   if (!u.alive || u.held) return;
   const side = u.side, st = S.st[side]; let n = u.def.fix || 2;
   for (const o of S.objs) { if (n <= 0) break; if (o.t === 'charge' && o.hp > 0 && o.side !== side && chargeOn(o) === side) { o.hp = 0; n--; ev('defuse', o.x, o.y, side); } }
+  // 拖太久、兩邊的城開始自己塌（sudden）：修不動了，只拆得掉炸藥（不然兩邊都是工兵的話永遠打不完）
+  if (S.round >= (S.lv.sudden || 10)) { u.recoil = 1; return; }
   const L = st.blocks.filter((b) => !b.dead && b.body && b.inPlace && !b.lost && b.wt > 0 && !b.frag && b.hp < b.hm * 0.8);
   const need = (b) => ((b.sup || 0) + b.wt) * (1 - b.hp / b.hm);
   L.sort((a, b) => need(b) - need(a));
@@ -259,13 +279,24 @@ function engFix(u) {
   if (n === (u.def.fix || 2)) buildWall(u);
   u.recoil = 1;
 }
+// 木牆還站著（倒了、被推走的不算數：會再架一道）
+function wallUp(b) {
+  if (b.dead || !b.body) return false;
+  const p = b.body.getPosition();
+  return Math.abs(b.body.getAngle()) < 0.35 && Math.hypot(p.x - b.x0, p.y - b.y0) < 1.2;
+}
 function buildWall(u) {
   const side = u.side, st = S.st[side], dir = side === 0 ? 1 : -1;
-  const walls = st.blocks.filter((b) => b.wall && !b.dead).length; if (walls >= WALL_MAX) return;
-  const w = CS * 0.55, h = CS * 1.55;
+  const walls = st.blocks.filter((b) => b.wall && wallUp(b)).length; if (walls >= WALL_MAX) return;
+  for (const b of st.blocks) if (b.wall && !b.dead && !wallUp(b)) blockKill(b, 2, K_CRUSH, true);          // 倒了的木牆收掉，再架一道新的
+  const w = CS * 0.55, h = CS * 1.55, foot = groundY(side === 0 ? st.x1 - 0.6 : st.x0 + 0.6);
   for (let k = 0; k < 4; k++) {
     const x = (side === 0 ? st.x1 : st.x0) + dir * (1.8 + k * 1.7), gy = groundY(x);
-    if (gy < -100 || Math.abs(groundY(x - w / 2) - gy) > 0.6 || Math.abs(groundY(x + w / 2) - gy) > 0.6) continue;
+    if ((dir > 0 ? x > MID - 3 : x < MID + 3) || gy < -100) continue;                         // 不過中線、不架在深淵上
+    if (S.water && gy < S.water.y + 0.3) continue;                                               // 不架在水裡
+    if (foot > -100 && Math.abs(gy - foot) > 2.6) continue;                                       // 跟城腳差不多高的平地才架
+    let flat = true; for (const q of [-0.5, -0.25, 0.25, 0.5]) if (Math.abs(groundY(x + q * w) - gy) > 0.14) flat = false;
+    if (!flat) continue;                                                                          // 斜坡上架不穩（會倒）
     if (physQuery(x, gy + h / 2, h / 2 + 0.2).some((o) => (o.isBlock && !o.dead) || (o.isUnit && o.alive))) continue;
     const b = mkBlock(st, { mat: M_WOOD, kind: 'box', x, y: gy + h / 2 + 0.02, w, h, awake: true });
     b.wall = 1; b.wt = 0; b.inPlace = true; b.x0 = x; b.y0 = gy + h / 2 + 0.02;

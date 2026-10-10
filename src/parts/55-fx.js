@@ -411,7 +411,7 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'split': part(P_FLASH, a, b, 0, 0, 0.12, 2.6, C_GOLD); ring(a, b, 0.5, 4, 0.25, '#fff0b0', 0.4); burst(P_SMOKE, a, b, 3, 6, 0.6, 1.4, C_GRAY); if (thr('split', 120)) sfx('pop'); break;
     case 'stuck': burst(P_SPARK, a, b, 5, 10, 0.3, 0.4, C_RED); if (thr('stuck', 200)) { sfx('stick'); if (S.state === 'play') pop(a, b + 2.6, c === 0 ? '炸藥黏上去了' : '敵軍的炸藥黏上來了！', c === 0 ? '#ffd0a0' : '#ff9a88', 2.6, 1.1); } break;
     case 'chargego': ring(a, b, 3, 0.5, 0.3, '#ff8a6a', 0.5); if (thr('chargego', 300)) sfx('warn'); break;
-    case 'defuse': burst(P_SPARK, a, b, 8, 14, 0.4, 0.5, C_ORANGE); burst(P_SMOKE, a, b, 2, 4, 0.6, 1.2, C_GRAY); if (thr('defuse', 300)) { pop(a, b + 2.6, '炸藥被拆掉了', '#ffe9a0', 2.6, 1.0); sfx('click'); } break;
+    case 'defuse': burst(P_SPARK, a, b, 8, 14, 0.4, 0.5, C_ORANGE); burst(P_SMOKE, a, b, 2, 4, 0.6, 1.2, C_GRAY); if (thr('defuse', 300)) { pop(a, b + 2.6, d === 1 ? '炸藥跟著掉下去了' : d === 2 ? '護罩悶熄了炸藥' : '炸藥被拆掉了', '#ffe9a0', 2.6, 1.0); sfx(d === 2 ? 'fizz' : 'click'); } break;          // d：1 黏的磚碎了、2 護罩悶熄
     case 'drill': burst(P_DEBRIS, a, b, 4, 12, 0.5, 0.4, C_TAN, 4); burst(P_SPARK, a, b, 4, 16, 0.25, 0.4, C_WHITEHOT); if (thr('drillhit', 90)) sfx('drill'); break;
     case 'chainhit': burst(P_SPARK, a, b, 6, 18, 0.3, 0.45, C_WHITEHOT); if (thr('chainhit', 120)) sfx('clang'); break;
     case 'tangle': if (S.state === 'play') pop(a, b + 2.6, '被鐵鍊纏住！', '#d8dee8', 2.6, 1.0); sfx('chainsnap'); break;

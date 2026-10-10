@@ -456,8 +456,8 @@ function shotsStep(dt) {
     let x = SH.x[i], y = SH.y[i], vx = SH.vx[i], vy = SH.vy[i];
     const side = SH.side[i], W = WL[SH.w[i]];
     vy -= GRAV * dt * (W.gk || 1); vx += wind * dt;          // gk：狙擊彈幾乎不往下掉
-    // 子母彈：飛到最高點（往上變往下的那一刻）分成小炸彈
-    if (W.split && SH.vy[i] > 0 && vy <= 0) { clusterSplit(i, x, y, vx, vy); killShot(i); i--; continue; }
+    // 子母彈：過了最高點、也飛出自己的城了，分成小炸彈
+    if (W.split && vy <= 0 && !clusterOverOwn(side, x)) { clusterSplit(i, x, y, vx, vy); killShot(i); i--; continue; }
     // 噴流、黑洞：改速度
     if (forces) {
       saLoad(i); SA.vx = vx; SA.vy = vy;
@@ -553,12 +553,12 @@ function shotsStep(dt) {
           break;
         }
         case 'charge': {
-          // 對方黏上來的炸藥：打得到就打得掉（砲彈在那裡炸開）
+          // 對方黏上來的炸藥：打得到就打得掉。黏在自己城上的：砲彈把它撞下來就沒了，不會在自己的牆上炸開
           if (o.side === side || o.hp <= 0 || side > 1 || o.go) break;
-          const dx = nx - o.x, dy = ny - o.y;
-          if (dx * dx + dy * dy > o.r * o.r) break;
+          if (segDist(o.x, o.y, x, y, nx, ny) > o.r) break;          // 狙擊彈一步飛兩公尺多：照整段算，不會穿過去
           chargeHurt(o, W.dmg * SH.mass[i] * team[side].dmg * 1.5, side);
-          if (W.r > 0) physExplode(nx, ny, W, side, SH.mass[i], SH.flag[i], null, vx, vy); else ev('tick', nx, ny, side);
+          if (chargeOn(o) === side) ev('tick', o.x, o.y, side);
+          else if (W.r > 0) physExplode(nx, ny, W, side, SH.mass[i], SH.flag[i], null, vx, vy); else ev('tick', nx, ny, side);
           dead = true;
           break;
         }
@@ -919,7 +919,7 @@ function simFire(side) {
     u.held = false;
     if (!u.alive || T.mute) continue;                       // mute：測試用，這一邊只瞄不打
     // 被凍住、被電暈：這一輪不能動（包括魔王放光球、氣球兵放氣球）
-    if (u.frozen > 0 || u.stun > 0) { u.held = true; u.immune = true; ev('skip', u.x, u.y + 4, side, u.frozen > 0 ? 0 : 1); u.frozen = Math.max(0, u.frozen - 1); u.stun = Math.max(0, u.stun - 1); continue; }
+    if (u.frozen > 0 || u.stun > 0) { u.held = true; u.immune = true; ev('skip', u.x, u.y + 4, side, u.frozen > 0 ? 0 : 1); u.frozen = Math.max(0, u.frozen - 1); u.stun = Math.max(0, u.stun - 1); if (u.stun <= 0) u.tangled = 0; continue; }
     u.immune = false;
     if (u.w) {
       const w = u.w, n = w.n || 1, g = w.gap || 0;
@@ -1314,7 +1314,7 @@ function simStep(dt) {
     S.pend.splice(i, 1);
     if (p.reso) { const o = p.reso; if (!o.dead) { const q = o.body.getPosition(); ev('resohit', q.x, q.y); blockHurt(o, (o.seg ? o.segM : o.hm) * 0.42 * (p.k || 1), K_CRUSH, p.side); } }       // 共鳴：一圈一圈傳過去，每一塊琉璃都震出裂痕
     else if (p.ring) { const o = p.ring; if (!o.dead) { const q = o.body.getPosition(); if (rnd() < 0.3) ev('crack', q.x, q.y, o.mat); blockHurt(o, BELL_WAVE * p.k * S.rage, K_CRUSH, p.side); if (!o.dead && o.body) o.body.applyLinearImpulse({ x: (p.side === 0 ? 1 : -1) * o.mass * 1.2 * p.k, y: o.mass * 0.6 * p.k }, o.body.getWorldCenter(), true); } }      // 鐘鳴的震波打到塔上的木頭、屋瓦
-    else if (p.ringU) { const u = p.ringU; if (u.alive) { hurtUnit(u, 14 * p.k * S.rage, p.side, K_CRUSH); if (u.alive && !u.immune && p.k >= 1 && !r1v(u.side)) { u.stun = Math.max(u.stun, 1); u.dazed = 1; ev('skip', u.x, u.y + 4, u.side, 1); } } }       // 鐘鳴震到兵：心柱斷了的塔，兵還會被震暈
+    else if (p.ringU) { const u = p.ringU; if (u.alive) { hurtUnit(u, 14 * p.k * S.rage, p.side, K_CRUSH); if (u.alive && !u.immune && p.k >= 1 && !r1v(u.side)) { u.stun = Math.max(u.stun, 1); u.dazed = 1; u.tangled = 0; ev('skip', u.x, u.y + 4, u.side, 1); } } }       // 鐘鳴震到兵：心柱斷了的塔，兵還會被震暈
     else physExplode(p.x, p.y, p.w, p.side, 1, 0, null, 0, 1);
   }
   gatesStep(dt);

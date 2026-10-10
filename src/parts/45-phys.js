@@ -67,7 +67,9 @@ function physNew() {
     // 投石兵的大石頭還在自己城裡：穿過自己的牆和自己的兵（跟砲彈一樣，飛出城才會撞東西）
     { const oa = A.getUserData() || c.getFixtureA().getUserData(), ob = B.getUserData() || c.getFixtureB().getUserData();          // 吊籠、配重桶的身體沒有掛資料：看零件上的
       if (oa && oa.bIn && ob && ((ob.side === oa.bSide && (ob.isUnit || ob.st === S.st[oa.bSide])) || (ob.dom && (ob.x0 < MID) === (oa.bSide === 0)))) { c.setEnabled(false); return; }
-      if (ob && ob.bIn && oa && ((oa.side === ob.bSide && (oa.isUnit || oa.st === S.st[ob.bSide])) || (oa.dom && (oa.x0 < MID) === (ob.bSide === 0)))) { c.setEnabled(false); return; } }
+      if (ob && ob.bIn && oa && ((oa.side === ob.bSide && (oa.isUnit || oa.st === S.st[ob.bSide])) || (oa.dom && (oa.x0 < MID) === (ob.bSide === 0)))) { c.setEnabled(false); return; }
+      // 工兵架在城前的木牆：自己的大石頭飛得過去（跟自己的砲彈一樣）
+      if (oa && ob && ((oa.bFly && ob.wall && ob.side === oa.bSide) || (ob.bFly && oa.wall && oa.side === ob.bSide))) { c.setEnabled(false); return; } }
     const dvx = va.x - vb.x, dvy = va.y - vb.y, wa = A.getAngularVelocity(), wb = B.getAngularVelocity();
     if (dvx * dvx + dvy * dvy < IMP_GATE * IMP_GATE && Math.abs(wa) + Math.abs(wb) < 0.6) return;
     const wm = c.getWorldManifold(PH.wm); if (!wm) return; PH.wm = wm;
@@ -601,7 +603,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
       const fk = o.side === side ? FF_K : 1, ck = o === hit && critU ? CRIT_K : 1;
       const bp = o.body.getPosition(), dx = bp.x - x, dy = bp.y - y, d = Math.hypot(dx, dy);
       // 關在石室裡炸開的火藥桶（room）：同一層樓、左右 room 以內的人都被震到，越遠越輕
-      if (w.room) { if (Math.abs(dy) > 2.6 || Math.abs(dx) > w.room) continue; const fr = 1 - 0.4 * Math.abs(dx) / w.room, jr = Math.min(Jw * UKB_K * fr, o.mass * UKB_V), k = pushScale(o.body, o.mass, Math.sign(dx) * jr, jr * 0.3, UKB_V); if (k > 0) o.body.applyLinearImpulse({ x: Math.sign(dx) * jr * k, y: jr * 0.3 * k }, o.body.getWorldCenter(), true); hurtUnit(o, ud * fr, side, kind); continue; }
+      if (w.room) { if (Math.abs(dy) > 2.6 || Math.abs(dx) > w.room) continue; const fr = 1 - 0.4 * Math.abs(dx) / w.room, jr = Math.min(Jw * UKB_K * fr, o.mass * UKB_V), k = pushScale(o.body, o.mass, Math.sign(dx) * jr, jr * 0.3, UKB_V); if (k > 0) o.body.applyLinearImpulse({ x: Math.sign(dx) * jr * k, y: jr * 0.3 * k }, o.body.getWorldCenter(), true); hurtUnit(o, ud * fr * fk, side, kind); continue; }
       let f = o === hit ? 1 : 1 - Math.max(0, d - 1.3 * (o.def.big ? MUZ_BIG : 1)) / r; if (f <= 0) continue; if (f > 1) f = 1;       // 離身體表面多遠（魔王的身體比較大）
       // 推兵：一輪幾十發小砲彈接連炸在旁邊，力道不能一直疊上去（不然人會像砲彈一樣飛出城）。已經被推到多快，就少推多少
       const dl = d || 1, j = Math.min(Jw * UKB_K * f, o.mass * UKB_V) * (open1(o, side) ? 0.35 : 1), jx = dx / dl * j, jy = dy / dl * j + j * 0.3, k = pushScale(o.body, o.mass, jx, jy, UKB_V);
@@ -641,7 +643,7 @@ function lightning(x, y, mul, side) {
   let low = y, n = 0;
   for (const h of _lz) { if (n >= 3) break; if (h.o.dead || h.y < roof) continue; n++; low = Math.min(low, h.y); blockHurt(h.o, 15 * mul, K_ZAP, side, x, h.y); if (h.o.mat === M_IRON) ev('spark', x, h.y); }
   if (roof > low) low = roof;
-  for (const u of S.units) if (u.alive && u.side !== side && Math.abs(u.x - x) < 2.6 && u.y + 3 > low - 4 && u.y + 3 > roof) { hurtUnit(u, 9 * mul, side, K_ZAP); if (u.alive && !u.immune && !open1(u, side)) { u.stun = Math.max(u.stun, 1); u.dazed = 1; } }
+  for (const u of S.units) if (u.alive && u.side !== side && Math.abs(u.x - x) < 2.6 && u.y + 3 > low - 4 && u.y + 3 > roof) { hurtUnit(u, 9 * mul, side, K_ZAP); if (u.alive && !u.immune && !open1(u, side)) { u.stun = Math.max(u.stun, 1); u.dazed = 1; u.tangled = 0; } }
   // 雷劈過鐵鍊：鐵會導電
   for (const r of S.ropes) { if (r.cut || r.side === side) continue; const e = r.e, lo2 = Math.min(e[1], e[3]), hi2 = Math.max(e[1], e[3]); if (lo2 < low - 1 || hi2 < roof) continue; if ((e[0] - x) * (e[2] - x) <= 0 || Math.abs(e[0] - x) < 1.8 || Math.abs(e[2] - x) < 1.8) ropeHurt(r, 15 * mul, K_ZAP, side); }
   ev('zap', x, n ? low : roof > -90 ? roof : -9, 78, n ? 1 : 0);
