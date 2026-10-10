@@ -641,6 +641,12 @@ function frostSprite(sp) {
   c.drawImage(sp.cv, 0, 0); c.globalCompositeOperation = 'source-in'; c.fillStyle = '#9fdcff'; c.fillRect(0, 0, cv.width, cv.height);
   sp.frost = cv; return cv;
 }
+function acidSprite(sp) {
+  if (sp.acid) return sp.acid;
+  const cv = mkCanvas(sp.cv.width, sp.cv.height), c = cv.getContext('2d');
+  c.drawImage(sp.cv, 0, 0); c.globalCompositeOperation = 'source-in'; c.fillStyle = '#7ce83a'; c.fillRect(0, 0, cv.width, cv.height);
+  sp.acid = cv; return cv;
+}
 // 每一塊磚：照它現在的位置和角度貼上去
 // hp：只畫吊著的鐘、燈、石籃（畫在兵的前面：魔王頭頂的吊燈才不會被他的身體蓋住）
 function drawBlocks(c, t, rdt, hp) {
@@ -675,6 +681,8 @@ function drawBlocks(c, t, rdt, hp) {
     }
     // 被冰術士打到、變脆的磚：罩一層淡淡的冰藍（不是整塊變白）
     if (b.brit > 0 && !b.frag) { const fr = frostSprite(sp); c.globalAlpha = 0.34; c.drawImage(fr, -sp.ax, -sp.ay); c.globalAlpha = 1; }
+    // 被酸液蝕著的磚：一層綠，偶爾冒一個泡
+    if (b.acid > 0) { const ac = acidSprite(sp); c.globalAlpha = Math.min(1, b.acid) * (0.32 + 0.1 * Math.sin(t * 5 + b.id)); c.drawImage(ac, -sp.ax, -sp.ay); c.globalAlpha = 1; if (!FX.low && ((RD.frame + b.id) & 7) === 0) part(P_EMBER, p.x + rndS() * b.w * 0.8, p.y + rndS() * b.h * 0.6, rndS() * 2, 2 + Math.random() * 3, 0.5, 0.45, C_GREEN); }
     // 避雷針：頂上一顆亮點（雷就是劈在這裡）
     if (b.rod) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.55 + 0.3 * Math.sin(t * 6 + b.id) + (b.flash > 0 ? 0.5 : 0); const g = glowSprite(C_YELLOW), r = V.T * 0.45; c.drawImage(g, -r, -sp.ay + sp.ax * 0 - r * 0.2 - r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
     // 魔晶：紫紅色的光一脹一縮
@@ -879,11 +887,44 @@ function drawUnits(c, t) {
       poly(c, [x - hw * 1.05, y, x - hw * 1.2, top + s, x - hw * 0.4, top - s * 0.4, x + hw * 0.7, top - s * 0.1, x + hw * 1.2, top + s * 1.4, x + hw * 1.05, y]); c.fill(); c.stroke();
       c.strokeStyle = 'rgba(255,255,255,.8)'; c.beginPath(); c.moveTo(x - hw * 0.6, top + s * 1.2); c.lineTo(x - hw * 0.1, top + s * 0.2); c.stroke();
     }
-    if (u.stun > 0) { c.fillStyle = '#ffe14a'; for (let k = 0; k < 3; k++) { const a = t * 7 + k * 2.1; c.beginPath(); c.arc(x + Math.cos(a) * hw * 0.8, top - s * 0.3 + Math.sin(a) * s * 0.35, Math.max(1.2, s * 0.26), 0, TAU); c.fill(); } }
+    if (u.stun > 0 && u.tangled) { c.strokeStyle = '#8a92a2'; c.lineWidth = Math.max(1.5, s * 0.34); c.setLineDash([s * 0.5, s * 0.35]); for (let k = 0; k < 2; k++) { c.beginPath(); c.ellipse(x, y - s * (1.1 + k * 1.1), hw * 0.95, s * 0.4, 0.15 - k * 0.3, 0, TAU); c.stroke(); } c.setLineDash([]); }
+    else if (u.stun > 0) { c.fillStyle = '#ffe14a'; for (let k = 0; k < 3; k++) { const a = t * 7 + k * 2.1; c.beginPath(); c.arc(x + Math.cos(a) * hw * 0.8, top - s * 0.3 + Math.sin(a) * s * 0.35, Math.max(1.2, s * 0.26), 0, TAU); c.fill(); } }
+    if (u.acid > 0 && !FX.low && ((RD.frame + u.slot) & 5) === 0) part(P_EMBER, u.x + rndS() * 1.5, u.y + 1 + Math.random() * 2, rndS(), -3, 0.4, 0.4, C_GREEN);
     if (u.hp < u.hpMax * 0.995) {
       const f = clamp(u.hp / u.hpMax, 0.06, 1), bw = s * 3.1 * big, bh = Math.max(2.5, s * 0.52), bx = x - bw / 2, by = top - s * 0.95;
       c.fillStyle = 'rgba(10,8,20,.75)'; c.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
       c.fillStyle = f > 0.5 ? '#6fe05a' : f > 0.25 ? '#ffc93c' : '#ff5a3c'; c.fillRect(bx, by, bw * f, bh);
+    }
+  }
+}
+
+/* ---------- 第三篇：黏在城上的炸藥、龍捲風 ---------- */
+function drawArms(c, t) {
+  const s = V.s;
+  for (const o of S.objs) {
+    if (o.t === 'charge' && o.hp > 0) {
+      const x = X(o.x), y = Y(o.y), w = s * 1.15, h = s * 1.6;
+      c.save(); c.translate(x, y); c.rotate(Math.sin(o.age * 2 + o.x) * 0.06);
+      for (let k = 0; k < 3; k++) { c.fillStyle = k === 1 ? '#d8261c' : '#b81c14'; c.fillRect(-w * 0.75 + k * w * 0.5, -h / 2, w * 0.46, h); }
+      c.fillStyle = '#3a2410'; c.fillRect(-w * 0.8, -h * 0.12, w * 1.6, h * 0.24);
+      c.strokeStyle = '#1a0806'; c.lineWidth = Math.max(1, s * 0.15); c.strokeRect(-w * 0.75, -h / 2, w * 1.5, h);
+      // 一閃一閃的紅燈：下一輪就爆（引爆前閃得很快）
+      const blink = o.go ? (Math.sin(t * 40) > 0) : (Math.sin(t * 6 + o.x) > 0.2);
+      if (blink) { c.globalCompositeOperation = 'lighter'; const g = glowSprite(C_RED), r = s * (o.go ? 2.4 : 1.6); c.drawImage(g, -r, -h / 2 - r, r * 2, r * 2); c.globalCompositeOperation = 'source-over'; }
+      c.fillStyle = blink ? '#ffeeaa' : '#7a1c10'; c.beginPath(); c.arc(0, -h / 2 - s * 0.25, s * 0.28, 0, TAU); c.fill();
+      if (o.flash > 0) { c.globalAlpha = o.flash; c.fillStyle = '#ffffff'; c.fillRect(-w * 0.8, -h / 2, w * 1.6, h); c.globalAlpha = 1; }
+      c.restore();
+      if (o.go && !FX.low && (RD.frame & 1) === 0) part(P_SPARK, o.x, o.y + 0.8, rndS() * 8, 4 + Math.random() * 6, 0.25, 0.35, C_GOLD);
+    } else if (o.t === 'twister') {
+      const k = o.age < 0.3 ? o.age / 0.3 : o.age > o.life - 0.5 ? Math.max(0, (o.life - o.age) / 0.5) : 1, x0 = X(o.x), yb = Y(o.y);
+      c.lineCap = 'round';
+      for (let j = 0; j < 9; j++) {
+        const u = j / 8, yy = yb - u * o.H * s, rw = (0.5 + u * 1.1) * o.R * s * 0.55, ph = o.spin + j * 0.9;
+        c.globalAlpha = k * (0.22 + 0.18 * (1 - u)); c.strokeStyle = j & 1 ? '#e8fff2' : '#9fe0c0'; c.lineWidth = Math.max(1.5, s * (0.5 - u * 0.25));
+        c.beginPath(); c.ellipse(x0 + Math.sin(ph * 0.5) * s * 0.6 * u, yy, rw, rw * 0.28, 0, ph % TAU, ph % TAU + 4.4); c.stroke();
+      }
+      c.globalAlpha = 1;
+      if (!FX.low && (RD.frame & 1) === 0) part(P_DUST, o.x + rndS() * o.R, o.y + Math.random() * o.H * 0.7, rndS() * 18, 6 + Math.random() * 10, 0.6, 1.2, C_SAND);
     }
   }
 }
@@ -1079,13 +1120,13 @@ function drawShots(c) {
   const sx = FX.shx, sy = FX.shy;
   for (let i = 0; i < n; i++) {
     // 分裂過的砲彈比較小顆（威力也比較小），合併的比較大顆
-    const sp = shotSprite(SH.w[i], SH.side[i]), a = SH.flag[i] & F_ROLL ? -SH.x[i] * 1.7 : Math.atan2(-SH.vy[i], SH.vx[i]), ms = SH.mass[i], m = ms > 1 ? Math.min(2, Math.sqrt(ms)) : Math.max(0.6, Math.pow(ms, 0.2)), cs = Math.cos(a) * m, sn = Math.sin(a) * m;
+    const sp = shotSprite(SH.w[i], SH.side[i]), wid = WL[SH.w[i]].id, a = SH.flag[i] & F_ROLL ? -SH.x[i] * 1.7 : wid === 'chain' ? SH.age[i] * 17 : Math.atan2(-SH.vy[i], SH.vx[i]), ms = SH.mass[i], m = ms > 1 ? Math.min(2, Math.sqrt(ms)) : Math.max(0.6, Math.pow(ms, 0.2)), cs = Math.cos(a) * m, sn = Math.sin(a) * m;
     c.setTransform(cs, sn, -sn, cs, X(SH.x[i]) + sx, Y(SH.y[i]) + sy);
     c.drawImage(sp.cv, -sp.w / 2, -sp.h / 2);
   }
   c.setTransform(1, 0, 0, 1, sx, sy);
   // 火箭和砲彈拖一點煙
-  if (!FX.low) for (let i = RD.frame % 5; i < n; i += 5) { const id = WL[SH.w[i]].id; if (id === 'rocket' || id === 'bomb' || id === 'drop') part(P_SMOKE, SH.x[i], SH.y[i], rndS() * 2, rndS() * 2, 0.45, id === 'rocket' ? 0.8 : 1.3, C_GRAY); else if (id === 'fire') part(P_EMBER, SH.x[i], SH.y[i], rndS() * 3, rndS() * 3, 0.35, 0.6, C_ORANGE); else if (id === 'ice') part(P_SPARK, SH.x[i], SH.y[i], rndS() * 4, rndS() * 4, 0.25, 0.3, C_ICE); else if (id === 'dark') part(P_EMBER, SH.x[i], SH.y[i], rndS() * 3, rndS() * 3, 0.3, 0.6, C_PURPLE); }
+  if (!FX.low) for (let i = RD.frame % 5; i < n; i += 5) { const id = WL[SH.w[i]].id; if (id === 'rocket' || id === 'bomb' || id === 'drop' || id === 'cluster') part(P_SMOKE, SH.x[i], SH.y[i], rndS() * 2, rndS() * 2, 0.45, id === 'rocket' ? 0.8 : 1.3, C_GRAY); else if (id === 'acid') part(P_EMBER, SH.x[i], SH.y[i], rndS() * 3, -2 - Math.random() * 4, 0.4, 0.5, C_GREEN); else if (id === 'wind') part(P_DUST, SH.x[i], SH.y[i], rndS() * 6, rndS() * 6, 0.4, 0.9, C_WHITE); else if (id === 'sticky') part(P_SPARK, SH.x[i], SH.y[i], rndS() * 6, rndS() * 6, 0.2, 0.3, C_GOLD); else if (id === 'magnet') part(P_SPARK, SH.x[i], SH.y[i], rndS() * 8, rndS() * 8, 0.2, 0.3, C_SKY); else if (id === 'fire') part(P_EMBER, SH.x[i], SH.y[i], rndS() * 3, rndS() * 3, 0.35, 0.6, C_ORANGE); else if (id === 'ice') part(P_SPARK, SH.x[i], SH.y[i], rndS() * 4, rndS() * 4, 0.25, 0.3, C_ICE); else if (id === 'dark') part(P_EMBER, SH.x[i], SH.y[i], rndS() * 3, rndS() * 3, 0.3, 0.6, C_PURPLE); }
 }
 
 /* ---------- 特效 ---------- */
@@ -1154,6 +1195,14 @@ function fxDraw(c) {
     for (let k = 0; k < 6; k++) { let hit = null; for (const q of placed) if (Math.abs(q[0] - x) < q[2] + hw && Math.abs(q[1] - y) < (q[3] + fz) * 0.55) { hit = q; break; } if (!hit) break; y = hit[1] - (hit[3] + fz) * 0.6; if (y < V.hud + fz * 0.9) { y = V.hud + fz * 0.9; break; } }
     placed.push([x, y, hw, fz]);
     c.lineWidth = fz * 0.22; c.strokeStyle = 'rgba(16,10,26,.9)'; c.strokeText(p.txt, x, y); c.fillStyle = p.col; c.fillText(p.txt, x, y);
+  }
+  // 傷害數字：往上飄、淡掉（暴擊的大一號、金色）
+  for (const p of FX.nums) {
+    if (!p.txt) continue;
+    const f = p.t / p.max, fz = p.size * s * (f < 0.1 ? 0.7 + f * 3 : 1);
+    c.globalAlpha = f > 0.65 ? (1 - f) / 0.35 : 1; c.font = '400 ' + fz * 1.15 + 'px ' + F_NUM;
+    const x = clamp(X(p.x), fz, V.W - fz), y = clamp(Y(p.y) - f * s * 4.2, V.hud + fz * 0.8, V.H - fz * 0.6);
+    c.lineWidth = fz * 0.24; c.strokeStyle = 'rgba(16,10,26,.88)'; c.strokeText(p.txt, x, y); c.fillStyle = p.col; c.fillText(p.txt, x, y);
   }
   c.globalAlpha = 1;
 }
@@ -1274,6 +1323,7 @@ function renderFrame(dt, rdt) {
   drawRopes(c, t);
   drawGates(c, t);
   drawUnits(c, t);
+  drawArms(c, t);
   for (const P of S.plats) if (P.kind === 'cage' && !P.dead) drawPart(c, P, t, true);
   if (S.ropes.length) { drawBlocks(c, t, rdt, 1); c.setTransform(1, 0, 0, 1, FX.shx, FX.shy); }
   drawWater(c, t);

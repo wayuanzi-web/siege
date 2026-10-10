@@ -298,3 +298,27 @@ const LEVELS = [
     sudden: 14
   }
 ];
+
+/* ===== 演武場：十八種兵任選、戰場任選（演武城，或第一到十一關的城和地形），先試打第三篇的兵器和規則 =====
+   practice：不給星星、不解鎖；rules：ff 誤傷、crit 弱點暴擊、elem 冰能滅火（屬性剋制的字每一關都會跳，這條是真的改戰局） */
+const PRACTICE_BASE = {
+  name: '演武場', tag: '十八種兵器・誤傷・弱點暴擊', theme: 0, castle: 'DRILL', practice: 1, rules: { ff: 1, crit: 1, elem: 1 },
+  tip: '十八種兵任你挑，每邊最多六個；戰場也可以換成第一到十一關的城。第三篇的規則都在：自己的砲炸到自己人一樣會傷，打中接點、核心、兵的頭是暴擊 ×2',
+  hints: [],
+  ground: [[-40, 3], [0, 0], [47, 0], [51, 3.6], [56, 5.2], [61, 3.6], [65, 0], [112, 0], [152, 3]],
+  me: { crew: ['chain', 'drill', 'cluster', 'sapper', 'magnet', 'eng'] },
+  foe: { crew: ['wind', 'acid', 'sniper', 'bomb', 'rocket', 'eng'], hp: 1, dmg: 1, open: 0.55, ai: { err: 4.2, think: 1.0, gate: 0.6, hate: 0.2, skill: 0.5, sap: 0.6, warm: 1.6 } },
+  wind: { max: 5, at: 2 }, sudden: 12
+};
+// 演武場的戰場清單：0 演武城，1–11 照那一關（城、地形、中間的機關都一樣，兵換成挑的）。魔王城不能選（要有魔王）
+const PRACTICE_MAPS = 12;
+function practiceSlots(map) { const lv = map > 0 ? LEVELS[map - 1] : PRACTICE_BASE, d = CASTLES[lv.castle || lv.me.castle]; let n = 0; for (const r of d.map) for (const ch of r) if (ch >= '1' && ch <= '9') n++; return n; }
+function practiceLevel(map, me, foe, ff) {
+  const base = map > 0 ? LEVELS[map - 1] : PRACTICE_BASE;
+  return Object.assign({}, base, {
+    name: map > 0 ? '演武場・' + base.name : PRACTICE_BASE.name, tag: PRACTICE_BASE.tag, tip: PRACTICE_BASE.tip, hints: [],
+    practice: 1, rules: { ff: ff ? 1 : 0, crit: 1, elem: 1 }, idx: -1 - map, map,
+    me: Object.assign({}, base.me, { crew: me.slice() }),
+    foe: Object.assign({}, base.foe, { crew: foe.slice(), ai: Object.assign({}, base.foe.ai) })
+  });
+}

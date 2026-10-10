@@ -46,6 +46,12 @@ function sfx(name, arg) {
       case 'frost': if (gap('frost', 110)) return; tone(1500 + r * 300, 0.16, 'sine', 0.05, 2300); tone(2200, 0.1, 'triangle', 0.025, 0, 0.03); break;
       case 'charge': if (gap('charge', 110)) return; tone(300, 0.2, 'sawtooth', 0.04, 980, 0, null, 0.05); break;
       case 'dark': if (gap('dark', 110)) return; tone(160, 0.3, 'sawtooth', 0.08, 70); tone(240, 0.3, 'square', 0.03, 100); break;
+      case 'drill': if (gap('drill', 80)) return; tone(180 + r * 40, 0.22, 'sawtooth', 0.06, 420); noise(0.2, 0.08, 'bandpass', 1800, 900, 2.5); break;
+      case 'snipe': if (gap('snipe', 90)) return; noise(0.05, 0.3, 'highpass', 2600, 0, 1); tone(1400, 0.06, 'square', 0.05, 300); noise(0.4, 0.06, 'bandpass', 900, 300, 1.5, 0.04); break;
+      case 'mag': if (gap('mag', 200)) return; tone(110, 0.5, 'sawtooth', 0.06, 220, 0, null, 0.05); tone(165, 0.5, 'square', 0.03, 330, 0, null, 0.05); break;
+      case 'crit': [88, 95].forEach((n, i) => tone(NOTE(n), 0.16, 'triangle', 0.09, 0, i * 0.05)); break;
+      case 'fix': if (gap('fix', 160)) return; for (let i = 0; i < 2; i++) { tone(900 + r * 200, 0.06, 'square', 0.04, 600, i * 0.11); noise(0.04, 0.06, 'bandpass', 2400, 0, 2, i * 0.11); } break;
+      case 'stick': if (gap('stick', 120)) return; noise(0.12, 0.12, 'lowpass', 700, 200, 1.5); tone(220, 0.08, 'sine', 0.06, 140); break;
       // 命中
       case 'tick': if (gap('tick', 45)) return; noise(0.03, 0.06, 'bandpass', 2200 + r * 1600, 0, 2); break;
       case 'boom': if (gap('boom', 60)) return; noise(0.3, 0.2, 'lowpass', 1300, 120, 0.8); tone(125 + r * 30, 0.22, 'sine', 0.2, 46); break;

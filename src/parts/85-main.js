@@ -55,31 +55,38 @@ function demoStart(idx) {
   simInit(idx, { dmg: 1, hp: 1, shield: 2, ult: 2 }, (Math.random() * 1e9) | 0, 1, { botA: BOTS.demo });
   fxReset(); sceneBuild(false); S.on = fxOn; RD.showAim = false; RD.trail = null; RD.sh[0] = RD.sh[1] = 0;      // 同一關、同樣大小就沿用畫好的佈景（第六關的竹林畫一次要不少時間）
 }
+// idx：第幾關；演武場直接給一個關卡物件（practiceLevel）
 function startLevel(idx) {
   auInit();
+  const lv = typeof idx === 'object' ? idx : LEVELS[idx];
   G.demo = false; G.mode = 'play'; G.endT = 0; G.acc = 0; G.fired = 0; G.drag = null; G.said = {}; G.hinted = {}; G.tapAt = -1e9; G.tut = idx === 0 && !SV.seen ? 1 : 0;
   const run = ++G.run;
   simInit(idx, SV.up, (Math.random() * 1e9) | 0, SV.diff); fxReset(); sceneBuild(false); S.on = fxOn;
   RD.showAim = true; RD.aimOn = false; RD.trail = null; RD.sh[0] = RD.sh[1] = 0;
   RD.aimT = [1.2, 0.95, 0.75][SV.diff] + 0.11 * (SV.up.aim || 0);
   $('home').hidden = true; $('result').hidden = true; $('opt').hidden = true; $('shop').hidden = true; $('hud').hidden = false;
-  $('hudName').textContent = LEVELS[idx].name;
+  $('hudName').textContent = lv.name;
   $('hint').hidden = true;
   $('banner').className = ''; sayClear(); $('mile').className = '';
   hudBuild(); hudUpdate();
-  setTimeout(() => { if (G.mode === 'play' && G.run === run) banner(LEVELS[idx].name, 'blue', '第' + numZh(idx + 1) + '關'); }, 60);
-  musStart(LEVELS[idx].theme);
+  setTimeout(() => { if (G.mode === 'play' && G.run === run) banner(lv.name, 'blue', lv.practice ? '演武場・試打' : '第' + numZh(idx + 1) + '關'); }, 60);
+  musStart(lv.theme);
 }
 function goHome() {
   G.run++;
   G.mode = 'home'; sayClear(); $('hud').hidden = true; $('result').hidden = true; $('opt').hidden = true; $('shop').hidden = true; $('home').hidden = false;
-  homeRender(); demoStart(UI.sel); musStart('home');
+  homeRender(); homeDemo(); musStart('home');
 }
 function pauseGame() { if (G.mode !== 'play' || S.state !== 'play') return; G.mode = 'pause'; G.drag = null; G.keys = {}; sayHold(true); openOpt(true); }
 function resumeGame() { if (G.mode !== 'pause') return; G.mode = 'play'; $('opt').hidden = true; G.last = performance.now(); sayHold(false); }
 function finishLevel() {
   // 用分出勝負那一刻的城防（之後整座垮掉的演出不算）
   const won = S.state === 'won', idx = S.idx, bar = S.endBar[0], lost = S.stat.lost;
+  if (S.lv.practice) {          // 演武場：試打，不給星星、不給金幣、不解鎖
+    G.mode = 'result'; sayClear(); musStop(); sfx(won ? 'win' : 'lose');
+    showResult(won, { idx, stars: 0, bar, lost, rounds: S.round, chain: S.stat.chain, swarm: S.stat.swarm, amp: S.stat.amp, coins: 0, streak: 0 });
+    return;
+  }
   const stars = !won ? 0 : bar >= 0.5 && !lost ? 3 : bar >= 0.25 ? 2 : 1;          // 城防條是照城破門檻拉開的：剩一半，城的完整度大約還有六成五
   let coins = won ? 50 + 25 * idx + Math.round(bar * 30) + Math.max(0, stars - SV.stars[idx]) * 20 : 10 + Math.round((1 - S.endBar[1]) * 25);
   if (SV.diff === 2) coins = Math.round(coins * 1.25);
@@ -109,10 +116,10 @@ function uiEvent(t, a, b, c, d, e) {
         const T = S.team[0], myAim = () => S.turn === 0 && S.phase === 'aim';
         // 沒有一個兵開得了火（全被凍住、電暈）：護罩可以解凍；沒有護罩就自動跳過這一輪，不用玩家對著空氣拖一下。
         // 這句最要緊，馬上講（別的話先放掉），這一輪也不講別的訣竅
-        if (!T.units.some((u) => u.alive && u.w && u.frozen <= 0 && u.stun <= 0)) {
+        if (!T.units.some((u) => u.alive && (u.w || u.def.fix || u.def.bal) && u.frozen <= 0 && u.stun <= 0)) {          // 工兵、氣球兵沒有砲也算動得了
           sayFlush();
           if (T.shield.c >= T.shield.need && !T.shield.on) say('兵都動不了：開護罩可以馬上解凍；不開就按「發射」跳過這一輪', 1);
-          else { say('兵都動不了，這一輪只能跳過', 1); later(1900, () => { if (canFire() && !S.team[0].units.some((u) => u.alive && u.w && u.frozen <= 0 && u.stun <= 0)) fireNow(); }); }
+          else { say('兵都動不了，這一輪只能跳過', 1); later(1900, () => { if (canFire() && !S.team[0].units.some((u) => u.alive && (u.w || u.def.fix || u.def.bal) && u.frozen <= 0 && u.stun <= 0)) fireNow(); }); }
           break;
         }
         // 第一次玩：一回合教一件事
@@ -137,7 +144,7 @@ function uiEvent(t, a, b, c, d, e) {
     case 'bossback': once('bback', '魔王摔下去又飛回來了，不過摔一次扣不少血'); break;
     case 'rockstop': if (c === 0) once('rstop', '護罩把落石擋下來了'); break;
     case 'sudden': banner('決戰時刻', 'red'); later(1900, () => say('拖太久了，雙方的砲火越來越猛', 1)); break;
-    case 'end': sayClear(); banner(c === 1 ? (S.lv.boss ? '魔王伏誅' : '敵城攻破') : '城樓失守', c === 1 ? 'gold' : 'red', d === 2 ? (c === 1 ? '敵城塌了，帥旗倒下' : '我方城樓塌了') : d ? (c === 1 ? '守軍全滅' : '我軍全滅') : ''); $('hint').hidden = true; break;
+    case 'end': sayClear(); banner(c === 1 ? (S.lv.boss ? '魔王伏誅' : '敵城攻破') : '城樓失守', c === 1 ? 'gold' : 'red', d === 3 ? (c === 1 ? '久攻不下：敵城塌得比較多' : '久攻不下：我方城樓塌得比較多') : d === 2 ? (c === 1 ? '敵城塌了，帥旗倒下' : '我方城樓塌了') : d ? (c === 1 ? '守軍全滅' : '我軍全滅') : ''); $('hint').hidden = true; break;
     case 'gate': if (e === 0 && G.tut >= 1 && G.tut <= 3 && !G.said.gt) { G.said.gt = 1; say('就是這樣！穿過倍增符，砲彈變多了'); } break;
     case 'gspawn': {
       // d 幾倍。高倍數的符只出現一回合：出現的那一刻才講（太早講，玩家找不到它在哪）
@@ -292,7 +299,7 @@ function bindInput() {
       else if (e.code === 'KeyZ') useSkill('shield');
       else if (pk) pauseGame();
     } else if (G.mode === 'pause' && pk) resumeGame();
-    else if (e.code === 'Escape') { for (const id of ['shop', 'opt']) if (!$(id).hidden) { $(id).hidden = true; sfx('click'); if (G.mode === 'home') homeRender(); break; } }
+    else if (e.code === 'Escape') { for (const id of ['pick', 'shop', 'opt']) if (!$(id).hidden) { $(id).hidden = true; sfx('click'); if (G.mode === 'home') homeRender(); if (id === 'pick') pickBack(); break; } }
   });
   window.addEventListener('keyup', (e) => { G.keys[e.code] = false; });
   window.addEventListener('blur', () => { G.keys = {}; G.drag = null; });
@@ -320,16 +327,21 @@ function bindInput() {
   press('btnUlt', () => useSkill('ult'));
   press('btnShield', () => useSkill('shield'));
   press('btnPause', () => { sfx('click'); pauseGame(); });
-  click('btnGo', () => { sfx('click'); startLevel(UI.sel); });
+  click('btnGo', () => { sfx('click'); startLevel(UI.prac ? pracLevel() : UI.sel); });
+  // 演武場：換戰場、誤傷開關、敵軍隨機
+  const pmap = (d) => { SV.prac.map = (SV.prac.map + d + PRACTICE_MAPS) % PRACTICE_MAPS; save(); sfx('click'); homeRender(); homeDemo(); };
+  click('pMapL', () => pmap(-1)); click('pMapR', () => pmap(1));
+  click('pFF', () => { SV.prac.ff = SV.prac.ff ? 0 : 1; save(); sfx('click'); homeRender(); });
+  click('pRand', () => { const L = UNIT_LIST.filter((t) => t !== 'eng' || Math.random() < 0.4); for (let k = 0; k < 6; k++) SV.prac.foe[k] = L[(Math.random() * L.length) | 0]; save(); sfx('click'); homeRender(); homeDemo(); });
   click('btnShop', () => { sfx('click'); shopRender(); $('shop').hidden = false; });
   click('btnOpt', () => { sfx('click'); openOpt(false); });
   click('btnResume', () => { sfx('click'); resumeGame(); });
-  click('btnRetry', () => { sfx('click'); startLevel(S.idx); });
+  click('btnRetry', () => { sfx('click'); startLevel(S.lv.practice ? S.lv : S.idx); });
   click('btnQuit', () => { sfx('click'); goHome(); });
   click('btnNext', (e) => { if (fresh(e)) return; sfx('click'); UI.sel = Math.min(LEVELS.length - 1, S.idx + 1); startLevel(UI.sel); });
-  click('btnAgain', (e) => { if (fresh(e)) return; sfx('click'); startLevel(S.idx); });
+  click('btnAgain', (e) => { if (fresh(e)) return; sfx('click'); startLevel(S.lv.practice ? S.lv : S.idx); });
   click('btnUp', (e) => { if (fresh(e)) return; sfx('click'); shopRender(); $('shop').hidden = false; });
-  click('btnHome', (e) => { if (fresh(e)) return; sfx('click'); UI.sel = Math.min(S.state === 'won' ? S.idx + 1 : S.idx, SV.open - 1, LEVELS.length - 1); goHome(); });
+  click('btnHome', (e) => { if (fresh(e)) return; sfx('click'); if (!S.lv.practice) UI.sel = Math.min(S.state === 'won' ? S.idx + 1 : S.idx, SV.open - 1, LEVELS.length - 1); goHome(); });
   click('tSfx', () => { SV.sfx = !SV.sfx; toggleSync(); save(); sfx('click'); });
   click('tMus', () => { SV.mus = !SV.mus; toggleSync(); save(); sfx('click'); });
   click('tVib', () => { SV.vib = !SV.vib; toggleSync(); save(); vibrate(30); sfx('click'); });
@@ -339,11 +351,11 @@ function bindInput() {
   click('btnWipe', () => {
     if (!UI.wipeArm) { UI.wipeArm = 1; $('btnWipe').textContent = '再按一次，確定清除'; sfx('deny'); return; }
     SV.coins = 0; SV.open = 1; SV.seen = false; SV.seenUlt = false; SV.seenSh = false; SV.stars = LEVELS.map(() => 0); for (const k in SV.up) SV.up[k] = 0;
-    save(); UI.sel = 0; homeRender(); demoStart(0); $('opt').hidden = true; sfx('click');
+    save(); UI.sel = 0; UI.prac = false; homeRender(); homeDemo(); $('opt').hidden = true; sfx('click');
   });
-  document.querySelectorAll('[data-close]').forEach((b) => onTap(b, () => { sfx('click'); b.closest('.modal').hidden = true; if (G.mode === 'home') homeRender(); }));
+  document.querySelectorAll('[data-close]').forEach((b) => onTap(b, () => { sfx('click'); const m = b.closest('.modal'); m.hidden = true; if (G.mode === 'home') homeRender(); if (m.id === 'pick') pickBack(); }));
   // 有視窗開著的時候，後面的東西不收鍵盤焦點（Tab 不會跑到視窗後面的按鈕去）
-  const layers = ['result', 'opt', 'shop'];       // 由下到上
+  const layers = ['result', 'pick', 'opt', 'shop'];       // 由下到上
   let prevTop = -1, opener = null;
   const scope = () => {
     let top = -1; layers.forEach((id, i) => { if (!$(id).hidden) top = i; });
@@ -372,7 +384,7 @@ function boot() {
   // 字型晚一點才載到的話重新排一次
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { layout(); }).catch(() => { });
 }
-window.__qp = { S, SH, FX, G, V, SV, AU, RD, UI, PH, LEVELS, BOTS, simInit, simStep, simAim, simFire, simSkill, aiInit, teamBar, startLevel, goHome, layout, renderFrame, fxStep, hudUpdate, sfx, musStart, physExplode, blockKill, killUnit, WPN, blockDist, homeRender, demoStart, ropeCut, tetherPop, fuseIgnite, castleB, bellPush, rollerSpawn, simTrace, aimFor, ampAims, liftBreak, AMP, groundYRaw,
+window.__qp = { S, SH, FX, G, V, SV, AU, RD, UI, PH, LEVELS, BOTS, practiceLevel, pracLevel, simInit, simStep, simAim, simFire, simSkill, aiInit, teamBar, startLevel, goHome, layout, renderFrame, fxStep, hudUpdate, sfx, musStart, physExplode, blockKill, killUnit, WPN, blockDist, homeRender, demoStart, ropeCut, tetherPop, fuseIgnite, castleB, bellPush, rollerSpawn, simTrace, aimFor, ampAims, liftBreak, AMP, groundYRaw,
   // 測試用：凍結即時迴圈後，手動把戰局往前推 sec 秒
   advance(sec) { const n = Math.round(sec / STEP); let acc = 0; for (let i = 0; i < n; i++) { simStep(STEP); fxStep(STEP, STEP); acc += STEP; if (G.mode === 'play' && S.state !== 'play') G.endT += STEP; if (acc >= 0.05 && i < n - 1) { renderFrame(acc, acc); acc = 0; } } if (G.mode === 'play') hudUpdate(); renderFrame(acc || STEP, acc || STEP); }
 };

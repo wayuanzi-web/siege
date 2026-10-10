@@ -7,7 +7,9 @@ const SH = {
   x: new Float32Array(NS), y: new Float32Array(NS), vx: new Float32Array(NS), vy: new Float32Array(NS),
   age: new Float32Array(NS), mass: new Float32Array(NS), side: new Int8Array(NS), w: new Uint8Array(NS),
   flag: new Uint8Array(NS), mask: new Int32Array(NS), lin: new Int32Array(NS),
-  k: new Uint8Array(NS), a0: new Float32Array(NS), a1: new Float32Array(NS)          // k：彈跳、打水漂幾次；a0、a1：滾地砲的起始威力、起始高度
+  k: new Uint8Array(NS), a0: new Float32Array(NS), a1: new Float32Array(NS),          // k：彈跳、打水漂幾次；a0、a1：滾地砲的起始威力、起始高度
+  p: new Uint8Array(NS),          // p：鑽頭鑽過幾塊、鏈彈掃斷幾樣、狙擊彈穿過幾層（第三篇的兵器）
+  id: new Int32Array(NS), sid: 0          // id：每一發砲彈的編號（鏈彈不會在下一步又掃到同一條繩子）
 };
 const S = {
   idx: 0, lv: null, time: 0, frame: 0, state: 'idle', diff: 1, endT: 0, loser: -1,
@@ -35,6 +37,7 @@ const BOSS_SOFT = 0.35;     // 魔王跨過換階段門檻的那一輪，超過�
 const BASE_WT = 0;         // 城基的磚不算進城樓完整度（打不太動的地基；要垮的是上面的樓閣）
 const SPLIT_P = 0.6;       // 砲彈穿過倍增符後，每一發的威力打幾折：數量 ×n，總威力大約 ×n^(1-SPLIT_P)
 const SHOT_CAP = 520;      // 每一邊同時在天上的砲彈上限（超過就改成加重）
+const ROUND_CAP = 36;      // 打到第幾回合還分不出勝負（兩邊都打不動對方：例如演武場兩邊都是工兵、防空弩）：城防條低的那一邊輸（魔王關不算）
 function ev(t, a, b, c, d, e, f) { if (S.on) S.on(t, a, b, c, d, e, f); }
 
 /* ---------- 城樓：把藍圖變成一塊一塊的磚 ---------- */
@@ -265,7 +268,8 @@ function mkUnit(side, type, st, slot, hpMul) {
   st.units.push(u); T.units.push(u); S.units.push(u);
   return u;
 }
-function hurtUnit(u, d, side, kind) {
+// crit：弱點暴擊（打中頭），已經乘過了，這裡只是讓傷害數字標成暴擊
+function hurtUnit(u, d, side, kind, crit) {
   if (!u.alive || d <= 0) return;
   if (S.state !== 'play' && u.side !== S.loser) return;          // 勝負已分：贏的那一邊不會再受傷（星數、損兵都以分出勝負那一刻為準）
   /* 開場護符：挨了對方第一輪的兵只受幾成傷，而且不會因此倒下（雙方一樣：開場不會還沒打就先倒一個）。
@@ -285,6 +289,7 @@ function hurtUnit(u, d, side, kind) {
     if (boss.softVol === S.vol && u.hp - d < boss.softLo) d = Math.max(0, u.hp - boss.softLo);
     if (d <= 0) { u.hurtT = 0.25; return; }
   }
+  ev('udmg', u.x, u.y + u.bh + 0.8, Math.min(d, u.hp), u.side, crit ? 1 : 0, u);          // 傷害數字
   u.hp -= d; u.hurtT = 0.25;
   if (boss && u.hp > 0) bossPhase(u);
   if (side < 2 && side !== u.side) { const T = S.team[side]; T.ult.c = Math.min(T.ult.need, T.ult.c + d * T.ult.gain * 0.6 * ultK(side)); }
@@ -312,7 +317,7 @@ function unitFire(u, T, w, ax, ay) {
   const n = w.fan || 1;
   for (let k = 0; k < n; k++) {
     const a = (n > 1 ? (k - (n - 1) / 2) * 0.085 : 0) + gauss() * 0.01, c = Math.cos(a), s = Math.sin(a), sp = 1 + gauss() * 0.008;
-    const vx = (ax * c - ay * s * dir) * sp, vy = (ay * c + ax * s * dir) * sp;
+    const vx = (ax * c - ay * s * dir) * sp * (w.spd || 1), vy = (ay * c + ax * s * dir) * sp * (w.spd || 1);          // 狙擊彈：打出去比瞄準的快（spd）
     spawnShot(u.side, w.i, mx, my, vx, vy, 1, F_IN, 0, 1);
   }
   T.fired += n; if (u.side === 0) S.stat.fired += n;
@@ -411,7 +416,7 @@ function spawnShot(side, wi, x, y, vx, vy, mass, flag, mask, lin) {
   if (SH.n >= NS) return -1;
   const i = SH.n++;
   SH.x[i] = x; SH.y[i] = y; SH.vx[i] = vx; SH.vy[i] = vy; SH.age[i] = 0; SH.mass[i] = mass; SH.side[i] = side; SH.w[i] = wi;
-  SH.flag[i] = flag; SH.mask[i] = mask; SH.lin[i] = lin; SH.k[i] = 0; SH.a0[i] = 0; SH.a1[i] = 0; SH.cnt[side]++;
+  SH.flag[i] = flag; SH.mask[i] = mask; SH.lin[i] = lin; SH.k[i] = 0; SH.a0[i] = 0; SH.a1[i] = 0; SH.p[i] = 0; SH.id[i] = ++SH.sid; SH.cnt[side]++;
   return i;
 }
 function killShot(i) {
@@ -420,7 +425,7 @@ function killShot(i) {
   if (i !== j) {
     SH.x[i] = SH.x[j]; SH.y[i] = SH.y[j]; SH.vx[i] = SH.vx[j]; SH.vy[i] = SH.vy[j]; SH.age[i] = SH.age[j]; SH.mass[i] = SH.mass[j];
     SH.side[i] = SH.side[j]; SH.w[i] = SH.w[j]; SH.flag[i] = SH.flag[j]; SH.mask[i] = SH.mask[j]; SH.lin[i] = SH.lin[j];
-    SH.k[i] = SH.k[j]; SH.a0[i] = SH.a0[j]; SH.a1[i] = SH.a1[j];
+    SH.k[i] = SH.k[j]; SH.a0[i] = SH.a0[j]; SH.a1[i] = SH.a1[j]; SH.p[i] = SH.p[j]; SH.id[i] = SH.id[j];
   }
 }
 // 線段 p→q 跟線段 a→b 有沒有相交；有的話回傳 p→q 上的比例，沒有回傳 -1
@@ -450,8 +455,10 @@ function shotsStep(dt) {
       saStore(i); continue;
     }
     let x = SH.x[i], y = SH.y[i], vx = SH.vx[i], vy = SH.vy[i];
-    const side = SH.side[i];
-    vy -= GRAV * dt; vx += wind * dt;
+    const side = SH.side[i], W = WL[SH.w[i]];
+    vy -= GRAV * dt * (W.gk || 1); vx += wind * dt;          // gk：狙擊彈幾乎不往下掉
+    // 子母彈：過了最高點、也飛出自己的城了，分成小炸彈
+    if (W.split && vy <= 0 && !clusterOverOwn(side, x)) { clusterSplit(i, x, y, vx, vy); killShot(i); i--; continue; }
     // 噴流、黑洞：改速度
     if (forces) {
       saLoad(i); SA.vx = vx; SA.vy = vy;
@@ -546,6 +553,16 @@ function shotsStep(dt) {
           o.hp = 0; o.by = side;
           break;
         }
+        case 'charge': {
+          // 對方黏上來的炸藥：打得到就打得掉。黏在自己城上的：砲彈把它撞下來就沒了，不會在自己的牆上炸開
+          if (o.side === side || o.hp <= 0 || side > 1 || o.go) break;
+          if (segDist(o.x, o.y, x, y, nx, ny) > o.r) break;          // 狙擊彈一步飛兩公尺多：照整段算，不會穿過去
+          chargeHurt(o, W.dmg * SH.mass[i] * team[side].dmg * 1.5, side);
+          if (chargeOn(o) === side) ev('tick', o.x, o.y, side);
+          else if (W.r > 0) physExplode(nx, ny, W, side, SH.mass[i], SH.flag[i], null, vx, vy); else ev('tick', nx, ny, side);
+          dead = true;
+          break;
+        }
         case 'barrier': {
           if (side !== 0) break;
           const d0 = Math.hypot(x - o.x, y - o.y), d1 = Math.hypot(nx - o.x, ny - o.y);
@@ -562,8 +579,13 @@ function shotsStep(dt) {
 
     // 繩索、鐵鍊：箭射到就斷一點、繼續不了；會爆的砲彈在繩子上炸開
     if (S.ropes.length && side < 2) {
-      const rc = ropeCross(x, y, nx, ny, side);
-      if (rc) {
+      const rc = W.chain ? chainRope(x, y, nx, ny, side, W.chain.w, SH.id[i]) : ropeCross(x, y, nx, ny, side);
+      if (rc && (W.stick || W.drill)) { /* 黏性炸藥、鑽頭：繩子黏不住、鑽不進去，穿過去 */ }
+      else if (rc && W.chain && SH.p[i] < W.chain.pass) {
+        // 鏈彈：鐵鍊捲住繩子一扯，砲彈繼續往前
+        const r = rc.r, hx = x + (nx - x) * rc.t, hy = y + (ny - y) * rc.t;
+        r.chId = SH.id[i]; ropeHurt(r, W.dmg * W.chain.rope * SH.mass[i] * team[side].dmg * S.rage, K_HEAVY, side); SH.p[i]++; ev('chainhit', hx, hy, side);
+      } else if (rc) {
         const r = rc.r, hx = x + (nx - x) * rc.t, hy = y + (ny - y) * rc.t, w = WL[SH.w[i]];
         if (w.r <= 0) { ropeHurt(r, w.dmg * SH.mass[i] * team[side].dmg * S.rage, w.kind, side); ev('boom', hx, hy, 0, w.i, side, SH.mass[i]); }
         else physExplode(hx, hy, w, side, SH.mass[i], SH.flag[i], null, vx, vy);
@@ -585,6 +607,8 @@ function shotsStep(dt) {
     const hit = rayShot(x, y, nx, ny, side, own);
     const wt = S.water ? waterCross(x, y, nx, ny) : -1;
     if (hit && !(wt >= 0 && wt < RAY.f)) {
+      // 第三篇的兵器：黏住、鑽進去、掃斷柱子、穿過木牆……（見 51-arms）
+      if (W.special) { const r = armsHit(i, W, hit, RAY.o, RAY.x, RAY.y, vx, vy); if (r === 1) { killShot(i); i--; continue; } if (r === 2) continue; }
       // 落在滾石坡往對方那一面：不炸，滾下去
       if (hit === 1 && !RAY.o && AMP.roll && rollOk(RAY.x, side, SH.w[i], vx, vy)) { saLoad(i); SA.vx = vx; SA.vy = vy; rollStart(RAY.x); saStore(i); ev('rollgo', RAY.x, RAY.y, side); continue; }
       physExplode(RAY.x, RAY.y, WL[SH.w[i]], side, SH.mass[i], flag, RAY.o, vx, vy);
@@ -754,7 +778,7 @@ function grantBonus(side, kind, x, y) {
   ev('bonus', x, y, side, kind);
 }
 // 飛行物還在動嗎（這一輪還不能結束）
-function flyersBusy() { for (const o of S.objs) if ((o.t === 'balloon' || o.t === 'orb') && (o.st === 'out' || o.st === 'run' || o.st === 'back')) return true; return false; }
+function flyersBusy() { for (const o of S.objs) if (((o.t === 'balloon' || o.t === 'orb') && (o.st === 'out' || o.st === 'run' || o.st === 'back')) || o.t === 'twister' || (o.t === 'charge' && o.go)) return true; return false; }
 function objsStep(dt) {
   const objs = S.objs;
   for (let i = objs.length - 1; i >= 0; i--) {
@@ -786,6 +810,8 @@ function objsStep(dt) {
         }
         break;
       }
+      case 'charge': gone = chargeStep(o, dt); break;
+      case 'twister': gone = twisterStep(o, dt); break;
       case 'lantern': {
         o.age += dt; o.y = o.by0 + Math.sin(o.age * 1.4) * 0.8;
         if (o.hp <= 0) { if (o.by >= 0 && S.state === 'play') grantBonus(o.by, o.kind, o.x, o.y); gone = true; }
@@ -889,11 +915,12 @@ function simFire(side) {
   const reps = (T.ult.armed ? 3 : 1) * (T.rage > 0 ? 2 : 1), bar = side === 1 && S.boss && S.boss.next === 'barrage' && !T.mute, ax = T.aim[0], ay = T.aim[1];          // 暗黑連射：魔王自己多打一輪
   const lead = volleyLead(T), E0 = lead ? volleyEvent(side, lead, ax, ay) : null, E = E0 ? { ok: E0.ok, x: E0.x, y: E0.y, vx: E0.vx, vy: E0.vy } : null, cv = [0, 0];
   let t0 = 0.05, any = false;
+  chargesGo(side);          // 上一輪黏在對方城上的炸藥：這一輪開火時引爆
   for (const u of T.units) {
     u.held = false;
     if (!u.alive || T.mute) continue;                       // mute：測試用，這一邊只瞄不打
     // 被凍住、被電暈：這一輪不能動（包括魔王放光球、氣球兵放氣球）
-    if (u.frozen > 0 || u.stun > 0) { u.held = true; u.immune = true; ev('skip', u.x, u.y + 4, side, u.frozen > 0 ? 0 : 1); u.frozen = Math.max(0, u.frozen - 1); u.stun = Math.max(0, u.stun - 1); continue; }
+    if (u.frozen > 0 || u.stun > 0) { u.held = true; u.immune = true; ev('skip', u.x, u.y + 4, side, u.frozen > 0 ? 0 : 1); u.frozen = Math.max(0, u.frozen - 1); u.stun = Math.max(0, u.stun - 1); if (u.stun <= 0) u.tangled = 0; continue; }
     u.immune = false;
     if (u.w) {
       const w = u.w, n = w.n || 1, g = w.gap || 0;
@@ -903,6 +930,7 @@ function simFire(side) {
       for (let r = 0; r < rp; r++) for (let k = 0; k < n; k++) q.push({ t: t0 + r * (n * g + 0.16) + k * g, u, w, ax: vx, ay: vy });
       t0 += 0.2; any = true;
     } else if (u.def.bal) q.push({ t: t0, u, w: null, act: 'bal' });
+    else if (u.def.fix) q.push({ t: t0 + 0.2, u, w: null, act: 'fix' });          // 工兵：修城、拆炸藥、架木牆
   }
   if (S.boss && side === 1 && !T.mute) bossVolley(q, t0);
   // 上一輪停在半路的氣球、光球，這一輪飛過去
@@ -1187,8 +1215,8 @@ function mkTeam(side) {
 function castleCols(d) { let c = 0; for (const r of d.map) if (r.length > c) c = r.length; return c; }
 function simInit(idx, up, seed, diff, opts) {
   srand(seed || 1);
-  const lv = LEVELS[idx], D = DIFFS[diff === undefined ? 1 : diff]; up = up || {};
-  S.idx = idx; S.lv = lv; S.time = 0; S.frame = 0; S.state = 'play'; S.diff = diff === undefined ? 1 : diff; S.endT = 0; S.loser = -1;
+  const lv = typeof idx === 'object' ? idx : LEVELS[idx], D = DIFFS[diff === undefined ? 1 : diff]; up = up || {};          // 演武場：直接給一個關卡物件
+  S.idx = typeof idx === 'object' ? (lv.idx === undefined ? -1 : lv.idx) : idx; S.lv = lv; S.nacid = 0; S.time = 0; S.frame = 0; S.state = 'play'; S.diff = diff === undefined ? 1 : diff; S.endT = 0; S.loser = -1;
   S.phase = 'intro'; S.turn = 0; S.round = 0; S.phaseT = 0; S.quietT = 0; S.vq.length = 0; S.vqi = 0;
   SH.n = 0; SH.cnt[0] = SH.cnt[1] = SH.cnt[2] = 0;
   S.structs = []; S.blocks = []; S.balls = []; S.units = []; S.gates = []; S.gsp = []; S.objs = []; S.marks = []; S.pend = []; S.bitUse.fill(0);
@@ -1267,13 +1295,14 @@ function simStep(dt) {
           if (e.w) unitFire(e.u, T, e.w, e.ax, e.ay);
           else if (e.act === 'bal') { let has = false; for (const o of S.objs) if (o.t === 'balloon' && o.side === e.u.side) has = true; if (!has && !e.u.held && !(e.u.balR >= S.round - 1)) { spawnBalloon(e.u); e.u.recoil = 1; e.u.balR = S.round; } }          // 隔一回合才放下一顆（不會每一輪都逼對面拿全部的砲去打氣球）
           else if (e.act === 'orb') spawnOrb(e.u);
+          else if (e.act === 'fix') engFix(e.u);
           else if (e.act === 'summon') { const T1 = S.team[1]; if (coresLeft(1) > 0 && T1.units.some((u) => !u.alive && !u.def.big)) { grantBonus(1, 'troop', e.u.x, e.u.y + 6); ev('summon', e.u.x, e.u.y + 4); } }
         }
         if (S.vqi >= q.length && S.phaseT > 0.35) { S.phase = 'resolve'; S.phaseT = 0; S.quietT = 0; }
         break;
       }
       case 'resolve': case 'hazard': {
-        const busy = SH.n > 0 || S.pend.length > 0 || flyersBusy() || ((S.nburn > 0 || ropesBurning()) && S.phaseT < 6);          // 點著的引信不等它燒完：每一輪（雙方的砲擊、落石）都往下燒一段
+        const busy = SH.n > 0 || S.pend.length > 0 || flyersBusy() || ((S.nburn > 0 || ropesBurning()) && S.phaseT < 6);          // 酸液不等它蝕完（下一輪砲擊接著蝕）          // 點著的引信不等它燒完：每一輪（雙方的砲擊、落石）都往下燒一段
         if (!busy && worldQuiet()) { if (headClear()) S.quietT = 0; else S.quietT += dt; } else S.quietT = 0;
         // 最多等 9 秒；還在一塊接一塊垮的時候多等一下（等最後一塊垮完再過 1.5 秒），最久 14 秒
         if (S.quietT >= 0.5 || S.phaseT > (S.time - S.chainT < 1.5 ? 14 : 9)) { if (S.phase === 'hazard') { endCheck(true); if (S.state === 'play') roundStart(); } else endTurn(); }
@@ -1286,7 +1315,7 @@ function simStep(dt) {
     S.pend.splice(i, 1);
     if (p.reso) { const o = p.reso; if (!o.dead) { const q = o.body.getPosition(); ev('resohit', q.x, q.y); blockHurt(o, (o.seg ? o.segM : o.hm) * 0.42 * (p.k || 1), K_CRUSH, p.side); } }       // 共鳴：一圈一圈傳過去，每一塊琉璃都震出裂痕
     else if (p.ring) { const o = p.ring; if (!o.dead) { const q = o.body.getPosition(); if (rnd() < 0.3) ev('crack', q.x, q.y, o.mat); blockHurt(o, BELL_WAVE * p.k * S.rage, K_CRUSH, p.side); if (!o.dead && o.body) o.body.applyLinearImpulse({ x: (p.side === 0 ? 1 : -1) * o.mass * 1.2 * p.k, y: o.mass * 0.6 * p.k }, o.body.getWorldCenter(), true); } }      // 鐘鳴的震波打到塔上的木頭、屋瓦
-    else if (p.ringU) { const u = p.ringU; if (u.alive) { hurtUnit(u, 14 * p.k * S.rage, p.side, K_CRUSH); if (u.alive && !u.immune && p.k >= 1 && !r1v(u.side)) { u.stun = Math.max(u.stun, 1); u.dazed = 1; ev('skip', u.x, u.y + 4, u.side, 1); } } }       // 鐘鳴震到兵：心柱斷了的塔，兵還會被震暈
+    else if (p.ringU) { const u = p.ringU; if (u.alive) { hurtUnit(u, 14 * p.k * S.rage, p.side, K_CRUSH); if (u.alive && !u.immune && p.k >= 1 && !r1v(u.side)) { u.stun = Math.max(u.stun, 1); u.dazed = 1; u.tangled = 0; ev('skip', u.x, u.y + 4, u.side, 1); } } }       // 鐘鳴震到兵：心柱斷了的塔，兵還會被震暈
     else physExplode(p.x, p.y, p.w, p.side, 1, 0, null, 0, 1);
   }
   gatesStep(dt);
@@ -1298,6 +1327,7 @@ function simStep(dt) {
   if (S.phase === 'hazard') rocksVsShields();
   unitsStep(dt);
   burnStep(dt);
+  acidStep(dt);
   for (const st of S.structs) {
     if (st.hitT > 0) st.hitT -= dt;
     if (st.fin) finStep(st, dt);
@@ -1351,12 +1381,13 @@ function endCheck(settled) {
       if (bu.hp <= 0) killUnit(bu, 0, 1); else { bossPhase(bu); bossSay(BOSS_LINES.castle); }
     }
   }
-  const how = [0, 0];          // 1 守軍全倒、2 城破
+  const how = [0, 0];          // 1 守軍全倒、2 城破、3 久攻不下（回合到了上限，城防條低的輸）
   for (let s = 0; s < 2; s++) {
     const T = S.team[s];
     if (T.alive <= 0 || (s === 1 && S.boss && !(bossUnit() || {}).alive)) how[s] = 1;
     else if (settled && !(s === 1 && S.boss) && structBar(s) <= 0) how[s] = 2;
   }
+  if (!how[0] && !how[1] && settled && !S.boss && S.round > ROUND_CAP) how[structBar(1) < structBar(0) ? 1 : 0] = 3;
   if (!how[0] && !how[1]) return;
   const loser = how[1] ? 1 : 0, lose0 = !!how[0], lose1 = !!how[1];
   // 結算用的數字在這一刻就記下來（之後整座城炸開，數字會再變）

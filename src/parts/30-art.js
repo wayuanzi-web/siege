@@ -499,6 +499,120 @@ const UNIT_ART = {
     poly(c, [x - 8, y - 11, x - 5, y - 17, x - 2, y - 12.5, x, y - 19, x + 2, y - 12.5, x + 5, y - 17, x + 8, y - 11]); fs(c, '#ffc93c', '#7a4a08', 1.3);
     ell(c, 52, 36, 5, 5.4); fs(c, '#6a2a86', '#12061c', 1.8);
     ell(c, 55, 27, 6.5, 6.5); fs(c, rg(c, 53, 25, 0.5, 7.5, [0, '#ff9ad8', 0.45, '#8a1fb4', 1, '#1c0630']), '#0c0410', 1.4);
+  },
+  // ---- 第三篇的新兵種 ----
+  chain(c, side, P) {
+    // 鏈彈手：右手高舉，甩著鐵鍊連著的兩顆鐵球（後面一道甩動的弧）
+    uShadow(c); uLegs(c, P); uBody(c, P); uArm(c, P, 21, 38);
+    uHead(c, side, P);
+    c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 2.2; c.beginPath(); c.arc(50, 15, 13, -2.6, 0.4); c.stroke();
+    c.strokeStyle = P.ink; c.lineWidth = 4.6; c.beginPath(); c.moveTo(41, 33); c.lineTo(45, 24); c.stroke();
+    c.strokeStyle = P.limb; c.lineWidth = 2.6; c.beginPath(); c.moveTo(41, 33); c.lineTo(45, 24); c.stroke();
+    c.strokeStyle = '#5a6070'; c.lineWidth = 2.2; c.setLineDash([2.2, 1.6]); c.beginPath(); c.moveTo(45, 23); c.quadraticCurveTo(47, 10, 53, 7); c.moveTo(45, 23); c.quadraticCurveTo(56, 22, 60, 17); c.stroke(); c.setLineDash([]);
+    for (const [bx, by] of [[54, 6], [60, 17]]) { ell(c, bx, by, 4.4, 4.4); fs(c, rg(c, bx - 1.5, by - 1.5, 0.5, 5, [0, '#b8c0cc', 0.5, '#4a505c', 1, '#16181e']), '#0a0b0e', 1.4); }
+    uArm(c, P, 45, 23);
+  },
+  drill(c, side, P) {
+    // 鑽地手：頭戴礦工帽（帽燈），扛著一支鑽頭砲
+    uShadow(c); uLegs(c, P); uBody(c, P); uArm(c, P, 21, 38);
+    uHead(c, side, P, 1);
+    c.beginPath(); c.moveTo(20.5, 17); c.quadraticCurveTo(21, 4.5, 32, 4.5); c.quadraticCurveTo(43, 4.5, 43.5, 17); c.closePath(); fs(c, lg(c, 0, 4, 0, 17, [0, '#ffe36a', 1, '#d39a12']), '#5a3a06', 1.6);
+    c.fillStyle = '#5a3a06'; c.fillRect(19, 15.5, 26, 2.6);
+    ell(c, 39, 10, 2.6, 2.6); fs(c, '#fffbe0', '#5a3a06', 1); c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(255,240,170,.35)'; poly(c, [41, 8, 50, 4, 50, 15, 41, 12]); c.fill(); c.globalCompositeOperation = 'source-over';
+    c.save(); c.translate(37, 33); c.rotate(-0.5);
+    rrect(c, -12, -5, 18, 10, 3); fs(c, lg(c, 0, -5, 0, 5, [0, '#ffb86a', 1, '#c4621c']), '#4a2408', 1.6);
+    poly(c, [6, -5.5, 23, 0, 6, 5.5]); fs(c, lg(c, 6, -5, 6, 5, [0, '#f2f4f8', 0.5, '#9aa2b0', 1, '#5a6070']), '#2a2e38', 1.4);
+    c.strokeStyle = '#3a3e48'; c.lineWidth = 1.1; for (let k = 0; k < 3; k++) { c.beginPath(); c.moveTo(8 + k * 5, -4.6 + k * 1.4); c.lineTo(11 + k * 5, 4.4 - k * 1.4); c.stroke(); }
+    c.restore();
+    uArm(c, P, 41, 36);
+  },
+  cluster(c, side, P) {
+    // 子母砲手：一門矮胖的臼砲，砲口探出一顆滿是小炸彈的母彈
+    uShadow(c);
+    c.save(); c.translate(-8, 0); uLegs(c, P); uBody(c, P); uHead(c, side, P); uArm(c, P, 42, 37); c.restore();
+    poly(c, [38, 57, 60, 57, 57, 51, 41, 51]); fs(c, '#6a5a44', '#2a2010', 1.6);
+    c.save(); c.translate(49, 46); c.rotate(-1.05);
+    rrect(c, -7, -8, 18, 16, 4); fs(c, lg(c, 0, -8, 0, 8, [0, '#8aa070', 0.5, '#5a7040', 1, '#2e3c1e']), '#1a2210', 1.8);
+    c.fillStyle = '#1a2210'; c.fillRect(1, -8, 2.4, 16);
+    ell(c, 13, 0, 6.5, 6.5); fs(c, rg(c, 11, -2, 0.5, 7, [0, '#9ab07a', 0.6, '#3a4a26', 1, '#1a2210']), '#0e1408', 1.4);
+    c.fillStyle = '#ffd34a'; for (const [dx, dy] of [[12, -3], [15, 1], [11, 2.5], [14.5, -0.8]]) { c.beginPath(); c.arc(dx, dy, 1.1, 0, TAU); c.fill(); }
+    c.restore();
+  },
+  sapper(c, side, P) {
+    // 爆破兵：背著一個大背包，手上一捆冒著火花的炸藥
+    uShadow(c);
+    rrect(c, 12, 27, 11, 17, 3); fs(c, lg(c, 0, 27, 0, 44, [0, '#a88458', 1, '#6a4a28']), '#3a2410', 1.6);
+    uLegs(c, P); uBody(c, P); uArm(c, P, 21, 38);
+    uHead(c, side, P); uHat(c, 'gog', side, P);
+    c.save(); c.translate(46, 33); c.rotate(0.25);
+    for (let k = 0; k < 3; k++) { rrect(c, -5 + k * 3.4, -8, 3.6, 15, 1.4); fs(c, lg(c, 0, -8, 0, 7, [0, '#ff6a4a', 1, '#b81c14']), '#5a0a08', 1.1); }
+    c.fillStyle = '#3a2410'; c.fillRect(-5.5, -3.5, 11.5, 2.4);
+    c.strokeStyle = '#3a2410'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(0, -8); c.quadraticCurveTo(3, -13, 1, -16); c.stroke();
+    c.restore();
+    c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(255,220,120,.9)'; c.beginPath(); c.arc(50, 17.5, 2, 0, TAU); c.fill(); c.fillStyle = 'rgba(255,150,60,.5)'; c.beginPath(); c.arc(50, 17.5, 3.8, 0, TAU); c.fill(); c.globalCompositeOperation = 'source-over';
+    uArm(c, P, 42, 37);
+  },
+  magnet(c, side, P) {
+    // 磁暴師：長袍、方巾，舉著一塊大馬蹄磁鐵，兩個磁極之間電光閃閃
+    uShadow(c); uBody(c, P, 1);
+    uArm(c, P, 44, 30);
+    c.save(); c.translate(50, 16); c.rotate(-0.3);
+    c.lineCap = 'butt'; c.strokeStyle = '#3a0a0a'; c.lineWidth = 9; c.beginPath(); c.arc(0, 0, 8, 0, Math.PI); c.stroke();
+    c.strokeStyle = '#e8322a'; c.lineWidth = 6.4; c.beginPath(); c.arc(0, 0, 8, 0.05, Math.PI - 0.05); c.stroke();
+    rrect(c, 4.6, -7, 6.8, 7.4, 1); fs(c, '#dfe4ec', '#2a2e38', 1.2); rrect(c, -11.4, -7, 6.8, 7.4, 1); fs(c, '#dfe4ec', '#2a2e38', 1.2);
+    c.strokeStyle = '#8fd0ff'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(-8, -8); c.lineTo(-4, -12); c.lineTo(-1, -9); c.lineTo(3, -13); c.lineTo(8, -8); c.stroke();
+    c.restore(); c.lineCap = 'round';
+    uHead(c, side, P, 1); uHat(c, 'sage', side, P);
+  },
+  wind(c, side, P) {
+    // 風術士：長袍、尖帽，手持一把大摺扇，身邊兩道旋風
+    uShadow(c); uBody(c, P, 1);
+    c.strokeStyle = 'rgba(190,255,220,.75)'; c.lineWidth = 1.8;
+    for (let k = 0; k < 2; k++) { c.beginPath(); c.ellipse(52, 42 - k * 9, 8 - k * 2, 2.6, -0.15, 0.2, TAU - 0.9); c.stroke(); }
+    uArm(c, P, 44, 33);
+    c.save(); c.translate(48, 26); c.rotate(-0.45);
+    c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, 15, -1.25, 0.3); c.closePath(); fs(c, lg(c, 0, -15, 0, 6, [0, '#f4fff8', 1, '#7ad8a4']), '#1e5a3a', 1.5);
+    c.strokeStyle = 'rgba(30,90,58,.7)'; c.lineWidth = 1; for (let k = 1; k < 6; k++) { const a = -1.25 + k * 0.258; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * 15, Math.sin(a) * 15); c.stroke(); }
+    c.restore();
+    uHead(c, side, P, 1); uHat(c, 'wiz', side, P);
+  },
+  acid(c, side, P) {
+    // 酸液兵：戴防毒面具，舉著一瓶冒泡的綠色酸液
+    uShadow(c); uLegs(c, P); uBody(c, P); uArm(c, P, 21, 38);
+    uHead(c, side, P);
+    ell(c, 36, 23, 4.4, 4.4); fs(c, lg(c, 0, 19, 0, 27, [0, '#8a8f9c', 1, '#3a3f4a']), '#14161c', 1.4); c.fillStyle = '#1a1c22'; for (let k = -1; k <= 1; k++) c.fillRect(34.4 + k * 1.6, 21.5, 0.9, 3);
+    c.strokeStyle = P.ink; c.lineWidth = 4.6; c.beginPath(); c.moveTo(42, 34); c.lineTo(46, 25); c.stroke();
+    c.strokeStyle = P.limb; c.lineWidth = 2.6; c.beginPath(); c.moveTo(42, 34); c.lineTo(46, 25); c.stroke();
+    c.beginPath(); c.moveTo(45, 8); c.lineTo(45, 12); c.quadraticCurveTo(38, 15, 38.5, 21); c.quadraticCurveTo(39, 27, 47, 27); c.quadraticCurveTo(55, 27, 55.5, 21); c.quadraticCurveTo(56, 15, 49, 12); c.lineTo(49, 8); c.closePath();
+    fs(c, 'rgba(220,255,230,.35)', '#1e3a28', 1.5);
+    c.beginPath(); c.moveTo(39.2, 19); c.quadraticCurveTo(47, 17, 54.8, 19); c.quadraticCurveTo(55, 26.5, 47, 26.5); c.quadraticCurveTo(39, 26.5, 39.2, 19); c.closePath(); c.fillStyle = '#7ce83a'; c.fill();
+    c.fillStyle = '#d8ffb0'; for (const [bx, by, br] of [[44, 22, 1.3], [50, 23.5, 1], [47, 20, 0.8], [47, 4, 1.4], [50, 0.5, 1]]) { c.beginPath(); c.arc(bx, by, br, 0, TAU); c.fill(); }
+    rrect(c, 44, 6.5, 6, 3, 1); fs(c, '#6b4424', '#2a1608', 1);
+  },
+  sniper(c, side, P) {
+    // 狙擊手：壓低的帽子，一支很長、上面架著瞄準鏡的長槍
+    uShadow(c); uLegs(c, P); uBody(c, P); uArm(c, P, 23, 37);
+    uHead(c, side, P, 1);
+    c.beginPath(); c.moveTo(20.5, 15); c.quadraticCurveTo(22, 6, 32, 6.5); c.quadraticCurveTo(41, 7, 43, 13); c.lineTo(48, 14.5); c.lineTo(43, 16); c.closePath(); fs(c, side ? '#4a2a1c' : '#2a3a2a', P.ink, 1.6);
+    c.save(); c.translate(36, 31); c.rotate(-0.12);
+    rrect(c, -14, -2.2, 18, 6.4, 2); fs(c, '#8a5a30', '#3c2410', 1.4);
+    rrect(c, 2, -1.4, 26, 3, 1); fs(c, '#4a4e58', '#16181e', 1.2);
+    rrect(c, 4, -6.5, 11, 3.6, 1.6); fs(c, '#2a2e38', '#0a0b0e', 1.1); c.fillStyle = '#8fd0ff'; c.fillRect(13.5, -6, 1.6, 2.6);
+    c.restore();
+    uArm(c, P, 40, 33);
+  },
+  eng(c, side, P) {
+    // 工兵：黃色安全帽，高舉一把大鐵鎚，腰上掛著扳手
+    uShadow(c); uLegs(c, P); uBody(c, P); uArm(c, P, 21, 38);
+    uHead(c, side, P, 1);
+    c.beginPath(); c.moveTo(20, 16.5); c.quadraticCurveTo(20.5, 5, 32, 5); c.quadraticCurveTo(43.5, 5, 44, 16.5); c.closePath(); fs(c, lg(c, 0, 5, 0, 17, [0, '#ffe36a', 1, '#e0a018']), '#5a3a06', 1.6);
+    rrect(c, 18, 15, 28, 3, 1.4); fs(c, '#f0b82a', '#5a3a06', 1.2); c.fillStyle = '#5a3a06'; c.fillRect(31, 5.5, 2, 10);
+    c.strokeStyle = '#7a8090'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(24, 44); c.lineTo(28, 52); c.stroke(); ell(c, 23.5, 43, 2.4, 2.4); fs(c, 'rgba(0,0,0,0)', '#7a8090', 1.8);
+    c.strokeStyle = P.ink; c.lineWidth = 4.6; c.beginPath(); c.moveTo(42, 33); c.lineTo(47, 22); c.stroke();
+    c.strokeStyle = P.limb; c.lineWidth = 2.6; c.beginPath(); c.moveTo(42, 33); c.lineTo(47, 22); c.stroke();
+    c.strokeStyle = '#7a4a1c'; c.lineWidth = 2.8; c.beginPath(); c.moveTo(46, 26); c.lineTo(52, 8); c.stroke();
+    c.save(); c.translate(52, 8); c.rotate(-0.33); rrect(c, -6, -3.6, 12, 7.2, 1.6); fs(c, lg(c, 0, -3.6, 0, 3.6, [0, '#c8ccd6', 1, '#5a5f6a']), '#1a1c22', 1.4); c.restore();
+    uArm(c, P, 47, 22);
   }
 };
 const USPR = {};     // 'side:type' → { cv, wh (白色剪影，受擊閃白用), px, w, h, ax, ay (腳底), cy (身體中心) }
@@ -556,12 +670,57 @@ const SHOT_ART = {
   lava(c) {
     poly(c, [8, 3, 16, 0.8, 24, 4, 26.5, 10, 20, 15, 11, 14, 6, 9]); fs(c, rg(c, 15, 7, 1, 11, [0, '#ffe68a', 0.4, '#ff7a1e', 1, '#5a1608']), '#2a0a04', 1.2);
     c.fillStyle = 'rgba(40,10,4,.65)'; poly(c, [10, 5, 15, 3.5, 14, 8]); c.fill(); poly(c, [18, 10, 23, 8, 21, 13]); c.fill();
+  },
+  // ---- 第三篇 ----
+  chain(c) {          // 兩顆鐵球連著鐵鍊（飛的時候整個轉）
+    c.strokeStyle = '#4a505c'; c.lineWidth = 1.6; c.setLineDash([1.8, 1.2]); c.beginPath(); c.moveTo(7, 8); c.lineTo(25, 8); c.stroke(); c.setLineDash([]);
+    for (const x of [6, 26]) { ell(c, x, 8, 5, 5); fs(c, rg(c, x - 1.6, 6.4, 0.5, 5.5, [0, '#c0c8d4', 0.5, '#4a505c', 1, '#14161c']), '#07080b', 1.1); }
+  },
+  drill(c, side) {          // 鑽頭：橘色的尾巴、銀色的螺旋錐頭
+    rrect(c, 2, 4, 12, 8, 2.4); fs(c, lg(c, 0, 4, 0, 12, [0, '#ffb86a', 1, '#c4621c']), INK, 1.1);
+    c.fillStyle = side ? '#ee3b30' : '#3d86ff'; c.fillRect(4, 4, 2.4, 8);
+    poly(c, [13, 3, 31, 8, 13, 13]); fs(c, lg(c, 13, 3, 13, 13, [0, '#f2f4f8', 0.5, '#9aa2b0', 1, '#5a6070']), '#2a2e38', 1.1);
+    c.strokeStyle = '#3a3e48'; c.lineWidth = 0.9; for (let k = 0; k < 3; k++) { c.beginPath(); c.moveTo(15 + k * 5, 3.8 + k * 1.3); c.lineTo(18 + k * 5, 12.2 - k * 1.3); c.stroke(); }
+  },
+  cluster(c) {          // 母彈：圓圓的、表面一圈小炸彈
+    ell(c, 16, 8, 7.4, 7.4); fs(c, rg(c, 13.5, 5.5, 0.5, 8, [0, '#9ab07a', 0.5, '#4a5a30', 1, '#1a2210']), '#0e1408', 1.2);
+    c.fillStyle = '#ffd34a'; for (const [x, y] of [[13, 5], [18, 4.5], [20.5, 9], [16, 11.5], [11.5, 9.5], [16, 8]]) { c.beginPath(); c.arc(x, y, 1.15, 0, TAU); c.fill(); }
+  },
+  bomblet(c, side) {
+    ell(c, 16, 8, 6.5, 6.5); fs(c, rg(c, 13.5, 5.5, 0.5, 7, [0, '#7a7f8c', 0.5, '#2a2e38', 1, '#0e1014']), '#07080b', 1.1);
+    c.fillStyle = side ? '#ee3b30' : '#ffd34a'; c.fillRect(9.5, 7, 13, 2);
+  },
+  sticky(c) {          // 一捆紅色炸藥，引信冒火花
+    for (let k = 0; k < 3; k++) { rrect(c, 6, 2.6 + k * 3.6, 18, 3.6, 1.4); fs(c, lg(c, 0, 2.6 + k * 3.6, 0, 6.2 + k * 3.6, [0, '#ff6a4a', 1, '#b81c14']), '#5a0a08', 0.9); }
+    c.fillStyle = '#3a2410'; c.fillRect(13, 2, 2.4, 12);
+    c.strokeStyle = '#3a2410'; c.lineWidth = 1; c.beginPath(); c.moveTo(6, 8); c.quadraticCurveTo(2, 6, 1.5, 3); c.stroke();
+    c.fillStyle = '#ffe9a0'; c.beginPath(); c.arc(1.5, 2.8, 1.4, 0, TAU); c.fill();
+  },
+  magnet(c) {          // 一顆藍白的磁暴彈，外面繞一圈電光
+    ell(c, 16, 8, 6.4, 6.4); fs(c, rg(c, 14.5, 6.5, 0.5, 7, [0, '#ffffff', 0.45, '#8fd0ff', 1, '#2a5ab8']), '#14306a', 1.1);
+    c.strokeStyle = '#e8322a'; c.lineWidth = 2.2; c.beginPath(); c.arc(16, 8, 3.4, 0.4, Math.PI - 0.4); c.stroke();
+    c.strokeStyle = 'rgba(200,236,255,.9)'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(6, 4); c.lineTo(9, 7); c.lineTo(7, 9); c.lineTo(10, 12); c.stroke();
+  },
+  wind(c) {          // 一團旋轉的綠白風球
+    ell(c, 16, 8, 6.4, 6.4); fs(c, rg(c, 15, 7, 0.5, 7, [0, '#ffffff', 0.5, '#c4ffe0', 1, '#5ac08a']), '#1e5a3a', 1);
+    c.strokeStyle = '#1e5a3a'; c.lineWidth = 1.1; c.beginPath(); c.arc(16, 8, 3.6, 0.3, 4.2); c.stroke(); c.beginPath(); c.arc(16, 8, 1.6, 2.2, 6); c.stroke();
+    c.strokeStyle = 'rgba(200,255,225,.8)'; c.beginPath(); c.moveTo(2, 5); c.lineTo(8, 5); c.moveTo(1, 9); c.lineTo(8, 9); c.moveTo(3, 12.5); c.lineTo(9, 12.5); c.stroke();
+  },
+  acid(c) {          // 一團冒泡的綠色酸液
+    c.beginPath(); c.moveTo(4, 8); c.quadraticCurveTo(8, 2, 17, 2.4); c.quadraticCurveTo(26, 2.8, 27, 8); c.quadraticCurveTo(26, 13.5, 17, 13.6); c.quadraticCurveTo(8, 14, 4, 8); c.closePath();
+    fs(c, rg(c, 18, 6, 0.5, 11, [0, '#e8ffb0', 0.4, '#7ce83a', 1, '#2a7a10']), '#1a4a08', 1.1);
+    c.fillStyle = 'rgba(240,255,210,.9)'; for (const [x, y, r] of [[20, 5.5, 1.4], [14, 9.5, 1], [23, 9, 0.8]]) { c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); }
+  },
+  snipe(c) {          // 細長的銅彈頭
+    c.strokeStyle = 'rgba(255,240,200,.7)'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(1, 8); c.lineTo(14, 8); c.stroke();
+    rrect(c, 12, 5.6, 12, 4.8, 1.6); fs(c, lg(c, 0, 5.6, 0, 10.4, [0, '#ffe08a', 1, '#b8801c']), '#4a3006', 1);
+    poly(c, [23, 5.6, 31, 8, 23, 10.4]); fs(c, '#d8a040', '#4a3006', 1);
   }
 };
 SHOT_ART.keg = SHOT_ART.bomb; SHOT_ART.doom = SHOT_ART.dark;
 const SSPR = {};     // 'id:side' → { cv, w, h }
 function shotSprite(wi, side) {
-  const w = WL[wi], key = w.id + ':' + side, sc = (w.id === 'bolt' ? 0.22 : w.id === 'bomb' || w.id === 'lava' || w.id === 'drop' ? 0.34 : 0.27) * V.T / 16 * 3.4;
+  const w = WL[wi], key = w.id + ':' + side, sc = (w.id === 'bolt' || w.id === 'snipe' ? 0.22 : w.id === 'bomblet' ? 0.18 : w.id === 'bomb' || w.id === 'lava' || w.id === 'drop' || w.id === 'chain' ? 0.34 : w.id === 'cluster' || w.id === 'drill' || w.id === 'sticky' ? 0.31 : 0.27) * V.T / 16 * 3.4;
   const pw = Math.max(8, Math.round(32 * sc)), ph = Math.max(4, Math.round(16 * sc));
   let s = SSPR[key]; if (s && s.w === pw) return s;
   const cv = mkCanvas(pw, ph), c = cv.getContext('2d'); c.scale(pw / 32, ph / 16); c.lineJoin = 'round'; c.lineCap = 'round';

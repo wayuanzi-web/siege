@@ -2,6 +2,7 @@
    Node 那邊的測試只載模擬的部分，畫面那一半（70-render / 55-fx / 80-ui / 85-main）裡少見的分支只有這裡跑得到。
 
    python3 test/rsoak.py [每關幾局=2] [關卡清單=1,2,3,4,5,6] [--monkey] [--size=844x390]
+     關卡清單裡寫 p0–p11 是演武場的戰場（雙方的兵每一局隨機挑、誤傷七成開著）
      預設：我方交給自動玩家（casual / newbie / expert 輪流），一路打到結算畫面，再按「下一關／再來一次」
      --monkey：我方不用自動玩家，改成亂拖亂按（瞄準拖曳、發射鈕、兩個技能、暫停再繼續、開關設定）
 
@@ -14,7 +15,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 args = [a for a in sys.argv[1:] if not a.startswith('--')]
 opts = dict(a[2:].split('=', 1) if '=' in a else (a[2:], '1') for a in sys.argv[1:] if a.startswith('--'))
 GAMES = int(args[0]) if args else 2
-LEVELS = [int(x) for x in (args[1] if len(args) > 1 else '1,2,3,4,5,6,7,8,9,10,11,12').split(',')]
+LEVELS = [x if x.startswith('p') else int(x) for x in (args[1] if len(args) > 1 else '1,2,3,4,5,6,7,8,9,10,11,12').split(',')]
 W, H = [int(x) for x in opts.get('size', '844x390').split('x')]
 MONKEY = 'monkey' in opts
 PAGE = opts.get('page', str(ROOT / 'src/dist/index.html'))
@@ -37,7 +38,15 @@ async ([lvl, bot, seed, monkey, maxSec]) => {
   const q = window.__qp, S = q.S, G = q.G, $ = (id) => document.getElementById(id);
   window.__hold = true;
   let s = seed; const rnd = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
-  q.SV.open = 12; q.SV.seen = true; q.UI.sel = lvl - 1;
+  q.SV.open = 12; q.SV.seen = true;
+  const prac = typeof lvl === 'string' && lvl[0] === 'p';
+  if (prac) {
+    // 演武場：雙方各挑六個兵（十八種隨機），戰場照清單
+    const U = ['rocket', 'bolt', 'bomb', 'fire', 'ice', 'zap', 'flak', 'bal', 'stone', 'chain', 'drill', 'cluster', 'sapper', 'magnet', 'wind', 'acid', 'sniper', 'eng'];
+    const crew = () => Array.from({ length: 6 }, () => U[(rnd() * U.length) | 0]);
+    q.SV.prac = { map: +lvl.slice(1) || 0, me: crew(), foe: crew(), ff: rnd() < 0.7 ? 1 : 0 };
+    q.UI.prac = true; q.UI.chap = 2; q.UI.sel = 0;
+  } else { q.UI.prac = false; q.UI.sel = lvl - 1; }
   if (G.mode !== 'home') q.goHome();
   $('btnGo').click();
   if (!monkey) q.aiInit(S.team[0], q.BOTS[bot], { aiErr: 1 });
@@ -68,7 +77,7 @@ async ([lvl, bot, seed, monkey, maxSec]) => {
     if (frames % 240 === 0) await new Promise((res) => setTimeout(res, 0));       // 讓版面、計時器有機會跑
   }
   rounds = S.round;
-  const out = { lvl, bot: monkey ? 'monkey' : bot, state: S.state, mode: G.mode, rounds, sec: +(frames / 60).toFixed(0), fired, paused, skills,
+  const out = { lvl, bot: monkey ? 'monkey' : bot, state: S.state, mode: G.mode, rounds, sec: +(frames / 60).toFixed(0), fired, paused, skills, crew: prac ? q.SV.prac.me.join(',') + ' vs ' + q.SV.prac.foe.join(',') + (q.SV.prac.ff ? ' ff' : '') : undefined,
     result: !$('result').hidden, title: ($('resTitle') || {}).textContent || '', low: !!q.FX.low };
   // 結算畫面：等按鈕解鎖再按
   if (G.mode === 'result') {

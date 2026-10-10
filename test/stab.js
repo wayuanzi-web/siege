@@ -1,9 +1,12 @@
 // node test/stab.js：每一張城樓藍圖疊起來穩不穩。把所有磚叫醒跑（最多 20 秒），看有沒有東西移位、多久全部靜止。
-const G = require('./load')();
+const G = require('./load')('practiceLevel, PRACTICE_BASE');
 const { S, PH, LEVELS, simInit, physStep, CS } = G;
 let bad = 0;
-for (let li = 0; li < LEVELS.length; li++) {
-  simInit(li, {}, 1, 1, null);
+// 十二關，再加上演武場的演武城（六個兵）
+const PR = G.practiceLevel(0, G.PRACTICE_BASE.me.crew, G.PRACTICE_BASE.foe.crew, 1);
+for (let li = 0; li <= LEVELS.length; li++) {
+  const lv = li < LEVELS.length ? LEVELS[li] : PR;
+  simInit(li < LEVELS.length ? li : PR, {}, 1, 1, null);
   S.phase = 'idle-test';
   const rec = [];
   for (const b of S.blocks) { b.body.setAwake(true); rec.push({ o: b, x: b.x0, y: b.y0 }); }
@@ -23,7 +26,7 @@ for (let li = 0; li < LEVELS.length; li++) {
     if (r.o.kind === 'ball' ? d > 2.6 : (d > 0.35 || a > 0.03)) out.push(`${r.unit ? 'UNIT ' + r.o.type + '#' + r.o.slot : 'block mat' + r.o.mat + ' @cell(' + r.o.cx + ',' + r.o.cy + ') ' + r.o.cw + 'x' + r.o.ch} side${r.o.side} 移了 ${d.toFixed(2)}，轉了 ${a.toFixed(3)}`);
   }
   const ok = out.length === 0 && slept > 0; if (!ok) bad++;
-  console.log(`L${li + 1} ${LEVELS[li].name}  磚 ${S.blocks.length} 兵 ${S.units.length}  ${slept > 0 ? slept.toFixed(2) + ' 秒後全部靜止' : '20 秒後還在動'}  每步 ${(tot / n).toFixed(2)}ms（最久 ${worst.toFixed(1)}）  ${ok ? '穩' : '不穩：'}`);
+  console.log(`${li < LEVELS.length ? 'L' + (li + 1) : '演武'} ${lv.name}  磚 ${S.blocks.length} 兵 ${S.units.length}  ${slept > 0 ? slept.toFixed(2) + ' 秒後全部靜止' : '20 秒後還在動'}  每步 ${(tot / n).toFixed(2)}ms（最久 ${worst.toFixed(1)}）  ${ok ? '穩' : '不穩：'}`);
   for (const o of out.slice(0, 12)) console.log('    ' + o);
 }
 process.exit(bad ? 1 : 0);

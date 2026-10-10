@@ -1,7 +1,8 @@
 /* ===== 80-ui: 存檔、主畫面、強化、設定、結算、戰鬥中的資訊列 ===== */
 const $ = (id) => document.getElementById(id);
 const SAVE_KEY = 'qianpao-pocheng-1';
-const SV = { coins: 0, stars: LEVELS.map(() => 0), open: 1, up: { dmg: 0, aim: 0, hp: 0, shield: 0, ult: 0 }, sfx: true, mus: true, vib: true, seen: false, seenUlt: false, seenSh: false, diff: 1, flip: false };
+const SV = { coins: 0, stars: LEVELS.map(() => 0), open: 1, up: { dmg: 0, aim: 0, hp: 0, shield: 0, ult: 0 }, sfx: true, mus: true, vib: true, seen: false, seenUlt: false, seenSh: false, diff: 1, flip: false,
+  prac: { map: 0, me: PRACTICE_BASE.me.crew.slice(), foe: PRACTICE_BASE.foe.crew.slice(), ff: 1 } };          // prac：演武場上次挑的戰場、兵、誤傷開關
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -17,6 +18,11 @@ function loadSave() {
       if (s.up && typeof s.up === 'object') { for (const k in SV.up) SV.up[k] = int(s.up[k], 0, 5); if (s.up.aim === undefined && s.up.rate) SV.up.aim = int(s.up.rate, 0, 5); }      // 舊版的「裝填」改成「準星」
       SV.sfx = s.sfx !== false; SV.mus = s.mus !== false; SV.vib = s.vib !== false; SV.seen = !!s.seen; SV.seenUlt = !!s.seenUlt; SV.seenSh = !!s.seenSh; SV.flip = !!s.flip;
       SV.diff = s.diff === 0 || s.diff === 2 ? s.diff : 1;
+      if (s.prac && typeof s.prac === 'object') {
+        const ok = (a) => Array.isArray(a) && a.length === 6 && a.every((t) => UNIT_LIST.indexOf(t) >= 0);
+        SV.prac.map = int(s.prac.map, 0, PRACTICE_MAPS - 1); SV.prac.ff = s.prac.ff ? 1 : 0;
+        if (ok(s.prac.me)) SV.prac.me = s.prac.me.slice(); if (ok(s.prac.foe)) SV.prac.foe = s.prac.foe.slice();
+      }
       // 從第一關起一路過了幾關（存檔裡的「解鎖到第幾關」壞了也救得回來；舊存檔搬過去的魔王城星星不算，不會一口氣解鎖整個第二篇）
       let top = 0; while (top < LEVELS.length && SV.stars[top] > 0) top++;
       SV.open = clamp(Math.max(SV.open, top + 1), 1, LEVELS.length);
@@ -34,9 +40,13 @@ const UPS = [
 ];
 const UP_COST = [80, 150, 240, 360, 520];
 const NUM_ZH = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
-const UI = { sel: 0, chap: 0, wipeArm: 0, resRun: 0, resAt: -1e9 };
+const UI = { sel: 0, chap: 0, wipeArm: 0, resRun: 0, resAt: -1e9, prac: false, pickSlot: null };          // prac：選的是第三篇的演武場；pickSlot：換兵的軍牌是哪一個頭像打開的
 const CHAP = 6;                                          // 一篇幾關
-const CHAPS = ['第一篇', '第二篇'];
+const CHAPS = ['第一篇', '第二篇', '第三篇'];
+// 演武場這一局的關卡（照存檔裡挑好的戰場、兵、誤傷開關）
+function pracLevel() { const P = SV.prac; return practiceLevel(P.map, P.me, P.foe, P.ff); }
+// 主畫面背景的示範戰局：選到哪一關就演那一關（演武場：照挑好的兵）
+function homeDemo() { if (typeof demoStart === 'function') demoStart(UI.prac ? pracLevel() : UI.sel); }
 function numZh(n) { return n <= 10 ? NUM_ZH[n - 1] : n < 20 ? '十' + NUM_ZH[n - 11] : n % 10 === 0 ? NUM_ZH[n / 10 - 1] + '十' : NUM_ZH[((n / 10) | 0) - 1] + '十' + NUM_ZH[n % 10 - 1]; }
 
 function replay(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
@@ -95,27 +105,27 @@ function starsHtml(n) { return '<em>' + '★'.repeat(n) + '</em>' + '★'.repeat
 // 換一篇：選那一篇裡打到的最後一關（還沒解鎖就選那一篇的第一關）
 function chapGo(k) {
   if (UI.chap === k) return;
-  sfx('click'); UI.chap = k;
-  const a = k * CHAP, b = Math.min(LEVELS.length, a + CHAP);
-  UI.sel = clamp(SV.open - 1, a, b - 1);
-  homeRender(); if (typeof demoStart === 'function') demoStart(UI.sel);
+  sfx('click'); UI.chap = k; UI.prac = k * CHAP >= LEVELS.length;          // 第三篇：第十三到十八關還在做，先放演武場
+  if (!UI.prac) { const a = k * CHAP, b = Math.min(LEVELS.length, a + CHAP); UI.sel = clamp(SV.open - 1, a, b - 1); }
+  homeRender(); homeDemo();
 }
 function homeRender() {
   const box = $('lvls'); box.textContent = '';
-  UI.chap = Math.floor(UI.sel / CHAP);
+  if (!UI.prac) UI.chap = Math.floor(UI.sel / CHAP);
   // 兩篇各一個分頁：一次只列一篇的六關（十二關排成一長條放不下）
   const tabs = $('chaps'); tabs.textContent = '';
   CHAPS.forEach((nm, k) => {
-    if (k * CHAP >= LEVELS.length) return;
-    const t = document.createElement('button'), lock = k * CHAP >= SV.open;
+    const t = document.createElement('button'), lock = k * CHAP >= SV.open && k * CHAP < LEVELS.length;          // 第三篇的演武場一直都能進
     t.className = 'chap chamfer' + (lock ? ' locked' : ''); t.setAttribute('role', 'tab'); t.setAttribute('aria-selected', String(k === UI.chap));
-    t.innerHTML = '<span>' + nm + '</span><small>' + (k * CHAP + 1) + '–' + Math.min(LEVELS.length, (k + 1) * CHAP) + '</small>';
+    t.innerHTML = '<span>' + nm + '</span><small>' + (k * CHAP + 1) + '–' + (k + 1) * CHAP + '</small>';
     t.tabIndex = k === UI.chap ? 0 : -1;
     onTap(t, () => { chapGo(k); const nt = $('chaps').children[k]; if (nt) nt.focus({ preventScroll: true }); });
     // 方向鍵換篇（分頁的慣例）
-    t.addEventListener('keydown', (e) => { if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; e.preventDefault(); const n = Math.ceil(LEVELS.length / CHAP), k2 = (k + (e.key === 'ArrowRight' ? 1 : n - 1)) % n; chapGo(k2); const nt = $('chaps').children[k2]; if (nt) nt.focus({ preventScroll: true }); });
+    t.addEventListener('keydown', (e) => { if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; e.preventDefault(); const n = CHAPS.length, k2 = (k + (e.key === 'ArrowRight' ? 1 : n - 1)) % n; chapGo(k2); const nt = $('chaps').children[k2]; if (nt) nt.focus({ preventScroll: true }); });
     tabs.appendChild(t);
   });
+  $('liPrac').hidden = !UI.prac; $('home').classList.toggle('pmode', UI.prac);
+  if (UI.prac) { pracRender(box); return; }
   LEVELS.forEach((lv, i) => {
     if (Math.floor(i / CHAP) !== UI.chap) return;
     const b = document.createElement('button'), locked = i >= SV.open;
@@ -142,7 +152,7 @@ function homeRender() {
     const p = document.createElement('p'); p.className = 'sizer'; p.setAttribute('aria-hidden', 'true'); p.textContent = t; tb.appendChild(p);
   }
   // 這一關雙方派誰上場：一排頭像，點一下看那個兵會什麼（再點一下回到關卡說明）
-  const cr = $('liCrew'); cr.textContent = ''; let picked = null;
+  const cr = $('liCrew'); cr.textContent = ''; cr.classList.remove('prac6'); let picked = null;
   [[0, lv.me.crew, '我方'], [1, lv.foe.crew, '敵軍']].forEach(([sd, crew, label]) => {
     const row = document.createElement('div'); row.className = 'grp ' + (sd ? 'foe' : 'me');
     const lb = document.createElement('small'); lb.textContent = label; row.appendChild(lb);
@@ -161,6 +171,55 @@ function homeRender() {
   });
   $('btnGo').disabled = locked;
   $('homeCoins').textContent = fmt(SV.coins);
+}
+/* ---------- 演武場（第三篇的分頁）：挑戰場、挑兵、誤傷開關 ---------- */
+function pracRender(box) {
+  const P = SV.prac, base = P.map > 0 ? LEVELS[P.map - 1] : PRACTICE_BASE, n = practiceSlots(P.map);
+  const b = document.createElement('button'); b.className = 'lv chamfer'; b.setAttribute('role', 'option'); b.setAttribute('aria-selected', 'true'); b.setAttribute('aria-label', '演武場');
+  b.innerHTML = '<b>演</b><strong>演武場</strong><span class="stars">試打</span>'; box.appendChild(b);
+  const soon = document.createElement('div'); soon.className = 'lv chamfer locked had'; soon.setAttribute('aria-hidden', 'true');
+  soon.innerHTML = '<b>13</b><strong>十三到十八關製作中</strong><span class="stars"></span>'; box.appendChild(soon);
+  $('liName').textContent = '演武場'; $('liTag').textContent = PRACTICE_BASE.tag;
+  const tip = $('liTip'), tipTxt = '十八種兵任你挑（點頭像換人），戰場換得到第一到十一關的城。第三篇的規則：' + (P.ff ? '自己的砲炸到自己人一樣會傷；' : '誤傷現在關著；') + '打中接點、核心、兵的頭是暴擊 ×2。';
+  tip.textContent = tipTxt; tip.classList.remove('blurb');
+  const tb = $('liTipBox'); tb.querySelectorAll('.sizer').forEach((e) => e.remove());
+  for (const t of [tipTxt].concat(UNIT_LIST.map((k) => UNIT[k].name + '：' + UNIT[k].blurb + '。'))) { const p = document.createElement('p'); p.className = 'sizer'; p.setAttribute('aria-hidden', 'true'); p.textContent = t; tb.appendChild(p); }
+  $('pMap').textContent = P.map > 0 ? '第' + numZh(P.map) + '關・' + base.name : '演武城（六兵）';
+  $('pFF').setAttribute('aria-pressed', String(!!P.ff)); $('pFF').textContent = P.ff ? '誤傷：開' : '誤傷：關';
+  const cr = $('liCrew'); cr.textContent = ''; cr.classList.add('prac6');
+  [[0, P.me, '我方'], [1, P.foe, '敵軍']].forEach(([sd, crew, label]) => {
+    const row = document.createElement('div'); row.className = 'grp ' + (sd ? 'foe' : 'me');
+    const lb = document.createElement('small'); lb.textContent = label; row.appendChild(lb);
+    for (let k = 0; k < n; k++) {
+      const type = crew[k], def = UNIT[type], bt = document.createElement('button'); bt.className = 'cu'; bt.dataset.slot = sd + ':' + k; bt.setAttribute('aria-label', label + '第' + numZh(k + 1) + '個：' + def.name + '（點一下換人）');
+      bt.appendChild(unitPortrait(type, sd));
+      onTap(bt, () => { sfx('click'); pickOpen(sd, k); });
+      row.appendChild(bt);
+    }
+    cr.appendChild(row);
+  });
+  $('btnGo').disabled = false;
+  $('homeCoins').textContent = fmt(SV.coins);
+}
+// 換人：十八種兵排成一格一格，點一個就換上去。關掉（選好、返回、Esc）之後焦點回到剛才點的那個頭像
+function pickBack() {
+  const sl = UI.pickSlot; if (!sl) return; UI.pickSlot = null;
+  // 等視窗的 inert 解開（MutationObserver 在這之後才跑）再把焦點放回去
+  setTimeout(() => { const b = document.querySelector('#liCrew .cu[data-slot="' + sl + '"]'); if (b && G.kbNav && !$('home').inert) b.focus({ preventScroll: true }); }, 0);
+}
+function pickOpen(sd, k) {
+  const P = SV.prac, crew = sd ? P.foe : P.me, grid = $('pickGrid'); grid.textContent = ''; UI.pickSlot = sd + ':' + k;
+  $('pickTitle').textContent = (sd ? '敵軍' : '我方') + '第' + numZh(k + 1) + '個兵'; $('pickSub').textContent = '現在是' + UNIT[crew[k]].name + '。點一個換上去';
+  $('pickTip').textContent = UNIT[crew[k]].name + '：' + UNIT[crew[k]].blurb + '。';
+  UNIT_LIST.forEach((type, i) => {
+    const def = UNIT[type], b = document.createElement('button'); b.className = 'chamfer' + (i >= 9 ? ' new' : ''); b.setAttribute('aria-pressed', String(type === crew[k])); b.setAttribute('aria-label', def.name + '：' + def.blurb);
+    b.appendChild(unitPortrait(type, sd)); const nm = document.createElement('span'); nm.textContent = def.name; b.appendChild(nm);
+    b.addEventListener('pointerenter', () => { $('pickTip').textContent = def.name + '：' + def.blurb + '。'; });
+    onTap(b, () => { sfx('click'); crew[k] = type; save(); $('pick').hidden = true; homeRender(); homeDemo(); pickBack(); });
+    grid.appendChild(b);
+  });
+  $('pick').hidden = false;
+  setTimeout(() => { const cur = grid.querySelector('button[aria-pressed="true"]'); if (cur && !$('pick').hidden && G.kbNav) cur.focus({ preventScroll: true }); }, 0);          // 用鍵盤的：焦點放在現在這個兵上
 }
 function shopRender() {
   $('shopCoins').textContent = fmt(SV.coins);
@@ -217,20 +276,22 @@ const LOSE_TIPS_LV = [
   ['魔王每回合會先預告招式：暗黑連射、隕石雨開護罩擋（你的城塌了也會輸）；毀滅光球停在半空，打爆它會掉頭砸回他身上。', '敵城城腳正面的兩顆紫色魔晶：打碎它們，魔王不能回血、結界補不回來、也叫不回魔兵。', '第二階段的黑洞會把砲彈吸過去再甩出來：擦過它、穿過繞著它轉的聖光符，一發變三發（太靠近會被吞）。他放完暗黑連射、隕石雨會累，下一回合打他加倍。']
 ];
 function showResult(won, st) {
+  const prac = !!(S.lv && S.lv.practice);
   $('resTitle').textContent = won ? (st.idx === LEVELS.length - 1 ? '魔王伏誅' : '敵城攻破') : '城樓失守';
   $('resTitle').className = won ? '' : 'lose';
-  $('resSub').textContent = '第' + numZh(st.idx + 1) + '關 ' + LEVELS[st.idx].name;
-  const stars = $('resStars'); stars.hidden = !won;
+  $('resSub').textContent = prac ? S.lv.name + '（試打，不算星星）' : '第' + numZh(st.idx + 1) + '關 ' + LEVELS[st.idx].name;
+  const stars = $('resStars'); stars.hidden = !won || prac;
   const run = ++UI.resRun;
   [...stars.children].forEach((s, i) => { s.className = ''; if (won && i < st.stars) setTimeout(() => { if (UI.resRun === run && !$('result').hidden) { s.className = 'on'; sfx('star', i); } }, 350 + i * 320); });
   $('rsBar').textContent = Math.round(st.bar * 100) + '%'; $('rsRounds').textContent = String(st.rounds);
   $('rsChain').textContent = st.chain ? st.chain + ' 塊' : '—'; // 有倍增符、稜鏡的關：一發最多分成幾發；其他關：最強的一發放大到幾倍（滾地、打水漂、噴流、彈簧板…）
   if (st.swarm > 1) { $('rsSwarmT').textContent = '一發最多變成'; $('rsSwarm').textContent = fmt(st.swarm) + ' 發'; } else { $('rsSwarmT').textContent = '最強的一發'; $('rsSwarm').textContent = st.amp > 1.05 ? '×' + st.amp.toFixed(1) : '—'; }
-  $('rsCoins').textContent = '+' + fmt(st.coins);
-  const tip = $('resTip'), own = LOSE_TIPS_LV[st.idx] || [], tips = Math.random() < 0.7 && own.length ? own : LOSE_TIPS;      // 多半講這一關自己的訣竅
-  if (won) { tip.hidden = st.stars >= 3; if (st.stars < 3) tip.textContent = st.lost ? '三顆星：一個兵都不能倒，城防還要剩一半以上。' : '三顆星：城防要剩一半以上。'; }
+  $('rsCoins').textContent = '+' + fmt(st.coins); $('rsCoins').parentElement.hidden = prac;          // 演武場不給金幣：整行藏起來
+  const tip = $('resTip'), own = (!prac && LOSE_TIPS_LV[st.idx]) || [], tips = Math.random() < 0.7 && own.length ? own : LOSE_TIPS;      // 多半講這一關自己的訣竅
+  if (prac) { tip.hidden = false; tip.textContent = '演武場隨時都能再來：點主畫面上的頭像換兵、換戰場。'; }
+  else if (won) { tip.hidden = st.stars >= 3; if (st.stars < 3) tip.textContent = st.lost ? '三顆星：一個兵都不能倒，城防還要剩一半以上。' : '三顆星：城防要剩一半以上。'; }
   else { tip.hidden = false; tip.textContent = st.streak >= 3 && SV.diff > 0 && st.streak % 2 === 1 ? TIP_EASY : tips[(Math.random() * tips.length) | 0]; }        // 同一關連輸三場、五場…：提醒可以調難度
-  const next = won && st.idx < LEVELS.length - 1;
+  const next = won && !prac && st.idx < LEVELS.length - 1;
   $('btnNext').hidden = !next; $('resBtns').className = 'stack ' + (next ? 'three' : 'two');         // 沒有「下一關」的時候兩顆按鈕各佔一半
   $('btnAgain').firstChild.textContent = won ? '再玩一次' : '再戰';
   $('btnAgain').className = 'btn' + (next ? '' : ' btn-gold');
@@ -251,7 +312,7 @@ const HUD = { a: -1, b: -1, crew: [[], []], ult: -1, sh: -1, wind: 99, deg: -1, 
 const MILES = [[30, '彈如雨下'], [70, '百砲齊發'], [150, '遮天蔽日'], [300, '千砲破城']];
 function hudBuild() {
   for (let sd = 0; sd < 2; sd++) {
-    const box = $(sd ? 'crewB' : 'crewA'); box.textContent = ''; HUD.crew[sd] = [];
+    const box = $(sd ? 'crewB' : 'crewA'); box.textContent = ''; HUD.crew[sd] = []; box.classList.toggle('many', S.team[sd].units.length > 4);          // 六個兵：頭像小一號
     for (const u of S.team[sd].units) {
       const el = document.createElement('span'); el.className = 'cu'; el.title = u.def.name;
       el.appendChild(unitPortrait(u.type, sd)); box.appendChild(el); HUD.crew[sd].push({ el, u, st: '' });
