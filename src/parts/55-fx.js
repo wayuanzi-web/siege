@@ -50,7 +50,7 @@ function pop(x, y, txt, col, size, life) {
 /* 傷害數字：同一個目標短時間內又挨打（連弩一串、酸液一直蝕、一輪砲火炸在同一處），加在同一個數字上，不要跳一整排。
    key：同一個兵、同一處城牆；crit 暴擊的字大一號、金色 */
 function numPop(x, y, v, col, size, key, crit) {
-  for (const q of FX.nums) if (q.key === key && q.t < 0.55) { q.v += v; q.txt = String(Math.round(q.v)); if (q.t > 0.15) q.t = 0.15; q.crit = q.crit || crit; if (crit) q.size = size; q.x = (q.x + x) / 2; return; }
+  for (const q of FX.nums) if (q.key === key && q.t < 0.55) { q.v += v; q.txt = q.v >= 0.5 ? String(Math.round(q.v)) : ''; if (q.t > 0.15) q.t = 0.15; q.crit = q.crit || crit; if (crit) q.size = size; q.x = (q.x + x) / 2; return; }          // 加起來還不到半點：不跳「0」
   if (v < 0.5) { FX.nums.push({ x, y, v, txt: '', col, size, key, t: 0.05, max: 0.95, crit }); return; }
   if (FX.nums.length > 26) FX.nums.shift();
   FX.nums.push({ x: x + rndS() * 0.8, y, v, txt: String(Math.round(v)), col, size, key, t: 0, max: 0.95, crit });

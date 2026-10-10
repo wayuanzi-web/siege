@@ -37,6 +37,7 @@ const BOSS_SOFT = 0.35;     // 魔王跨過換階段門檻的那一輪，超過�
 const BASE_WT = 0;         // 城基的磚不算進城樓完整度（打不太動的地基；要垮的是上面的樓閣）
 const SPLIT_P = 0.6;       // 砲彈穿過倍增符後，每一發的威力打幾折：數量 ×n，總威力大約 ×n^(1-SPLIT_P)
 const SHOT_CAP = 520;      // 每一邊同時在天上的砲彈上限（超過就改成加重）
+const ROUND_CAP = 36;      // 打到第幾回合還分不出勝負（兩邊都打不動對方：例如演武場兩邊都是工兵、防空弩）：城防條低的那一邊輸（魔王關不算）
 function ev(t, a, b, c, d, e, f) { if (S.on) S.on(t, a, b, c, d, e, f); }
 
 /* ---------- 城樓：把藍圖變成一塊一塊的磚 ---------- */
@@ -1380,12 +1381,13 @@ function endCheck(settled) {
       if (bu.hp <= 0) killUnit(bu, 0, 1); else { bossPhase(bu); bossSay(BOSS_LINES.castle); }
     }
   }
-  const how = [0, 0];          // 1 守軍全倒、2 城破
+  const how = [0, 0];          // 1 守軍全倒、2 城破、3 久攻不下（回合到了上限，城防條低的輸）
   for (let s = 0; s < 2; s++) {
     const T = S.team[s];
     if (T.alive <= 0 || (s === 1 && S.boss && !(bossUnit() || {}).alive)) how[s] = 1;
     else if (settled && !(s === 1 && S.boss) && structBar(s) <= 0) how[s] = 2;
   }
+  if (!how[0] && !how[1] && settled && !S.boss && S.round > ROUND_CAP) how[structBar(1) < structBar(0) ? 1 : 0] = 3;
   if (!how[0] && !how[1]) return;
   const loser = how[1] ? 1 : 0, lose0 = !!how[0], lose1 = !!how[1];
   // 結算用的數字在這一刻就記下來（之後整座城炸開，數字會再變）

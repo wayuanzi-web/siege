@@ -144,7 +144,7 @@ function uiEvent(t, a, b, c, d, e) {
     case 'bossback': once('bback', '魔王摔下去又飛回來了，不過摔一次扣不少血'); break;
     case 'rockstop': if (c === 0) once('rstop', '護罩把落石擋下來了'); break;
     case 'sudden': banner('決戰時刻', 'red'); later(1900, () => say('拖太久了，雙方的砲火越來越猛', 1)); break;
-    case 'end': sayClear(); banner(c === 1 ? (S.lv.boss ? '魔王伏誅' : '敵城攻破') : '城樓失守', c === 1 ? 'gold' : 'red', d === 2 ? (c === 1 ? '敵城塌了，帥旗倒下' : '我方城樓塌了') : d ? (c === 1 ? '守軍全滅' : '我軍全滅') : ''); $('hint').hidden = true; break;
+    case 'end': sayClear(); banner(c === 1 ? (S.lv.boss ? '魔王伏誅' : '敵城攻破') : '城樓失守', c === 1 ? 'gold' : 'red', d === 3 ? (c === 1 ? '久攻不下：敵城塌得比較多' : '久攻不下：我方城樓塌得比較多') : d === 2 ? (c === 1 ? '敵城塌了，帥旗倒下' : '我方城樓塌了') : d ? (c === 1 ? '守軍全滅' : '我軍全滅') : ''); $('hint').hidden = true; break;
     case 'gate': if (e === 0 && G.tut >= 1 && G.tut <= 3 && !G.said.gt) { G.said.gt = 1; say('就是這樣！穿過倍增符，砲彈變多了'); } break;
     case 'gspawn': {
       // d 幾倍。高倍數的符只出現一回合：出現的那一刻才講（太早講，玩家找不到它在哪）

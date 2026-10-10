@@ -79,8 +79,8 @@ function chargeStep(o, dt) {
   }
   if (o.hp <= 0) return true;
   if (o.go && S.time >= o.go) {
-    const on = chargeOn(o);
-    if (on < 2 && on !== o.side && S.team[on].shield.on) { o.hp = 0; ev('defuse', o.x, o.y, on, 2); return true; }          // 對方開著護罩：罩住的炸藥悶熄，不會爆
+    const v = 1 - o.side, on = chargeOn(o);
+    if (o.side < 2 && S.team[v].shield.on && (on === v || inBubble(S.st[v], o.x, o.y))) { o.hp = 0; ev('defuse', o.x, o.y, v, 2); return true; }          // 對方開著護罩：罩住的炸藥（黏在城上的、掉在城腳的）悶熄，不會爆
     physExplode(o.x, o.y, WPN.sticky, o.side, o.mass, 0, o.host || null, 0, -1); return true;
   }
   return false;
@@ -294,7 +294,7 @@ function buildWall(u) {
     const x = (side === 0 ? st.x1 : st.x0) + dir * (1.8 + k * 1.7), gy = groundY(x);
     if ((dir > 0 ? x > MID - 3 : x < MID + 3) || gy < -100) continue;                         // 不過中線、不架在深淵上
     if (S.water && gy < S.water.y + 0.3) continue;                                               // 不架在水裡
-    if (foot > -100 && Math.abs(gy - foot) > 2.6) continue;                                       // 跟城腳差不多高的平地才架
+    if (foot > -100 && Math.abs(gy - foot) > 4) continue;                                         // 跟城腳差不多高的平地才架
     let flat = true; for (const q of [-0.5, -0.25, 0.25, 0.5]) if (Math.abs(groundY(x + q * w) - gy) > 0.14) flat = false;
     if (!flat) continue;                                                                          // 斜坡上架不穩（會倒）
     if (physQuery(x, gy + h / 2, h / 2 + 0.2).some((o) => (o.isBlock && !o.dead) || (o.isUnit && o.alive))) continue;
