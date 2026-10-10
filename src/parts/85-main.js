@@ -80,7 +80,7 @@ function resumeGame() { if (G.mode !== 'pause') return; G.mode = 'play'; $('opt'
 function finishLevel() {
   // 用分出勝負那一刻的城防（之後整座垮掉的演出不算）
   const won = S.state === 'won', idx = S.idx, bar = S.endBar[0], lost = S.stat.lost;
-  const stars = !won ? 0 : bar >= 0.6 && !lost ? 3 : bar >= 0.3 ? 2 : 1;
+  const stars = !won ? 0 : bar >= 0.5 && !lost ? 3 : bar >= 0.25 ? 2 : 1;          // 城防條是照城破門檻拉開的：剩一半，城的完整度大約還有六成五
   let coins = won ? 50 + 25 * idx + Math.round(bar * 30) + Math.max(0, stars - SV.stars[idx]) * 20 : 10 + Math.round((1 - S.endBar[1]) * 25);
   if (SV.diff === 2) coins = Math.round(coins * 1.25);
   if (won) { SV.stars[idx] = Math.max(SV.stars[idx], stars); SV.open = Math.max(SV.open, Math.min(LEVELS.length, idx + 2)); }

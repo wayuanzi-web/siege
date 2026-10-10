@@ -1,7 +1,7 @@
 // node test/outs.js <關卡 1-6> [場數=6]：每個「出局」的兵是怎麼出去的（死的那一刻的位置、速度；出事前一秒在哪）
 const G = require('./load')(); const { S, simInit, simStep, LEVELS, BOTS } = G;
 const li = +(process.argv[2] || 3) - 1, N = +(process.argv[3] || 6);
-const HOW = ['擊倒', '砸扁', '?', '燒', '摔出場', '出城'];
+const HOW = ['擊倒', '砸扁', '?', '燒', '摔出場', '出城', '轟飛', '被水沖走'];
 for (let sd = 0; sd < N; sd++) {
   simInit(li, {}, 9000 + sd * 7919 + li * 131, 1, { botA: BOTS.casual });
   const hist = new Map();

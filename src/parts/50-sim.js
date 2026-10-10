@@ -267,7 +267,7 @@ function hurtUnit(u, d, side, kind) {
   // 開場護符：第一回合，挨對方第一輪的兵只受幾成傷（雙方一樣：開場不會還沒打就先倒一個）
   if (side < 2 && side !== u.side && r1v(u.side)) d *= S.lv.foe.open * (kind === K_CRUSH ? 0.5 : 1);
   const boss = u.def.big && S.boss ? S.boss : null;
-  if (boss && boss.tired && side === 0) d *= 2;          // 破綻：他放完隕石雨累了，這一回合打他加倍
+  if (boss && boss.tired && side === 0) d *= 2;          // 破綻：他放完大招累了（暗黑連射、隕石雨、城塌了摔下來），這一回合打他加倍
   if (boss) {
     /* 魔王換階段：血一掉過門檻就馬上換（第二階段的結界當場張開）。跨過門檻的那一輪，超過的傷害只算三成五，
        而且最多打到下一個門檻上面一點：連珠砲穿過倍增符一輪幾百點，不這樣會直接跳過結界和暴怒，什麼都沒看到就打完了 */
@@ -366,9 +366,9 @@ function unitsStep(dt) {
       else if (!u.edge && u.edgeT > 0) u.edgeT = Math.max(0, u.edgeT - dt * 0.3);
     } else if (!act) u.edge = 0;
     // 掉下深淵、飛出戰場兩邊：出局
-    if (u.y < -26 || u.x < -GUT + 1.5 || u.x > VIEW_W + GUT - 1.5) { if (u.def.big) bossReturn(u); else if (r1Unit(u)) unitHome(u); else killUnit(u, 1 - u.side, u.y < -26 ? 4 : 6); continue; }
+    if (u.y < -26 || u.x < -GUT + 1.5 || u.x > VIEW_W + GUT - 1.5) { if (u.def.big) bossReturn(u); else if (r1Unit(u)) unitHome(u, true); else killUnit(u, 1 - u.side, u.y < -26 ? 4 : 6); continue; }
     // 掉進河裡：被水沖走（身體一半泡進水裡、泡了一下子）
-    if (u.wet > 0.45) { u.wetT = (u.wetT || 0) + dt; if (u.wetT > 0.5) { if (u.def.big) bossReturn(u); else killUnit(u, 1 - u.side, 7); continue; } } else if (u.wetT) u.wetT = 0;
+    if (u.wet > 0.45) { u.wetT = (u.wetT || 0) + dt; if (u.wetT > 0.5) { if (u.def.big) bossReturn(u); else if (r1Unit(u)) { u.wetT = 0; unitHome(u, true); } else killUnit(u, 1 - u.side, 7); continue; } } else if (u.wetT) u.wetT = 0;          // 開場護符那一輪掉進水裡的也送回去
     /* 被轟出自己的城、落地站定了：不會死，站在哪裡就從哪裡繼續打（out 標記在城外）。
        魔王會自己飛回去；開場護符那一輪被轟出去的兵送回原位 */
     const st = u.st, ux = u.fr ? frLocal(u.fr, u.x, u.y).x : st.plat ? platLocal(st, u.x, u.y).x : u.x, outNow = (ux < st.x0 - OUT_M || ux > st.x1 + OUT_M) && !u.air;
@@ -980,7 +980,7 @@ function endTurn() {
   endCheck(true); if (S.state !== 'play') return;
   if (S.turn === 0) startTurn(1); else roundEnd();
 }
-/* 搖搖欲墜：城防條快見底（不到兩成）、或拖太久（過了 sudden 回合）的城，每回合結束自己再塌一點（隨便幾塊磚裂開）。
+/* 搖搖欲墜：城防條快見底（剩不到 12%）、或拖太久（到了 sudden 回合）的城，每回合結束自己再塌一點（隨便幾塊磚裂開）。魔王城不會。
    不會停在「城塌得只剩一個角、兩邊殘兵對射」的局面拖下去 */
 const CRUMBLE = 0.06;
 function crumble(st) {
@@ -1045,15 +1045,33 @@ function rockMarks(n, big, foe) {
 // 魔王掉出戰場：不會就這樣死掉，扣一截血之後飛回自己的城頂
 // 敵軍的第一輪把我方的兵轟出城、掉下去：開場護符把他送回原本站的地方（不會還沒開打就先少一個）
 function r1Unit(u) { return r1v(u.side); }
-function unitHome(u) {
-  if (u.homeV === S.vol) return;          // 一輪只送回去一次（送回去的地方自己也在晃、在垮的話，就隨它了）
+// deadly：掉下深淵、飛出戰場（不送回去就會死）
+function unitHome(u, deadly) {
+  const again = u.homeV === S.vol;
+  if (again && !deadly) return;          // 一輪只送回去一次（送回去的地方自己也在晃、在垮的話，就隨它了）
   u.homeV = S.vol;
   let P = u.fr ? frWorld(u.fr, u.hx0, u.hy0) : platWorld(u.st, u.hx0, u.hy0);
   // 站在吊著的殿、會動的東西上：送回他腳下那塊樓板現在的位置
   const hb = u.homeB; if (hb && !hb.dead && hb.body && u.st.def.swingy) { const q = hb.body.getWorldPoint(u.homeL); P = { x: q.x, y: q.y }; }
+  // 這一輪已經送回去過一次、原位自己也在垮，又掉下去了：改放到這座城最後面還站得穩的地方
+  if (again) { const q = unitSafe(u); if (q) P = q; }
   const x = P.x, y = P.y;
   u.body.setTransform({ x, y: y + u.bh / 2 + 0.2 }, 0); u.body.setLinearVelocity({ x: 0, y: 0 }); u.body.setAwake(true); u.outT = 0; u.airT = 0;
   ev('revive', x, y, u.side, u.slot);
+}
+// 這座城從最後面（離戰場最遠）往前找：那一格正上方最高、還在原位、沒在動的磚頂上
+function unitSafe(u) {
+  const st = u.st, dir = st.mirror ? -1 : 1, back = st.mirror ? st.x1 : st.x0;
+  for (let k = 0.5; k < st.cols; k += 1) {
+    const x = back + dir * k * CS; let top = -1e9, moving = false;
+    for (const b of st.blocks) {
+      if (b.dead || !b.inPlace || b.frag || b.prop || !b.body) continue;
+      const p = b.body.getPosition(); if (Math.abs(p.x - x) > b.w / 2 || p.y + b.h / 2 < top) continue;
+      const v = b.body.getLinearVelocity(); moving = v.x * v.x + v.y * v.y > 1; top = p.y + b.h / 2;
+    }
+    if (top > -1e9 && !moving) return { x, y: top };
+  }
+  return null;
 }
 function bossReturn(u) {
   const st = u.st; let top = st.y0 + CS;
@@ -1096,8 +1114,9 @@ function bossPhase(bu) {
   } else if (B.phase === 2 && f <= lb.p3 + 1e-6) { B.phase = 3; ev('phase', 3); bossSay(BOSS_LINES.p3); }
 }
 /* 魔王的招式：每回合一開始先預告這一回合他要放哪一招（頭上有字、有圖示），你有一輪可以準備：
-   暗黑連射（這一輪他的人打兩輪：開護罩擋）、毀滅光球（停在半路，下一輪砸過來：打爆它會掉頭砸回他身上）、
-   隕石雨（落點先標出來，回合結束砸下來：護罩擋得住；放完之後他累了，下一回合是「破綻」，打他傷害加倍）、
+   暗黑連射（這一輪他自己打兩輪：開護罩擋）、毀滅光球（停在半路，下一輪砸過來：打爆它會掉頭砸回他身上）、
+   隕石雨（落點先標出來，回合結束砸下來：護罩擋得住）、
+   放完暗黑連射、隕石雨（關卡的 boss.rest）他會累：下一回合是「破綻」，不放招、打他傷害加倍、
    召喚魔兵（把倒下的手下叫回來：城腳的魔晶都碎了就叫不動） */
 const BOSS_MOVES = { barrage: '暗黑連射', orb: '毀滅光球', meteor: '隕石雨', summon: '召喚魔兵' };
 const BOSS_LINES = {
@@ -1131,7 +1150,8 @@ function bossRound() {
   B.next = S.round >= 2 && !B.tired ? bossPick() : null;          // 破綻的那一回合他喘不過氣，不放招
   if (B.next) {
     ev('bossnext', bu.x, bu.y + 8, B.next); if (!B.tired) bossSay(BOSS_LINES.next[B.next]);
-    if (B.next === 'meteor') { rockMarks(S.lv.boss.meteors || 3, true, 0); B.tiredR = S.round + 1; }
+    if (B.next === 'meteor') rockMarks(S.lv.boss.meteors || 3, true, 0);
+    if ((S.lv.boss.rest || ['meteor']).indexOf(B.next) >= 0) B.tiredR = S.round + 1;          // 放完大招（rest 裡的招）會累：下一回合是破綻
   }
 }
 // 魔王這一輪額外做的事：照預告放招

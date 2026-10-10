@@ -2,7 +2,7 @@
 // 開場公平性：我方完全不開火、不開護罩，敵軍（照關卡原本的 AI，含手抖）先打 K 輪，看我方倒幾個兵
 const G = require('./load')(); const { S, simInit, simStep, simFire, LEVELS } = G;
 const li = +(process.argv[2] || 1) - 1, N = +(process.argv[3] || 150), K = +(process.argv[4] || 1);
-const HOW = ['擊倒', '砸扁', '?', '燒', '摔出場', '出城'];
+const HOW = ['擊倒', '砸扁', '?', '燒', '摔出場', '出城', '轟飛', '被水沖走'];
 const hist = [0, 0, 0, 0, 0], who = {}; let lost = 0;
 for (let sd = 0; sd < N; sd++) {
   simInit(li, {}, 52000 + sd * 7919 + li * 131, 1, { mute: 0 }); S.team[0].ai = null;

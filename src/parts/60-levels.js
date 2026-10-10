@@ -5,7 +5,7 @@
    foe.ai  err 落點誤差、think 想多久才開火、gate 這一輪會去找倍增符的機率、hate 會打我方倍增符的機率、lob 偏好吊高、
            skill 連珠砲集滿之後會拿來用的機率（0 = 不會用）、sap 會把牆和柱子也列進目標的機率（列進去也多半還是瞄兵）、
            guard 會不會去打天燈、氣球（0 = 不會）、warm 第一回合的手抖是平常的幾倍
-   foe.hp / dmg  敵軍的耐久、傷害倍率；foe.open 第一回合敵軍打到我方的兵只算幾成（開場不會還沒打就先倒一個）
+   foe.hp / dmg  敵軍的耐久、傷害倍率；foe.open 第一回合雙方各自挨的第一輪，打到兵只算幾成（雙方一樣；開場不會還沒打就先倒一個）
    gates   倍增符：owner 0 我方（藍）、1 敵方（赤，會擋我方的砲，可以打掉）、2 黃金（兩邊都能用）、3 折損（÷2）
            mult 倍數、h 半高、spots 位置（hop: true 的每回合換下一個）、at 第幾回合開始出現、
            life 出現幾回合、gap 消失後隔幾回合再出現、regap 被打掉後隔幾回合、move {t:'bob', a 振幅, per 週期（秒）}
@@ -16,8 +16,12 @@
    rollers 滾石坡上的大石頭：{ x 石頭中心, r 半徑, stake 擋住它的木樁 x, to 往哪一邊的城滾（0 我方、1 敵城）, every 滾下去之後隔幾回合補一顆 }
    bell    戰場中間吊著的大鐘 { x, y 吊點, len 鐵鍊長, w, h, den }
    boss    魔王：p2、p3 血量剩幾成進第二、第三階段；segHp 結界每一段的耐久、regen 打破後隔幾回合補回來；
-           orbHp 毀滅光球的耐久、orbGap 第二／第三階段各隔幾輪放一顆；meteors 第三階段每回合幾顆隕石
-   sudden  第幾回合之後雙方砲火開始加重（沒寫就是第 10 回合）
+           orbHp 毀滅光球的耐久、orbGap 第二／第三階段各隔幾輪放一顆；meteors 第三階段每回合幾顆隕石；heal 每顆魔晶每回合回幾成血；
+           rest 放完哪些招會累（下一回合是破綻：不放招、打他加倍；沒寫就是隕石雨）
+   sudden  第幾回合起雙方的城每回合自己塌一點、之後砲火也開始加重（沒寫就是第 10 回合）
+   fall    城破的門檻：城的完整度掉到多少，城防條就歸零、這一邊輸（沒寫就是 FALL_TH 三成）
+   blockHp 城樓磚的耐久倍率（沒寫就是 CASTLE_HP）；smashK 雪崩（積雪、冰棚）砸下來的力道倍率
+   extra   戰場中間另外放的結構 [{ castle 藍圖名, x 中心, y 底 }]：打不壞的岩石，擋住被轟到地上的兵平平地對射
    weak    自動玩家（敵軍、測試用的我方）想打的要害：weak(side) 回傳 side 這一邊要打的目標（對方城上的格子、對方那一頭的機關）
    tip     主畫面上的關卡說明（兩三句就好：這一關的機關是什麼、最該打哪裡；細節進了關卡輪到玩家的時候再講）
    hints   進了關卡之後輪到你的時候講的訣竅，一回合最多一句：r 第幾回合起可以講、t 內容、ok 還用得上才講（沒寫就一定講） */
@@ -102,7 +106,7 @@ const LEVELS = [
       { r: 4, t: '小心左邊那顆：敵軍打斷它的木樁，滾石就往你這邊衝過來', ok: () => stakeUp(0) }],
     ground: [[-40, 4], [0, 0], [40.5, 0], [44, 1.4], [47, 4.6], [50.6, 5.4], [53.6, 9.8], [56, 10.8], [58.4, 9.8], [61.4, 5.4], [65, 4.6], [68, 1.4], [71.5, 0], [112, 0], [152, 4]],
     me: { crew: ['rocket', 'bolt', 'stone', 'bomb'] },
-    foe: { crew: ['bomb', 'rocket', 'stone', 'rocket'], hp: 0.75, dmg: 0.75, open: 0.55, ai: { err: 6.0, think: 1.2, gate: 0.5, sap: 0.25, warm: 1.6 } },
+    foe: { crew: ['bomb', 'rocket', 'stone', 'rocket'], hp: 0.75, dmg: 0.75, open: 0.55, ai: { err: 5.2, think: 1.2, gate: 0.5, sap: 0.25, warm: 1.6 } },
     wind: { max: 6, at: 2 }, sudden: 8,
     rollers: [{ x: 49.1, r: 2.35, stake: 45.9, to: 0, every: 2 }, { x: 62.9, r: 2.35, stake: 66.1, to: 1, every: 2 }],
     // 滾地砲：落在山坡往對方那一面的砲彈一路滾下去（每往下滾一格高度威力多 k 倍，最多 max 倍）
@@ -112,7 +116,7 @@ const LEVELS = [
     lantern: { at: 3, every: 3, spots: [[56, 48], [50, 30], [62, 28]] }
   },
   {
-    name: '冰崖雪崩', tag: '冰鏡・結霜・雪崩', theme: 2, castle: 'ICE', stress: 1, snow: 1, smashK: 0.35,
+    name: '冰崖雪崩', tag: '冰鏡・結霜・雪崩', theme: 2, castle: 'ICE', stress: 1, snow: 1, smashK: 0.35, blockHp: 2.6,
     tip: '崖頂的冰棚壓著一大片積雪：打掉撐著它的冰柱，雪崩砸垮敵城頂樓。下面兩層是石砌的：用中間的冰鏡把砲彈彈成平射，打進最底層，打到的磚會結霜變脆',
     hints: [{ r: 1, t: '敵城崖頂的冰棚壓著一大堆雪，外端只靠兩根冰柱撐著：打掉冰柱（火一烤就化），雪崩砸垮頂樓', ok: () => shelfUp(1) },
       { r: 2, t: '左邊那面冰鏡的亮面朝上：砲彈打上去會被彈平，直直打進敵城最底層（前牆很薄），打到的磚會結霜、變脆' },
@@ -121,7 +125,7 @@ const LEVELS = [
     ground: [[-40, 3], [0, 0], [41, 0], [44, -2], [68, -2], [71, 0], [112, 0], [152, 3]],
     extra: [{ castle: 'ROCK_FROST', x: 56, y: -2.3 }],
     me: { crew: ['fire', 'bolt', 'bomb', 'rocket'] },
-    foe: { crew: ['ice', 'rocket', 'bomb', 'fire'], hp: 0.9, dmg: 0.7, open: 0.55, ai: { err: 7.0, think: 1.2, gate: 0.6, hate: 0.15, lob: 1, skill: 0.4, sap: 0.4, warm: 1.7 } },
+    foe: { crew: ['ice', 'rocket', 'bomb', 'fire'], hp: 0.9, dmg: 0.8, open: 0.55, ai: { err: 7.0, think: 1.2, gate: 0.6, hate: 0.15, lob: 1, skill: 0.4, sap: 0.4, warm: 1.7 } },
     // 冰鏡：兩邊各一面，亮面朝著對方的城上空。從自己這邊吊高打下來的砲彈，被亮面彈成平射，打進對方的底層；彈過的砲彈結霜。
     // 背面是厚冰（擋下砲彈）。每回合換一個角度
     objs: [
@@ -161,7 +165,7 @@ const LEVELS = [
       { r: 4, t: '噴流往你這邊吹的回合，砲彈穿過去會被減速：吊高越過它，或從底下鑽過去', ok: () => jetDir() < 0 }],
     voids: [[-60, 172]],
     me: { crew: ['rocket', 'zap', 'bolt', 'bomb'] },
-    foe: { crew: ['bal', 'rocket', 'flak', 'zap'], hp: 0.85, dmg: 0.5, open: 0.55, ai: { err: 3.7, think: 1.1, gate: 0.75, hate: 0.25, skill: 0.5, sap: 0.5, warm: 1.8 } },
+    foe: { crew: ['bal', 'rocket', 'flak', 'zap'], hp: 1.0, dmg: 0.7, open: 0.55, ai: { err: 3.7, think: 1.1, gate: 0.75, hate: 0.25, skill: 0.5, sap: 0.5, warm: 1.8 } },
     // 噴流：每回合換方向（第一回合往敵城吹）、每兩回合換高度（中＝一樓、低＝浮空晶石、高＝氣球）
     objs: [{ t: 'jet', x0: 37, x1: 75, lv: [18, 8, 43.5], hh: 3.2, U: 92, kx: 5, ky: 7, kc: 10, gain: 1.8 }],
     ampAim: (side) => { const o = S.objs.find((q) => q.t === 'jet'), d = side === 0 ? 1 : -1; if (!o || o.U * d <= 0) return []; const xe = d > 0 ? o.x0 + 2 : o.x1 - 2; return [{ x: xe, y: o.y }, { x: xe + d * 5, y: o.y }, { x: xe + d * 10, y: o.y + 1 }]; },
@@ -169,7 +173,7 @@ const LEVELS = [
     lantern: { at: 3, every: 3, spots: [[56, 26], [50, 48], [62, 12]] }
   },
   {
-    name: '怒海艦城', sayTop: 1, tag: '打水漂・火藥庫・翻船', theme: 6, castle: 'SHIP', y0: -5.2,
+    name: '怒海艦城', sayTop: 1, tag: '打水漂・火藥庫・翻船', theme: 6, castle: 'SHIP', y0: -5.2, blockHp: 2.6,
     tip: '兩邊都是戰船：甲板上前後兩座樓，船身也算城。平平打出去，砲彈在海面上打水漂（一跳多三成），撞進敵船的吃水線：船艙進水，那一頭沉下去，樓就滑進海裡。中艙底下是火藥庫',
     hints: [{ r: 1, t: '仰角壓低、力道加大，平平打到海面：砲彈會彈起來（最多三跳，一跳 ×1.3），撞進敵船船身', ok: () => flooded(1) < 0.5 },
       { r: 2, t: '敵船中艙底下是火藥庫：把中艙的船身打到剩一半，整艙炸開', ok: () => magLeft(1) },
@@ -181,7 +185,7 @@ const LEVELS = [
     skip: { slope: 0.78, keep: 0.55, up: 4, fric: 0.9, gain: 1.3, max: 3, vmin: 30 },
     ampAim: (side) => { const d = side === 0 ? 1 : -1, out = []; for (const dx of [-12, -6, 0, 6]) out.push({ x: MID + d * dx, y: 0.3, lo: 0.42, hi: 1.15 }); return out; },
     me: { crew: ['rocket', 'bomb', 'bolt', 'fire'] },
-    foe: { crew: ['bomb', 'rocket', 'fire', 'bolt'], hp: 1.05, dmg: 1.1, open: 0.55, ai: { err: 3.6, think: 1.1, gate: 0.8, hate: 0.3, skill: 0.6, sap: 0.55, warm: 1.8 } },
+    foe: { crew: ['bomb', 'rocket', 'fire', 'bolt'], hp: 1.05, dmg: 1.0, open: 0.55, ai: { err: 3.6, think: 1.1, gate: 0.8, hate: 0.3, skill: 0.6, sap: 0.55, warm: 1.8 } },
     wind: { max: 6, at: 3 },
     lantern: { at: 3, every: 3, spots: [[52, 46], [58, 26]] }
   },
@@ -274,18 +278,18 @@ const LEVELS = [
   {
     name: '魔王城', tag: '魔王・預告招式・黑洞・聖光符', theme: 5, castle: 'KEEP',
     tip: '打倒魔王就贏；你的城塌了就輸。他每回合先預告要放哪一招（連射、光球、隕石、召喚）。把魔王城打塌，他會從寶座上摔下來（扣一大截血、下一回合是破綻）。城腳的兩顆魔晶讓他回血、補結界',
-    hints: [{ r: 1, t: '魔王從第二回合起會在頭上預告招式：暗黑連射、隕石雨開護罩擋；毀滅光球打爆會掉頭砸回他身上' },
+    hints: [{ r: 1, t: '魔王從第二回合起會在頭上預告招式：暗黑連射、隕石雨開護罩擋（你的城塌了也會輸）；毀滅光球打爆會掉頭砸回他身上' },
+      { r: 2, t: '魔王喘不過氣了：他放完暗黑連射、隕石雨會累，這一回合是破綻，打他傷害加倍！', ok: () => S.boss && S.boss.tired && S.turn === 0 },          // 輪到敵軍才講就沒用了：放掉，下一次破綻再講
       { r: 2, t: '敵城城腳正面嵌著兩顆紫色魔晶：打碎它們，魔王不能回血、結界補不回來、也叫不回魔兵', ok: () => coresLeft(1) > 0 },
       { r: 3, t: '把魔王城打塌：他會從寶座上摔下來，扣一大截血，下一回合打他傷害加倍', ok: () => S.boss && !S.boss.castleFell },
-      { r: 4, t: '黑洞會把砲彈吸過去、甩出來：擦過它，穿過繞著它轉的金色聖光符，一發變三發（太靠近會被吞掉）', ok: () => S.boss && S.boss.phase >= 2 },
-      { r: 5, t: '他放完隕石雨會累：下一回合是破綻，打他傷害加倍', ok: () => S.boss && S.boss.phase >= 3 }],
+      { r: 4, t: '黑洞會把砲彈吸過去、甩出來：擦過它，穿過繞著它轉的金色聖光符，一發變三發（太靠近會被吞掉）', ok: () => S.boss && S.boss.phase >= 2 }],
     ground: [[-40, 3], [0, 0], [112, 0], [152, 3]],
     voids: [[41.5, 70.5]],
     extra: [{ castle: 'ROCK_DEMON', x: 56, y: -12.4 }],
     me: { crew: ['rocket', 'zap', 'bomb', 'fire'] },
     foe: { crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 0.8, dmg: 0.5, open: 0.55, ai: { err: 4.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 1.8 } },
     weak: (side) => side === 1 ? tgC(side, [[10, 10], [9, 10], [3, 2], [7, 2]], 0.8) : tgC(side, [[10, 10], [9, 10]], 0.7),          // 敵軍也會打我方大殿的木柱（吊燈砸我方的兵）；我方的自動玩家專打魔晶
-    boss: { p2: 0.72, p3: 0.4, segHp: 60, regen: 2, orbHp: 30, meteors: 3, heal: 0.015 },
+    boss: { p2: 0.72, p3: 0.4, segHp: 60, regen: 2, orbHp: 30, meteors: 3, heal: 0.015, rest: ['barrage', 'meteor'] },          // rest：放完暗黑連射、隕石雨會累，下一回合是破綻
     objs: [{ t: 'hole', x: 56, y: 33, G: 2300, R: 15, rs: 1.7, on: false }],
     gates: [
       { owner: 2, mult: 3, h: 4.4, spots: [[56, 33, 0]], move: { t: 'orbit', per: 11, rx: 9.5, ry: 7.5 }, phase: 2 },
