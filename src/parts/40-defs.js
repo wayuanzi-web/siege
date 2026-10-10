@@ -18,7 +18,7 @@ const MAT = [null,
 ];
 
 // 傷害種類對各種磚材的倍率：     無  木   石   鐵   瓦   冰   岩   桶  陶   竹   琉璃  雪
-const K_BLAST = 0, K_PIERCE = 1, K_HEAVY = 2, K_FIRE = 3, K_ICE = 4, K_ZAP = 5, K_CRUSH = 6, K_DARK = 7;
+const K_BLAST = 0, K_PIERCE = 1, K_HEAVY = 2, K_FIRE = 3, K_ICE = 4, K_ZAP = 5, K_CRUSH = 6, K_DARK = 7, K_ACID = 8, K_WIND = 9, K_MAG = 10;
 const DM = [
   /* blast  */ [0, 1.0, 1.0, 0.6, 1.0, 1.0, 0.7, 1, 1, 1.0, 1.3, 1.3],
   /* pierce */ [0, 1.0, 0.5, 0.25, 1.0, 0.8, 0.3, 1, 1, 0.9, 0.7, 0.5],
@@ -27,8 +27,19 @@ const DM = [
   /* ice    */ [0, 0.9, 0.9, 0.8, 0.9, 0.2, 0.6, 1, 1, 0.8, 1.2, 0.1],
   /* zap    */ [0, 1.0, 1.0, 2.0, 1.0, 1.0, 0.6, 1, 1, 1.0, 1.0, 0.6],
   /* crush  */ [0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1, 1, 1.0, 1.6, 1.0],
-  /* dark   */ [0, 1.1, 1.1, 0.9, 1.1, 1.1, 0.8, 1, 1, 1.1, 1.2, 1.2]
+  /* dark   */ [0, 1.1, 1.1, 0.9, 1.1, 1.1, 0.8, 1, 1, 1.1, 1.2, 1.2],
+  /* acid   */ [0, 0.6, 2.2, 2.0, 0.6, 0.9, 1.6, 1, 1, 0.6, 0.5, 0.6],          // 酸剋石：石頭、鐵甲被蝕得最快，木頭、琉璃不太怕
+  /* wind   */ [0, 1.0, 0.35, 0.2, 1.6, 0.6, 0.2, 1, 1, 1.3, 0.8, 2.2],          // 風：掀屋瓦、折竹子、捲積雪，石頭鐵甲吹不動
+  /* mag    */ [0, 0.15, 0.15, 2.6, 0.15, 0.15, 0.1, 1, 1, 0.15, 0.15, 0.15]    // 磁暴：只對鐵有用
 ];
+/* 屬性剋制：直接打中、倍率特別高的那幾種，畫面上跳一句（K 種類 → 磚材 → 字）。冰能滅火另外算（打在著火的東西上） */
+const ELEM = {
+  [K_FIRE]: { [M_WOOD]: '火剋木', [M_BAMBOO]: '火剋木', [M_ROOF]: '火燒瓦', [M_ICE]: '火化冰', [M_SNOW]: '火化冰' },
+  [K_ZAP]: { [M_IRON]: '雷剋鐵' },
+  [K_ACID]: { [M_STONE]: '酸剋石', [M_ROCK]: '酸剋石', [M_IRON]: '酸蝕鐵' },
+  [K_WIND]: { [M_ROOF]: '風掀瓦', [M_BAMBOO]: '風折竹', [M_SNOW]: '風捲雪' },
+  [K_MAG]: { [M_IRON]: '磁吸鐵' }
+};
 
 /* 砲彈：n 一輪打幾發、gap 每發間隔、fan 一次幾發扇形、dmg 打磚、r 爆炸半徑（0 = 只打中的那一塊）、
    J 把磚塊炸飛的力道、ud 打兵、kind 傷害種類 */
@@ -47,9 +58,28 @@ const WL = [
   { id: 'keg', dmg: 34, r: 6.6, J: 950, ud: 18, kind: K_HEAVY },
   { id: 'powder', dmg: 24, r: 4.6, J: 620, ud: 60, room: 11, kind: K_HEAVY },          // 引信串著的火藥桶：炸開的範圍小（一層一層炸，不會一桶就把整座塔掀掉），但關在石室裡炸：同一層的人都被震傷（room：左右多遠）
   { id: 'mag', dmg: 70, r: 7.2, J: 1700, ud: 70, room: 13, kind: K_HEAVY },             // 地窖的火藥庫（大桶）：一桶炸開，整排跟著炸，塔腳炸垮
-  { id: 'doom', dmg: 80, r: 9.0, J: 2200, ud: 36, kind: K_DARK }
+  { id: 'doom', dmg: 80, r: 9.0, J: 2200, ud: 36, kind: K_DARK },
+  /* ---- 第三篇的新兵器 ----
+     chain 鏈彈：兩顆鐵球連著鐵鍊轉著飛，掃過的寬度 w；繩索、鐵鍊吃 rope 倍、細柱子吃 pillar 倍，打斷了還會繼續往前（最多穿過 pass 樣東西）
+     drill 鑽頭：打到磚不炸，鑽進去（每一塊吃 d、速度剩 slow 倍），鑽過 n 塊、或碰到地面、兵、岩壁才在裡面炸開
+     split 子母彈：飛到最高點分成 n 顆小炸彈（bomblet），往兩邊散開 sp
+     stick 黏性炸藥：黏在打到的東西上（hp：對方打幾下會被打掉），等自己下一輪開火才爆
+     mag 磁暴：落點方圓 R 裡的鐵磚被一把吸過去（力道 J、傷害 d），鐵鍊吃 rope 倍
+     tw 龍捲風：落點捲起一道風柱（半徑 R、高 H、維持 life 秒），把輕的磚、兵捲起來甩出去
+     acid 酸液：濺到的磚、兵一直被蝕（t 秒，砲擊的時候才算；dps 每秒傷害 × 磚材倍率，ud 兵每秒）
+     spd、gk：狙擊彈打出去的速度是瞄準的幾倍、重力剩幾倍（又平又快）；pierce 穿得過幾層木牆
+     ai：敵軍估分數用的威力（特殊的打法不是一次炸開，照它大概的效果算） */
+  { id: 'chain', n: 1, gap: 0, dmg: 22, r: 0, J: 520, ud: 24, kind: K_HEAVY, chain: { w: 0.9, rope: 3.2, pillar: 2.4, pass: 2 }, ai: { dmg: 34, r: 1.6, ud: 20 } },
+  { id: 'drill', n: 1, gap: 0, dmg: 26, r: 3.4, J: 600, ud: 20, kind: K_HEAVY, drill: { n: 3, d: 15, slow: 0.72 }, ai: { dmg: 52, r: 3.4, ud: 20 } },
+  { id: 'cluster', n: 1, gap: 0, dmg: 9, r: 2.4, J: 160, ud: 8, kind: K_BLAST, split: { n: 6, sp: 7.5 }, ai: { dmg: 36, r: 6.5, ud: 24 } },
+  { id: 'bomblet', dmg: 8, r: 2.4, J: 200, ud: 7, kind: K_BLAST },
+  { id: 'sticky', n: 1, gap: 0, dmg: 64, r: 5.6, J: 1250, ud: 32, kind: K_HEAVY, stick: { hp: 26 }, ai: { dmg: 58, r: 5.6, ud: 28 } },
+  { id: 'magnet', n: 1, gap: 0, dmg: 6, r: 2.2, J: 100, ud: 6, kind: K_MAG, mag: { R: 9.5, J: 1500, d: 34, rope: 0.75, rr: 5.5 }, ai: { dmg: 30, r: 7, ud: 6 } },
+  { id: 'wind', n: 1, gap: 0, dmg: 4, r: 2.0, J: 120, ud: 5, kind: K_WIND, tw: { R: 4.4, H: 13, life: 2.6, lift: 1.9 }, ai: { dmg: 22, r: 4.4, ud: 16 } },
+  { id: 'acid', n: 2, gap: 0.2, dmg: 5, r: 2.9, J: 70, ud: 5, kind: K_ACID, acid: { t: 7, dps: 5.5, ud: 2.2 }, ai: { dmg: 24, r: 2.9, ud: 12 } },
+  { id: 'snipe', n: 1, gap: 0, dmg: 9, r: 0, J: 160, ud: 56, kind: K_PIERCE, spd: 1.55, gk: 0.32, pierce: 1 }
 ];
-const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; });
+const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; if (w.chain || w.drill || w.stick || w.pierce) w.special = 1; });          // special：打到東西時有自己的打法（51-arms 的 armsHit）
 
 /* 兵種。w 用哪種砲彈；flak 防空（每一輪射下幾發飛過來的砲彈）；bal 放轟炸氣球 */
 const UNIT = {
@@ -62,8 +92,20 @@ const UNIT = {
   flak: { name: '防空弩', w: null, hp: 100, flak: 3, blurb: '每一輪把飛過來的砲彈射下三發' },
   bal: { name: '氣球兵', w: null, hp: 100, bal: 1, blurb: '放轟炸氣球：先飄到半路，下一輪飛到你頭上丟炸彈' },
   stone: { name: '投石兵', w: 'stone', hp: 110, blurb: '丟出一顆大石頭：不會爆，但會一路撞、一路滾，撞斷柱子、推倒石碑最拿手' },
-  boss: { name: '魔王', w: 'dark', hp: 440, big: 1, blurb: '打倒他才算贏。每回合先預告招式（暗黑連射、毀滅光球、隕石雨、召喚魔兵）；城腳的魔晶讓他回血' }
+  boss: { name: '魔王', w: 'dark', hp: 440, big: 1, blurb: '打倒他才算贏。每回合先預告招式（暗黑連射、毀滅光球、隕石雨、召喚魔兵）；城腳的魔晶讓他回血' },
+  // ---- 第三篇的新兵種 ----
+  chain: { name: '鏈彈手', w: 'chain', hp: 100, blurb: '兩顆鐵球連著鐵鍊轉著飛：專斷繩索和細柱子（打斷了還會繼續往前），打到兵會把他纏住、下一輪不能開火' },
+  drill: { name: '鑽地手', w: 'drill', hp: 95, blurb: '鑽頭彈鑽穿兩三塊磚，鑽到裡面才炸開：專打厚牆和地窖' },
+  cluster: { name: '子母砲手', w: 'cluster', hp: 95, blurb: '砲彈飛到最高點分成六顆小炸彈，灑下一大片' },
+  sapper: { name: '爆破兵', w: 'sticky', hp: 100, blurb: '黏性炸藥黏在打到的牆上，等你下一輪開火時才爆，威力最大；對方打得掉它' },
+  magnet: { name: '磁暴師', w: 'magnet', hp: 90, blurb: '落點放出磁暴，把附近的鐵磚、鐵鍊一把吸過去：鐵造的城最怕他' },
+  wind: { name: '風術士', w: 'wind', hp: 85, blurb: '落點捲起一道龍捲風：輕的木頭、屋瓦和站在外面的兵都會被捲起來甩出去' },
+  acid: { name: '酸液兵', w: 'acid', hp: 90, blurb: '酸液沾到的磚一直被蝕，石牆、鐵甲最怕（酸剋石）' },
+  sniper: { name: '狙擊手', w: 'snipe', hp: 80, blurb: '又平又快的一發，穿得過一層木牆，專打兵（打中頭是暴擊）' },
+  eng: { name: '工兵', w: null, hp: 105, fix: 2, blurb: '不攻擊：每一輪修好自己城上兩塊打裂的磚、拆掉黏在城上的炸藥；城都好好的，就在城前架一道木牆' }
 };
+// 十八種兵（魔王不算）：演武場、第三篇選兵用的順序
+const UNIT_LIST = ['rocket', 'bolt', 'bomb', 'fire', 'ice', 'zap', 'flak', 'bal', 'stone', 'chain', 'drill', 'cluster', 'sapper', 'magnet', 'wind', 'acid', 'sniper', 'eng'];
 Object.keys(UNIT).forEach((k) => { UNIT[k].id = k; });
 
 
@@ -286,6 +328,23 @@ const CASTLES = {
     '####DDD####',
     '###########'],
     hangs: [{ t: 'lamp', at: [5, 0, 0.5, 0], len: 0.5, w: 3.6, h: 2.2, mat: M_IRON, den: 2.2, chain: 1, aw: 0.8, iron: 1 }] },
+
+  /* 演武場：六個兵位的試打城。後面是三層的主樓（木頭的頂樓、石頭的中樓、鐵甲的大廳、最底下的石室），
+     前面一座兩層的木頭望樓，最底下夾著一桶火藥；大廳天花板吊著一盞鐵吊燈（試鏈彈、磁暴） */
+  DRILL: { skin: 'bandit', map: [
+    '  ^^^^^    ',
+    '  |.1.|    ',
+    '  _____ ^^^',
+    '  S...S |2|',
+    '  S.3.S ===',
+    '  _____ | |',
+    '  I...I |4|',
+    '  I.5.I ===',
+    '  _____ | |',
+    '  S.6.S |K|',
+    '###########',
+    '###########'],
+    hangs: [{ t: 'lamp', at: [4, 5, 0.5, 0], len: 0.5, w: 2.4, h: 1.5, mat: M_IRON, den: 2.0, chain: 1, aw: 0.7, iron: 1 }] },
 
   /* ---- 戰場中間的東西（中立） ---- */
   // 戰場正中間打不壞的岩石：被轟到地上的兵沒辦法平平地對射（一定要吊高越過去）

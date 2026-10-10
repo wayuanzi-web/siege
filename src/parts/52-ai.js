@@ -26,9 +26,11 @@ function supInit(st) {
   }
 }
 // 打在 (x, y)：w 這種砲彈、威力 amp 倍，大概讓對面城樓少掉幾成完整度（0..1）
+// 一種砲彈一輪大概多大威力（估分數、挑帶頭的兵用）：特殊的兵器照 ai 寫的（黏性炸藥、子母彈、鑽頭……不是一次炸開）
+function wPower(w) { return w.ai ? w.ai.dmg : w.dmg * (w.n || 1) * (w.fan || 1); }
 function aiStructVal(side, x, y, w, amp) {
   const st = S.st[1 - side]; if (!st || !(st.hp0 > 0) || !w) return 0;
-  const r = Math.max(1.4, w.r || 1.0) * 1.1, dmg = (w.dmg || 10) * (w.n || 1) * (w.fan || 1) * (amp || 1);
+  const r = Math.max(1.4, (w.ai ? w.ai.r : w.r) || 1.0) * 1.1, dmg = wPower(w) * (amp || 1);
   let v = 0;
   for (const b of st.blocks) {
     if (b.dead || !b.inPlace || b.lost || !(b.wt > 0)) continue;
@@ -44,7 +46,7 @@ function aiStructVal(side, x, y, w, amp) {
 const AI_PK = 10;
 function aiPtScore(side, x, y, w, amp, direct) {
   const F = S.team[1 - side]; let hpAll = 0; for (const u of F.units) if (u.alive) hpAll += Math.max(1, u.hp);
-  const ud = (w ? (w.ud || 8) * (w.n || 1) * (w.fan || 1) : 10) * (amp || 1), r = Math.max(1.2, (w && w.r) || 1.0);
+  const ud = (w ? (w.ai ? w.ai.ud : (w.ud || 8) * (w.n || 1) * (w.fan || 1)) : 10) * (amp || 1), r = Math.max(1.2, (w && (w.ai ? w.ai.r : w.r)) || 1.0);
   let dmg = 0;
   for (const u of F.units) {
     if (!u.alive) continue;
@@ -58,8 +60,9 @@ function aiPtScore(side, x, y, w, amp, direct) {
 }
 const BOSS_W = 0.9;      // 魔王關：自動玩家特別想打魔王（打倒他才算贏，其他的兵只是順便）
 // 從砲口 (mx,my) 出發，tau 秒後要到 (tx,ty)，需要的初速（把風算進去）
-function aimFor(mx, my, tx, ty, tau, wind, out) {
-  out[0] = (tx - mx - 0.5 * wind * tau * tau) / tau; out[1] = (ty - my + 0.5 * GRAV * tau * tau) / tau; return out;
+// gk、spd：這種砲彈的重力剩幾倍、打出去比瞄準的快幾倍（狙擊彈）。回傳的是「瞄準」的那個速度
+function aimFor(mx, my, tx, ty, tau, wind, out, gk, spd) {
+  const s = spd || 1; out[0] = (tx - mx - 0.5 * wind * tau * tau) / tau / s; out[1] = (ty - my + 0.5 * GRAV * (gk || 1) * tau * tau) / tau / s; return out;
 }
 function aimOk(vx, vy, dir) {
   const fx = vx * dir; if (fx <= 0) return false;
@@ -82,10 +85,12 @@ const _tr = { hit: 0, x: 0, y: 0, t: 0, mult: 1, gm: 0, o: null, obj: null, lan:
 function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
   const R = _tr; R.hit = 0; R.mult = 1; R.gm = 0; R.o = null; R.obj = null; R.lan = null; R.gate = null; R.port = false; R.rope = null; R.amp = 1; R.fire = false; R.zap = false; R.frost = false; R.roll = false; R.ev = false; R.split = false;
   const dt = 1 / 30, own = S.st[side], foeT = S.team[1 - side], fst = S.st[1 - side], forces = AMP.jets.length || AMP.holes.length;
-  // 這裡一步走 1/30 秒，戰局是 1/60 秒；補上兩者每一步差的那一點，落點才會跟真的打出去一樣
-  const cy = GRAV * STEP * STEP, cx = -wind * STEP * STEP;
-  let x = mx, y = my, mask = 0, t = 0, inOwn = true, mass = 1, flag = F_IN, kk = 0, a0 = 0, a1 = 0, rolling = false;
   if (wi === undefined) wi = 0;
+  const W = WL[wi], gk = W.gk || 1;
+  if (W.spd) { vx *= W.spd; vy *= W.spd; }          // 狙擊彈：打出去比瞄準的快
+  // 這裡一步走 1/30 秒，戰局是 1/60 秒；補上兩者每一步差的那一點，落點才會跟真的打出去一樣
+  const cy = GRAV * gk * STEP * STEP, cx = -wind * STEP * STEP;
+  let x = mx, y = my, mask = 0, t = 0, inOwn = true, mass = 1, flag = F_IN, kk = 0, a0 = 0, a1 = 0, rolling = false, pierced = 0;
   if (path) path.length = 0;
   // 這一發「第一件事」發生在哪裡（先碰到的符、冰鏡、彈簧板、稜鏡、雷雲、地火、噴流、水面、滾地，都沒有就是落點）：齊射的其他兵瞄這一點
   const evt = (ex, ey, evx, evy) => { if (!R.ev) { R.ev = true; R.ex = ex; R.ey = ey; R.evx = evx; R.evy = evy; R.et = t; } };
@@ -104,7 +109,7 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
       if (path) path.push(x, y);
       continue;
     }
-    vy -= GRAV * dt; vx += wind * dt;
+    vy -= GRAV * gk * dt; vx += wind * dt;
     if (!R.ev) { for (const o of AMP.jets) if (x > o.x0 && x < o.x1 && Math.abs(y - o.y) < o.hh && vx * o.U > 0) evt(x, y, vx, vy); for (const o of AMP.holes) if (o.on && (x - o.x) * (x - o.x) + (y - o.y) * (y - o.y) < o.R * o.R) evt(x, y, vx, vy); }
     if (forces) { load(); const f = ampForces(dt); if (f === 2) { R.x = x; R.y = y; return end(5); } vx = SA.vx; vy = SA.vy; mass = SA.mass; kk = SA.k; }
     let nx = x + vx * dt + cx, ny = y + vy * dt + cy;
@@ -141,6 +146,9 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
       } else if (o.t === 'balloon' || o.t === 'orb' || o.t === 'tether' || o.t === 'lift') {
         if (o.side === side || o.hp <= 0) continue;
         const dx = nx - o.x, dy = ny - o.y; if (dx * dx + dy * dy < o.r * o.r) { R.obj = o; R.x = nx; R.y = ny; return end(4); }
+      } else if (o.t === 'charge') {
+        if (o.side === side || o.hp <= 0 || o.go) continue;
+        const dx = nx - o.x, dy = ny - o.y; if (dx * dx + dy * dy < o.r * o.r) { R.obj = o; R.x = nx; R.y = ny; return end(4); }
       } else if (o.t === 'barrier' && side === 0) {
         const d0 = Math.hypot(x - o.x, y - o.y), d1 = Math.hypot(nx - o.x, ny - o.y);
         if (d0 > o.R && d1 <= o.R && barrierSeg(o, nx, ny)) { R.x = nx; R.y = ny; return end(5); }
@@ -155,6 +163,8 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
       R.x = x + (nx - x) * wt; R.y = S.water.y; return end(1);
     }
     if (h) {
+      // 狙擊彈穿過一層木牆：接著往後算
+      if (h === 2 && W.pierce && pierced < W.pierce && RAY.o && (RAY.o.mat === M_WOOD || RAY.o.mat === M_BAMBOO || RAY.o.mat === M_ROOF || RAY.o.mat === M_GLASS || RAY.o.mat === M_CLAY)) { const sp = Math.hypot(vx, vy) || 1; pierced++; x = RAY.x + vx / sp * 0.25; y = RAY.y + vy / sp * 0.25; vx *= 0.85; vy *= 0.85; inOwn = false; if (path) path.push(x, y); continue; }
       if (h === 1 && !RAY.o && AMP.roll && rollOk(RAY.x, side, wi, vx, vy)) { evt(RAY.x, RAY.y, vx, vy); load(); rollStart(RAY.x); x = SA.x; y = SA.y; vx = SA.vx; vy = 0; flag = SA.flag; a0 = SA.a0; a1 = SA.a1; rolling = true; R.roll = true; if (path) path.push(x, y); continue; }
       R.o = RAY.o; R.x = RAY.x; R.y = RAY.y; return end(h);
     }
@@ -187,14 +197,15 @@ function volleyAim(side, u, ax, ay, E, out) {
   out[0] = ax; out[1] = ay;
   if (!E || !E.ok) return out;
   const dir = S.team[side].dir, m = muzzle(u, dir), mx = m[0], my = m[1], wind = S.wind, ta = Math.atan2(E.vy, E.vx), sp0 = Math.hypot(E.vx, E.vy);
+  const W = u.w || {}, g = GRAV * (W.gk || 1), spd = W.spd || 1;          // 狙擊彈：重力小、打出去比瞄準的快（算出來的初速再換回瞄準的速度）
   let best = 1e9;
-  for (let tau = 0.25; tau <= 4.5; tau += 0.05) {
-    const vx = (E.x - mx - 0.5 * wind * tau * tau) / tau, vy = (E.y - my + 0.5 * GRAV * tau * tau) / tau;
-    if (!aimOk(vx, vy, dir)) continue;
-    const avx = vx + wind * tau, avy = vy - GRAV * tau;
+  for (let tau = spd > 1 ? 0.12 : 0.25; tau <= 4.5; tau += 0.05) {
+    const vx = (E.x - mx - 0.5 * wind * tau * tau) / tau, vy = (E.y - my + 0.5 * g * tau * tau) / tau;
+    if (!aimOk(vx / spd, vy / spd, dir)) continue;
+    const avx = vx + wind * tau, avy = vy - g * tau;
     let da = Math.abs(Math.atan2(avy, avx) - ta); if (da > Math.PI) da = TAU - da;
     const err = da + 0.25 * Math.abs(Math.hypot(avx, avy) - sp0) / Math.max(10, sp0);
-    if (err < best) { best = err; out[0] = vx; out[1] = vy; }
+    if (err < best) { best = err; out[0] = vx / spd; out[1] = vy / spd; }
   }
   return out;
 }
@@ -205,7 +216,7 @@ function aiBegin(T) {
   // 連珠集滿了：一輪到自己就先上膛（對方看得到，來得及開護罩），多想一下再打
   if (A.skill > 0 && T.ult.c >= T.ult.need && !T.ult.armed && rnd() < A.skill) { simSkill(side, 'ult'); A.t += 0.7; A.fireAt += 0.7; A.useGate = true; }
   let lead = null, bv = -1;
-  for (const u of T.units) { if (!u.alive || !u.w || u.frozen > 0 || u.stun > 0) continue; const v = u.w.dmg * (u.w.n || 1) * (u.w.fan || 1) + rnd() * 6; if (v > bv) { bv = v; lead = u; } }
+  for (const u of T.units) { if (!u.alive || !u.w || u.frozen > 0 || u.stun > 0) continue; const v = wPower(u.w) + rnd() * 6; if (v > bv) { bv = v; lead = u; } }
   if (!lead) for (const u of T.units) if (u.alive) { lead = u; break; }
   // 對面垂著引信頭：有時候這一輪改由火油兵帶頭，專瞄引信頭（其他兵照同一個落點跟著打）
   const F = fst.fuse; let fuseMode = false;
@@ -217,6 +228,8 @@ function aiBegin(T) {
   const big = lead.def.big ? MUZ_BIG : 1, mx = lead.x + dir * 1.3 * big, my = lead.y + 2.3 * big;
   const tg = [];
   for (const u of foeT.units) if (u.alive) tg.push({ x: u.x, y: u.y + 1.6 * (u.def.big ? MUZ_BIG : 1), w: 1.15 + (u.type === 'boss' ? BOSS_W : 0) + (u.hp < u.hpMax * 0.4 ? 0.25 : 0) });
+  // 對方黏在自己城上的炸藥：下一輪就爆，打得掉就先打掉
+  for (const o of S.objs) if (o.t === 'charge' && o.side !== side && o.hp > 0 && !o.go && chargeOn(o) === side) tg.push({ x: o.x, y: o.y, w: 1.6 * Math.min(2, o.mass), obj: o });
   if (A.guard > 0 && rnd() < A.guard) for (const o of S.objs) {
     if (o.t === 'lantern') tg.push({ x: o.x, y: o.y, w: 1.0, obj: o });
     else if ((o.t === 'balloon' || o.t === 'orb') && o.side !== side && o.hp > 0 && o.st === 'hover') tg.push({ x: o.x, y: o.y, w: o.t === 'orb' ? 3 : 1.9, obj: o });
@@ -259,8 +272,9 @@ function aiBegin(T) {
   if (fuseMode) { tg.length = 0; tg.push({ x: F.x[0], y: F.y[0] + 0.6, w: 1.5, fuse: F }); }
   // 這一關中間的放大（冰鏡、噴流、水面、雷雲、稜鏡、彈簧板、滾石坡）：瞄它的入口，打出去之後照最後打到什麼來評分
   if (!fuseMode && A.useGate) for (const p of ampAims(side)) tg.push({ x: p.x, y: p.y, w: p.w || 1, amp: 1, lo: p.lo, hi: p.hi });
-  for (const t of tg) for (let tau = t.lo || 0.7; tau <= (t.hi || 3.41); tau += 0.1) {
-    aimFor(mx, my, t.x, t.y, tau, wind, _av);
+  const LW = lead.w || {}, lgk = LW.gk || 1, lsp = LW.spd || 1;
+  for (const t of tg) for (let tau = t.lo || (lsp > 1 ? 0.3 : 0.7); tau <= (t.hi || 3.41); tau += 0.1) {
+    aimFor(mx, my, t.x, t.y, tau, wind, _av, lgk, lsp);
     if (aimOk(_av[0], _av[1], dir)) A.cand.push({ vx: _av[0], vy: _av[1], tau, t });
   }
   A.mx = mx; A.my = my;
@@ -331,13 +345,15 @@ function aiHitScore(R, side, T) {
 }
 // 用這個角度，自己人每一個開得了火的兵各試射一發：有沒有哪一發會落回自己的城上（後排的兵吊太高、水平速度太小就會）。順便回傳最多穿過幾倍的符
 function aiVolley(T, vx, vy) {
-  const A = T.ai, dir = T.dir, lead = volleyLead(T), E = lead ? volleyEvent(T.side, lead, vx, vy) : null, ev = E ? { ok: E.ok, x: E.x, y: E.y, vx: E.vx, vy: E.vy } : null, v = [0, 0]; let wm = 1, own = false;
+  const ff = !!rules().ff, A = T.ai, dir = T.dir, lead = volleyLead(T), E = lead ? volleyEvent(T.side, lead, vx, vy) : null, ev = E ? { ok: E.ok, x: E.x, y: E.y, vx: E.vx, vy: E.vy } : null, v = [0, 0]; let wm = 1, own = false;
   for (const u of T.units) {
     if (!ableUnit(u)) continue;
     if (u === lead) { v[0] = vx; v[1] = vy; } else volleyAim(T.side, u, vx, vy, ev, v);
     const m = muzzle(u, dir), R = simTrace(T.side, m[0], m[1], v[0], v[1], S.wind, A.fireAt, undefined, u.w.i);
     if (R.mult > wm) wm = R.mult;
     if (R.hit === 2 && R.o && R.o.side === T.side && !R.o.frag) own = true;
+    // 有誤傷的關：這一發炸開的地方離自己人太近也不行
+    if (ff && R.hit) { const r = ((u.w.ai ? u.w.ai.r : u.w.r) || 1) + 1.2; for (const q of T.units) if (q.alive && Math.hypot(q.x - R.x, q.y + 1.5 - R.y) < r) { own = true; break; } }
   }
   _vol.mult = wm; _vol.own = own; return _vol;
 }

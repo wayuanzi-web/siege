@@ -140,8 +140,8 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 .actions .row { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 2.2); }
 .lvls { display: grid; gap: calc(var(--u) * 1.5); }
 /* 兩篇的分頁：一次只列一篇的六關 */
-.chaps { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 1.6); }
-.chap { position: relative; display: flex; align-items: baseline; justify-content: center; gap: calc(var(--u) * 1.4); min-height: max(calc(var(--u) * 8.4), 40px); padding: calc(var(--u) * .6) calc(var(--u) * 1.6); background: var(--line); --cut: calc(var(--u) * 1.5); color: #a79fc4; font-weight: 700; font-size: calc(var(--u) * 3.3); letter-spacing: .12em; white-space: nowrap; }
+.chaps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(var(--u) * 1.2); }
+.chap { position: relative; display: flex; align-items: baseline; justify-content: center; gap: calc(var(--u) * 1); min-height: max(calc(var(--u) * 8.4), 40px); padding: calc(var(--u) * .6) calc(var(--u) * 1); background: var(--line); --cut: calc(var(--u) * 1.5); color: #a79fc4; font-weight: 700; font-size: calc(var(--u) * 3.3); letter-spacing: .12em; white-space: nowrap; }
 .chap::before { content: ""; position: absolute; inset: 2px; background: linear-gradient(180deg, rgba(43, 36, 70, .96), rgba(29, 24, 48, .96)); clip-path: inherit; }
 .chap > * { position: relative; }
 .chap small { font-family: var(--f-num); font-size: calc(var(--u) * 2.8); letter-spacing: 0; opacity: .8; }
@@ -171,6 +171,18 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 .lvinfo .tipbox > p { grid-area: 1 / 1; margin: 0; color: #cfc8e6; font-size: calc(var(--u) * 3.2); line-height: 1.5; text-wrap: pretty; }
 .lvinfo .tipbox > p.sizer { visibility: hidden; }
 .lvinfo p.blurb { color: var(--bone); }
+/* 演武場：戰場、誤傷兩個小開關；兵的頭像點了換人 */
+.prac { display: flex; justify-content: center; align-items: center; gap: calc(var(--u) * 1.6); margin-top: calc(var(--u) * 1.2); flex-wrap: wrap; }
+.prac .pbtn { min-height: max(calc(var(--u) * 8), 34px); min-width: max(calc(var(--u) * 8), 34px); padding: 0 calc(var(--u) * 1.6); font-weight: 700; font-size: calc(var(--u) * 3.1); letter-spacing: .06em; color: var(--bone); background: rgba(255, 255, 255, .1); --cut: calc(var(--u) * 1.2); }
+.prac .pbtn[aria-pressed="true"] { color: var(--gold-ink); background: var(--gold); }
+.prac .pmap { min-width: calc(var(--u) * 26); text-align: center; font-weight: 700; font-size: calc(var(--u) * 3.1); letter-spacing: .06em; white-space: nowrap; }
+.lvcrew .cu.add { box-shadow: 0 0 0 calc(var(--u) * .45) var(--gold); }
+.pickgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: calc(var(--u) * 1.4); }
+.pickgrid button { display: grid; justify-items: center; gap: calc(var(--u) * .4); padding: calc(var(--u) * .8) 0; background: rgba(255, 255, 255, .06); --cut: calc(var(--u) * 1.2); font-size: calc(var(--u) * 2.7); font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
+.pickgrid button canvas { width: calc(var(--u) * 10); height: calc(var(--u) * 10); border-radius: 50%; background: #241d3c; }
+.pickgrid button[aria-pressed="true"] { background: rgba(255, 201, 60, .28); box-shadow: inset 0 0 0 2px var(--gold); }
+.pickgrid button.new span::after { content: "新"; margin-left: 2px; padding: 0 3px; border-radius: 3px; background: #e0442e; color: #fff; font-size: .8em; }
+.crew.many .cu { width: calc(var(--u) * 6.2); height: calc(var(--u) * 6.2); }
 /* 雙方的兵：一排頭像，左邊直書的「我方／敵軍」。卡片窄的時候頭像一起縮，標籤不會被擠成一個字一行 */
 .lvcrew { display: grid; gap: calc(var(--u) * 1.3); margin-top: calc(var(--u) * 1.6); }
 .lvcrew .grp { display: grid; grid-auto-flow: column; grid-template-columns: auto; grid-auto-columns: minmax(0, max(calc(var(--u) * 9.4), 36px)); justify-content: center; align-items: center; gap: calc(var(--u) * 1.4); }
@@ -312,13 +324,25 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
         </div>
       </div>
       <div class="home-m">
-        <div class="lvinfo chamfer"><h2 id="liName"></h2><small id="liTag" class="chamfer" style="--cut:3px"></small><div id="liTipBox" class="tipbox"><p id="liTip" aria-live="polite"></p></div><div id="liCrew" class="lvcrew"></div></div>
+        <div class="lvinfo chamfer"><h2 id="liName"></h2><small id="liTag" class="chamfer" style="--cut:3px"></small><div id="liTipBox" class="tipbox"><p id="liTip" aria-live="polite"></p></div>
+          <div id="liPrac" class="prac" hidden><button class="pbtn chamfer" id="pMapL" aria-label="上一個戰場">◀</button><span class="pmap" id="pMap"></span><button class="pbtn chamfer" id="pMapR" aria-label="下一個戰場">▶</button><button class="pbtn chamfer" id="pFF" aria-pressed="true">誤傷</button><button class="pbtn chamfer" id="pRand">敵軍隨機</button></div>
+          <div id="liCrew" class="lvcrew"></div></div>
       </div>
       <div class="home-r" id="homeR">
         <div class="chaps" id="chaps" role="tablist" aria-label="選擇篇章"></div>
         <div class="lvls" id="lvls" role="listbox" aria-label="選擇關卡"></div>
       </div>
     </section>
+
+    <div id="pick" class="modal" role="dialog" aria-modal="true" aria-labelledby="pickTitle" hidden>
+      <div class="plaque chamfer">
+        <h2 id="pickTitle">挑一個兵</h2>
+        <p class="sub" id="pickSub"></p>
+        <div class="pickgrid" id="pickGrid"></div>
+        <p class="tipline" id="pickTip"></p>
+        <button class="btn" data-close><span>返回</span></button>
+      </div>
+    </div>
 
     <div id="shop" class="modal" role="dialog" aria-modal="true" aria-labelledby="shopTitle" hidden>
       <div class="plaque chamfer">

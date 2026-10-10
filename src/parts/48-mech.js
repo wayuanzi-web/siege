@@ -40,8 +40,8 @@ function anchorAt(st, P) {
 
 /* ---------- 繩索與鐵鍊 ---------- */
 // 傷害種類對繩子的倍率：   爆   穿刺  重   火   冰   雷   壓   暗
-const ROPE_DM = [1.0, 2.6, 1.2, 1.6, 0.4, 0.8, 0, 1.1];        // 麻繩：一箭射得斷、火燒得斷
-const CHAIN_DM = [0.8, 0.45, 1.25, 0.25, 0.4, 3.2, 0, 1.0];    // 鐵鍊：箭射不太動，重砲、雷、大石頭才打得斷
+const ROPE_DM = [1.0, 2.6, 1.2, 1.6, 0.4, 0.8, 0, 1.1, 1.6, 0.6, 0];        // 麻繩：一箭射得斷、火燒得斷、酸蝕得斷，磁暴吸不動
+const CHAIN_DM = [0.8, 0.45, 1.25, 0.25, 0.4, 3.2, 0, 1.0, 1.8, 0.1, 2.4];    // 鐵鍊：箭射不太動，重砲、雷、大石頭、酸、磁暴才打得斷
 const ROPE_HP = { rope: 26, chain: 60 };
 function ropeEnds(r) {
   const e = r.e;
@@ -184,7 +184,7 @@ const WELD_HP = 0.35;
 function mkWelds(st, rects) {
   const inR = (b) => { const bc = st.mirror ? st.cols - b.cx - b.cw : b.cx, r0 = st.rows - (b.cy + b.ch), r1 = st.rows - 1 - b.cy; for (const r of rects) if (bc + b.cw - 1 >= Math.min(r[0], r[2]) && bc <= Math.max(r[0], r[2]) && r1 >= Math.min(r[1], r[3]) && r0 <= Math.max(r[1], r[3])) return true; return false; };
   const L = st.blocks.filter((b) => !b.dead && !b.prop && b.cx !== undefined && inR(b)), box = (b) => [b.x0 - b.w / 2, b.x0 + b.w / 2, b.y0 - b.h / 2, b.y0 + b.h / 2];
-  const add = (a, b, px, py) => { const j = PH.world.createJoint(new PL.WeldJoint({ frequencyHz: 0, dampingRatio: 0, collideConnected: false }, a.body, b ? b.body : st.rockBody, { x: px, y: py })); const w = { a, b, j }; S.welds.push(w); (a.welds || (a.welds = [])).push(w); if (b) (b.welds || (b.welds = [])).push(w); };
+  const add = (a, b, px, py) => { const j = PH.world.createJoint(new PL.WeldJoint({ frequencyHz: 0, dampingRatio: 0, collideConnected: false }, a.body, b ? b.body : st.rockBody, { x: px, y: py })), q = a.body.getLocalPoint({ x: px, y: py }), w = { a, b, j, la: { x: q.x, y: q.y } }; S.welds.push(w); (a.welds || (a.welds = [])).push(w); if (b) (b.welds || (b.welds = [])).push(w); };
   for (let i = 0; i < L.length; i++) {
     const A = box(L[i]);
     for (let k = i + 1; k < L.length; k++) {
