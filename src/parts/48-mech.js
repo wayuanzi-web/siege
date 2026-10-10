@@ -90,31 +90,18 @@ function mkHang(st, h) {
   b.hp = b.hm = h.hp ? h.hp * (st.hpMul || 1) : kind === 'lamp' ? (mat === M_IRON ? 250 : 120) * (st.hpMul || 1) : 1e6;
   return mkRope(st, { b: top, x: P.x, y: P.y }, { b, x: P.x, y: y + hh / 2 }, { kind: h.chain ? 'chain' : 'rope', hp: h.rhp, aw: h.aw, tag: h.tag || h.t, hang: b });
 }
-// 第一回合（敵軍的第一輪）：我方的機關（繩索、鐵鍊、氣球、船艙、引信、擋滾石的木樁）還有護符護著，敵軍打不壞。
-// 第二回合起就沒有了（開場不會還沒打就先被敵軍一輪打斷要害）
-function guard1(victim, side) { return S.round <= 1 && victim === 0 && side === 1 && !!S.lv.foe.open; }
-/* 開場護符也護著「機關磚」：共鳴晶柱、吊著的東西（配重籃、吊燈、吊鐘）和吊它的那塊、懸臂樑插銷的那根樑、
-   城樓藍圖標了 r1hold 的最上面幾列（冰崖頂上的冰棚、積雪、撐著它的冰柱和屋頂），還有戰場中間會倒向我方的那一排石碑。
-   敵軍第一輪打不傷、炸不動它們；會倒向我方的石碑和中間的大鐘在敵軍第一輪的時候整塊定住（投石兵的大石頭也推不倒），第二回合一開始放開 */
-function r1mech(b) { return !!(b.reso || b.hang || b.ropes || b.pins || b.r1hold || b.mat === M_KEG || b.rod || b.tslab || b.heart || b.brake || b.core || (b.dom && b.side === 2 && b.x0 < MID)); }
-function r1Guard(b, side) { return side === 1 && (b.side === 0 || b.side === 2) && S.round <= 1 && !!S.lv.foe.open && r1mech(b); }
-// 敵軍的第一輪裡，我方的機關磚也不會因為「掉在兵頭上碎掉」這類規則被拿掉（不管是誰的功勞）
-function r1Keep(b) { return S.turn === 1 && r1Guard(b, 1); }
-function r1Mark() {
-  S.r1held = []; S.doms = []; for (const b of S.blocks) if (b.dom && !b.dead) S.doms.push(b);
-  if (!S.lv.foe.open) return;
-  const st = S.st[0], hr = st.def.r1hold || 0;
-  if (hr) for (const b of st.blocks) if (!b.dead && !b.prop && b.body.isDynamic() && b.cy + b.ch > st.rows - hr) b.r1hold = 1;          // 只標記（打不傷、炸不動），不定住：定住再放開，被擠進去的磚會把整座城彈開
-  for (const q of S.structs) if (q.side === 2 && !q.loose) for (const b of q.blocks) if (!b.dead && b.dom && b.x0 < MID) S.r1held.push(b);
-  if (S.bell) S.r1held.push(S.bell.b);          // 大鐘：敵軍的第一輪（連投石兵的大石頭）推不動它
+/* 開場護符（雙方一樣）：第一回合，每一邊挨的第一輪砲火（敵軍挨我方的第一輪、我方挨敵軍的第一輪）——
+   兵只受幾成傷（foe.open）、不會被轟出城或掉下去（送回原位）、不會被凍住電暈、不會被壓扁。
+   護到這一邊自己打完下一輪為止：第一輪留下來的火、引信、還在垮的樓，在自己那一輪也還在燒、還在掉，一樣不會把兵弄死。
+   敵軍：第一回合整回合（含回合結束的落石）；我方：第一回合敵軍那一輪、回合結束、第二回合自己那一輪。
+   城樓和機關照常打得壞：第一輪就打得出坍塌（城破要好幾段一起垮，一輪打不完） */
+function r1v(victim) {
+  if (victim >= 2 || !S.lv.foe.open) return false;
+  return victim === 1 ? S.round <= 1 : (S.round <= 1 && S.turn === 1) || (S.round === 2 && S.turn === 0);
 }
-function r1Hold(on) {
-  if (!S.r1held || !S.r1held.length || !!S.r1on === on) return;
-  S.r1on = on;
-  for (const b of S.r1held) { if (b.dead || !b.body) continue; b.body.setType(on ? 'static' : 'dynamic'); if (!on) b.body.setAwake(true); }
-}
+function r1Mark() { S.doms = []; for (const b of S.blocks) if (b.dom && !b.dead) S.doms.push(b); }
 function ropeHurt(r, d, kind, side) {
-  if (r.cut || d <= 0 || guard1(r.side, side)) return;
+  if (r.cut || d <= 0) return;
   d *= (r.kind === 'chain' ? CHAIN_DM : ROPE_DM)[kind] || 0; if (d <= 0) return;
   const before = r.hp; r.hp -= d; r.flash = 1;
   if (side < 2 && r.side < 2 && side !== r.side) { const T = S.team[side]; T.ult.c = Math.min(T.ult.need, T.ult.c + Math.min(d, before) * T.ult.gain * 0.8 * ultK(side)); }
@@ -190,6 +177,37 @@ function ropesBlast(x, y, rad, dmg, kind, side, fire) {
   }
 }
 
+/* ---------- 榫接（weld）：一整間吊著的殿、一整片桁架，磚和磚之間用榫頭接死（一起晃、一起倒） ----------
+   藍圖寫 weld: [[欄0, 由上往下列0, 欄1, 列1], …]（照藍圖的方向，敵城會鏡射）：範圍裡上下疊著的兩塊磚接起來，
+   最底下踩著岩壁（A）的也接在岩壁上。榫頭不會被推斷、震斷：要把那一塊打碎（或打到剩不到 WELD_HP 的耐久），接在它身上的榫頭才斷 */
+const WELD_HP = 0.35;
+function mkWelds(st, rects) {
+  const inR = (b) => { const bc = st.mirror ? st.cols - b.cx - b.cw : b.cx, r0 = st.rows - (b.cy + b.ch), r1 = st.rows - 1 - b.cy; for (const r of rects) if (bc + b.cw - 1 >= Math.min(r[0], r[2]) && bc <= Math.max(r[0], r[2]) && r1 >= Math.min(r[1], r[3]) && r0 <= Math.max(r[1], r[3])) return true; return false; };
+  const L = st.blocks.filter((b) => !b.dead && !b.prop && b.cx !== undefined && inR(b)), box = (b) => [b.x0 - b.w / 2, b.x0 + b.w / 2, b.y0 - b.h / 2, b.y0 + b.h / 2];
+  const add = (a, b, px, py) => { const j = PH.world.createJoint(new PL.WeldJoint({ frequencyHz: 0, dampingRatio: 0, collideConnected: false }, a.body, b ? b.body : st.rockBody, { x: px, y: py })); const w = { a, b, j }; S.welds.push(w); (a.welds || (a.welds = [])).push(w); if (b) (b.welds || (b.welds = [])).push(w); };
+  for (let i = 0; i < L.length; i++) {
+    const A = box(L[i]);
+    for (let k = i + 1; k < L.length; k++) {
+      const B = box(L[k]), ox = Math.min(A[1], B[1]) - Math.max(A[0], B[0]);
+      if (ox > 0.25 && (Math.abs(A[3] - B[2]) < 0.2 || Math.abs(B[3] - A[2]) < 0.2)) add(L[i], L[k], (Math.max(A[0], B[0]) + Math.min(A[1], B[1])) / 2, Math.abs(A[3] - B[2]) < 0.2 ? A[3] : B[3]);
+    }
+    // 踩在岩壁上
+    if (st.rockBody) { const b = L[i], cy = b.cy - 1; if (cy >= 0) for (let a = 0; a < b.cw; a++) if (st.cellK[cy * st.cols + b.cx + a] === 3) { add(b, null, b.x0, A[2]); break; } }
+  }
+}
+// 每一步：打碎了、打到快碎的那一塊，接在它身上的榫頭斷掉
+function weldStep() {
+  for (const w of S.welds) {
+    if (!w.j) continue;
+    const a = w.a, b = w.b;
+    if (a.dead || !a.body || (b && (b.dead || !b.body))) { w.j = null; continue; }          // 磚碎了：榫頭跟著那塊磚一起沒了（物理引擎已經拆掉）
+    if (a.hp < a.hm * WELD_HP || (b && b.hp < b.hm * WELD_HP)) {
+      if (PH.inStep) PH.killJ.push(w.j); else PH.world.destroyJoint(w.j); w.j = null;
+      const p = a.body.getPosition(); ev('weldsnap', p.x, p.y); S.chainT = S.time;
+      for (const o of [a, b]) if (o) o.body.setAwake(true);
+    }
+  }
+}
 /* ---------- 天秤的支點：一塊磚被釘在世界上的一點，只能繞著它轉（有角度上限，轉軸有摩擦） ---------- */
 // 支點釘在這座城自己的岩柱上（大樑跟岩柱之間不碰撞：轉起來不會卡在柱頂的角上）。
 // 開場先秤一下：大樑上所有東西（磚、兵、兩籃配重）對支點的力矩加起來，差多少就加在標了 bal 的那一籃上，讓它剛好平衡。
@@ -431,6 +449,7 @@ function mechStep(dt) {
     }
   }
   if (S.lv.stress) stressStep(dt, act);
+  if (S.welds.length) weldStep();
   boulderStep(dt);
   if (S.plats.length) platStep(dt, act);
   // 崩下來的冰棚、積雪：掉得快的時候整塊的重量砸上去（跟滾石一樣），砸穿屋頂、把人埋掉
@@ -458,8 +477,7 @@ function mechStep(dt) {
   for (const o of S.pivots) if (o.b && !o.b.dead) {
     const a = o.b.body.getAngle(), w = o.b.body.getAngularVelocity();
     // 瞄準的時候天秤卡死。轉軸是「靜摩擦大、動摩擦小」：一旦開始翻（歪了快兩度），摩擦只剩三成，一路翻到底
-    const r1 = o.st.side === 0 && S.round <= 1 && S.turn === 1 && !!S.lv.foe.open;          // 敵軍的第一輪：我方的天秤卡住（開場護符）
-    if (o.tq) o.j.setMaxMotorTorque(!act || r1 ? 1e9 : Math.abs(a) > 0.012 && Math.abs(w) > 0.004 ? o.tq * 0.3 : o.tq);
+    if (o.tq) o.j.setMaxMotorTorque(!act ? 1e9 : Math.abs(a) > 0.012 && Math.abs(w) > 0.004 ? o.tq * 0.3 : o.tq);
     // 大樑開始翻：嘎——的一聲（一次翻動只響一次）
     if (Math.abs(w) > 0.01 && act) S.chainT = S.time;          // 還在翻：回合先別結束
     if (Math.abs(w) > 0.25 && !o.tip && act) { o.tip = 1; ev('tilt', o.x, o.y, w); }
@@ -469,15 +487,20 @@ function mechStep(dt) {
   // 吊著的東西：吊它的那塊垮了（屋頂、樓板掉下來），它也是砸下去的
   for (const r of S.ropes) if (!r.cut && r.hang && !r.hang.dead && !r.hang.hangFree) { const top = r.a; if (top && (top.dead || !top.inPlace)) r.hang.hangFree = 1; }
 }
-// 共鳴晶柱被打到：整座宮殿的琉璃一起震出裂痕（一個圈一個圈傳出去）
+/* 共鳴晶柱被打到：琉璃震出裂痕、震碎（從晶柱一圈一圈傳出去）。晶柱的耐久每掉過一道門檻（RESO_TH）就共鳴一次：
+   共鳴從最高、最薄的琉璃震起——第一次震碎頂樓，第二次震到二樓，晶柱碎掉的那一下整座宮殿的琉璃一起震：要打三次，琉璃才一層一層碎完（只震琉璃：石頭骨架還在，城破要另外打） */
+const RESO_TH = [0.62, 0.3, 0.0001];
 function resonate(b, side) {
-  if (b.resoDone) return; b.resoDone = 1;
-  const p = b.body.getPosition();
-  ev('reso', p.x, p.y, side);
+  const n = b.resoN || 0; if (n >= RESO_TH.length) return;
+  b.resoN = n + 1; if (b.resoN >= RESO_TH.length) b.resoDone = 1;
+  const p = b.body.getPosition(); let y0 = 1e9, y1 = -1e9;
+  for (const o of b.st.blocks) if (!o.dead && o.mat === M_GLASS && !o.reso && !o.hang) { y0 = Math.min(y0, o.y0); y1 = Math.max(y1, o.y0); }
+  const cut = y1 - (y1 - y0) * (n + 1) / RESO_TH.length - 0.5, prev = n ? y1 - (y1 - y0) * n / RESO_TH.length - 0.5 : 1e9;
+  ev('reso', p.x, p.y, side, n + 1);
   for (const o of b.st.blocks) {
-    if (o.dead || o === b || o.mat !== M_GLASS || o.reso) continue;
-    const d = Math.hypot(o.x0 - p.x, o.y0 - p.y); if (d > 30) continue;
-    S.pend.push({ t: S.time + 0.08 + d * 0.018, reso: o, side });
+    if (o.dead || o === b || o.mat !== M_GLASS || o.reso || o.y0 < cut) continue;
+    const d = Math.hypot(o.x0 - p.x, o.y0 - p.y);
+    S.pend.push({ t: S.time + 0.08 + d * 0.018, reso: o, side, k: o.y0 >= prev ? 0.6 : 1 });          // 上一次震過的再震一次（少一點）
   }
 }
 // 第二篇才有的回合結束清場：場中間停住的大石頭清掉（不然整片空地擺滿石頭，平射都被擋）
@@ -496,7 +519,8 @@ function mechRoundEnd() {
   }
 }
 // 兵比對面少的時候：打出傷害、打出坍塌，連珠集得快一點（給落後的一方翻盤的機會）
-function ultK(side) { const T = S.team[side], F = S.team[1 - side]; return T && F && T.alive < F.alive ? 1.5 : 1; }
+// 落後的那一邊（兵比較少，或城樓比對面塌得多）：打出的傷害、坍塌讓連珠集得快五成
+function ultK(side) { const T = S.team[side], F = S.team[1 - side]; return T && F && (T.alive < F.alive || (S.st[side] && S.st[1 - side] && structBar(side) + 0.15 < structBar(1 - side))) ? 1.5 : 1; }
 function ropesBurning() { for (const r of S.ropes) if (!r.cut && r.burn > 0) return true; return false; }
 
 /* ---------- 浮島與戰船（藍圖裡的 R、B）：整片連成一個會動的大塊，城樓蓋在上面 ----------
@@ -578,7 +602,6 @@ function mkLift(st, d) {
 }
 function liftBreak(o, side) {
   if (o.cutT > 0) return;
-  if (guard1(o.side, side)) { o.hp = Math.max(o.hp, o.hm * 0.2); return; }
   o.hp = 0; o.F = 0; o.cutT = S.time; o.by = side;
   const P = o.plat; if (P && !P.dead) P.body.setAwake(true);
   // 那一頭的繩子一下子吃滿重量：從氣球的環裡滑出一截（那一頭往下一沉）
@@ -660,7 +683,7 @@ function platForces() {
 }
 // 船艙被打到：船身很厚，可是打穿了就會一直進水
 function hullHurt(c, d, kind, side) {
-  if (side === c.side || c.hp <= 0 || guard1(c.side, side)) return;
+  if (side === c.side || c.hp <= 0) return;
   d *= DM[kind][M_WOOD] * 0.85; if (d <= 0) return;
   const before = c.hp; c.hp = Math.max(0, c.hp - d); c.flash = 1;
   if (side < 2) { const T = S.team[side]; T.dealt += before - c.hp; T.ult.c = Math.min(T.ult.need, T.ult.c + (before - c.hp) * T.ult.gain * ultK(side)); }
@@ -678,7 +701,6 @@ function hullHurt(c, d, kind, side) {
 // 浮島氣球被打破
 function tetherPop(o, side) {
   if (o.hp <= 0 && o.cutT > 0) return;          // 已經破了
-  if (guard1(o.side, side)) { o.hp = Math.max(o.hp, o.hm * 0.2); return; }
   o.hp = 0; o.cutT = S.time; o.by = side;
   if (o.j) { if (PH.inStep) PH.killJ.push(o.j); else PH.world.destroyJoint(o.j); o.j = null; }
   const P = o.plat; if (P && !P.dead) P.body.setAwake(true);
@@ -704,7 +726,7 @@ function platStep(dt, act) {
         // 繩子吃不住重量（另一頭的晶石碎了、浮島被打得甩起來）：撐一下就繃斷
         if (o.j && act) {
           o.tens = o.j.getReactionForce(1 / dt).length();
-          if (o.tens > o.tmax && !(o.side === 0 && S.round <= 1 && S.turn === 1 && S.lv.foe.open)) { o.over += dt; if (o.over > 0.3) { const by = P.lifts ? P.lifts.reduce((a, q) => (q.by >= 0 ? q.by : a), 2) : 2; o.snap = 1; const wp = body.getWorldPoint(o.lp); ev('snap', (wp.x + o.ax) / 2, (wp.y + o.ay) / 2, 0, o.side, 'tether'); tetherPop(o, by === o.side ? 2 : by); S.chainT = S.time; } }
+          if (o.tens > o.tmax) { o.over += dt; if (o.over > 0.3) { const by = P.lifts ? P.lifts.reduce((a, q) => (q.by >= 0 ? q.by : a), 2) : 2; o.snap = 1; const wp = body.getWorldPoint(o.lp); ev('snap', (wp.x + o.ax) / 2, (wp.y + o.ay) / 2, 0, o.side, 'tether'); tetherPop(o, by === o.side ? 2 : by); S.chainT = S.time; } }
           else o.over = Math.max(0, o.over - dt);
         }
       }
@@ -730,7 +752,7 @@ function platStep(dt, act) {
    火從點著的地方往兩頭燒，燒到哪一桶火藥，那一桶就爆。
    引信沿著牆、樓板走：每一小段記住它貼著的那塊磚（anc），那塊垮了、移位了，那一段就跟著不見（不會整條吊在半空中） */
 const FUSE_R = 1.0;            // 火要燒到離引信頭這麼近才點得著（要瞄得準）
-const FUSE_V = 8.5;            // 引信一秒燒多長
+const FUSE_V = 1.6;            // 引信一秒燒多長：只在砲擊、落石的時候燒（瞄準的時候停），一輪大概燒下一層樓，要兩三回合才燒進地窖
 function mkFuse(st, d) {
   const xs = [], ys = [], s = [0];
   for (const a of d.pts) { const P = cellPt(st, a); xs.push(P.x); ys.push(P.y); }
@@ -761,7 +783,7 @@ function fusePt(F, s) {
   const u = clamp((s - F.s[i]) / Math.max(1e-6, F.s[i + 1] - F.s[i]), 0, 1); _pl.x = lerp(F.x[i], F.x[i + 1], u); _pl.y = lerp(F.y[i], F.y[i + 1], u); return _pl;
 }
 function fuseIgnite(F, s, by) {
-  if (F.done || guard1(F.side, by)) return;
+  if (F.done) return;
   const k = clamp(Math.round(s / 0.25), 0, F.bin.length - 1); if (F.bin[k]) return;
   for (const f of F.fronts) if (Math.abs(f.s - s) < 0.6) return;
   F.fronts.push({ s, d: 1 }, { s, d: -1 }); F.by = by; F.lit++;
@@ -776,7 +798,6 @@ function fuseBlast(x, y, r, fire, keg, side) {
     else if (fire && side !== F.side) { const q = fuseNear(F, x, y, F.open); if (q.d < FUSE_R && fuseOn(F, clamp(Math.round(q.s / 0.25), 0, F.bin.length - 1))) fuseIgnite(F, q.s, side); }
   }
 }
-function fusesBurning() { for (let k = 0; k < 2; k++) { const F = S.st[k] && S.st[k].fuse; if (F && F.fronts.length) return true; } return false; }
 function fuseStep(dt, act) {
   for (let k = 0; k < 2; k++) {
     const F = S.st[k] && S.st[k].fuse; if (!F || !F.fronts.length || !act) continue;
@@ -856,16 +877,16 @@ function bellInit(d) {
 }
 // d：這一下打得多重（累積成鐘鳴）
 function bellPush(side, d) {
-  const B = S.bell; if (!B) return; B.round1 = S.round <= 1 && side === 1 && !!S.lv.foe.open; B.by = side; B.b.smashBy = side; if (B.damp) { B.damp = false; B.b.body.setLinearDamping(0.04); B.b.body.setAngularDamping(3); }
-  // 共振：打在鐘上的力道累積起來，滿了「噹——」一聲，震波打向對面那座塔（敵軍第一輪不算）
-  if (B.e && side < 2 && d > 0 && !B.round1 && S.state === 'play') { B.e[side] = Math.min(1, B.e[side] + d / (S.lv.bell.e || 220)); B.flash = 1; if (B.e[side] >= 1 && !B.ring) { B.ring = 1; bellRing(side); } }
+  const B = S.bell; if (!B) return; B.by = side; B.b.smashBy = side; if (B.damp) { B.damp = false; B.b.body.setLinearDamping(0.04); B.b.body.setAngularDamping(3); }
+  // 共振：打在鐘上的力道累積起來，滿了「噹——」一聲，震波打向對面那座塔
+  if (B.e && side < 2 && d > 0 && S.state === 'play') { B.e[side] = Math.min(1, B.e[side] + d / (S.lv.bell.e || 220)); B.flash = 1; if (B.e[side] >= 1 && !B.ring) { B.ring = 1; bellRing(side); } }
 }
 const BELL_WAVE = 34;          // 鐘鳴的震波：打在對面塔上每一塊木頭、屋瓦的傷害（心柱還在只剩三分之一：柱子只會震裂；心柱斷了全額，一根根震斷）
 function bellRing(side) {
   const B = S.bell, st = S.st[1 - side], p = B.b.body.getPosition(), heart = st.blocks.some((b) => b.heart && !b.dead && b.inPlace), k = heart ? 0.33 : 1;
   B.e[side] = 0; B.ringK = k;
   ev('bellring', p.x, p.y, side, heart ? 1 : 0);
-  S.chainT = S.time; if (side !== S.turn || S.phase === 'hazard') { /* 不是自己這一輪打的（落石、對方推的）也照樣響 */ }
+  S.chainT = S.time;          // 不是自己這一輪打的（落石、對方推的）也照樣響
   for (const b of st.blocks) { if (b.dead || b.prop || b.heart || (b.mat !== M_WOOD && b.mat !== M_ROOF)) continue; const d = Math.hypot(b.x0 - p.x, b.y0 - p.y); S.pend.push({ t: S.time + 0.15 + d * 0.012, ring: b, side, k }); }
   for (const u of st.units) if (u.alive) { const d = Math.hypot(u.x - p.x, u.y - p.y); S.pend.push({ t: S.time + 0.15 + d * 0.012, ringU: u, side, k }); }
   B.ring = 0;
@@ -943,6 +964,7 @@ function pulleyCalib(PU) {
   const want = Math.max(Mc * PU_RATIO - Ms, pan.body.getMass() * 0.3), f = want / pan.body.getMass();
   for (let fx = pan.body.getFixtureList(); fx; fx = fx.getNext()) fx.setDensity(fx.getDensity() * f);
   pan.body.resetMassData(); PU.Mc = Mc;
+  const pa = pan.body.getWorldPoint(PU.lp); PU.maxSink = Math.max(4, Math.hypot(pa.x - PU.bx, pa.y - PU.by) - 1.4);          // 籠子最多沉多深（配重桶升到岩臂、鋼纜就斷）
 }
 function pulleyCut(PU, side, quiet) {
   if (PU.cut) return; PU.cut = true;
@@ -953,8 +975,8 @@ function pulleyCut(PU, side, quiet) {
 function pulleyStep(dt, act) {
   for (const PU of S.pulleys || []) {
     if (PU.cut) continue;
-    const cage = PU.cage.body, pan = PU.pan.body, r1 = PU.side === 0 && S.round <= 1 && S.turn === 1 && !!S.lv.foe.open;
-    if (PU.mode === 'lock' && !PU.brakes.some((b) => !b.dead && b.inPlace) && !r1) {
+    const cage = PU.cage.body, pan = PU.pan.body;
+    if (PU.mode === 'lock' && !PU.brakes.some((b) => !b.dead && b.inPlace)) {
       // 閘斷了：鋼纜鬆開，變成真的滑輪
       const ca = cage.getWorldPoint(PU.lc), pa = pan.getWorldPoint(PU.lp), LA = Math.hypot(ca.x - PU.ax, ca.y - PU.ay), LB = Math.hypot(pa.x - PU.bx, pa.y - PU.by);
       PH.world.destroyJoint(PU.jA); PH.world.destroyJoint(PU.jB); PU.jA = PU.jB = null;

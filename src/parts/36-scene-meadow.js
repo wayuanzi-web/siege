@@ -44,11 +44,11 @@ THEMES[0] = (function () {
     terrain(c) {
       const R = mkRand(202), s = V.s;
       solidGround(c, { fill: lg(c, 0, Y(0), 0, V.H, [0, '#55ad49', 0.3, '#3d8c3f', 1, '#2a6a3a']), band: '#7ada58', bandH: 1.0, edge: '#2c6f2e', edgeW: 0.2 });
-      // 池塘（谷底）
-      const px = X(56), py = Y(-3.7);
-      ell(c, px, py, s * 7.5, s * 1.0); c.fillStyle = lg(c, 0, py - s * 1.3, 0, py + s * 1.3, [0, '#a6e3ff', 0.5, '#5fb6ee', 1, '#3c8fd4']); c.fill(); c.strokeStyle = '#2c6f2e'; c.lineWidth = Math.max(1, s * 0.2); c.stroke();
-      c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = Math.max(1, s * 0.16); c.lineCap = 'round';
-      for (let k = 0; k < 4; k++) { const x = px + (R() - 0.5) * s * 10, y = py + (R() - 0.5) * s * 0.8; c.beginPath(); c.moveTo(x, y); c.lineTo(x + s * (1.4 + R() * 1.6), y); c.stroke(); }
+      // 中間的小山丘：頂上一塊界石、一條小路（擋住平射，要吊高越過去）
+      const hx = X(56), hy = Y(groundYRaw(56));
+      c.fillStyle = 'rgba(255,255,255,.18)'; c.beginPath(); c.moveTo(X(47), Y(groundYRaw(47)) + 1); c.quadraticCurveTo(X(53), Y(groundYRaw(53) + 0.4), hx, hy + s * 0.15); c.quadraticCurveTo(X(59), Y(groundYRaw(59) + 0.4), X(65), Y(groundYRaw(65)) + 1); c.lineWidth = Math.max(1, s * 0.5); c.strokeStyle = 'rgba(232,222,170,.45)'; c.stroke();
+      c.fillStyle = '#9a9283'; rrect(c, hx - s * 0.7, hy - s * 2.3, s * 1.4, s * 2.6, s * 0.5); c.fill(); c.fillStyle = '#b9b2a2'; rrect(c, hx - s * 0.7, hy - s * 2.3, s * 0.6, s * 2.5, s * 0.4); c.fill();
+      c.strokeStyle = '#4c473e'; c.lineWidth = Math.max(1, s * 0.16); rrect(c, hx - s * 0.7, hy - s * 2.3, s * 1.4, s * 2.6, s * 0.5); c.stroke();
       // 土層的暗紋
       c.strokeStyle = 'rgba(20,60,30,.22)'; c.lineWidth = Math.max(1, s * 0.3);
       for (let k = 0; k < 9; k++) { const x = X(V.x0 + R() * (V.x1 - V.x0)), y = Y(-3 - R() * 5), w = s * (4 + R() * 9); c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + w * 0.5, y + s * 0.8, x + w, y + s * 0.1); c.stroke(); }

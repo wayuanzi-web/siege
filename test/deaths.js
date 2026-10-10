@@ -1,7 +1,7 @@
 // node test/deaths.js [場數=12] [bot=casual]：每一關兩邊的兵是怎麼死的、死在第幾回合；每回合兩邊城防掉多少
 const G = require('./load')(); const { S, simInit, simStep, LEVELS, BOTS, teamBar, structBar } = G;
 const N = +(process.argv[2] || 12), bot = process.argv[3] || 'casual';
-const HOW = ['擊倒', '砸扁', '?', '燒', '摔出場', '出城'];
+const HOW = ['擊倒', '砸扁', '?', '燒', '摔出場', '出城', '轟飛', '被水沖走'];
 for (let li = 0; li < LEVELS.length; li++) {
   const how = [{}, {}], byRound = [[], []], bars = []; let rounds = 0, wins = 0;
   for (let sd = 0; sd < N; sd++) {

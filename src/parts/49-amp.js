@@ -19,14 +19,21 @@ function ampInit() {
    撞到擋滾石的木樁：撞得斷就撞斷、繼續滾；撞到還架在坡上的大滾石：從它上面彈起來跳過去 */
 const ROLL_R = 0.55, ROLL_MU = 0.1;
 function slopeAt(x) { return (groundYRaw(x + 0.3) - groundYRaw(x - 0.3)) / 0.6; }
-function rollOk(x, side, wi) {
+function rollOk(x, side, wi, vx, vy) {
   const R = AMP.roll; if (!R || side > 1) return false;
   const w = WL[wi]; if (w.r <= 0 || w.phys || w.id === 'drop') return false;
   if (x < R.x0 || x > R.x1 || groundY(x) < -100) return false;
-  return slopeAt(x) * (side === 0 ? 1 : -1) < -0.08;          // 這裡的坡往對方那邊下去才會滾
+  const dir = side === 0 ? 1 : -1, s = slopeAt(x) * dir;
+  if (s < -0.08) return true;          // 這裡的坡往對方那邊下去：滾
+  /* 落在自己這一面的上半坡、往前衝得夠快：往上滾過山頂，再從對面那一面滾下去（衝不過山頂就在半坡停下來炸）。
+     山頂附近平平的地方也一樣 */
+  if (vx === undefined || !R.top) return false;
+  const y = groundYRaw(x); if (y < R.top * 0.5) return false;
+  const c = 1 / Math.sqrt(1 + s * s), vt = (vx * dir + vy * s * dir * dir) * c * 0.6;
+  return vt > 7 && vt * vt > 2 * GRAV * (R.top - y) * (1 + ROLL_MU * 2) + 49;
 }
 function rollStart(x) {
-  const dir = SA.side === 0 ? 1 : -1, s = slopeAt(x), c = 1 / Math.sqrt(1 + s * s), vt = (SA.vx + SA.vy * s) * c;
+  const dir = SA.side === 0 ? 1 : -1, s = slopeAt(x), c = 1 / Math.sqrt(1 + s * s), vt = (SA.vx + SA.vy * s) * c;          // vt：沿著坡面的速度
   SA.flag |= F_ROLL; SA.a0 = SA.mass; SA.a1 = groundYRaw(x);
   SA.x = x; SA.y = groundYRaw(x) + ROLL_R; SA.vx = dir * Math.max(7, vt * dir * 0.6); SA.vy = 0;
 }
@@ -49,7 +56,7 @@ function rollMove(dt, trace) {
     if (o && o.isBlock && o.stake && o.stake.to === 1 - SA.side && !o.dead) {
       // 擋滾石的木樁：撞得斷就撞斷，繼續滾（試射的時候用算的）
       const d = WL[SA.wi].dmg * SA.mass * 1.6 * S.team[SA.side].dmg * S.rage;
-      if (trace) { if (d * DM[K_HEAVY][o.mat] >= o.hp && !guard1(o.stake.to, SA.side)) v *= 0.75; else { SA.hx = RAY.x; SA.hy = RAY.y; SA.o = o; SA.vx = v * c; SA.vy = v * sn; return 1; } }
+      if (trace) { if (d * DM[K_HEAVY][o.mat] >= o.hp) v *= 0.75; else { SA.hx = RAY.x; SA.hy = RAY.y; SA.o = o; SA.vx = v * c; SA.vy = v * sn; return 1; } }
       else { blockHurt(o, d, K_HEAVY, SA.side, RAY.x, RAY.y); if (o.dead) { v *= 0.75; ev('rollsmash', RAY.x, RAY.y); } else { SA.hx = RAY.x; SA.hy = RAY.y; SA.o = o; SA.vx = v * c; SA.vy = v * sn; return 1; } }
     } else { SA.hx = RAY.x; SA.hy = RAY.y; SA.o = o; SA.vx = v * c; SA.vy = v * sn; return 1; }
   }
@@ -115,6 +122,7 @@ function cloudIn(o) { const dx = (SA.nx - o.x) / o.rx, dy = (SA.ny - o.y) / o.ry
 function ampObj(o) {
   switch (o.t) {
     case 'mirror': {
+      if (o.side !== undefined && o.side !== SA.side && SA.side < 2) return 0;          // 對方的冰鏡：穿過去（只有自己那一面幫自己，不會變成擋住對方的牆）
       if (Math.abs(SA.nx - o.x) > o.len + 4 && Math.abs(SA.x - o.x) > o.len + 4) return 0;
       const r = segBounce(o, 0); if (!r) return 0;
       if (r === 2) return 2;

@@ -176,6 +176,7 @@ function fxOn(t, a, b, c, d, e, f) {
     }
     case 'yelp': pop(a, b, c ? '哇啊！' : '哇！', '#ffffff', 2.5, 0.8); FX.pops[FX.pops.length - 1].yelp = 1; break;
     case 'uland': burst(P_DUST, a, b, 3, 8, 0.4, 1.4, C_SAND); break;
+    case 'landout': burst(P_DUST, a, b, 6, 10, 0.5, 1.6, C_SAND); if (S.state === 'play') pop(a, b + 3.5, c === 1 ? '摔出城外！' : '摔出城外', c === 1 ? '#ffe14a' : '#ffb08a', 2.8, 1.0); break;
     case 'zap': {
       // a 欄位中心 x；b 劈到的高度；c 從多高劈下來
       const pts = []; let x = a, y = c; const n = 9;
@@ -386,6 +387,8 @@ function fxOn(t, a, b, c, d, e, f) {
     }
     case 'bossback': ring(a, b, 14, 1.5, 0.5, '#ff7ad0', 0.8); burst(P_SPARK, a, b, 18, 30, 0.7, 0.8, C_PINK); burst(P_SMOKE, a, b, 6, 8, 0.8, 2.4, C_PURPLE); pop(a, b + 7, '魔王飛回來了', '#ff9ad8', 3.4, 1.4); flash(0.3, '#ff5aa0'); sfx('dark'); break;
     case 'phase': flash(0.7, '#ff5aa0'); shake(1.6); sfx('phase'); vibrate(120); break;
+    case 'crumble': shake(0.5); sfx('collapse'); burst(P_DUST, a, b, 14, 10, 1.2, 2.6, C_SAND); pop(a, b + 8, c === 1 ? '敵城搖搖欲墜' : '我方城樓搖搖欲墜', c === 1 ? '#ffe14a' : '#ff9a8a', 3, 1.3); break;
+    case 'bosscastle': flash(0.6, '#ffd36a'); shake(2.2); sfx('collapse'); vibrate(180); ring(a, b, 3, 18, 0.7, '#ffe08a', 0.8); pop(a, b + 9, '魔王城塌了！魔王摔下寶座', '#ffe14a', 4, 1.6); break;
     case 'sudden': flash(0.5, '#ff6a3a'); sfx('horn'); break;
     case 'wind': sfx('gust'); break;
   }

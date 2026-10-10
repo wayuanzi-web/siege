@@ -1,4 +1,5 @@
-// node test/r1probe.js <關卡 1-12> [場數=40]：我方不還手、敵軍打完第一輪，看我方的機關被動了什麼（第一回合應該什麼都不會發生）
+// node test/r1probe.js <關卡 1-12> [場數=40]：我方不還手、敵軍打完第一輪，看我方的機關被動了什麼。
+// 開場護符只護兵、不護機關（雙方一樣），所以這裡列出來的是「第一輪就打得到的機關」，拿來和 test/first.js（兵不會倒）一起看開場公不公平
 // Player does nothing; enemy fires its round-1 volley. At the start of round 2, report what happened to the PLAYER's mechanisms.
 const G = require('./load')('PH');
 const { S, simInit, simStep, simFire, LEVELS, MID } = G;
