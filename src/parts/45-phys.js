@@ -448,7 +448,7 @@ function physStep(dt) {
         // 吊鐘、吊燈掉下來砸到東西：整個重量砸上去，屋頂、樓板一砸就穿
         // （只砸得穿屋頂、柱子這種一塊一塊的，樓板、長樑不算；一口鐘最多砸穿兩樣東西，不會一路鑽到底）
         { const oth = k ? r.a : r.b; if (oth && oth.isBlock && oth.hang && (oth.hangFree || oth.body.getLinearVelocity().y < -4) && !oth.dead && oth !== o && r.vn > 4 && o.st !== S.rubble && !o.hang && !o.seg && (oth.crashN || 0) < 2) { oth.crashN = (oth.crashN || 0) + 1; const by = oth.hitBy !== undefined ? oth.hitBy : o.side === credit ? 2 : credit; blockHurt(o, oth.mass * r.vn * 0.55, K_CRUSH, by, r.x, r.y); if (o.dead) continue; } }
-        if (o.boulder) { if (!o.bHit && o.bFly && !o.bIn) { o.bHit = 1; const oth = k ? r.a : r.b; ev('thunk', r.x, r.y, r.J); if (oth && oth.bigBell) bellPush(o.bSide, o.bW.dmg * o.bMul * 1.5); if (oth && oth.isBlock && !oth.dead && oth !== o) blockHurt(oth, o.bW.dmg * o.bMul, K_HEAVY, o.bSide, r.x, r.y); else if (oth && oth.isUnit && oth.alive && oth.side !== o.bSide) hurtUnit(oth, o.bW.ud * o.bMul, o.bSide, K_CRUSH); } continue; }
+        if (o.boulder) { if (!o.bHit && o.bFly && !o.bIn) { o.bHit = 1; const oth = k ? r.a : r.b; ev('thunk', r.x, r.y, r.J); if (oth && oth.bigBell) bellPush(o.bSide, o.bW.dmg * o.bMul * 1.5); if (oth && oth.isBlock && !oth.dead && oth !== o) blockHurt(oth, o.bW.dmg * o.bMul, K_HEAVY, o.bSide, r.x, r.y); else if (oth && oth.isBeast) beastHurt(oth, o.bW.dmg * o.bMul, K_HEAVY, o.bSide, r.x, r.y); else if (oth && oth.isUnit && oth.alive && oth.side !== o.bSide) hurtUnit(oth, o.bW.ud * o.bMul, o.bSide, K_CRUSH); } continue; }
         const d = (dv - (MAT[o.mat].imp || IMP_V0)) * IMP_K * MAT[o.mat].frag * (o.impK || 1);
         if (d > 0) blockHurt(o, Math.min(d, (o.seg ? o.segM : o.hm) * 0.9 + 6), K_CRUSH, o.side === credit ? 2 : credit, r.x, r.y);
       } else if (o.alive) {
@@ -466,6 +466,7 @@ function physStep(dt) {
           if (d > 0 && !(S.time < o.crushCd)) { o.crushCd = S.time + 0.7; hurtUnit(o, clamp(d * 0.9, o.hpMax * 0.05, o.hpMax * 0.12), o.side === credit ? 2 : credit, K_CRUSH); }
         } else {
           // 摔下來、被砸到：很痛，但一下最多扣四成血（城塌了、被轟下城，人還在，站起來接著打）
+          if (o.thrown) { o.thrown = 0; continue; }          // 被機關巨獸甩出去的：咬那一下已經扣過了，落地不再扣
           const d = (dv - UIMP_V0) * UIMP_K;
           if (d > 0) hurtUnit(o, Math.min(d, o.hpMax * UNIT_FALL_MAX), o.side === credit ? 2 : credit, K_CRUSH);
         }
@@ -554,6 +555,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
     if (crit) ev('crit', x, y, side);
     if (hit && hit.isHull) hullHurt(hit, dmg, kind, side);
     else if (hit && hit.isArm) armHurt(hit, dmg, kind, side);
+    else if (hit && hit.isBeast) { beastHurt(hit, dmg, kind, side, x, y); if (w.chain && hit.leg !== undefined && side === 0 && S.beast) { S.beast.tangleR = S.round; ev('chainhit', x, y, side); } }          // 機關巨獸（第十八關）：鏈彈纏住腳，這一回合結束少走一半
     else if (hit && hit.isBlock && !hit.dead) {
       if (hit.bigBell) bellPush(side, dmg);
       const b = hit;
@@ -590,6 +592,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
       continue;
     }
     if (o.isArm) { armBlast(o, x, y, r, dmg, kind, side, hit); continue; }          // 風車的葉臂
+    if (o.isBeast) { beastBlast(o, x, y, r, dmg, kind, side, hit); continue; }          // 機關巨獸的一塊（第十八關）
     if (o.isHull) {
       // 船身：照離最近的那一點算傷害；船很重，只被推一點點
       const A = o.fix.getAABB(0), qx = clamp(x, A.lowerBound.x, A.upperBound.x), qy = clamp(y, A.lowerBound.y, A.upperBound.y), d = Math.hypot(x - qx, y - qy);
@@ -659,7 +662,9 @@ function lightning(x, y, mul, side) {
   if (S.rods && S.rods.length) for (const b of S.rods) { if (b.dead || !b.inPlace || b.side === side) continue; const p = b.body.getPosition(); if (Math.abs(p.x - x) < (S.lv.rodR || 15)) { ev('rodzap', p.x, p.y + b.h / 2, 78, b.side); b.flash = 1; return; } }
   _lz.length = 0; let roof = -99;
   // 雷從天上直直劈下來：劈到岩壁（懸空寺的岩簷）、地面就停，底下的東西劈不到
-  PH.world.rayCast({ x, y: 78 }, { x, y: -12 }, (f, p) => { const o = f.getUserData(); if (!o || o.isRock) { if (p.y > roof) roof = p.y; } else if (o.isBlock && !o.dead && o.side !== side) _lz.push({ o, y: p.y }); return 1; });
+  let bz = null, bzy = -99;
+  PH.world.rayCast({ x, y: 78 }, { x, y: -12 }, (f, p) => { const o = f.getUserData(); if (o && o.isBeast) { if (!o.dead && o.side !== side && p.y > bzy) { bz = o; bzy = p.y; } if (p.y > roof) roof = p.y; return 1; } if (!o || o.isRock) { if (p.y > roof) roof = p.y; } else if (o.isBlock && !o.dead && o.side !== side) _lz.push({ o, y: p.y }); return 1; });
+  if (bz && bzy >= roof - 0.01) { beastHurt(bz, 18 * mul, K_ZAP, side, x, bzy); ev('spark', x, bzy); }          // 雷劈在機關巨獸最上面那一塊（鐵：加倍）
   _lz.sort((a, b) => b.y - a.y);
   let low = y, n = 0;
   for (const h of _lz) { if (n >= 3) break; if (h.o.dead || h.y < roof) continue; n++; low = Math.min(low, h.y); blockHurt(h.o, 15 * mul, K_ZAP, side, x, h.y); if (h.o.mat === M_IRON) ev('spark', x, h.y); }

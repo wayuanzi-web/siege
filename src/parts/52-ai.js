@@ -397,9 +397,12 @@ function aiStep(T, dt) {
 // 自動玩家：對方開火時，有護城罩就看本事決定開不開
 function aiReact(T) {
   const A = T.ai; if (!A || A.sh <= 0 || T.shield.c < T.shield.need || T.shield.on) return;
+  if (S.beast && T.side === 1) return;          // 機關巨獸沒有城可以罩
   // 魔王城：看得到魔王預告的招式，連射、隕石雨的那一輪才開護罩（其他回合省著）
   let p = A.sh * 0.8;
   if (S.objs.some((o) => o.t === 'charge' && o.hp > 0 && o.side !== T.side && chargeOn(o) === T.side)) p = Math.min(1, A.sh * 1.6);          // 城上黏著對方的炸藥：開罩悶熄它
   if (S.boss && T.side === 0) p = S.boss.next === 'barrage' || S.boss.next === 'meteor' ? Math.min(1, A.sh * 1.6) : A.sh * 0.25;
+  // 機關巨獸：預告光束一定開；噴火、咬人、走到城下要踩城的那一回合看本事開；其他回合省著
+  if (S.beast && T.side === 0) { const B = S.beast; p = B.next === 'beam' ? 1 : B.next === 'flame' || B.next === 'grab' || B.atWall ? Math.min(1, A.sh * 1.5) : A.sh * 0.2; }
   if (rnd() < p) simSkill(T.side, 'shield');
 }

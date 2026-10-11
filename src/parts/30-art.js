@@ -21,6 +21,8 @@ const SKINS = {
   mill: { stone: ['#d9d2c2', '#b3a993', '#857b66', '#5e5646'], wood: ['#c99a62', '#a3743f', '#6a4824'], roof: ['#8aa0b8', '#5d7590', '#3a4c62'], iron: ['#a8acb4', '#7a7f88', '#4b4f57'], panel: ['#3c3026', '#2d241c'], ink: '#1e160f', trim: '#ffd27a', flag: '#dc3a2e', flagDk: '#8f1418' },
   forge: { stone: ['#8a807c', '#655c59', '#433c3a', '#2a2423'], wood: ['#8e5c36', '#6a4022', '#40250f'], roof: ['#a0968f', '#706761', '#45403c'], iron: ['#a3abb6', '#6b7480', '#3a414c'], panel: ['#2e2424', '#201818'], ink: '#130c0c', trim: '#ffb347', flag: '#dc3a2e', flagDk: '#8f1418' },
   mine: { stone: ['#a49a8a', '#7c7262', '#574e42', '#3a332a'], wood: ['#a07446', '#7a522c', '#4c3018'], roof: ['#8a6a48', '#644a30', '#3e2c1a'], iron: ['#9a9890', '#6e6c66', '#46443f'], panel: ['#241c16', '#1a1410'], ink: '#140e0a', trim: '#ffc870', flag: '#dc3a2e', flagDk: '#8f1418' },
+  bastion: { stone: ['#d6dae2', '#aab1bf', '#7b8395', '#575e70'], wood: ['#b8844c', '#8f6132', '#5c3b1b'], roof: ['#8aa0c0', '#5d7596', '#3a4c66'], iron: ['#b0b8c6', '#7e8798', '#4c5464'], panel: ['#2c3242', '#212634'], ink: '#161a26', trim: '#ffc93c', flag: '#2f7bff', flagDk: '#1b46b8' },
+  beast: { stone: ['#7d8798', '#4c5462', '#2e333d', '#1c1f26'], wood: ['#8a6a48', '#644a30', '#3e2c1a'], roof: ['#7d8798', '#4c5462', '#2e333d'], iron: ['#8a93a3', '#5a6270', '#363b45'], panel: ['#1c1f26', '#14161c'], ink: '#0e1014', trim: '#c58c3c', flag: '#dc3a2e', flagDk: '#8f1418' },
   train: { stone: ['#9a948a', '#757068', '#504b45', '#33302c'], wood: ['#9a6a3e', '#744a26', '#4a2c14'], roof: ['#8a9478', '#5e6a50', '#3c4632'], iron: ['#8e9a78', '#626e52', '#3c4632'], panel: ['#26281e', '#1c1e16'], ink: '#14160f', trim: '#e8c060', flag: '#dc3a2e', flagDk: '#8f1418' }
 };
 // 每一關雙方的城樓一模一樣，只有屋瓦和旗子分顏色：我方藍、敵方紅（藍圖的外觀名稱後面接 @0、@1）
@@ -702,6 +704,17 @@ const UNIT_ART = {
     rrect(c, 4, -6.5, 11, 3.6, 1.6); fs(c, '#2a2e38', '#0a0b0e', 1.1); c.fillStyle = '#8fd0ff'; c.fillRect(13.5, -6, 1.6, 2.6);
     c.restore();
     uArm(c, P, 40, 33);
+  },
+  mech(c, side, P) {
+    // 機關巨獸放出來的小機械兵：方方的鐵身子、一隻紅眼、一根天線，肩上扛一管火箭
+    uShadow(c);
+    c.fillStyle = '#2a2e36'; rrect(c, 23, 46, 7, 12, 2); c.fill(); rrect(c, 34, 46, 7, 12, 2); c.fill();
+    rrect(c, 19, 26, 26, 22, 4); fs(c, lg(c, 0, 26, 0, 48, [0, '#9aa2b0', 1, '#4a505c']), '#14161c', 2);
+    c.fillStyle = '#c58c3c'; c.fillRect(20, 40, 24, 3); c.fillStyle = '#14161c'; for (const x of [24, 32, 40]) { c.beginPath(); c.arc(x, 31, 1.2, 0, TAU); c.fill(); }
+    rrect(c, 22, 9, 20, 16, 4); fs(c, lg(c, 0, 9, 0, 25, [0, '#b4bccb', 1, '#5a616e']), '#14161c', 2);
+    c.fillStyle = '#1a0606'; rrect(c, 28, 13, 12, 6, 3); c.fill(); c.fillStyle = '#ff4a2a'; ell(c, 35, 16, 2.6, 2.2); c.fill();
+    c.strokeStyle = '#14161c'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(27, 9); c.lineTo(25, 2); c.stroke(); c.fillStyle = '#ff4a2a'; ell(c, 25, 2, 1.8, 1.8); c.fill();
+    rrect(c, 22, 21, 32, 6, 2); fs(c, '#4a4e58', '#16181e', 1.3); c.fillStyle = side ? '#ee3b30' : '#3d86ff'; c.fillRect(48, 20, 3, 8);
   },
   eng(c, side, P) {
     // 工兵：黃色安全帽，高舉一把大鐵鎚，腰上掛著扳手

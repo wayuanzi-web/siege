@@ -144,11 +144,16 @@ function uiEvent(t, a, b, c, d, e) {
     case 'pass': if (c === 1) once('tunnel', '鑽進隧道了：頂上整片岩頂，砲彈吊不高，只能平著打；中間也沒東西擋，隧道裡沒有風'); break;
     case 'vortex': once('vortex', '中場的小山上捲起一道龍捲風：穿過它的砲彈會被往上捲、往前的速度被拖慢。虛線也算進去了，也可以繞開它'); break;
     case 'ultarm': if (c === 1) { const T = S.team[0]; say(T.shield.c >= T.shield.need && !T.shield.on ? '敵軍連珠砲上膛了，這一輪打三次：快開護罩！' : '敵軍連珠砲上膛了，這一輪打三次！', 1); } break;
-    case 'phase': if (a === 2) { banner('魔王結界', 'boss', '第二階段'); later(1900, () => say('魔王張開結界了！結界分三段、每回合換缺口；戰場中間還裂開一個黑洞，會把砲彈吸彎', 1)); } else { banner('魔王暴怒', 'boss', '最終階段'); later(1900, () => say('魔王暴怒了：結界改開兩個缺口，還會放隕石雨（紅圈是落點，開護罩擋）', 1)); } break;
+    case 'phase': if (S.beast) { if (a === 2) { banner('巨獸跪地', 'boss', '第二階段'); later(1900, () => say('巨獸跪下來了：肚子打開放出兩隻小機械兵，背上的砲台會輪流齊射', 1)); } else { banner('巨獸倒地', 'boss', '最終階段'); later(1900, () => say('巨獸倒地爬行，胸甲掉了：打牠胸口發光的核心最痛！核心蓄力一回合就光束橫掃，記得開護罩', 1)); } break; }
+      if (a === 2) { banner('魔王結界', 'boss', '第二階段'); later(1900, () => say('魔王張開結界了！結界分三段、每回合換缺口；戰場中間還裂開一個黑洞，會把砲彈吸彎', 1)); } else { banner('魔王暴怒', 'boss', '最終階段'); later(1900, () => say('魔王暴怒了：結界改開兩個缺口，還會放隕石雨（紅圈是落點，開護罩擋）', 1)); } break;
+    case 'beastrelease': hudBuild(); break;          // 小機械兵：頭像加上去
+    case 'beastpart': if (d === 0) { if (c === 'knee') once('bknee', '膝關節斷了！巨獸踉蹌：這一回合結束牠不走，下一回合打牠傷害加倍'); else if (c === 'cap') once('bcap', '護膝甲碎了：裡面的膝關節露出來了，打斷它！'); else if (c === 'head') once('bhead', '巨獸的頭被打爛了：牠不能再噴火、咬人'); else if (c === 'turret') once('bturret', '砲台塌了：上面的兵摔下去了'); } break;
+    case 'beastgrab': if (c === 0) once('bgrab', '巨獸叼走了一個兵，會把他甩到背後：落地不死，站在那裡照樣打', 1); break;
+    case 'beasttangle': once('btangle', '鏈彈纏住巨獸的腳了：這一回合牠只走一半'); break;
     case 'bossback': once('bback', '魔王摔下去又飛回來了，不過摔一次扣不少血'); break;
     case 'rockstop': if (c === 0) once('rstop', '護罩把落石擋下來了'); break;
     case 'sudden': banner('決戰時刻', 'red'); later(1900, () => say('拖太久了，雙方的砲火越來越猛', 1)); break;
-    case 'end': sayClear(); banner(c === 1 ? (S.lv.boss ? '魔王伏誅' : '敵城攻破') : '城樓失守', c === 1 ? 'gold' : 'red', d === 3 ? (c === 1 ? '久攻不下：敵城塌得比較多' : '久攻不下：我方城樓塌得比較多') : d === 2 ? (c === 1 ? '敵城塌了，帥旗倒下' : '我方城樓塌了') : d ? (c === 1 ? '守軍全滅' : '我軍全滅') : ''); $('hint').hidden = true; break;
+    case 'end': sayClear(); banner(c === 1 ? (S.lv.boss ? '魔王伏誅' : S.lv.beast ? '巨獸倒下' : '敵城攻破') : '城樓失守', c === 1 ? 'gold' : 'red', d === 3 ? (c === 1 ? '久攻不下：敵城塌得比較多' : '久攻不下：我方城樓塌得比較多') : d === 2 ? (c === 1 ? '敵城塌了，帥旗倒下' : '我方城樓塌了') : d ? (c === 1 ? '守軍全滅' : '我軍全滅') : ''); $('hint').hidden = true; break;
     case 'gate': if (e === 0 && G.tut >= 1 && G.tut <= 3 && !G.said.gt) { G.said.gt = 1; say('就是這樣！穿過倍增符，砲彈變多了'); } break;
     case 'gspawn': {
       // d 幾倍。高倍數的符只出現一回合：出現的那一刻才講（太早講，玩家找不到它在哪）
@@ -389,7 +394,7 @@ function boot() {
   // 字型晚一點才載到的話重新排一次
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { layout(); }).catch(() => { });
 }
-window.__qp = { S, SH, FX, G, V, SV, AU, RD, UI, PH, LEVELS, BOTS, practiceLevel, pracLevel, simInit, simStep, simAim, simFire, simSkill, aiInit, teamBar, startLevel, goHome, layout, renderFrame, fxStep, hudUpdate, sfx, musStart, physExplode, blockKill, killUnit, WPN, blockDist, homeRender, demoStart, ropeCut, tetherPop, fuseIgnite, castleB, bellPush, rollerSpawn, simTrace, aimFor, ampAims, liftBreak, AMP, groundYRaw,
+window.__qp = { S, SH, FX, G, V, SV, AU, RD, UI, PH, LEVELS, BOTS, practiceLevel, pracLevel, simInit, simStep, simAim, simFire, simSkill, aiInit, teamBar, startLevel, goHome, layout, renderFrame, fxStep, hudUpdate, sfx, musStart, physExplode, blockKill, killUnit, WPN, blockDist, homeRender, demoStart, ropeCut, tetherPop, fuseIgnite, castleB, bellPush, rollerSpawn, simTrace, aimFor, ampAims, liftBreak, AMP, groundYRaw, beastAct, beastQueue, beastBreak, beastHurt, beastPose, beastPlace,
   // 測試用：凍結即時迴圈後，手動把戰局往前推 sec 秒
   advance(sec) { const n = Math.round(sec / STEP); let acc = 0; for (let i = 0; i < n; i++) { simStep(STEP); fxStep(STEP, STEP); acc += STEP; if (G.mode === 'play' && S.state !== 'play') G.endT += STEP; if (acc >= 0.05 && i < n - 1) { renderFrame(acc, acc); acc = 0; } } if (G.mode === 'play') hudUpdate(); renderFrame(acc || STEP, acc || STEP); }
 };

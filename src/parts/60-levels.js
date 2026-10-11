@@ -391,6 +391,23 @@ const LEVELS = [
     foe: { crew: ['fire', 'bomb', 'rocket', 'drill', 'acid', 'stone'], hp: 1.15, dmg: 1.2, open: 0.55, ai: { err: 3.3, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
     weak: (side) => mineWeak(side),
     lantern: { at: 3, every: 3, spots: [[52, 20], [60, 15]] }
+  },
+  {
+    name: '機關巨獸', sayTop: 1, tag: '魔王・巨獸踩城・斷腿拆甲射核心', theme: 17, castle: 'BASTION', stress: 1, blockHp: 2.8, rules: { ff: 1, crit: 1, elem: 1 },
+    tip: '敵方沒有城：一頭機關巨獸每回合朝你的城走一段，走到城下就每回合踩城。打掉護膝甲、打斷膝關節，牠踉蹌一回合（不走，下一回合是破綻，傷害加倍）；打爛頭就不能噴火、咬人。血剩六成牠跪下來放出小機械兵，剩不到三成倒地爬行、胸口的核心露出來（打核心最痛），蓄力一回合就光束橫掃：開護罩擋。巨獸是鐵造的：雷、酸、磁暴打牠最痛',
+    hints: [{ r: 1, t: '巨獸每回合結束往前走一段：走到你的城下，每回合都會踩城。在那之前把牠打倒，或打斷牠的腿拖慢牠', ok: () => true },
+      { r: 2, t: '膝蓋前面那片護膝甲打掉，膝關節就露出來：打斷膝關節，那條腿斷了，巨獸踉蹌一回合（不走，下一回合打牠傷害加倍）', ok: () => S.beast && S.beast.legs.some((L) => !L.broken) },
+      { r: 3, t: '巨獸每回合一開始會預告招式：噴火燒得著你城上的木頭；咬人會把一個兵叼起來甩到牠背後（落地不死，站在那裡照樣打）。開著護罩都擋得住', ok: () => S.beast && !!S.beast.P.head && !S.beast.P.head.dead },
+      { r: 4, t: '鏈彈打中巨獸的腳會纏住牠：那一回合結束只走一半。黏性炸藥黏在牠身上，你下一輪開火時炸開' }],
+    ground: [[-40, 0], [152, 0]],
+    wind: { max: 4, at: 2 },
+    me: { crew: ['zap', 'acid', 'magnet', 'chain', 'sapper', 'eng'] },
+    foe: { crew: ['rocket', 'bomb', 'sniper'], mechs: 2, hp: 1.0, dmg: 0.9, open: 0.55, ai: { err: 3.6, think: 1.1, gate: 0, hate: 0.2, skill: 0.6, sap: 0.6, warm: 1.6 } },
+    // 機關巨獸：開場站在哪（軀幹中心 x）、血量；血剩幾成進第二、第三階段
+    beast: { x: 93, hp: 1250, p2: 0.6, p3: 0.28 },
+    weak: (side) => beastWeak(side),
+    lantern: { at: 3, every: 3, spots: [[60, 30], [68, 24]] },
+    sudden: 16
   }
 ];
 
@@ -406,7 +423,7 @@ const PRACTICE_BASE = {
   wind: { max: 5, at: 2 }, sudden: 12
 };
 // 演武場的戰場清單：0 演武城，其他照那一關（第幾關；城、地形、中間的機關、環境都一樣，兵換成挑的）。魔王城不能選（要有魔王）
-const PRACTICE_LIST = [0].concat(LEVELS.map((l, i) => i + 1).filter((m) => !LEVELS[m - 1].boss));
+const PRACTICE_LIST = [0].concat(LEVELS.map((l, i) => i + 1).filter((m) => !LEVELS[m - 1].boss && !LEVELS[m - 1].beast));
 const PRACTICE_MAPS = LEVELS.length + 1;          // 戰場編號的上限（存檔檢查用）
 function practiceSlots(map) { const lv = map > 0 ? LEVELS[map - 1] : PRACTICE_BASE, d = CASTLES[lv.castle || lv.me.castle]; let n = 0; for (const r of d.map) for (const ch of r) if (ch >= '1' && ch <= '9') n++; return n; }
 function practiceLevel(map, me, foe, ff) {

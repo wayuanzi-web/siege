@@ -20,6 +20,7 @@ function envInit() {
 }
 // 回合結束：換下一段潮（大潮那一回合先來一次暴潮）；岩漿漲一截。回傳 true：要等它演完（hazard）
 function envRoundEnd() {
+  if (S.beast) return beastRoundEnd();          // 第十八關：巨獸往前走一段（走到城下就踩城）
   if (S.rotors.length) return rotorsTurn();
   if (S.pass) return passSwap();          // 第十六關：路邊換一樣東西（或進出隧道）
   const L = S.lv.lava;
@@ -39,6 +40,7 @@ function envRoundEnd() {
 // 暴潮的時間軸（秒）：漲、停、退（退的時候把甲板上的兵往外拖）
 const SURGE_UP = 1.1, SURGE_HOLD = 0.7, SURGE_DOWN = 2.0, SURGE_CUR = 3.4, SURGE_BACK = 6.5;
 function envStep(dt) {
+  if (S.beast) beastStep(dt);          // 第十八關：機關巨獸的骨架、動作
   const E = S.env; if (!E) return;
   const W = S.water;
   if (W && E.surge) {
@@ -76,7 +78,7 @@ function backwash(dt, k) {
   }
 }
 // 潮水還在動（回合結束等它演完）
-function envBusy() { const E = S.env; return !!(E && (E.surge || E.tideA)) || S.rotors.some((R) => R.rot) || !!(S.pass && (S.pass.anim || rollBusy())); }
+function envBusy() { const E = S.env; return !!(E && (E.surge || E.tideA)) || S.rotors.some((R) => R.rot) || !!(S.pass && (S.pass.anim || rollBusy())) || beastBusy(); }
 /* 泡在水裡的兵會不會被沖走：第十三關，站在自己的水寨裡（甲板以上）不會（暴潮淹上來只是被推），
    掉到甲板底下、被拖出自己的水寨外面才會 */
 function envDrown(u) {

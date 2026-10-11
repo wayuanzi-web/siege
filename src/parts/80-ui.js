@@ -289,11 +289,12 @@ const LOSE_TIPS_LV = [
   ['敵城風車的四個吊艙各吊在一支帆架的尖端：打斷帆架（火油燒得動），吊艙連人掉下去，城防也掉一截。葉輪每回合轉 45 度，轉到正下方的最好打。', '陣風：砲彈飛到一半風會反過來吹，虛線上的小漩渦就是轉向的地方，照著虛線打就好；龍捲風會把穿過的砲彈往上捲，繞開它或吊高越過去。', '四支帆架和吊艙加起來大約是城防的三分之一：先把帆架都打斷，再打塔身。'],
   ['敵城半腰的鑄造台靠兩條鐵鍊吊著：鏈彈、雷、磁暴打鐵鍊最痛，兩條都斷了，整座台連人掉進岩漿。', '先打斷吊鐵水鍋的鍊子：鐵水鍋砸穿鑄造台的屋頂，鐵水澆在兵身上；鑄造台先掉了，鐵水鍋就只會掉進岩漿裡。', '岩漿每回合漲一截，漲上崖腳的熔爐，鐵地板發紅變軟；火山彈兩邊一樣會落，紅圈是落點，開著護罩擋得住。'],
   ['敵車外側那節車廂只靠一個連結器掛著：鏈彈、轟天砲、雷打它最痛，炸在它旁邊也算。打斷了，整節車廂連人被甩下車。', '火車頭的大鍋爐（圓滾滾的那一截）一打爆，蒸汽炸開整個砲室和砲塔。', '每四回合鑽一次隧道：頂上整片岩頂、中間沒東西擋，只能平著打，隧道裡也沒有風。看清楚這一回合路邊擋的是高的還是低的再瞄。'],
-  ['頂上是岩頂，吊太高會撞上去：仰角壓低、力道加大，從中間的礦脈上面擦過去。礦脈打得碎，越打越低，敵城下層就露出來了。', '敵城頂樓那四根坑木頂著兩塊懸石：打斷靠岩壁那一塊底下的兩根，懸石砸穿頂樓、壓住上層的兵；前面那一塊會把前牆撞開。火油燒得動坑木。', '城是石頭造的，酸蝕得最快；岩壁裡那包發綠光的沼氣一炸，一團火衝進上層那一間。']
+  ['頂上是岩頂，吊太高會撞上去：仰角壓低、力道加大，從中間的礦脈上面擦過去。礦脈打得碎，越打越低，敵城下層就露出來了。', '敵城頂樓那四根坑木頂著兩塊懸石：打斷靠岩壁那一塊底下的兩根，懸石砸穿頂樓、壓住上層的兵；前面那一塊會把前牆撞開。火油燒得動坑木。', '城是石頭造的，酸蝕得最快；岩壁裡那包發綠光的沼氣一炸，一團火衝進上層那一間。'],
+  ['巨獸每回合結束往前走一段，走到城下就每回合踩城：先打護膝甲、再打膝關節，斷一條腿牠就踉蹌一回合（不走，下一回合打牠傷害加倍）。', '巨獸是鐵造的：雷、酸、磁暴打牠最痛；鏈彈打中腳會纏住牠，那一回合只走一半。', '預告噴火、咬人、光束的那一回合開護罩：都擋得住。牠倒地之後胸口的核心露出來，打核心最痛。']
 ];
 function showResult(won, st) {
   const prac = !!(S.lv && S.lv.practice);
-  $('resTitle').textContent = won ? (!prac && LEVELS[st.idx] && LEVELS[st.idx].boss ? '魔王伏誅' : '敵城攻破') : '城樓失守';
+  $('resTitle').textContent = won ? (!prac && LEVELS[st.idx] && LEVELS[st.idx].boss ? '魔王伏誅' : !prac && LEVELS[st.idx] && LEVELS[st.idx].beast ? '巨獸倒下' : '敵城攻破') : '城樓失守';
   $('resTitle').className = won ? '' : 'lose';
   $('resSub').textContent = prac ? S.lv.name + '（試打，不算星星）' : '第' + numZh(st.idx + 1) + '關 ' + LEVELS[st.idx].name;
   const stars = $('resStars'); stars.hidden = !won || prac;
@@ -308,7 +309,8 @@ function showResult(won, st) {
   else if (won) { tip.hidden = st.stars >= 3; if (st.stars < 3) tip.textContent = st.lost ? '三顆星：一個兵都不能倒，城防還要剩一半以上。' : '三顆星：城防要剩一半以上。'; }
   else { tip.hidden = false; tip.textContent = st.streak >= 3 && SV.diff > 0 && st.streak % 2 === 1 ? TIP_EASY : tips[(Math.random() * tips.length) | 0]; }        // 同一關連輸三場、五場…：提醒可以調難度
   const next = won && !prac && st.idx < LEVELS.length - 1;
-  if (won && !prac && st.idx === LEVELS.length - 1 && LEVELS.length < LEVEL_MAX) { tip.hidden = false; tip.textContent = '第' + numZh(LEVELS.length + 1) + '到十八關還在做，做好了會出現在第三篇的分頁。先到演武場，用十八種兵試打吧。'; }          // 打完目前最後一關：沒有「下一關」，講一聲後面的還在做
+  if (won && !prac && st.idx === LEVELS.length - 1 && LEVELS.length < LEVEL_MAX) { tip.hidden = false; tip.textContent = '第' + numZh(LEVELS.length + 1) + '到十八關還在做，做好了會出現在第三篇的分頁。先到演武場，用十八種兵試打吧。'; }
+  else if (won && !prac && st.idx === LEVEL_MAX - 1) { tip.hidden = false; tip.textContent = '十八關全破！機關巨獸倒下了。想拿滿三顆星可以再來一次，也可以到演武場用十八種兵試打各關的城。'; }          // 打完最後一關          // 打完目前最後一關：沒有「下一關」，講一聲後面的還在做
   $('btnNext').hidden = !next; $('resBtns').className = 'stack ' + (next ? 'three' : 'two');         // 沒有「下一關」的時候兩顆按鈕各佔一半
   $('btnAgain').firstChild.textContent = won ? '再玩一次' : '再戰';
   $('btnAgain').className = 'btn' + (next ? '' : ' btn-gold');
@@ -337,8 +339,8 @@ function hudBuild() {
   }
   // 魔王城：城防條上標出換階段的位置
   const hb = $('hpB'); hb.querySelectorAll('.tick').forEach((e) => e.remove());
-  if (S.lv.boss) for (const p of [S.lv.boss.p2, S.lv.boss.p3]) { const t = document.createElement('span'); t.className = 'tick'; t.style.right = (p * 100) + '%'; hb.appendChild(t); }
-  $('foeLbl').textContent = S.lv.boss ? '魔王' : '敵城';
+  const bossDef = S.lv.boss || S.lv.beast; if (bossDef) for (const p of [bossDef.p2, bossDef.p3]) { const t = document.createElement('span'); t.className = 'tick'; t.style.right = (p * 100) + '%'; hb.appendChild(t); }          // 魔王、機關巨獸：城防條上標出換階段的位置
+  $('foeLbl').textContent = S.lv.boss ? '魔王' : S.lv.beast ? '機關巨獸' : '敵城';
   $('windBox').hidden = !S.lv.wind; $('gustTxt').hidden = true; $('hud').classList.remove('gusty');
   HUD.a = HUD.b = -1; HUD.ult = HUD.sh = -1; HUD.wind = 99; HUD.deg = HUD.pow = -1; HUD.mile = 0; HUD.turn = ''; HUD.round = -1; HUD.fire = -1; HUD.boost = null;
   $('turnChip').hidden = true;                                       // 上一局留下來的「輪到你」不能帶進新的一局

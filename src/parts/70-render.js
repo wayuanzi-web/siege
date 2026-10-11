@@ -1479,6 +1479,7 @@ function renderFrame(dt, rdt) {
   drawAmp(c, t);
   for (const st of S.structs) drawBackdrop(c, st, rdt);
   drawBlocks(c, t, rdt);
+  if (S.beast) drawBeast(c, t);          // 第十八關：機關巨獸
   drawFuses(c, t);
   drawRopes(c, t);
   if (S.rotors.length) drawRotors(c, t);
@@ -1496,6 +1497,7 @@ function renderFrame(dt, rdt) {
   fxDraw(c);
   drawShields(c, t, rdt);
   drawBossUI(c, t);
+  drawBeastUI(c, t);
   drawAim(c, t);
   RD.dt = rdt; drawBubbles(c);
   sceneFront(c, t, dt);

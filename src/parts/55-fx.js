@@ -443,6 +443,30 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'decouple': burst(P_SPARK, a, b, 24, 16, 0.6, 0.35, C_GOLD); burst(P_DEBRIS, a, b, 8, 10, 0.7, 0.3, C_GRAY, 3); pop(a, b + 6, '連結器斷了！', '#ffe0a8', 3.4, 1.4); sfx('clank'); setTimeout(() => sfx('screech'), 250); shake(0.6); vibrate(80); break;          // 第十六關
     case 'boilerblast': part(P_FLASH, a, b, 0, 0, 0.25, 9, C_WHITE); burst(P_SMOKE, a, b + 1, 30, 22, 2.2, 3.4, C_WHITE, 12); burst(P_SMOKE, a, b, 14, 12, 1.6, 2.4, C_GRAY, 8); burst(P_DEBRIS, a, b, 20, 24, 1, 0.5, C_DARK, 6); pop(a, b + 6, '鍋爐炸了！', '#ffffff', 3.8, 1.6); sfx('steam'); shake(1.1); vibrate(140); break;
     case 'gasblast': part(P_FLASH, a, b, 0, 0, 0.3, 10, C_GREEN); burst(P_EMBER, a, b, 34, 22, 1.1, 0.6, C_ORANGE, 8); burst(P_SMOKE, a, b, 16, 12, 1.8, 2.6, C_DARK, 8); pop(a, b + 6, '沼氣炸了！', '#c8ff8a', 3.6, 1.5); sfx('boom3'); shake(1.0); vibrate(120); break;          // 第十七關
+    // 第十八關：機關巨獸
+    case 'beaststep': burst(P_DUST, a, 0.3, c ? 9 : 5, 10, 0.9, 2.2, C_SAND, 3); if (c) shake(0.35); sfx('servo'); break;
+    case 'beaststomp': part(P_FLASH, a, b, 0, 0, 0.18, 7, C_WHITE); burst(P_DUST, a, b, 26, 26, 1.2, 3.2, C_SAND, 6); burst(P_DEBRIS, a, b, 24, 22, 1.1, 0.6, C_GRAY, 8); ring(a, b, 1, 14, 0.6, '#ffe0b0', 0.8); pop(a, b + 7, c ? '護罩擋下一半！' : '踩城！', c ? '#bfe6ff' : '#ffb0a0', 3.6, 1.4); sfx('crash'); sfx('servo'); shake(1.8); vibrate(200); break;
+    case 'quake': { ring(a, 0.4, 1, 10, 0.5, '#f3d8b0', 0.8); burst(P_DUST, a, 0.3, 18, 18, 1.1, 2.8, C_SAND, 4); shake(1.1); vibrate(140); sfx('rumble'); const x0 = a; for (let k = 1; k <= 4; k++) setTimeout(() => { const x = x0 - k * (c / 4 + 3); ring(x, 0.4, 1, 6, 0.4, '#f3d8b0', 0.6); burst(P_DUST, x, 0.3, 8, 12, 0.8, 2.2, C_SAND, 3); }, k * 120); pop(a, 8, '震地！', '#ffd0a0', 3.2, 1.2); break; }
+    case 'flame': { const k = FX.low ? 2 : 5; for (let i = 0; i < k; i++) { const ang = c + (Math.random() - 0.5) * 0.3, sp = 22 + Math.random() * 14; part(i & 1 ? P_EMBER : P_FLASH, a, b, Math.cos(ang) * sp, Math.sin(ang) * sp, 0.55 + Math.random() * 0.4, i & 1 ? 0.5 : 2.2 + Math.random() * 1.6, i % 3 === 0 ? C_YELLOW : C_ORANGE); } sfx('flame'); break; }
+    case 'beastact': if (c === 'grab') sfx('roar'); else if (c === 'beam') sfx('beam'); else if (c === 'flame') sfx('roar'); break;
+    case 'beastnext': ring(a, b, 1, 8, 0.45, c === 'beam' || c === 'charge' ? '#ffd36a' : '#ff9a6a', 0.6); sfx(c === 'beam' ? 'warn' : 'roar'); break;
+    case 'beastgrab': burst(P_SPARK, a, b, 10, 10, 0.4, 0.25, C_GOLD); pop(a, b + 4, '被叼走了！', '#ffb0a0', 3.0, 1.2); sfx('clank'); break;
+    case 'beastthrow': pop(a, b + 4, '甩出去了！', '#ffd0a0', 3.0, 1.1); sfx('whoosh'); break;
+    case 'beastbonk': ring(a, b, 1, 6, 0.4, '#bfe6ff', 0.7); pop(a, b + 3, '護罩擋住了！', '#bfe6ff', 2.8, 1.1); sfx('shieldhit'); break;
+    case 'beastmiss': pop(a, b + 3, '咬空了', '#e0d0c0', 2.4, 0.9); break;
+    case 'beastpart': {
+      const big = c === 'knee' || c === 'head' || c === 'turret' || c === 'chest';
+      part(P_FLASH, a, b, 0, 0, 0.2, big ? 8 : 5, C_ORANGE); burst(P_SPARK, a, b, big ? 30 : 16, 20, 0.7, 0.35, C_GOLD); burst(P_DEBRIS, a, b, big ? 16 : 8, 18, 1, 0.6, C_DARK, 5); burst(P_SMOKE, a, b, 8, 8, 1.4, 2.4, C_DARK, 4);
+      const T = { cap: '護膝甲碎了！', knee: '膝關節斷了！巨獸踉蹌', head: '頭被打爛了！', turret: '砲台塌了！', chest: '胸甲掉了：核心露出來了' }[c];
+      if (T) pop(a, b + 5, T, '#ffe0a8', big ? 3.8 : 3.0, 1.6);
+      sfx(big ? 'crash' : 'chainsnap'); if (big) { shake(1.0); vibrate(120); } break;
+    }
+    case 'coreout': flash(0.3, '#ff9a4a'); ring(a, b, 2, 12, 0.6, '#ffd36a', 0.8); break;
+    case 'beastrelease': burst(P_SMOKE, a, b, 22, 14, 1.6, 2.8, C_WHITE, 6); pop(a, b - 2, '放出小機械兵！', '#ffd0a0', 3.2, 1.4); sfx('steam'); break;
+    case 'beaststagger': pop(a, b + 8, '踉蹌！', '#ffe14a', 3.6, 1.3); sfx('groan'); shake(0.9); break;
+    case 'beasttangle': pop(a, b + 6, '腳被纏住了：少走一半', '#ffe0a8', 3.0, 1.3); sfx('chainsnap'); break;
+    case 'beastboom': part(P_FLASH, a, b, 0, 0, 0.2, 6, C_ORANGE); burst(P_EMBER, a, b, 14, 16, 0.8, 0.5, C_ORANGE, 4); burst(P_SMOKE, a, b, 6, 6, 1.4, 2.4, C_DARK, 3); sfx('fireboom'); shake(0.5); break;
+    case 'beastdie': flash(0.7, '#ffd08a'); shake(2.2); vibrate(300); burst(P_SMOKE, a, b, 40, 18, 2.2, 3.6, C_DARK, 10); burst(P_EMBER, a, b, 40, 24, 1.2, 0.6, C_ORANGE, 8); ring(a, b, 3, 24, 0.9, '#ffe08a', 0.9); sfx('collapse'); sfx('roar'); break;
     case 'pass': if (c === 1) { pop(MID, 30, '進隧道了！', '#ffd890', 3.2, 1.3); sfx('whistle'); } else if (c === 2) { pop(MID, 30, '出隧道了', '#ffe8c0', 2.8, 1.1); sfx('whistle'); } break;
     case 'armbreak': burst(P_DEBRIS, a, b, 12, 18, 0.8, 0.45, C_TAN, 4); burst(P_DUST, a, b, 5, 6, 0.8, 1.6, C_SAND); pop(a, b + 3, '帆架斷了！', '#ffe0a8', 2.8, 1.1); sfx('crash'); shake(0.4); break;
     case 'rotorfall': burst(P_DEBRIS, a, b, 22, 24, 1.0, 0.6, C_TAN, 6); burst(P_DUST, a, b, 10, 10, 1.2, 2.6, C_SAND, 6); pop(a, b + 5, '整具葉輪掉下來了！', '#ffe0a8', 3.6, 1.6); sfx('crash'); shake(1.0); vibrate(120); break;
