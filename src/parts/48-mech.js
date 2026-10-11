@@ -62,7 +62,7 @@ function mkRope(st, A, B, o) {
   const r = {
     st, side: st.side, kind, a: A.b, b: B.b, la: ga.getLocalPoint({ x: A.x, y: A.y }), lb: gb.getLocalPoint({ x: B.x, y: B.y }),
     len: Math.hypot(B.x - A.x, B.y - A.y) * (o.slack || 1), hp: hm, hm, j: null, cut: false, burn: 0, flash: 0, t0: 0, tmax: 1e9, over: 0, tens: 0,
-    aw: o.aw || 0, tag: o.tag || '', e: [A.x, A.y, B.x, B.y], cutT: -99, cx: [0, 0, 0, 0], hang: o.hang || null
+    aw: o.aw || 0, tag: o.tag || '', e: [A.x, A.y, B.x, B.y], cutT: -99, cx: [0, 0, 0, 0], hang: o.hang || null, solid: o.solid || 0
   };
   r.la = { x: r.la.x, y: r.la.y }; r.lb = { x: r.lb.x, y: r.lb.y };
   ropeJoint(r);
@@ -80,7 +80,7 @@ function mkRopeDef(st, d) {
 function mkHang(st, h) {
   const P = cellPt(st, h.at), top = anchorAt(st, P); if (top === undefined) return null;
   const w = h.w || 3.4, hh = h.h || 3.4, y = P.y - h.len - hh / 2;
-  const kind = h.t === 'bell' ? 'bell' : h.t === 'lamp' ? 'lamp' : h.t === 'basket' ? 'basket' : 'box';
+  const kind = h.t === 'bell' ? 'bell' : h.t === 'lamp' ? 'lamp' : h.t === 'basket' ? 'basket' : h.t === 'pot' ? 'pot' : 'box';
   const mat = h.mat !== undefined ? h.mat : h.t === 'bell' ? M_IRON : h.t === 'lamp' ? M_GLASS : M_STONE;
   const b = mkBlock(st, { mat, kind, x: P.x, y, w, h: hh, prop: 1, den: h.den, il: kind === 'bell' ? w * 0.24 : 0, ir: kind === 'bell' ? w * 0.24 : 0 });
   b.hang = h.t; b.cx = P.cx; b.cy = P.cy; b.cw = 1; b.ch = 1; if (h.bal) b.bal = 1;
@@ -366,7 +366,7 @@ function stressCalib(k) {
   }
   // 吊殿的鐵鍊（stay）餘裕少：上面那間殿砸下來壓在這間上，它就繃斷
   // 麻繩（索橋）一被扯緊就斷：一棟倒了，不會把另一棟整個拖下去（只會晃一下）
-  for (const r of S.ropes) r.tmax = Math.max(r.t0 * (r.tag === 'stay' ? 2.6 : r.kind === 'chain' ? 4.2 : 2.5), r.kind === 'chain' ? 1800 : r.hang ? 700 : 420);
+  for (const r of S.ropes) r.tmax = r.solid ? 1e12 : Math.max(r.t0 * (r.tag === 'stay' ? 2.6 : r.kind === 'chain' ? 4.2 : 2.5), r.kind === 'chain' ? 1800 : r.hang ? 700 : 420);          // solid：粗鐵鍊，扯不斷（只打得斷）
 }
 /* 兩座城是同一張藍圖（敵城左右鏡射）：開場量出來的「撐得住多重」也要一樣。
    物理引擎解接觸力的時候有左右的偏差，同一根柱子在兩邊量起來會差一兩成——取兩邊的平均，鏡射對應的那一塊、那一條、那一根插銷都設成一樣 */

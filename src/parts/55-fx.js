@@ -181,7 +181,8 @@ function fxOn(t, a, b, c, d, e, f) {
       burst(P_SPARK, a, b, 8, 22, 0.5, 0.6, c === 0 ? C_SKY : C_SALMON); ring(a, b, 0.5, 5, 0.3, '#ffffff', 0.4);
       // 剛才那一聲「哇！」不用留著跟這一句疊在一起；整座城垮掉時順便倒下的不再一個一個報
       for (let i = FX.pops.length - 1; i >= 0; i--) { const q = FX.pops[i]; if (q.yelp && Math.abs(q.x - a) < 9 && Math.abs(q.y - b) < 12) FX.pops.splice(i, 1); }
-      if (S.state === 'play') pop(a, b + 3.5, c === 1 ? (e === 1 ? '砸扁！' : e === 4 ? '摔下去了！' : e === 5 ? '轟出城外！' : e === 6 ? '轟飛了！' : e === 3 ? '燒到了！' : e === 7 ? '沖走了！' : '擊倒！') : (e === 5 ? '被轟出城' : e === 4 ? '摔下去了' : e === 6 ? '被轟飛了' : e === 1 ? '被砸扁了' : e === 7 ? '被沖走了' : '陣亡'), c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.1);
+      if (S.state === 'play') pop(a, b + 3.5, c === 1 ? (e === 1 ? '砸扁！' : e === 4 ? '摔下去了！' : e === 5 ? '轟出城外！' : e === 6 ? '轟飛了！' : e === 3 ? '燒到了！' : e === 7 ? '沖走了！' : e === 8 ? '掉進岩漿！' : '擊倒！') : (e === 5 ? '被轟出城' : e === 4 ? '摔下去了' : e === 6 ? '被轟飛了' : e === 1 ? '被砸扁了' : e === 7 ? '被沖走了' : e === 8 ? '掉進岩漿了' : '陣亡'), c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.1);
+      if (e === 8) { burst(P_EMBER, a, b - 1.8, 16, 14, 0.7, 1.0, C_ORANGE); burst(P_SMOKE, a, b - 1.8, 4, 6, 0.8, 1.6, C_DARK); }
       sfx(c === 1 ? 'kill' : 'lostunit'); if (c === 0) { shake(0.4); vibrate(60); }
       if (e === 1 && S.state === 'play') slowmo(0.5, 0.7);
       break;
@@ -244,7 +245,11 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'erupt': for (let k = 0; k < 12; k++) part(P_EMBER, a + rndS() * 4, b + Math.random() * 6, rndS() * 14, 24 + Math.random() * 30, 0.9, 1.0, C_ORANGE); shake(0.2); sfx('erupt'); break;
     case 'rockwarn': sfx('warn'); break;
     case 'rockstop': burst(P_DEBRIS, a, b, 10, 30, 0.8, 0.8, C_GRAY, 8); burst(P_DUST, a, b, 4, 8, 0.6, 2.4, C_SAND); pop(a, b + 4, '擋住了！', c === 0 ? '#cfe6ff' : '#ffc4b8', 3, 0.9); sfx('crumble'); break;
-    case 'rumble': shake(0.5); sfx('rumble'); break;
+    case 'rumble':
+      shake(0.5); sfx(a ? 'volcano' : 'rumble');
+      // 第十五關：中間的小火山噴發（火山彈從天上落下來）
+      if (a) { const vx = MID, vy = 14.2; part(P_FLASH, vx, vy, 0, 0, 0.3, 7, C_ORANGE); burst(P_EMBER, vx, vy, 34, 34, 1.2, 0.8, C_ORANGE, 18); burst(P_SMOKE, vx, vy + 2, 10, 10, 2.2, 4.2, C_DARK, 9); flash(0.12, '#ff7a3a'); }
+      break;
     case 'slam': ring(a, b, 1, 9, 0.5, '#f3e2c0', 0.6); for (let i = 0; i < 9; i++) part(P_DUST, a + rndS() * 4, b + Math.random() * 1.5, rndS() * 26, 3 + Math.random() * 8, 0.9 + Math.random() * 0.5, 2.6 + Math.random() * 1.6, C_SAND); burst(P_DEBRIS, a, b + 1, 8, 24, 0.9, 0.9, '#9a9488', 6); shake(0.7); sfx('rumble'); vibrate(60); break;          // 石碑整塊砸進城裡
     case 'dirt': burst(P_DUST, a, b + 0.5, 3, 10, 0.5, 1.6, C_SAND, 4); break;
     case 'tick': burst(P_SPARK, a, b, 2, 12, 0.2, 0.4, C_WHITEHOT); sfx('tick'); break;
@@ -280,6 +285,11 @@ function fxOn(t, a, b, c, d, e, f) {
     }
     case 'splash': {
       // 掉進水裡（c 大小；d 0 磚 1 兵 2 砲彈）
+      if (S.water && S.water.lava) {          // 岩漿：濺起一團火星和黑煙，嘶一聲
+        burst(P_EMBER, a, b, 6 + Math.min(10, c * 3 | 0), 10 + c * 4, 0.7, 0.55, C_ORANGE, 6); burst(P_SMOKE, a, b + 0.4, 2, 4, 0.9, 1.6, C_DARK, 3); ring(a, b, 0.5, 2.5 + c, 0.35, '#ffb05a', 0.4);
+        if (d !== 2 && thr('lsplash', 250)) sfx('fizz');
+        break;
+      }
       const n = d === 2 ? 4 : 6 + Math.min(8, c * 3 | 0);
       for (let k = 0; k < n; k++) part(P_SHARD, a + rndS() * (1 + c), b, rndS() * (8 + c * 4), 14 + Math.random() * (10 + c * 6), 0.6 + Math.random() * 0.3, 0.45 + Math.random() * 0.4, k & 1 ? C_WHITE : C_SKY);
       ring(a, b, 0.6, 3 + c * 1.6, 0.4, '#e8fbff', 0.35);
@@ -411,7 +421,7 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'split': part(P_FLASH, a, b, 0, 0, 0.12, 2.6, C_GOLD); ring(a, b, 0.5, 4, 0.25, '#fff0b0', 0.4); burst(P_SMOKE, a, b, 3, 6, 0.6, 1.4, C_GRAY); if (thr('split', 120)) sfx('pop'); break;
     case 'stuck': burst(P_SPARK, a, b, 5, 10, 0.3, 0.4, C_RED); if (thr('stuck', 200)) { sfx('stick'); if (S.state === 'play') pop(a, b + 2.6, c === 0 ? '炸藥黏上去了' : '敵軍的炸藥黏上來了！', c === 0 ? '#ffd0a0' : '#ff9a88', 2.6, 1.1); } break;
     case 'chargego': ring(a, b, 3, 0.5, 0.3, '#ff8a6a', 0.5); if (thr('chargego', 300)) sfx('warn'); break;
-    case 'defuse': burst(P_SPARK, a, b, 8, 14, 0.4, 0.5, C_ORANGE); burst(P_SMOKE, a, b, 2, 4, 0.6, 1.2, C_GRAY); if (thr('defuse', 300)) { pop(a, b + 2.6, d === 1 ? '炸藥跟著掉下去了' : d === 2 ? '護罩悶熄了炸藥' : d === 3 ? '炸藥泡水啞了' : '炸藥被拆掉了', '#ffe9a0', 2.6, 1.0); sfx(d === 2 || d === 3 ? 'fizz' : 'click'); } break;          // d：1 黏的磚碎了、2 護罩悶熄、3 泡水
+    case 'defuse': burst(P_SPARK, a, b, 8, 14, 0.4, 0.5, C_ORANGE); burst(P_SMOKE, a, b, 2, 4, 0.6, 1.2, C_GRAY); if (thr('defuse', 300)) { pop(a, b + 2.6, d === 1 ? '炸藥跟著掉下去了' : d === 2 ? '護罩悶熄了炸藥' : d === 3 ? '炸藥泡水啞了' : d === 4 ? '炸藥掉進岩漿燒掉了' : '炸藥被拆掉了', '#ffe9a0', 2.6, 1.0); sfx(d === 2 || d === 3 ? 'fizz' : 'click'); } break;          // d：1 黏的磚碎了、2 護罩悶熄、3 泡水
     case 'drill': burst(P_DEBRIS, a, b, 4, 12, 0.5, 0.4, C_TAN, 4); burst(P_SPARK, a, b, 4, 16, 0.25, 0.4, C_WHITEHOT); if (thr('drillhit', 90)) sfx('drill'); break;
     case 'chainhit': burst(P_SPARK, a, b, 6, 18, 0.3, 0.45, C_WHITEHOT); if (thr('chainhit', 120)) sfx('clang'); break;
     case 'tangle': if (S.state === 'play') pop(a, b + 2.6, '被鐵鍊纏住！', '#d8dee8', 2.6, 1.0); sfx('chainsnap'); break;
@@ -425,6 +435,11 @@ function fxOn(t, a, b, c, d, e, f) {
     }
     case 'tide': if (thr('tide', 1500)) { pop(MID, 26, d === 2 ? '大潮：回合結束時暴潮' : b > (S.water ? S.water.y : 0) ? '漲潮' : '退潮', '#cfeefa', 2.8, 1.1); sfx('tide'); } break;
     case 'deluge': burst(P_SPARK, a, b, 20, 18, 0.6, 0.7, C_SKY); burst(P_SMOKE, a, b, 5, 6, 0.8, 1.8, C_WHITE, 4); pop(a, b + 3, '水塔破了！', '#cfeefa', 3, 1.2); sfx('splash'); shake(0.5); break;
+    // 第十五關：岩漿湖、鐵水鍋、火山彈
+    case 'lavarise': if (thr('lava', 1500)) { pop(MID, 26, c ? '岩漿漲到最高了' : '岩漿上漲', '#ffc27a', 2.8, 1.1); sfx('lava'); shake(0.35); } break;
+    case 'melt': burst(P_SMOKE, a, b + 0.3, 2 + Math.min(4, c | 0), 5, 1.0, 1.8, C_DARK, 4); burst(P_EMBER, a, b + 0.2, 5, 9, 0.7, 0.5, C_ORANGE, 3); if (thr('melt', 500)) sfx('fizz'); break;
+    case 'pour': burst(P_EMBER, a, b, 22, 16, 0.8, 0.7, C_ORANGE); part(P_FLASH, a, b, 0, 0, 0.2, 5, C_GOLD); pop(a, b + 3, '鐵水澆下來了！', '#ffcf7a', 3.2, 1.3); sfx('pour'); shake(0.6); vibrate(80); break;
+    case 'lavabomb': part(P_FLASH, a, b, 0, 0, 0.16, 4.2, C_ORANGE); burst(P_EMBER, a, b, 18, 22, 0.8, 0.7, C_ORANGE, 4); burst(P_SMOKE, a, b, 4, 8, 1.2, 2.4, C_DARK, 5); ring(a, b, 0.6, 5, 0.35, '#ffb05a', 0.6); break;
     case 'fix': burst(P_SPARK, a, b, 6, 10, 0.5, 0.45, C_GREEN, 4); if (thr('fix' + d, 500)) { pop(a, b + 2.4, '修好了', '#b8ff9a', 2.4, 0.9); sfx('fix'); } break;
     case 'wall': burst(P_DUST, a, b - 2, 6, 8, 0.6, 2, C_SAND, 3); pop(a, b + 3.2, '架起木牆', '#ffe0a8', 2.6, 1.0); sfx('fix'); break;
     case 'wind': sfx('gust'); break;

@@ -42,6 +42,8 @@ const tgC = (side, cells, w) => { const out = [], o = 1 - side, st = S.st[o]; fo
 const steles = () => { const out = []; for (const q of S.structs) if (q.side === 2 && !q.loose) for (const b of q.blocks) if (!b.dead && b.dom && b.inPlace) out.push(b); return out.sort((a, b) => a.x0 - b.x0); };
 // 某一邊的繩索、鐵鍊還在不在（tag）
 const ropeLeft = (tag, side) => S.ropes.some((r) => !r.cut && r.side === (side === undefined ? 1 : side) && r.tag === tag);
+// 第十五關：鐵水鍋還吊著
+const potUp = (side) => S.ropes.some((r) => !r.cut && r.side === side && r.hang && r.hang.hang === 'pot' && !r.hang.hangFree);
 // 第九關：閘還在、吊籠還吊著
 const brakeUp = (side) => S.st[side].blocks.some((b) => b.brake && !b.dead && b.inPlace);
 const cageUp = (side) => { const PU = S.st[side].pulley; return !!(PU && !PU.cut); };
@@ -314,6 +316,25 @@ const LEVELS = [
     foe: { crew: ['bomb', 'chain', 'rocket', 'fire', 'sniper', 'wind'], hp: 1.1, dmg: 1.15, open: 0.55, ai: { err: 3.4, think: 1.1, gate: 0.6, hate: 0.2, skill: 0.6, sap: 0.6, warm: 1.8 } },
     weak: (side) => tideWeak(side),
     lantern: { at: 3, every: 3, spots: [[52, 46], [60, 30]] }
+  },
+  {
+    name: '熔岩鑄城', tag: '鐵懸臂・鐵水鍋・岩漿上漲', theme: 14, castle: 'FORGE', y0: -4, stress: 1, blockHp: 1.4, rules: { ff: 1, crit: 1, elem: 1 },
+    tip: '兩座鑄城蓋在岩漿湖邊的懸崖上：崖頂一間哨屋，半腰伸出一座鐵造的鑄造台（靠吊臂垂下來的兩條鐵鍊吊著），崖腳的岩台上是熔爐。兩條鐵鍊都打斷，鑄造台連人掉進岩漿；吊臂上還吊著一鍋鐵水。岩漿每回合漲一截，火山彈每回合亂落。鐵城最怕磁暴、雷、酸',
+    hints: [{ r: 1, t: '敵城半腰那座鑄造台是插在崖壁上的鐵懸臂，靠吊臂垂下來的兩條鐵鍊吊著：兩條都打斷，整座台往下垂、斷掉，連人掉進岩漿（鏈彈、雷、磁暴打鐵鍊最痛）', ok: () => ropeLeft('up') && ropeLeft('mid') },
+      { r: 2, t: '敵城吊臂中間吊著一鍋鐵水：打斷吊它的鐵鍊，鐵水鍋砸穿底下的屋頂，鐵水澆在兵身上（鑄造台掉了，就砸在崖腳的熔爐上）', ok: () => potUp(1) },
+      { r: 3, t: '整座城是鐵造的：磁暴把附近的鐵一把吸過去、雷劈鐵兩倍痛、酸蝕鐵也快；火和冰燒不太動' },
+      { r: 4, t: '岩漿每回合漲一截：漲上崖腳的岩台，熔爐的鐵地板發紅變軟，撐不了多久（兩邊都一樣）。在那之前先把敵城打塌', ok: () => !lavaReach(1) }],
+    ground: [[-40, 36], [-12, 35], [3.0, 33.4], [3.4, -4], [108.6, -4], [109, 33.4], [124, 35], [152, 36]],
+    voids: [[17, 95]],
+    water: { x0: 17, x1: 95, y: -6.5, rho: 1.6, cur: 0, lava: 1 },
+    // 岩漿：開場在 y0，每回合結束漲 dy，最高漲到 max（下層鑄造台的鐵樑泡進去一半）
+    lava: { y0: -6.5, dy: 2.2, max: 4.4 },
+    // 火山彈：第二回合起每回合兩顆，兩座城一樣機會（預告紅圈、回合結束砸下來，落地濺開一團岩漿）
+    rocks: { at: 2, every: 1, n: 2, sym: 1 },
+    extra: [{ castle: 'ROCK_VOLC', x: 56, y: -10 }],
+    me: { crew: ['chain', 'zap', 'bomb', 'magnet', 'acid', 'eng'] },
+    foe: { crew: ['bomb', 'zap', 'rocket', 'magnet', 'chain', 'acid'], hp: 1.15, dmg: 1.2, open: 0.55, ai: { err: 3.2, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.5 } },
+    lantern: { at: 3, every: 3, spots: [[52, 47], [60, 31]] }
   }
 ];
 

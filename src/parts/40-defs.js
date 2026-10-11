@@ -77,7 +77,9 @@ const WL = [
   { id: 'magnet', n: 1, gap: 0, dmg: 6, r: 2.2, J: 100, ud: 6, kind: K_MAG, mag: { R: 9.5, J: 1500, d: 34, rope: 0.75, rr: 5.5 }, ai: { dmg: 30, r: 7, ud: 6 } },
   { id: 'wind', n: 1, gap: 0, dmg: 4, r: 2.0, J: 120, ud: 5, kind: K_WIND, tw: { R: 4.4, H: 13, life: 2.6, lift: 1.9 }, ai: { dmg: 22, r: 4.4, ud: 16 } },
   { id: 'acid', n: 2, gap: 0.2, dmg: 5, r: 2.9, J: 70, ud: 5, kind: K_ACID, acid: { t: 7, dps: 5.5, ud: 2.2 }, ai: { dmg: 24, r: 2.9, ud: 12 } },
-  { id: 'snipe', n: 1, gap: 0, dmg: 9, r: 0, J: 160, ud: 56, kind: K_PIERCE, spd: 1.55, gk: 0.32, pierce: 1 }
+  { id: 'snipe', n: 1, gap: 0, dmg: 9, r: 0, J: 160, ud: 56, kind: K_PIERCE, spd: 1.55, gk: 0.32, pierce: 1 },
+  // 第十五關：火山彈落地時濺開的岩漿（不是兵射的）
+  { id: 'lavabomb', dmg: 12, r: 3.4, J: 420, ud: 16, kind: K_FIRE }
 ];
 const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; if (w.chain || w.drill || w.stick || w.pierce) w.special = 1; });          // special：打到東西時有自己的打法（51-arms 的 armsHit）
 
@@ -123,13 +125,15 @@ Object.keys(UNIT).forEach((k) => { UNIT[k].id = k; });
    T 大石板（同一列連著的算一整塊，很重）  t 石墩（單塊大石，石柱的腳）  M 地窖火藥庫的大桶（只有火點得著）  + 避雷針
    W 粗大的承重樑（同一列連著的算一整根，耐打三倍半）  C 吊籠的鐵籠  b 吊籠的閘  Y 五重塔的心柱  E 魔王城城腳的魔晶
    V 水塔（同一列連著的算一整桶，裝滿水很重；打破了水從頂樓一路灌下來）
+   F 鐵樑（同一列連著的算一整根）  N 鐵皮屋頂（同一列連著的算一整片，比石牆薄）
+   j 吊臂的鐵柱（上下連著的算一整根）  f 吊臂（同一列連著的算一整根，扁的）：吊臂很硬，也不算城防（要打的是它吊著的鐵鍊）
    . 屋內（沒有東西，只有背景）       1-9 兵站的位置（腳下要有東西）
    擺在格子裡的小東西（不算城防，但會被炸飛、會滾、會砸到人）：
    x 小木箱   X 兩個疊起來的小木箱   u 陶甕（一碰就碎）   o 木桶（圓的，會滾）   O 大石球（非常重，掉下來會砸死人）   m 城垛（兩小塊石頭）
    其他設定：
    sk：這座城的木柱、竹樁撐得住幾倍的重量（沒寫就照材質：木頭 2.4 倍、竹子 1.8 倍）
    ropes：繩索、鐵鍊 { a, b: [欄, 由上往下第幾列, 格子裡的 fx, fy], kind: 'rope' | 'chain', hp, aw（敵軍多想打斷它） }
-   hangs：吊著的東西 { t: 'bell' | 'lamp' | 'basket', at: 吊點, len 繩長, w, h, chain, den, aw }
+   hangs：吊著的東西 { t: 'bell' | 'lamp' | 'basket' | 'pot'（鐵水鍋）, at: 吊點, len 繩長, w, h, chain, den, aw, rhp 吊它的繩子多耐打 }
    pivot：天秤的支點 { at, lo, hi（能轉的角度）, hold（轉軸的摩擦） }
    pins：懸臂樑插進岩壁的榫頭 { at, on, hold, brk }
    fuse：引信 { pts: 一串點, open: 露在城外的前幾段（火燒得到） }
@@ -347,6 +351,30 @@ const CASTLES = {
     ' |  |  | | ',
     ' |  |  | | ',
     ' |  |  | | '] },
+  /* 第十五關：熔岩鑄城。玄武岩的懸崖，底下是岩漿湖，分三段：
+     崖頂的岩棚上一間鐵皮的哨屋（兩個兵），岩棚前端立著一座鐵吊臂；
+     崖壁半腰伸出一座鐵造的鑄造台（懸臂：鐵樑的內端用一根插銷釘在崖壁上，外端靠吊臂垂下來的鐵鍊吊著，兩個兵）——
+     鐵鍊斷了，插銷撐不住整座台：嘎吱嘎吱往下垂，垂到斷，連人掉進岩漿（砸在底下的熔爐上）；
+     崖腳貼著岩漿的岩台上蓋著熔爐（兩個兵）：岩漿漲上岩台，熔爐的鐵地板發紅變軟，撐不了多久。
+     吊臂中間吊著一鍋鐵水，正下方是鑄造台（鑄造台掉了，底下就是熔爐）：打斷吊它的鐵鍊，鐵水鍋砸下來，鐵水澆在底下的兵身上 */
+  FORGE: { skin: 'forge', nofound: 1, nobase: 1, weld: [[0, 0, 4, 1], [6, 0, 10, 1], [4, 4, 10, 6], [4, 8, 7, 10]], map: [
+    'NNNNN fffff',
+    'I3.6I j    ',
+    'AAAAAAA    ',
+    'AAAA       ',
+    'AAAA  NNNNN',
+    'AAAA  I.45I',
+    'AAAAFFFFFFF',
+    'AAAA       ',
+    'AAAANNNN   ',
+    'AAAAI12I   ',
+    'AAAAFFFF   ',
+    'AAAAAAAA   ',
+    'AAAAAAAA   '],
+    // 鑄造台用兩條鐵鍊吊著（外端一條、穿過屋頂的中間一條）：斷一條還撐得住（猛地一沉），兩條都斷才往下垂、斷掉
+    pins: [{ at: [3, 6, 1, 1], on: [4, 6], hold: 0.5, brk: 0.22, tag: 'up' }],
+    ropes: [{ a: [10, 0, 0.5, 0], b: [10, 6, 0.5, 0.5], kind: 'chain', hp: 220, aw: 1.2, tag: 'up', solid: 1 }, { a: [7, 0, 0.5, 0], b: [7, 6, 0.5, 0.5], kind: 'chain', hp: 220, aw: 1.0, tag: 'mid', solid: 1 }],
+    hangs: [{ t: 'pot', at: [8, 0, 0.5, 0], len: 0.9, w: 2.8, h: 2.3, mat: M_IRON, den: 2.6, chain: 1, rhp: 110, aw: 1.4 }] },
 
   /* 演武場：六個兵位的試打城。後面是三層的主樓（木頭的頂樓、石頭的中樓、鐵甲的大廳、最底下的石室），
      前面一座兩層的木頭望樓，最底下夾著一桶火藥；大廳天花板吊著一盞鐵吊燈（試鏈彈、磁暴） */
@@ -374,6 +402,7 @@ const CASTLES = {
   ROCK_MAPLE: { skin: 'maple', map: ['AA', 'AA'] },
   ROCK_DEMON: { skin: 'demon', map: ['AA', 'AA', 'AA', 'AA', 'AA', 'AA'] },
   ROCK_REEF: { skin: 'tide', map: ['AA', 'AA', 'AA'] },          // 第十三關：中間的礁岩（大潮也露在水面上）
+  ROCK_VOLC: { skin: 'forge', map: ['  AA  ', '  AA  ', ' AAAA ', ' AAAA ', 'AAAAAA', 'AAAAAA', 'AAAAAA'] },          // 第十五關：岩漿湖正中間的小火山（火山彈從這裡噴出來）
   // 第七關的石碑（一塊一個，三種高度）：兩排，各往一座城那邊一塊比一塊高
   P3: { skin: 'karst', map: ['P', 'P', 'P'] },
   P4: { skin: 'karst', map: ['P', 'P', 'P', 'P'] },

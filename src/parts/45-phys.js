@@ -128,6 +128,7 @@ function mkBlock(st, o) {
   if (o.kind === 'ball') shape = new PL.Circle(o.r);
   else if (o.kind === 'roof') { const hw = o.w / 2, hh = o.h / 2; shape = new PL.Polygon([{ x: -hw, y: -hh }, { x: hw, y: -hh }, { x: hw - b.ir, y: hh }, { x: -hw + b.il, y: hh }]); }
   else if (o.kind === 'bell') { const hw = o.w / 2, hh = o.h / 2; shape = new PL.Polygon([{ x: -hw, y: -hh }, { x: hw, y: -hh }, { x: hw * 0.62, y: hh * 0.55 }, { x: hw * 0.3, y: hh }, { x: -hw * 0.3, y: hh }, { x: -hw * 0.62, y: hh * 0.55 }]); }
+  else if (o.kind === 'pot') { const hw = o.w / 2, hh = o.h / 2; shape = new PL.Polygon([{ x: -hw * 0.7, y: -hh }, { x: hw * 0.7, y: -hh }, { x: hw, y: hh * 0.55 }, { x: hw * 0.9, y: hh }, { x: -hw * 0.9, y: hh }, { x: -hw, y: hh * 0.55 }]); }          // 鐵水鍋：口寬底窄
   else if (poly) { const v = []; for (let i = 0; i < o.pts.length; i += 2) v.push({ x: o.pts[i], y: o.pts[i + 1] }); shape = new PL.Polygon(v); }
   else shape = new PL.Box(Math.max(0.2, o.w / 2 - BOX_GAP), o.h / 2);        // 比格子窄一點點：並排的磚才不會角頂著角卡住，該掉的就掉
   body.createFixture({ shape, density: o.den || M.den, friction: M.fr, restitution: 0.02, filterCategoryBits: CAT_BLOCK, userData: b });

@@ -120,6 +120,9 @@ function sfx(name, arg) {
       // 第三篇的環境
       case 'surge': noise(2.4, 0.32, 'lowpass', 260, 900, 0.7); noise(2.0, 0.12, 'bandpass', 1200, 500, 0.8, 0.4); tone(44, 1.8, 'sine', 0.3, 34, 0, null, 0.3); break;          // 暴潮：一大片海水湧上來的轟隆聲
       case 'tide': noise(1.6, 0.08, 'bandpass', 500, 900, 0.9); break;
+      case 'lava': noise(2.0, 0.16, 'lowpass', 180, 420, 0.8); tone(40, 1.6, 'sine', 0.26, 30, 0, null, 0.3); for (let i = 0; i < 4; i++) tone(90 + r * 60, 0.09, 'sine', 0.05, 40, 0.3 + i * 0.27); break;          // 岩漿上漲：低沉的隆隆聲，咕嘟咕嘟冒泡
+      case 'pour': noise(2.2, 0.18, 'bandpass', 900, 2600, 0.6); noise(1.8, 0.08, 'highpass', 4200, 7000, 0.8, 0.15); tone(70, 0.6, 'sine', 0.2, 44); break;          // 鐵水澆下來：嘶——
+      case 'volcano': noise(1.4, 0.36, 'lowpass', 500, 2000, 0.7); tone(36, 1.4, 'sine', 0.42, 28, 0, null, 0.15); break;          // 火山噴發
       // 回合
       case 'turn': tone(NOTE(79), 0.12, 'triangle', 0.08); tone(NOTE(86), 0.2, 'triangle', 0.07, 0, 0.09); break;
       case 'arm': [72, 76, 79, 84].forEach((n, i) => tone(NOTE(n), 0.12, 'square', 0.05, 0, i * 0.045)); noise(0.3, 0.06, 'highpass', 5000, 0, 1); break;

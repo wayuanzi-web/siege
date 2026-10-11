@@ -358,7 +358,7 @@ function hudUpdate() {
   // 敵軍瞄準的彈道會穿過倍增符：先講，讓玩家來得及開護罩
   const eA = S.team[1].ai, em = play && S.phase === 'aim' && S.turn === 1 && eA && eA.st === 2 && eA.warn >= 2 ? Math.round(eA.warn) : 0;
   // 回合結束的環境變化（第三篇）：暴潮、漲潮、退潮
-  const E = S.env, envT = S.phase === 'hazard' && E ? (E.surge ? 'surge' : E.tideA ? (E.tideA.to > E.tideA.from ? 'up' : 'down') : '') : '';
+  const E = S.env, envT = S.phase === 'hazard' && E ? (E.surge ? 'surge' : E.tideA ? (S.water && S.water.lava ? 'lava' : E.tideA.to > E.tideA.from ? 'up' : 'down') : '') : '';
   const tk = !play || S.phase === 'intro' || (S.phase === 'hazard' && !S.hz && !envT) ? '' : S.phase === 'hazard' ? (envT ? 'e' + envT : 'hz') : S.phase + S.turn + (S.team[S.turn].ult.armed ? 'u' : '') + (em ? 'm' + em : '');
   if (tk !== HUD.turn) {
     HUD.turn = tk; const el = $('turnChip');
@@ -366,7 +366,7 @@ function hudUpdate() {
     else {
       el.hidden = false;
       el.className = 'chamfer ' + (tk === 'hz' || envT ? 'hz' : S.turn === 0 ? 'me' : 'foe') + (mine ? ' go' : '') + (S.turn === 1 && S.phase === 'aim' && (em || S.team[1].ult.armed) ? ' warn' : '');
-      el.textContent = envT ? (envT === 'surge' ? '暴潮！' : envT === 'up' ? '漲潮' : '退潮') : tk === 'hz' ? '落石！' : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : S.team[1].ult.armed ? '敵軍連珠砲上膛！' : em ? '敵軍的砲彈會穿過' + (S.lv.boss ? '聖光符' : '倍增符') + '：×' + em + '！' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
+      el.textContent = envT ? (envT === 'surge' ? '暴潮！' : envT === 'lava' ? '岩漿上漲' : envT === 'up' ? '漲潮' : '退潮') : tk === 'hz' ? (S.lv.rocks && S.lv.rocks.sym ? '火山彈！' : '落石！') : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : S.team[1].ult.armed ? '敵軍連珠砲上膛！' : em ? '敵軍的砲彈會穿過' + (S.lv.boss ? '聖光符' : '倍增符') + '：×' + em + '！' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
     }
   }
   const fk = mine ? 1 : 0; if (fk !== HUD.fire) { HUD.fire = fk; $('btnFire').classList.toggle('ready', !!mine); $('btnFire').classList.toggle('btn-gold', !!mine); }
