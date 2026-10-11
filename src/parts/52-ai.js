@@ -56,6 +56,7 @@ function aiPtScore(side, x, y, w, amp, direct) {
   const su = hpAll > 0 ? dmg / hpAll : 0;
   let sv = aiStructVal(side, x, y, w, amp) / (1 - fallTh());
   if (S.boss && side === 0) sv *= 0.3;          // 魔王城：城不會破，打城只是順便（壓到魔王、打掉魔晶另外算）
+  if (S.beast && side === 0) sv += beastPtVal(x, y, w, amp);          // 機關巨獸：沒有城，打在牠身上扣多少血
   return (Math.max(su, sv) + 0.35 * Math.min(su, sv)) * AI_PK;
 }
 const BOSS_W = 0.9;      // 魔王關：自動玩家特別想打魔王（打倒他才算贏，其他的兵只是順便）

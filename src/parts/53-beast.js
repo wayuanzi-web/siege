@@ -482,8 +482,7 @@ function beastPhase(B) {
   } else if (B.phase === 2 && f <= lv.p3 + 1e-6) {
     B.phase = 3; B.down = true; ev('phase', 3); beastSay(BEAST_LINES.p3);
     const C = B.P.chest; if (C && !C.dead) beastBreak(C, 2, true);
-    const b = beastBase(B), f0 = B.legs.map((L) => L.fx);
-    beastQueue('settle', { feet: B.legs.map((L) => B.x + L.hip[0] + (L.k ? 5.5 : -6.5)), f0 });
+    beastQueue('settle', { feet: B.legs.map((L) => B.x + L.hip[0] + (L.k ? 5.5 : -6.5)) });
   }
 }
 // 一塊被打壞：變成幾塊鐵碎片掉下去；照部位有不同的效果
@@ -526,6 +525,22 @@ function beastDie(side) {
   ev('beastdie', B.x, B.y, side); beastSay(BEAST_LINES.die);
   for (const u of S.units) if (u.grabbed) { u.grabbed = null; if (u.body) { u.body.setType('dynamic'); unitGhost(u, false); u.body.setAwake(true); } }
   B.anim = null; beastStart('die');
+}
+
+/* ---------- 自動玩家：炸在 (x, y) 打得掉巨獸幾成血（照部位的折數、離爆炸多遠；破綻的回合加倍）。
+   要害之外，打在軀幹、大腿這些大塊上也有一點分數：不然手不穩的自動玩家只會瞄小小的要害，打不中就整輪落空（真人會先往大塊的身體打） ---------- */
+function beastPtVal(x, y, w, amp) {
+  const B = S.beast; if (!B || B.dead) return 0;
+  const r = Math.max(1.2, (w && (w.ai ? w.ai.r : w.r)) || 1), kind = w ? w.kind : K_BLAST, dm = ((w && (w.ai ? w.ai.dmg : w.dmg * (w.n || 1))) || 10) * (amp || 1) * DM[kind][M_IRON] * (kind === K_MAG ? 2.5 : 1);
+  let v = 0;
+  for (const p of B.parts) {
+    if (p.dead || !p.body || !p.body.isActive()) continue;
+    const q = p.body.getPosition(); let d;
+    if (p.r) d = Math.max(0, Math.hypot(x - q.x, y - q.y) - p.r);
+    else { const a = p.body.getAngle(), c = Math.cos(a), s = Math.sin(a), lx = (x - q.x) * c + (y - q.y) * s, ly = -(x - q.x) * s + (y - q.y) * c; d = Math.hypot(Math.max(0, Math.abs(lx) - p.hw), Math.max(0, Math.abs(ly) - p.hh)); }
+    if (d < 0.3) v += dm * p.bk; else if (d < r) v += dm * p.bk * 0.6 * (1 - d / r);
+  }
+  return v / B.hm * (B.tired ? 2 : 1);
 }
 
 /* ---------- 自動玩家想打的要害：護膝甲、露出來的膝關節、頭、胸甲、核心 ---------- */

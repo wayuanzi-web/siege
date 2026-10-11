@@ -404,7 +404,7 @@ const LEVELS = [
     me: { crew: ['zap', 'acid', 'magnet', 'chain', 'sapper', 'eng'] },
     foe: { crew: ['rocket', 'bomb', 'sniper'], mechs: 2, hp: 1.0, dmg: 0.9, open: 0.55, ai: { err: 3.6, think: 1.1, gate: 0, hate: 0.2, skill: 0.6, sap: 0.6, warm: 1.6 } },
     // 機關巨獸：開場站在哪（軀幹中心 x）、血量；血剩幾成進第二、第三階段
-    beast: { x: 93, hp: 1250, p2: 0.6, p3: 0.28 },
+    beast: { x: 93, hp: 1450, p2: 0.6, p3: 0.28 },
     weak: (side) => beastWeak(side),
     lantern: { at: 3, every: 3, spots: [[60, 30], [68, 24]] },
     sudden: 16
@@ -415,7 +415,7 @@ const LEVELS = [
    practice：不給星星、不解鎖；rules：ff 誤傷、crit 弱點暴擊、elem 冰能滅火（屬性剋制的字每一關都會跳，這條是真的改戰局） */
 const PRACTICE_BASE = {
   name: '演武場', tag: '十八種兵器・誤傷・弱點暴擊', theme: 0, castle: 'DRILL', practice: 1, rules: { ff: 1, crit: 1, elem: 1 },
-  tip: '十八種兵任你挑，每邊最多六個；戰場也可以換成各關的城（魔王城除外）。第三篇的規則都在：自己的砲炸到自己人一樣會傷，打中接點、核心、兵的頭是暴擊 ×2',
+  tip: '十八種兵任你挑，每邊最多六個；戰場也可以換成各關的城（魔王城、機關巨獸除外）。第三篇的規則都在：自己的砲炸到自己人一樣會傷，打中接點、核心、兵的頭是暴擊 ×2',
   hints: [],
   ground: [[-40, 3], [0, 0], [47, 0], [51, 3.6], [56, 5.2], [61, 3.6], [65, 0], [112, 0], [152, 3]],
   me: { crew: ['chain', 'drill', 'cluster', 'sapper', 'magnet', 'eng'] },
