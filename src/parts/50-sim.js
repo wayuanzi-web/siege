@@ -1365,12 +1365,12 @@ function burnStep(dt) {
   // 瞄準的時候火不往下燒（火苗照樣畫著）：不然上一輪點的火會在別人瞄準時把樑燒斷、把兵燒倒。下一輪砲擊開始再接著燒
   if (S.state === 'play' && (S.phase === 'aim' || S.phase === 'intro')) return;
   S.burnT -= dt; const tick = S.burnT <= 0; if (tick) S.burnT = 0.4;
-  let nb = 0; const credit = S.phase === 'hazard' ? 2 : S.turn;
+  let nb = 0; const credit = S.phase === 'hazard' ? 2 : S.turn, wetK = S.lv.damp || 1;          // damp：海上的水寨木頭是濕的（第十三關），燒得慢、延燒得少
   for (const b of S.blocks) {
     if (b.dead || b.burn <= 0) continue;
     b.burn -= dt; if (b.burn <= 0) { b.burn = 0; continue; }
     const foe = b.burnBy !== undefined && b.burnBy !== b.side ? b.burnBy : b.side === credit ? 2 : credit;
-    blockHurt(b, 4.2 * dt, K_FIRE, foe);
+    blockHurt(b, 4.2 * dt * wetK, K_FIRE, foe);
     if (tick && !b.dead) {
       const p = b.body.getPosition(), reach = Math.max(b.w, b.h) * 0.5 + 0.8, list = physQuery(p.x, p.y, reach).slice(), A = b.body.getFixtureList().getAABB(0);
       for (let k = 0; k < list.length; k++) {
@@ -1380,7 +1380,7 @@ function burnStep(dt) {
           // 火只會延燒到貼著的東西（隔一層石板、隔一間房燒不過去）
           const B = o.body.getFixtureList().getAABB(0);
           if (Math.max(A.lowerBound.x - B.upperBound.x, B.lowerBound.x - A.upperBound.x, A.lowerBound.y - B.upperBound.y, B.lowerBound.y - A.upperBound.y) > 0.6) continue;
-          if (o.mat === M_KEG || rnd() < 0.1) ignite(o, 2.5 + rnd() * 2, foe);          // 火燒到火藥桶：馬上爆
+          if (o.mat === M_KEG || rnd() < 0.1 * wetK) ignite(o, 2.5 + rnd() * 2, foe);          // 火燒到火藥桶：馬上爆
         } else if (o.alive && o.fireT !== S.frame && Math.abs(o.x - p.x) < b.w * 0.5 + 1.6 && Math.abs(o.y + 1.5 - p.y) < b.h * 0.5 + 2.2) { o.fireT = S.frame; hurtUnit(o, 2.2, foe, K_FIRE); }       // 身邊燒著好幾塊，一次也只算燒到一下
       }
     }

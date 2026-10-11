@@ -166,6 +166,7 @@ function mkRotor(st, d) {
     const G = mkGondola(st, R, hx + ca * L, hy + sa * L, d); G.arm = A; A.gond = G; R.gond.push(G);
   }
   R.j = PH.world.createJoint(new PL.RevoluteJoint({ enableMotor: true, motorSpeed: 0, maxMotorTorque: 1e9, collideConnected: false }, PH.ground, body, { x: hx, y: hy }));
+  R.ubN = st.blocks.filter((b) => b !== ub && Math.abs(b.y0 - ub.y0) < 0.5 && Math.abs(Math.abs(b.x0 - ub.x0) - CS) < 0.5);          // 軸座左右兩塊牆
   st.rotor = R; S.rotors.push(R);
   const w = d.aw * d.n + d.gw * d.n; st.hp0 += w; st.hpNow = st.hp0;
   return R;
@@ -302,7 +303,8 @@ function millWeak(side) {
     const G = A.gond, n = G ? S.team[o].units.filter((u) => u.alive && u.fr === G && unitRiding(u)).length : 0;
     const m = R.body.getWorldPoint({ x: A.lx * 0.62, y: A.ly * 0.62 }); out.push({ x: m.x, y: m.y, w: 0.9 + 0.3 * n, arm: A });
   }
-  const ub = R.ub; if (!ub.dead && ub.inPlace) out.push({ x: ub.x0, y: ub.y0, w: 1.1, blk: ub });
+  // 軸座：兩邊夾著它的石牆打開了一邊才值得瞄（藏在牆裡的時候砲彈只會炸在牆上）
+  const ub = R.ub; if (!ub.dead && ub.inPlace && (!R.ubN || R.ubN.some((b) => b.dead || !b.inPlace))) out.push({ x: ub.x0, y: ub.y0, w: 1.1, blk: ub });
   return out;
 }
 
