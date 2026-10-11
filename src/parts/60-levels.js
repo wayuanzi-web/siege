@@ -296,6 +296,24 @@ const LEVELS = [
     ],
     lantern: { at: 3, every: 3, spots: [[56, 22], [48, 48], [62, 48]] },
     sudden: 14
+  },
+  /* ===== 第三篇（第 13–18 關）：每邊六個兵、誤傷、弱點暴擊、冰能滅火；環境每回合在變 ===== */
+  {
+    name: '潮汐水寨', sayTop: 1, tag: '潮汐・暴潮・水塔', theme: 12, castle: 'TIDE', y0: -8, stress: 1, blockHp: 3.0, rules: { ff: 1, crit: 1, elem: 1 },
+    tip: '海上的高腳水寨：甲板架在木樁上。退潮木樁整根露出來，打得到、燒得著；漲潮泡在水裡，打在水面上就炸了。每四回合一次大潮，回合結束時暴潮淹上甲板，退下去會把沒有牆擋著的兵拖下海。主屋屋頂上一座大水塔，打破它，水從頂樓一路灌下來',
+    hints: [{ r: 1, t: '退潮了：敵寨的木樁整根露在水面上，這時候打得到、火也燒得著。前面望樓腳下那兩根一斷，望樓連人翻進海裡', ok: () => tideNow() === 0 },
+      { r: 2, t: '敵寨主屋屋頂上那座大水塔：打破它，水從頂樓一路灌下來，把屋裡的兵往前沖；前牆打掉了就沖出屋外', ok: () => tankUp(1) },
+      { r: 3, t: '大潮：這一回合結束時暴潮會淹上甲板，退下去的時候把沒有牆、沒有門擋著的兵拖下海。先把敵寨的門、前牆打掉', ok: () => tideNow() === 2 },
+      { r: 4, t: '漲潮的時候木樁泡在水裡（打在水面上就炸了、火被撲滅、黏在水下的炸藥會泡水啞掉）：先打上面的屋子，等退潮再打木樁', ok: () => tideNow() !== 0 }],
+    ground: [[-60, -8], [172, -8]],
+    water: { x0: -60, x1: 172, y: -5.5, cur: 0, rho: 0.85, sea: 1 },
+    // 潮汐：四回合一輪（低、中、高、中），水面高度；大潮（高）那一回合結束時暴潮：水面猛漲 surge、再退下去；deck：甲板底（比這裡低、或在自己城外泡水的兵會被沖走）
+    tide: { lv: [-5.5, -3, -0.5, -3], surge: 7, deck: 2.2 },
+    extra: [{ castle: 'ROCK_REEF', x: 56, y: -8 }],
+    me: { crew: ['chain', 'bomb', 'fire', 'drill', 'rocket', 'eng'] },
+    foe: { crew: ['bomb', 'chain', 'rocket', 'fire', 'sniper', 'wind'], hp: 1.1, dmg: 1.15, open: 0.55, ai: { err: 3.4, think: 1.1, gate: 0.6, hate: 0.2, skill: 0.6, sap: 0.6, warm: 1.8 } },
+    weak: (side) => tideWeak(side),
+    lantern: { at: 3, every: 3, spots: [[52, 46], [60, 30]] }
   }
 ];
 
@@ -310,8 +328,9 @@ const PRACTICE_BASE = {
   foe: { crew: ['wind', 'acid', 'sniper', 'bomb', 'rocket', 'eng'], hp: 1, dmg: 1, open: 0.55, ai: { err: 4.2, think: 1.0, gate: 0.6, hate: 0.2, skill: 0.5, sap: 0.6, warm: 1.6 } },
   wind: { max: 5, at: 2 }, sudden: 12
 };
-// 演武場的戰場清單：0 演武城，1–11 照那一關（城、地形、中間的機關都一樣，兵換成挑的）。魔王城不能選（要有魔王）
-const PRACTICE_MAPS = 12;
+// 演武場的戰場清單：0 演武城，其他照那一關（第幾關；城、地形、中間的機關、環境都一樣，兵換成挑的）。魔王城不能選（要有魔王）
+const PRACTICE_LIST = [0].concat(LEVELS.map((l, i) => i + 1).filter((m) => !LEVELS[m - 1].boss));
+const PRACTICE_MAPS = LEVELS.length + 1;          // 戰場編號的上限（存檔檢查用）
 function practiceSlots(map) { const lv = map > 0 ? LEVELS[map - 1] : PRACTICE_BASE, d = CASTLES[lv.castle || lv.me.castle]; let n = 0; for (const r of d.map) for (const ch of r) if (ch >= '1' && ch <= '9') n++; return n; }
 function practiceLevel(map, me, foe, ff) {
   const base = map > 0 ? LEVELS[map - 1] : PRACTICE_BASE;

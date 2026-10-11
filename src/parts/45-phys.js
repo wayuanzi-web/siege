@@ -212,6 +212,7 @@ function blockKill(b, side, kind, clean) {
   if (b.ropes) ropesOff(b, null);
   if (b.pins) pinsOff(b, null);
   if (b.pivot) { b.pivot.b = null; b.pivot = null; }
+  if (b.tank && b.body) spawnDeluge(b, side);          // 水塔破了：水從這裡一路灌下去
   b.dead = true; b.inPlace = false; b.hp = 0;
   const p = b.body.getPosition(); b.x = p.x; b.y = p.y; b.a = b.body.getAngle();
   if (b.burn > 0) S.nburn--;
@@ -305,6 +306,7 @@ function segSplit(b, side, kind) {
   }
   if (pieces) { ropesOff(b, pieces); pinsOff(b, pieces); }
   if (b.pivot) { b.pivot.b = null; b.pivot = null; }
+  if (b.tank && b.body) spawnDeluge(b, side);          // 水塔破了：水從這裡一路灌下去
   b.dead = true; b.inPlace = false; b.hp = 0; b.x = px; b.y = py; b.a = ang;
   if (b.burn > 0) S.nburn--;
   st.ver++;

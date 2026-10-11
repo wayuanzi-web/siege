@@ -79,6 +79,7 @@ function chargeStep(o, dt) {
   }
   if (o.hp <= 0) return true;
   if (o.go && S.time >= o.go) {
+    if (envDud(o)) { o.hp = 0; ev('defuse', o.x, o.y, 2, 3); return true; }          // 潮水漲上來泡了水：啞了
     const v = 1 - o.side, on = chargeOn(o);
     if (o.side < 2 && S.team[v].shield.on && (on === v || inBubble(S.st[v], o.x, o.y))) { o.hp = 0; ev('defuse', o.x, o.y, v, 2); return true; }          // 對方開著護罩：罩住的炸藥（黏在城上的、掉在城腳的）悶熄，不會爆
     physExplode(o.x, o.y, WPN.sticky, o.side, o.mass, 0, o.host || null, 0, -1); return true;

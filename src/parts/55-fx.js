@@ -411,12 +411,20 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'split': part(P_FLASH, a, b, 0, 0, 0.12, 2.6, C_GOLD); ring(a, b, 0.5, 4, 0.25, '#fff0b0', 0.4); burst(P_SMOKE, a, b, 3, 6, 0.6, 1.4, C_GRAY); if (thr('split', 120)) sfx('pop'); break;
     case 'stuck': burst(P_SPARK, a, b, 5, 10, 0.3, 0.4, C_RED); if (thr('stuck', 200)) { sfx('stick'); if (S.state === 'play') pop(a, b + 2.6, c === 0 ? '炸藥黏上去了' : '敵軍的炸藥黏上來了！', c === 0 ? '#ffd0a0' : '#ff9a88', 2.6, 1.1); } break;
     case 'chargego': ring(a, b, 3, 0.5, 0.3, '#ff8a6a', 0.5); if (thr('chargego', 300)) sfx('warn'); break;
-    case 'defuse': burst(P_SPARK, a, b, 8, 14, 0.4, 0.5, C_ORANGE); burst(P_SMOKE, a, b, 2, 4, 0.6, 1.2, C_GRAY); if (thr('defuse', 300)) { pop(a, b + 2.6, d === 1 ? '炸藥跟著掉下去了' : d === 2 ? '護罩悶熄了炸藥' : '炸藥被拆掉了', '#ffe9a0', 2.6, 1.0); sfx(d === 2 ? 'fizz' : 'click'); } break;          // d：1 黏的磚碎了、2 護罩悶熄
+    case 'defuse': burst(P_SPARK, a, b, 8, 14, 0.4, 0.5, C_ORANGE); burst(P_SMOKE, a, b, 2, 4, 0.6, 1.2, C_GRAY); if (thr('defuse', 300)) { pop(a, b + 2.6, d === 1 ? '炸藥跟著掉下去了' : d === 2 ? '護罩悶熄了炸藥' : d === 3 ? '炸藥泡水啞了' : '炸藥被拆掉了', '#ffe9a0', 2.6, 1.0); sfx(d === 2 || d === 3 ? 'fizz' : 'click'); } break;          // d：1 黏的磚碎了、2 護罩悶熄、3 泡水
     case 'drill': burst(P_DEBRIS, a, b, 4, 12, 0.5, 0.4, C_TAN, 4); burst(P_SPARK, a, b, 4, 16, 0.25, 0.4, C_WHITEHOT); if (thr('drillhit', 90)) sfx('drill'); break;
     case 'chainhit': burst(P_SPARK, a, b, 6, 18, 0.3, 0.45, C_WHITEHOT); if (thr('chainhit', 120)) sfx('clang'); break;
     case 'tangle': if (S.state === 'play') pop(a, b + 2.6, '被鐵鍊纏住！', '#d8dee8', 2.6, 1.0); sfx('chainsnap'); break;
     case 'magpulse': for (let k = 0; k < 3; k++) ring(a, b, c * (1 - k * 0.22), 1, 0.45 + k * 0.1, '#9fd8ff', 0.5); burst(P_SPARK, a, b, 8, 20, 0.35, 0.45, C_SKY); sfx('mag'); break;
     case 'twister': burst(P_DUST, a, b, 8, 12, 0.8, 2.2, C_WHITE, 6); sfx('gust'); break;
+    // 第三篇的環境
+    case 'surge': {          // 暴潮：海水猛漲（兩座水寨的前面都濺起大浪）
+      shake(1.2); sfx('surge'); vibrate(160); pop(MID, 30, '暴潮！', '#dff6ff', 4, 1.6);
+      for (const st of S.st) { const fx = st.side === 0 ? st.x1 + 1 : st.x0 - 1; burst(P_SPARK, fx, b + 1, 18, 26, 0.7, 0.9, C_SKY); burst(P_SMOKE, fx, b + 2, 6, 10, 1.2, 2.6, C_WHITE, 5); }
+      break;
+    }
+    case 'tide': if (thr('tide', 1500)) { pop(MID, 26, d === 2 ? '大潮：回合結束時暴潮' : b > (S.water ? S.water.y : 0) ? '漲潮' : '退潮', '#cfeefa', 2.8, 1.1); sfx('tide'); } break;
+    case 'deluge': burst(P_SPARK, a, b, 20, 18, 0.6, 0.7, C_SKY); burst(P_SMOKE, a, b, 5, 6, 0.8, 1.8, C_WHITE, 4); pop(a, b + 3, '水塔破了！', '#cfeefa', 3, 1.2); sfx('splash'); shake(0.5); break;
     case 'fix': burst(P_SPARK, a, b, 6, 10, 0.5, 0.45, C_GREEN, 4); if (thr('fix' + d, 500)) { pop(a, b + 2.4, '修好了', '#b8ff9a', 2.4, 0.9); sfx('fix'); } break;
     case 'wall': burst(P_DUST, a, b - 2, 6, 8, 0.6, 2, C_SAND, 3); pop(a, b + 3.2, '架起木牆', '#ffe0a8', 2.6, 1.0); sfx('fix'); break;
     case 'wind': sfx('gust'); break;

@@ -67,6 +67,7 @@ const ROCK_PAL = {
   crystal: { c: ['#efeaff', '#c3bbee', '#9289cc', '#4f4688'], veg: 'snow', jnt: 0.45, ldg: 0.35 },
   maple: { c: ['#bdb6a6', '#979080', '#6d675b', '#46423a'], veg: 'grass', g: ['#d8c060', '#a8913f', '#6e5c28'], jnt: 0.5, ldg: 0.7 },
   demon: { c: ['#7a5a88', '#553a64', '#352442', '#170d20'], veg: 0, jnt: 0.65, ldg: 0.5 },
+  tide: { c: ['#8f9b94', '#68746e', '#465150', '#29312f'], veg: 0, jnt: 0.55, ldg: 0.6 },
   def: { c: ['#a39a8c', '#81786b', '#5c554b', '#3e3932'], veg: 'grass', g: ['#a2e070', '#7fae5a', '#4a7a3a'], jnt: 0.85, ldg: 1 }
 };
 // 岩石（藍圖裡的 A；浮島的 R 由 drawPlats 傳 cells 進來）：整片連成一塊畫，不是一格一格的磚。
@@ -779,10 +780,10 @@ function drawWater(c, t) {
     /* 外海：一道道湧浪往右推，浪頭碎成白沫。只是畫出來的 —— 物理的水面一直平平地在 W.y，
        所以船身附近的起伏壓在 ±0.4 以內（船才不會看起來浮在半空或沉下去），兩船之間、畫面兩頭的開闊海面才湧得高 */
     const D = drawWater.sea || (drawWater.sea = { key: '', g: null, cap: null, wash: null, p: new Float32Array(0), sp: [0, 0, 0, 0] });
-    const key = V.W + '|' + V.H + '|' + s + '|' + W.y;
+    const key = V.W + '|' + V.H + '|' + s;          // 水面高度不放進來：第十三關的潮水一直在漲退（漸層每次照現在的水面重做，很便宜）
+    if (D.gy !== W.y || D.key !== key) { D.gy = W.y; D.g = lg(c, 0, Y(W.y + 1), 0, yb, [0, 'rgba(78,168,170,.3)', 0.07, 'rgba(44,134,148,.42)', 0.32, 'rgba(16,84,112,.62)', 1, 'rgba(6,30,58,.86)']); }
     if (D.key !== key) {
       D.key = key;
-      D.g = lg(c, 0, Y(W.y + 1), 0, yb, [0, 'rgba(78,168,170,.3)', 0.07, 'rgba(44,134,148,.42)', 0.32, 'rgba(16,84,112,.62)', 1, 'rgba(6,30,58,.86)']);
       // 浪頭的白沫：沿著浪峰一串大小不一的泡沫，往前坡（右邊）淌下去一點，底下帶幾顆氣泡。(D.cx, D.cy) 是浪峰
       const R = mkRand(29), cw = Math.ceil(s * 4.2), ch = Math.ceil(s * 1.9), cap = mkCanvas(cw, ch), g = cap.getContext('2d');
       D.cx = cw * 0.42; D.cy = ch * 0.34;
@@ -925,6 +926,15 @@ function drawArms(c, t) {
       }
       c.globalAlpha = 1;
       if (!FX.low && (RD.frame & 1) === 0) part(P_DUST, o.x + rndS() * o.R, o.y + Math.random() * o.H * 0.7, rndS() * 18, 6 + Math.random() * 10, 0.6, 1.2, C_SAND);
+    } else if (o.t === 'deluge') {
+      // 水塔破了：一道水柱從那裡往下灌，邊上一條條白水紋往下流，越到後來越細
+      const k = o.age < 0.25 ? o.age / 0.25 : o.age > o.life - 0.7 ? Math.max(0, (o.life - o.age) / 0.7) : 1, x0 = X(o.x), y0 = Y(o.y), L = Math.min(o.age * 34, 24) * s, hw = o.w * s * 0.5 * (0.45 + 0.55 * k);
+      c.globalAlpha = 0.55 * k; c.fillStyle = lg(c, 0, y0, 0, y0 + L, [0, 'rgba(190,240,255,.95)', 0.6, 'rgba(110,200,235,.8)', 1, 'rgba(110,200,235,0)']);
+      c.beginPath(); c.moveTo(x0 - hw * 0.7, y0); c.lineTo(x0 + hw * 0.7, y0); c.lineTo(x0 + hw, y0 + L); c.lineTo(x0 - hw, y0 + L); c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(240,252,255,.85)'; c.lineWidth = Math.max(1, s * 0.16);
+      for (let j = 0; j < 5; j++) { const fx = (j / 4 - 0.5) * 1.6 * hw, off = ((t * 3.2 + j * 0.37) % 1) * L; c.globalAlpha = 0.7 * k; c.beginPath(); c.moveTo(x0 + fx, y0 + off * 0.6); c.lineTo(x0 + fx * 1.1, y0 + Math.min(L, off * 0.6 + s * 2.2)); c.stroke(); }
+      c.globalAlpha = 1;
+      if (!FX.low && (RD.frame & 1) === 0) part(P_SPARK, o.x + rndS() * o.w * 0.6, o.y - Math.random() * Math.min(o.age * 34, 24), rndS() * 8, -4 - Math.random() * 6, 0.35, 0.5, C_SKY);
     }
   }
 }

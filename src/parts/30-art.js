@@ -15,7 +15,9 @@ const SKINS = {
   canyon: { stone: ['#e8a47e', '#c97a52', '#9a5433', '#6e3720'], wood: ['#8f6a4a', '#6c4c32', '#43301e'], roof: ['#d9644a', '#a94330', '#6c2618'], iron: ['#a59a8e', '#776c61', '#4a423a'], panel: ['#4a2a1e', '#371f16'], ink: '#26140c', trim: '#ffcf7a', flag: '#dc3a2e', flagDk: '#8f1418' },
   crystal: { stone: ['#ece6f6', '#c8bfe0', '#958bb6', '#6a6190'], wood: ['#b8c4dc', '#8d9bba', '#5d6a88'], roof: ['#8fe6f0', '#46b6c8', '#22788a'], iron: ['#d8d2f0', '#a69ec8', '#6c6494'], panel: ['#1f2550', '#161b3e'], ink: '#10133a', trim: '#b9f6ff', flag: '#dc3a2e', flagDk: '#8f1418' },
   maple: { stone: ['#d8d2c8', '#b0a89b', '#80786c', '#5a5348'], wood: ['#b85a34', '#8c3e22', '#5a2412'], roof: ['#6f8a7e', '#4b6559', '#2e423a'], iron: ['#c4a45e', '#957732', '#5c4618'], panel: ['#3e2418', '#2f1a11'], ink: '#1e0f08', trim: '#ffcf6a', flag: '#dc3a2e', flagDk: '#8f1418' },
-  ship: { stone: ['#d9cdb4', '#b3a585', '#857858', '#5d523a'], wood: ['#a8673a', '#7e4624', '#4c2610'], roof: ['#d9a35c', '#b07a34', '#76501c'], iron: ['#a9a49c', '#7a756d', '#4a4640'], panel: ['#3e2a1c', '#2e1f14'], ink: '#1f120a', trim: '#ffd27a', flag: '#dc3a2e', flagDk: '#8f1418' }
+  ship: { stone: ['#d9cdb4', '#b3a585', '#857858', '#5d523a'], wood: ['#a8673a', '#7e4624', '#4c2610'], roof: ['#d9a35c', '#b07a34', '#76501c'], iron: ['#a9a49c', '#7a756d', '#4a4640'], panel: ['#3e2a1c', '#2e1f14'], ink: '#1f120a', trim: '#ffd27a', flag: '#dc3a2e', flagDk: '#8f1418' },
+  // 第三篇
+  tide: { stone: ['#dfe4dc', '#b4bfb6', '#81918a', '#5b6a64'], wood: ['#b9a07c', '#8f7653', '#5a4831'], roof: ['#d8b56e', '#ad8942', '#715823'], iron: ['#a7b0ae', '#79837f', '#49524f'], panel: ['#2c3836', '#212b2a'], ink: '#131c1b', trim: '#ffe6a0', flag: '#dc3a2e', flagDk: '#8f1418' }
 };
 // 每一關雙方的城樓一模一樣，只有屋瓦和旗子分顏色：我方藍、敵方紅（藍圖的外觀名稱後面接 @0、@1）
 const ROOF_TEAM = [['#78b2ff', '#2f6fe0', '#1a429c'], ['#ff8a6c', '#d43c2a', '#86180f']], FLAG_TEAM = [['#2f7bff', '#1b46b8'], ['#dc3a2e', '#8f1418']];
@@ -30,7 +32,7 @@ const PAL_ROCK = ['#8e8794', '#665f70', '#403a49', '#2a2532'];
 /* ---------- 磚塊：每一塊一張貼圖（依外觀、材質、形狀、大小、破損程度），第一次用到時才畫 ---------- */
 const BSPR = {};
 function blockSprite(b, ds) {
-  const key = b.skin + ':' + b.mat + ':' + b.kind + ':' + Math.round(b.w * 10) + ':' + Math.round(b.h * 10) + ':' + Math.round(b.il * 10) + ':' + Math.round(b.ir * 10) + ':' + b.deco + ':' + ds + ':' + (b.vr & 1) + (b.hot ? 'h' : '') + (b.prop ? 'p' : '') + (b.seg ? 's' : '') + (b.dom ? 'd' : '') + (b.beam ? 'b' : '') + (b.reso ? 'r' : '') + (b.mag ? 'm' : '') + (b.core ? 'c' : '') + (b.heart ? 'H' : '') + (b.brake ? 'k' : '');
+  const key = b.skin + ':' + b.mat + ':' + b.kind + ':' + Math.round(b.w * 10) + ':' + Math.round(b.h * 10) + ':' + Math.round(b.il * 10) + ':' + Math.round(b.ir * 10) + ':' + b.deco + ':' + ds + ':' + (b.vr & 1) + (b.hot ? 'h' : '') + (b.prop ? 'p' : '') + (b.seg ? 's' : '') + (b.dom ? 'd' : '') + (b.beam ? 'b' : '') + (b.reso ? 'r' : '') + (b.mag ? 'm' : '') + (b.core ? 'c' : '') + (b.heart ? 'H' : '') + (b.brake ? 'k' : '') + (b.tank ? 'T' : '');
   let s = BSPR[key]; if (s) return s;
   const sc = V.s, w = b.w * sc, h = b.h * sc, roof = b.kind === 'roof';
   const padX = Math.ceil((roof ? 0.62 : 0.14) * CS * sc), padY = Math.ceil((roof ? 0.5 : 0.14) * CS * sc);
@@ -108,6 +110,17 @@ function paintBlock(c, b, ds, w, h, sc) {
       break;
     }
     case M_WOOD: {
+      if (b.tank) {
+        // 水塔：一圈圈直立的木板箍著兩道鐵箍，桶口露出一層亮藍的水
+        const p = P.wood;
+        c.fillStyle = lg(c, 0, 0, w, 0, [0, p[2], 0.18, p[1], 0.45, mix(p[0], p[1], 0.3), 0.7, p[1], 1, p[2]]); c.fillRect(0, 0, w, h);
+        c.strokeStyle = rgba(p[2], 0.8); c.lineWidth = Math.max(1, u * 0.05);
+        for (let x = u * 0.36; x < w - u * 0.2; x += u * 0.42) { c.beginPath(); c.moveTo(x, h * 0.16); c.lineTo(x, h); c.stroke(); }
+        c.fillStyle = '#5c6670'; for (const f of [0.34, 0.78]) { c.fillRect(0, h * f - u * 0.07, w, u * 0.14); c.fillStyle = '#8d98a2'; c.fillRect(0, h * f - u * 0.07, w, Math.max(1, u * 0.04)); c.fillStyle = '#5c6670'; }
+        c.fillStyle = lg(c, 0, 0, 0, h * 0.18, [0, '#bfeefc', 0.5, '#5cc0e6', 1, '#2b86b8']); c.fillRect(u * 0.12, 0, w - u * 0.24, h * 0.16);
+        c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(w * 0.2, h * 0.04, w * 0.3, Math.max(1, u * 0.04));
+        break;
+      }
       if (b.heart) {
         // 五重塔的心柱：朱漆、上下兩道金箍
         c.fillStyle = lg(c, 0, 0, w, 0, [0, '#6a1410', 0.3, '#b8281c', 0.55, '#d8402a', 0.8, '#b8281c', 1, '#6a1410']); c.fillRect(0, 0, w, h);

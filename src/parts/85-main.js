@@ -329,7 +329,7 @@ function bindInput() {
   press('btnPause', () => { sfx('click'); pauseGame(); });
   click('btnGo', () => { sfx('click'); startLevel(UI.prac ? pracLevel() : UI.sel); });
   // 演武場：換戰場、誤傷開關、敵軍隨機
-  const pmap = (d) => { SV.prac.map = (SV.prac.map + d + PRACTICE_MAPS) % PRACTICE_MAPS; save(); sfx('click'); homeRender(); homeDemo(); };
+  const pmap = (d) => { const L = PRACTICE_LIST, i = Math.max(0, L.indexOf(SV.prac.map)); SV.prac.map = L[(i + d + L.length) % L.length]; save(); sfx('click'); homeRender(); homeDemo(); };
   click('pMapL', () => pmap(-1)); click('pMapR', () => pmap(1));
   click('pFF', () => { SV.prac.ff = SV.prac.ff ? 0 : 1; save(); sfx('click'); homeRender(); });
   click('pRand', () => { const L = UNIT_LIST.filter((t) => t !== 'eng' || Math.random() < 0.4); for (let k = 0; k < 6; k++) SV.prac.foe[k] = L[(Math.random() * L.length) | 0]; save(); sfx('click'); homeRender(); homeDemo(); });

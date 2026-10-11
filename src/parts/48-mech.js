@@ -322,8 +322,8 @@ function waterForces() {
     b.wet = sub;
     if (first) { const v = body.getLinearVelocity(); if (v.y < -4) ev('splash', p.x, W.y, Math.min(3, b.mass / 8), 0); }
     const m = body.getMass(), den = body.getFixtureList().getDensity() || 1, area = m / den, v = body.getLinearVelocity(), c = body.getWorldCenter();
-    const fb = W.rho * area * sub * GRAV;
-    body.applyForce({ x: (W.cur - v.x) * m * 1.4 * sub, y: fb - v.y * m * 1.8 * sub }, { x: c.x, y: lo + (Math.min(W.y, hi) - lo) * 0.5 }, first);
+    const fb = W.rho * area * sub * GRAV, cur = W.curF ? W.curF(p.x) : W.cur;          // curF：暴潮的時候水流照位置變（漲的時候往兩邊的水寨沖、退的時候往中間拖）
+    body.applyForce({ x: (cur - v.x) * m * 1.4 * sub, y: fb - v.y * m * 1.8 * sub }, { x: c.x, y: lo + (Math.min(W.y, hi) - lo) * 0.5 }, first);
     if (sub > 0.2) body.setAngularVelocity(body.getAngularVelocity() * 0.97);
   }
   for (const u of S.units) {
@@ -331,8 +331,8 @@ function waterForces() {
     const p = u.body.getPosition(); if (p.x < W.x0 || p.x > W.x1 || p.y - u.bh / 2 >= W.y) { u.wet = 0; continue; }
     const sub = clamp((W.y - (p.y - u.bh / 2)) / u.bh, 0, 1), first = !u.wet; u.wet = sub;
     if (first) ev('splash', p.x, W.y, 1.2, 1);
-    const m = u.body.getMass(), v = u.body.getLinearVelocity();
-    u.body.applyForce({ x: (W.cur - v.x) * m * 1.4 * sub, y: m * GRAV * 0.8 * sub - v.y * m * 1.6 * sub }, u.body.getWorldCenter(), true);
+    const m = u.body.getMass(), v = u.body.getLinearVelocity(), cur = W.curF ? W.curF(p.x) : W.cur;
+    u.body.applyForce({ x: (cur - v.x) * m * 1.4 * sub, y: m * GRAV * 0.8 * sub - v.y * m * 1.6 * sub }, u.body.getWorldCenter(), true);
   }
 }
 // 砲彈這一步有沒有打進水面（水面跟地面一樣：砲彈在那裡炸開）
