@@ -181,7 +181,7 @@ function fxOn(t, a, b, c, d, e, f) {
       burst(P_SPARK, a, b, 8, 22, 0.5, 0.6, c === 0 ? C_SKY : C_SALMON); ring(a, b, 0.5, 5, 0.3, '#ffffff', 0.4);
       // 剛才那一聲「哇！」不用留著跟這一句疊在一起；整座城垮掉時順便倒下的不再一個一個報
       for (let i = FX.pops.length - 1; i >= 0; i--) { const q = FX.pops[i]; if (q.yelp && Math.abs(q.x - a) < 9 && Math.abs(q.y - b) < 12) FX.pops.splice(i, 1); }
-      if (S.state === 'play') pop(a, b + 3.5, c === 1 ? (e === 1 ? '砸扁！' : e === 4 ? '摔下去了！' : e === 5 ? '轟出城外！' : e === 6 ? '轟飛了！' : e === 3 ? '燒到了！' : e === 7 ? '沖走了！' : e === 8 ? '掉進岩漿！' : '擊倒！') : (e === 5 ? '被轟出城' : e === 4 ? '摔下去了' : e === 6 ? '被轟飛了' : e === 1 ? '被砸扁了' : e === 7 ? '被沖走了' : e === 8 ? '掉進岩漿了' : '陣亡'), c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.1);
+      if (S.state === 'play') pop(a, b + 3.5, c === 1 ? (e === 1 ? '砸扁！' : e === 4 ? '摔下去了！' : e === 5 ? '轟出城外！' : e === 6 ? '轟飛了！' : e === 3 ? '燒到了！' : e === 7 ? '沖走了！' : e === 8 ? '掉進岩漿！' : e === 9 ? '甩下車了！' : '擊倒！') : (e === 5 ? '被轟出城' : e === 4 ? '摔下去了' : e === 6 ? '被轟飛了' : e === 1 ? '被砸扁了' : e === 7 ? '被沖走了' : e === 8 ? '掉進岩漿了' : e === 9 ? '被甩下車了' : '陣亡'), c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.1);
       if (e === 8) { burst(P_EMBER, a, b - 1.8, 16, 14, 0.7, 1.0, C_ORANGE); burst(P_SMOKE, a, b - 1.8, 4, 6, 0.8, 1.6, C_DARK); }
       sfx(c === 1 ? 'kill' : 'lostunit'); if (c === 0) { shake(0.4); vibrate(60); }
       if (e === 1 && S.state === 'play') slowmo(0.5, 0.7);
@@ -440,6 +440,10 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'vortex': pop(a, b + 12, '龍捲風！', '#e8f0ff', 3.4, 1.4); sfx('gust'); shake(0.3); break;
     case 'vortexoff': burst(P_DUST, a, b + 2, 10, 10, 1.0, 2.2, C_SAND, 5); break;
     case 'rotorturn': if (thr('rotor', 1000)) sfx('creak'); break;
+    case 'decouple': burst(P_SPARK, a, b, 24, 16, 0.6, 0.35, C_GOLD); burst(P_DEBRIS, a, b, 8, 10, 0.7, 0.3, C_GRAY, 3); pop(a, b + 6, '連結器斷了！', '#ffe0a8', 3.4, 1.4); sfx('clank'); setTimeout(() => sfx('screech'), 250); shake(0.6); vibrate(80); break;          // 第十六關
+    case 'boilerblast': part(P_FLASH, a, b, 0, 0, 0.25, 9, C_WHITE); burst(P_SMOKE, a, b + 1, 30, 22, 2.2, 3.4, C_WHITE, 12); burst(P_SMOKE, a, b, 14, 12, 1.6, 2.4, C_GRAY, 8); burst(P_DEBRIS, a, b, 20, 24, 1, 0.5, C_DARK, 6); pop(a, b + 6, '鍋爐炸了！', '#ffffff', 3.8, 1.6); sfx('steam'); shake(1.1); vibrate(140); break;
+    case 'gasblast': part(P_FLASH, a, b, 0, 0, 0.3, 10, C_GREEN); burst(P_EMBER, a, b, 34, 22, 1.1, 0.6, C_ORANGE, 8); burst(P_SMOKE, a, b, 16, 12, 1.8, 2.6, C_DARK, 8); pop(a, b + 6, '沼氣炸了！', '#c8ff8a', 3.6, 1.5); sfx('boom3'); shake(1.0); vibrate(120); break;          // 第十七關
+    case 'pass': if (c === 1) { pop(MID, 30, '進隧道了！', '#ffd890', 3.2, 1.3); sfx('whistle'); } else if (c === 2) { pop(MID, 30, '出隧道了', '#ffe8c0', 2.8, 1.1); sfx('whistle'); } break;
     case 'armbreak': burst(P_DEBRIS, a, b, 12, 18, 0.8, 0.45, C_TAN, 4); burst(P_DUST, a, b, 5, 6, 0.8, 1.6, C_SAND); pop(a, b + 3, '帆架斷了！', '#ffe0a8', 2.8, 1.1); sfx('crash'); shake(0.4); break;
     case 'rotorfall': burst(P_DEBRIS, a, b, 22, 24, 1.0, 0.6, C_TAN, 6); burst(P_DUST, a, b, 10, 10, 1.2, 2.6, C_SAND, 6); pop(a, b + 5, '整具葉輪掉下來了！', '#ffe0a8', 3.6, 1.6); sfx('crash'); shake(1.0); vibrate(120); break;
     case 'rotorcrash': for (let k = 0; k < 4; k++) { const q = k * Math.PI / 2 + 0.6; burst(P_DEBRIS, a + Math.cos(q) * d * 0.5, b + Math.sin(q) * d * 0.5, 10, 16, 0.9, 0.5, C_TAN, 4); } burst(P_DUST, a, b, 14, 12, 1.4, 2.8, C_SAND, 7); sfx('crash'); shake(0.7); break;          // 掉下來的葉輪砸在地上散掉

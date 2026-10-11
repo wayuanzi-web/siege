@@ -21,6 +21,7 @@ function envInit() {
 // 回合結束：換下一段潮（大潮那一回合先來一次暴潮）；岩漿漲一截。回傳 true：要等它演完（hazard）
 function envRoundEnd() {
   if (S.rotors.length) return rotorsTurn();
+  if (S.pass) return passSwap();          // 第十六關：路邊換一樣東西（或進出隧道）
   const L = S.lv.lava;
   if (L && S.water) {
     const W = S.water, next = Math.min(L.max, W.y + L.dy);
@@ -53,6 +54,7 @@ function envStep(dt) {
   if (W && W.lava) lavaStep(dt);
   potStep(dt);
   if (S.rotors.length) rotorStep(dt);
+  if (S.pass) { passStep(dt); trainStep(dt); }
   // 泡進水裡的火被撲滅（第三篇的規則；第一、二篇照舊）
   if (W && !W.lava && S.nburn > 0 && S.lv.rules) for (const b of S.blocks) {
     if (b.dead || !(b.burn > 0) || !b.body) continue;
@@ -74,7 +76,7 @@ function backwash(dt, k) {
   }
 }
 // 潮水還在動（回合結束等它演完）
-function envBusy() { const E = S.env; return !!(E && (E.surge || E.tideA)) || S.rotors.some((R) => R.rot); }
+function envBusy() { const E = S.env; return !!(E && (E.surge || E.tideA)) || S.rotors.some((R) => R.rot) || !!(S.pass && (S.pass.anim || rollBusy())); }
 /* 泡在水裡的兵會不會被沖走：第十三關，站在自己的水寨裡（甲板以上）不會（暴潮淹上來只是被推），
    掉到甲板底下、被拖出自己的水寨外面才會 */
 function envDrown(u) {
@@ -406,6 +408,134 @@ function tideWeak(side) {
     if (b.tank) out.push({ x: p.x, y: p.y, w: 1.05, blk: b });
     // 木樁：露出水面的那一截（打在水面上方一點）
     else if (b.mat === M_WOOD && b.ch >= 3 && b.h > b.w * 2 && b.cy <= 2 && W) { const top = p.y + b.h / 2, y = Math.max(W.y + 1.4, p.y - b.h / 2 + 1.2); if (y < top - 0.8) out.push({ x: p.x, y, w: W.y < -4 ? 1.15 : 0.7, blk: b }); }
+  }
+  return out;
+}
+
+/* ---------- 第十六關：裝甲列車 ----------
+   兩列火車並排狂奔：背景一直往後捲（只是畫面），城樓本身不動。
+   連結器（S.objs 的 'coupler'）：掛在外側那節車廂和火車頭之間，打斷了，外側那節車廂（連車上的兵）一路往後退出戰場（trainRoll）。
+   鍋爐（藍圖的 v）：打爆了蒸汽炸開（WPN.boiler，blockKill 那裡排進 S.pend）。
+   中場：每回合換一樣路邊的東西（水塔、號誌橋、路塹的小山），每 4 回合鑽一次隧道（頂上一整片岩頂，只能平著打；中間沒東西擋、沒有風） */
+const ROLL_ACC = 5, ROLL_MAX = 16;          // 甩下車的車廂往後退：每秒加速多少、最快多快
+function mkCars(st, d) {
+  const cols = st.cols, m = st.mirror, c0 = m ? cols - d.a1 : d.a0, c1 = m ? cols - d.a0 : d.a1, gc = m ? cols - 1 - d.gap : d.gap;
+  const blocks = st.blocks.filter((b) => b.cx >= c0 && b.cx + b.cw <= c1);
+  const x = st.x0 + (gc + 0.5) * CS, y = st.y0 + (d.row + 0.5) * CS, hm = d.hp * (st.hpMul || 1);
+  const o = { t: 'coupler', side: st.side, st, x, y, x0: x, y0: y, r: 1.9, hp: hm, hm, flash: 0, by: 2, cut: false, blocks, dir: st.side === 0 ? -1 : 1, c0, c1 };
+  st.car = o; S.objs.push(o);
+  return o;
+}
+// 連結器被打到（鐵的：火、冰打不太動，雷、重砲、鏈彈打得動）
+function couplerHurt(o, d, kind, side) {
+  if (o.cut || side === o.side || side > 1) return;
+  d *= DM[kind][M_IRON]; if (d <= 0) return;
+  o.hp -= d; o.flash = 1;
+  if (PH.dk > 0) PH.dacc += Math.min(d, o.hp + d);
+  if (o.hp <= 0) couplerBreak(o, side);
+}
+// 連結器斷了：外側那節車廂（還在原位的磚、站在車上的兵）一路往外退出戰場
+function couplerBreak(o, by) {
+  if (o.cut) return; o.cut = true; o.hp = 0; o.by = by;
+  const blocks = o.blocks.filter((b) => !b.dead && b.body && b.inPlace);
+  let xa = 1e9, xb = -1e9, ya = 1e9, yb = -1e9;
+  for (const b of blocks) { const p = b.body.getPosition(); xa = Math.min(xa, p.x - b.w / 2); xb = Math.max(xb, p.x + b.w / 2); ya = Math.min(ya, p.y - b.h / 2); yb = Math.max(yb, p.y + b.h / 2); }
+  const units = blocks.length ? S.units.filter((u) => u.alive && u.body && u.x > xa - 0.3 && u.x < xb + 0.3 && u.y > ya - 0.5 && u.y < yb + 1) : [];
+  for (const b of blocks) { b.roll = 1; b.body.setAwake(true); }
+  for (const u of units) { u.carried = 1; u.body.setAwake(true); }
+  (S.rolls || (S.rolls = [])).push({ o, dir: o.dir, t0: S.time, blocks, units });
+  ev('decouple', o.x, o.y, o.side, by);
+  S.chainT = S.time; if (by < 2 && by !== o.side && o.side !== S.turn && S.phase !== 'hazard' && S.state === 'play') S.chain += 4;
+}
+function trainStep(dt) {
+  // 連結器跟著底盤（被炸得晃一下也跟著）
+  for (const st of S.st) { const o = st && st.car; if (!o || o.cut) continue; const b = o.blocks.find((q) => !q.dead && q.body && q.cy === st.def.cars.row); if (b) { const p = b.body.getPosition(); o.x = o.x0 + (p.x - b.x0); o.y = o.y0 + (p.y - b.y0); } }
+  if (!S.rolls) return;
+  for (const R of S.rolls) {
+    const v = R.dir * Math.min(ROLL_MAX, ROLL_ACC * (S.time - R.t0));
+    let xa = 1e9, xb = -1e9;
+    for (const b of R.blocks) { if (b.dead || !b.body) continue; const lv = b.body.getLinearVelocity(); b.body.setLinearVelocity({ x: v, y: lv.y }); b.body.setAngularVelocity(0); const p = b.body.getPosition(); xa = Math.min(xa, p.x - b.w / 2); xb = Math.max(xb, p.x + b.w / 2); }
+    for (const u of R.units) {
+      if (!u.alive || !u.body || !u.carried) continue;
+      if (u.x < xa - 2 || u.x > xb + 2) { u.carried = 0; continue; }          // 被送回城上（開場護符）、自己摔下車了：不再跟著車廂走
+      const lv = u.body.getLinearVelocity(); u.body.setLinearVelocity({ x: v, y: lv.y });
+    }
+  }
+}
+function rollBusy() { if (!S.rolls) return false; for (const R of S.rolls) for (const b of R.blocks) if (!b.dead) return true; return false; }
+
+/* 中場路邊的東西：一個不會動、打不壞的實體（跟岩壁一樣），每回合結束時換下一樣（舊的往後退出去、新的從前面滑進來）。
+   座標：x 從中線算、y 從地面算；hill 是多邊形，其他是長方形 [x, y, w, h] */
+const PASS_SHAPES = {
+  tower: { boxes: [[-2.2, 0, 4.4, 9.6], [-3.4, 9.6, 6.8, 6.2]], top: 16.9 },          // 水塔：磚砌的塔身、上面一個大木桶
+  gantry: { boxes: [[-5.6, 0, 0.9, 15.4], [4.7, 0, 0.9, 15.4], [-6.4, 13.6, 12.8, 1.9]], top: 15.5 },          // 號誌橋：兩根鐵柱、上面一道橫樑（平射從底下穿不過：柱子擋著）
+  hill: { poly: [[-10, 0], [-6.5, 3.6], [-2.6, 7.4], [2.6, 7.4], [6.5, 3.6], [10, 0]], top: 7.4 },          // 路塹：鐵路切開的小山
+  tunnel: { boxes: [[-90, 22.6, 180, 12]], top: 22.6, roof: 22.6 }          // 隧道：頂上一整片岩頂（中間沒東西擋）
+};
+const PASS_SLIDE = 1.6, PASS_OFF = 74;          // 換景：舊的退出去、新的滑進來要多久、滑多遠
+function passKind(round) { const P = S.lv.pass; return P ? P.seq[(Math.max(1, round) - 1) % P.seq.length] : null; }
+function mkPassBody(kind) {
+  const D = PASS_SHAPES[kind], body = PH.world.createBody({ type: 'static', position: { x: MID, y: 0 } }), tag = { isRock: true, side: 2, pass: kind };
+  if (D.boxes) for (const [x, y, w, h] of D.boxes) body.createFixture({ shape: new PL.Box(w / 2, h / 2, { x: x + w / 2, y: y + h / 2 }, 0), friction: 0.8, restitution: 0, filterCategoryBits: CAT_TERR, userData: tag });
+  if (D.poly) body.createFixture({ shape: new PL.Polygon(D.poly.map(([x, y]) => ({ x, y }))), friction: 0.8, restitution: 0, filterCategoryBits: CAT_TERR, userData: tag });
+  return body;
+}
+function passInit() {
+  const k = passKind(1);
+  S.pass = { kind: k, body: mkPassBody(k), off: 0, outKind: null, outOff: 0, anim: null };
+  passClear(k);
+}
+// 新的路邊東西出現的地方：擋在那裡的碎塊清掉、站在那裡的兵推到旁邊的地上
+function passClear(kind) {
+  const D = PASS_SHAPES[kind]; if (!D || kind === 'tunnel') return;
+  const hw = D.boxes ? Math.max(...D.boxes.map(([x, y, w]) => Math.max(Math.abs(x), Math.abs(x + w)))) : Math.max(...D.poly.map(([x]) => Math.abs(x)));
+  for (const b of S.blocks) { if (b.dead || !b.body || !b.frag) continue; const p = b.body.getPosition(); if (Math.abs(p.x - MID) < hw + 0.5 && p.y < D.top + 1) blockKill(b, 2, K_CRUSH, true); }
+  for (const u of S.units) { if (!u.alive || !u.body || u.def.big) continue; if (Math.abs(u.x - MID) < hw + 0.6 && u.y < D.top + 0.5) { const nx = u.x < MID ? MID - hw - 1.2 : MID + hw + 1.2; u.body.setTransform({ x: nx, y: groundYRaw(nx) + u.bh / 2 + 0.05 }, 0); u.body.setLinearVelocity({ x: 0, y: 0 }); u.x = nx; } }
+}
+// 回合結束：下一回合是不是換一樣東西。回傳 true：要等它演完
+// 滑進滑出只是畫面：舊的實體馬上拿掉、新的滑到定位才放上去（不然會從兩列火車中間穿過去，把車廂撞爛）
+function passSwap() {
+  const P = S.pass; if (!P) return false;
+  const next = passKind(S.round + 1); if (next === P.kind) return false;
+  if (P.body) { PH.world.destroyBody(P.body); P.body = null; }
+  P.outKind = P.kind; P.outOff = 0; P.kind = next; P.off = PASS_OFF;
+  P.anim = { t: 0 };
+  ev('pass', MID, 0, next === 'tunnel' ? 1 : P.outKind === 'tunnel' ? 2 : 0, next);
+  return true;
+}
+function passStep(dt) {
+  const P = S.pass; if (!P || !P.anim) return;
+  P.anim.t += dt; const u = Math.min(1, P.anim.t / PASS_SLIDE), e = u * u * (3 - 2 * u);
+  P.off = PASS_OFF * (1 - e); P.outOff = -PASS_OFF * e;
+  if (u >= 1) { P.anim = null; P.off = 0; P.outKind = null; passClear(P.kind); P.body = mkPassBody(P.kind); }
+}
+// 回合開始：隧道裡沒有風
+function passRound() { const P = S.pass; if (P && P.kind === 'tunnel') S.wind = 0; }
+function inTunnel() { return !!(S.pass && S.pass.kind === 'tunnel'); }
+// 敵軍、自動玩家想打的要害（第十六關）：對面的連結器（炸在它附近就算）、鍋爐
+function trainWeak(side) {
+  const st = S.st[1 - side], out = [], o = st.car;
+  if (o && !o.cut) out.push({ x: o.x, y: o.y + 0.6, w: 1.35, near: 3.4 });
+  for (const b of st.blocks) if (b.boiler && !b.dead && b.body && b.inPlace) { const p = b.body.getPosition(); out.push({ x: p.x, y: p.y, w: 1.0, blk: b }); }
+  return out;
+}
+
+/* ---------- 第十七關：地底礦坑 ----------
+   整個戰場頂上一片岩頂（打不壞，跟岩壁一樣）：砲彈吊不高。城頂的懸石貼著它，靠木支柱頂著。
+   岩壁裡的沼氣（藍圖的 z）：是一種火藥桶（M_KEG），被火、爆炸碰到就炸（WPN.gas，blockKill 排進 S.pend） */
+function ceilInit(y) {
+  const body = PH.world.createBody({ type: 'static', position: { x: 0, y: 0 } });
+  body.createFixture({ shape: new PL.Box(120, 8, { x: MID, y: y + 8 }, 0), friction: 0.8, restitution: 0, filterCategoryBits: CAT_TERR, userData: { isRock: true, side: 2, ceil: 1 } });
+  S.ceil = { y, body };
+}
+// 敵軍、自動玩家想打的要害（第十七關）：還頂著懸石的坑木、岩壁裡的沼氣
+function mineWeak(side) {
+  const st = S.st[1 - side], out = [], slabs = st.blocks.filter((b) => b.drop && !b.dead && b.inPlace);
+  for (const b of st.blocks) {
+    if (b.dead || !b.body || !b.inPlace) continue;
+    const p = b.body.getPosition();
+    if (b.gas) out.push({ x: p.x, y: p.y, w: 1.1, near: 3.6 });
+    else if (b.mprop && slabs.some((o) => Math.abs(o.body.getPosition().x - p.x) < o.w / 2 + 0.5)) out.push({ x: p.x, y: p.y, w: 1.05, blk: b });
   }
   return out;
 }

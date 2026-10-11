@@ -755,6 +755,10 @@ function drawBlocks(c, t, rdt, hp) {
     // 共鳴晶柱：一閃一閃的紫光；吊燈：一團暖光
     if (b.kind === 'pot' && !b.spilt) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.5 + 0.12 * Math.sin(t * 2.6); const g = glowSprite(C_ORANGE), r = V.T * 1.25; c.drawImage(g, -r, -sp.ay - r * 0.6, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; if (!FX.low && (RD.frame & 7) === 0) part(P_EMBER, p.x + rndS() * b.w * 0.3, p.y + b.h * 0.5, rndS() * 2, 4 + Math.random() * 4, 0.7, 0.4, C_ORANGE); }
     if ((b.reso && !b.resoDone) || b.kind === 'lamp') { c.globalCompositeOperation = 'lighter'; c.globalAlpha = b.reso ? 0.35 + 0.25 * Math.sin(t * 3.4) : 0.45; const g = glowSprite(b.reso || b.mat === M_IRON ? C_PURPLE : C_GOLD), r = V.T * (b.reso ? 1.1 : 1.3); c.drawImage(g, -r, -r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
+    // 裝甲列車（第十六關）：車輪的輪輻一直轉（車在跑）；被甩下車的車廂輪子轉得慢下來。煙囪冒煙
+    if (b.bogie) { const r = Math.min(b.w * 0.46, b.h * 0.36) * s, wy = b.h * s / 2 - r - CS * s * 0.04, spin = (b.roll ? 0.3 : 1) * t * 30 / Math.max(0.5, r / s); c.strokeStyle = '#a8aab2'; c.lineWidth = Math.max(1, s * 0.12); c.beginPath(); for (let k = 0; k < 6; k++) { const q = spin + k * Math.PI / 3; c.moveTo(0, wy); c.lineTo(Math.cos(q) * r * 0.72, wy + Math.sin(q) * r * 0.72); } c.stroke(); if (b.roll && !FX.low && ((RD.frame + b.id) & 1) === 0) part(P_SPARK, p.x + rndS() * 0.6, p.y - b.h * 0.5 + 0.1, rndS() * 5 + (b.x0 < MID ? 6 : -6), 2 + Math.random() * 4, 0.3, 0.22, C_GOLD); }          // 被甩下車的車廂：煞車磨出火花
+    if (b.gas) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.35 + 0.2 * Math.sin(t * 2.4 + b.id); const g = glowSprite(C_GREEN), r = V.T * 1.2; c.drawImage(g, -r, -r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }          // 沼氣：綠光一脹一縮（第十七關）
+    if (b.stack && !FX.low && b.inPlace && ((RD.frame + b.id) & 3) === 0) part(P_SMOKE, p.x + rndS() * 0.2, p.y + b.h * 0.5, -6 - Math.random() * 6, 3 + Math.random() * 2, 1.6, 1.1 + Math.random() * 0.6, C_DARK);
     if (b.burn > 0) burn.push(b);
   }
   c.setTransform(1, 0, 0, 1, sx, sy);
@@ -1096,6 +1100,18 @@ function drawObjs(c, t) {
   const s = V.s;
   for (const o of S.objs) {
     switch (o.t) {
+      case 'coupler': {
+        // 裝甲列車的連結器（第十六關）：兩邊車廂的緩衝器、中間一個粗鐵環扣著鉤子；受傷了發紅、冒火星，斷了只剩兩截鉤子
+        const x = X(o.x), y = Y(o.y), k = o.hp / o.hm, gap = CS * s * 0.5;
+        c.fillStyle = '#26282c'; for (const sd of [-1, 1]) { c.fillRect(x + sd * gap - (sd > 0 ? 0 : s * 0.9), y - s * 0.55, s * 0.9, s * 1.1); c.fillStyle = '#6a6e76'; c.fillRect(x + sd * (gap - s * 0.9) - (sd > 0 ? 0 : s * 0.3), y - s * 0.75, s * 0.3, s * 1.5); c.fillStyle = '#26282c'; }
+        if (o.cut) { c.strokeStyle = '#2a2c30'; c.lineWidth = Math.max(2, s * 0.32); for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(x + sd * gap * 0.95, y); c.lineTo(x + sd * gap * 0.5, y - s * 0.4); c.stroke(); } break; }
+        c.strokeStyle = '#1a1b1e'; c.lineWidth = Math.max(3, s * 0.55); c.beginPath(); c.moveTo(x - gap * 0.95, y); c.lineTo(x + gap * 0.95, y); c.stroke();
+        c.strokeStyle = k < 0.35 ? '#c0502a' : '#7a7e86'; c.lineWidth = Math.max(2, s * 0.3); c.beginPath(); c.ellipse(x, y, s * 0.95, s * 0.5, 0, 0, TAU); c.stroke();
+        c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = Math.max(1, s * 0.08); c.beginPath(); c.ellipse(x, y - s * 0.08, s * 0.8, s * 0.36, 0, Math.PI * 1.1, Math.PI * 1.9); c.stroke();
+        if (k < 0.5) { c.strokeStyle = 'rgba(20,10,6,.8)'; c.lineWidth = Math.max(1, s * 0.1); c.beginPath(); c.moveTo(x - s * 0.2, y - s * 0.5); c.lineTo(x + s * 0.1, y); c.lineTo(x - s * 0.15, y + s * 0.45); c.stroke(); if (!FX.low && (RD.frame & 15) === 0) part(P_SPARK, o.x + rndS() * 0.5, o.y, rndS() * 3, 2 + Math.random() * 3, 0.35, 0.25, C_GOLD); }
+        if (o.flash > 0) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = o.flash * 0.7; const g = glowSprite(C_ORANGE), r = s * 2.2; c.drawImage(g, x - r, y - r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
+        break;
+      }
       case 'vortex': {
         // 龍捲風（第十四關）：一道灰白的漏斗雲，底下捲著塵土，上面散開；一圈一圈往上轉（物理上的風柱位置不動，畫的時候擺一擺）
         o.age += RD.dt || 0.016; const k = Math.min(1, o.age / 0.8), H = o.top - o.base, x0 = X(o.x), yb = Y(o.base);

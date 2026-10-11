@@ -223,7 +223,8 @@ function blockKill(b, side, kind, clean) {
   ev('cell', b.x, b.y, b.mat, b.side, kind, b);
   if (b.side === 1 && side === 0) S.stat.cells++;
   b.st.ver++;
-  if (b.mat === M_KEG) S.pend.push({ t: S.time + 0.1 + rnd() * 0.1, x: b.x, y: b.y, w: b.mag ? WPN.mag : b.fuseKeg ? WPN.powder : WPN.keg, side: side === 0 || side === 1 ? side : 2 });
+  if (b.mat === M_KEG) S.pend.push({ t: S.time + 0.1 + rnd() * 0.1, x: b.x, y: b.y, w: b.gas ? WPN.gas : b.mag ? WPN.mag : b.fuseKeg ? WPN.powder : WPN.keg, side: side === 0 || side === 1 ? side : 2, ev: b.gas ? 'gasblast' : undefined });
+  if (b.boiler && !clean) S.pend.push({ t: S.time + 0.12, x: b.x, y: b.y, w: WPN.boiler, side: side === 0 || side === 1 ? side : 2, ev: 'boilerblast' });          // 鍋爐打爆了：蒸汽炸開（第十六關）
   if (PH.inStep) PH.kill.push(b.body); else PH.world.destroyBody(b.body);
   b.body = null;
 }
@@ -276,6 +277,19 @@ function segSettle(b, side, kind) {
   if (!dead) { const was = b.low === undefined ? 1 : b.low; b.hp = hp; b.low = low; if (((was * 3) | 0) !== ((low * 3) | 0)) { const p = b.body.getPosition(); ev('crack', p.x, p.y, b.mat); } return; }
   if (dead === n || PH.inStep) { b.hp = 0; blockKill(b, side, kind, false); return; }
   segSplit(b, side, kind);
+}
+// 礦坑的懸石砸在樓板（長樑）上：懸石底下的那幾段一起受力，砸出一個懸石大小的洞；砸在別的東西上照一般的算。
+// 砸到城裡還在原位的東西，這一下就沒力了（掉進底下那一間只是一般的撞擊，不會再一路砸穿）
+function dropHit(sm, o, d, by, x, y) {
+  const hard = o.inPlace && o.st && o.st.side < 2;
+  if (o.seg) {
+    const p = sm.body.getPosition(), q = o.body.getPosition(), cs = Math.cos(o.body.getAngle()), cw = o.w / o.cw, hw = sm.w / 2, dm = d * DM[K_CRUSH][o.mat];
+    let n = 0;
+    for (let k = 0; k < o.cw; k++) if (Math.abs(q.x + (-o.w / 2 + (k + 0.5) * cw) * cs - p.x) < hw) { segDmg(o, k, dm, by); n++; }
+    if (!n) segDmg(o, segAt(o, x, y), dm, by);
+    segSettle(o, by, K_CRUSH);
+  } else blockHurt(o, d, K_CRUSH, by, x, y);
+  if (hard) { sm.spent = 1; sm.smash = 0; }
 }
 function segSplit(b, side, kind) {
   const st = b.st, n = b.cw, seg = b.seg, cw = b.w / n, hh = b.h / 2, body = b.body, was = b.inPlace;
@@ -404,9 +418,9 @@ function physStep(dt) {
     { const a = r.a, b = r.b, sm = a && a.smash && !a.dead ? a : b && b.smash && !b.dead ? b : null, o = sm === a ? b : a;
       if (sm && o && !o.smash && r.vn > 4.5) {
         const by = sm.smashBy === undefined ? 2 : sm.smashBy;
-        const k1 = sm.snow || sm.noCalm ? S.lv.smashK || 1 : 1;          // 雪崩（積雪、冰棚）砸下來的力道：關卡可以調（砸穿頂樓，不要一路砸到地下室）
-        if (o.isBlock && !o.dead && o.st !== S.mech && !(sm.dom && o.dom) && !(S.time < (o.smCd || 0))) { o.smCd = S.time + 0.25; blockHurt(o, sm.mass * r.vn * SMASH_K * k1, K_CRUSH, by === o.side ? 2 : by, r.x, r.y); if (!o.dead) ev('thud', r.x, r.y, r.J, r.vn); }
-        else if (o.isUnit && o.alive && !(S.time < (o.smCd || 0))) { o.smCd = S.time + 0.6; ev('bonk', r.x, r.y, sm.bigBell ? 'bell' : 'rock'); hurtUnit(o, Math.min(o.def.big ? o.hpMax * 0.12 : sm.snow || sm.noCalm ? 95 : 160, sm.mass * r.vn * 0.22), by === o.side ? 2 : by, K_CRUSH); }
+        const k1 = sm.snow || sm.noCalm || sm.drop ? S.lv.smashK || 1 : 1;          // 雪崩（積雪、冰棚）、礦坑的懸石砸下來的力道：關卡可以調（砸穿頂樓，不要一路砸到地下室）
+        if (o.isBlock && !o.dead && o.st !== S.mech && !(sm.dom && o.dom) && !(S.time < (o.smCd || 0))) { o.smCd = S.time + 0.25; if (sm.drop) dropHit(sm, o, sm.mass * r.vn * SMASH_K * k1, by === o.side ? 2 : by, r.x, r.y); else blockHurt(o, sm.mass * r.vn * SMASH_K * k1, K_CRUSH, by === o.side ? 2 : by, r.x, r.y); if (!o.dead) ev('thud', r.x, r.y, r.J, r.vn); }
+        else if (o.isUnit && o.alive && !(S.time < (o.smCd || 0))) { o.smCd = S.time + 0.6; ev('bonk', r.x, r.y, sm.bigBell ? 'bell' : 'rock'); hurtUnit(o, Math.min(o.def.big ? o.hpMax * 0.12 : sm.snow || sm.noCalm || sm.drop ? 95 : 160, sm.mass * r.vn * 0.22), by === o.side ? 2 : by, K_CRUSH); }
         // 石碑整塊砸進城裡：落下的那一下震得周圍的人都受傷（一塊石碑只算一次）
         if (sm.dom && !sm.domHit && o.isBlock && o.st !== sm.st && !o.dom && r.vn > 6) {
           sm.domHit = 1; ev('slam', r.x, r.y, r.vn);
@@ -630,6 +644,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
   // 飛在天上的東西（氣球、光球、吊著浮島的氣球、浮島底下的浮空晶石）
   for (const o of S.objs) {
     if (o.t === 'charge') { if (o.side !== side && side < 2 && !o.go && o.hp > 0) { const d = Math.hypot(o.x - x, o.y - y); if (d < r + o.r) chargeHurt(o, dmg * 0.6 * Math.min(1, 1.2 - d / (r + o.r)), side); } continue; }          // 黏在城上的炸藥：被炸到也會掉
+    if (o.t === 'coupler') { if (!o.cut && o.side !== side) { const d = Math.hypot(o.x - x, o.y - y); if (d < r + o.r) couplerHurt(o, dmg * 0.75 * Math.min(1, 1.25 - d / (r + o.r)), kind, side); } continue; }          // 裝甲列車的連結器
     if ((o.t !== 'balloon' && o.t !== 'orb' && o.t !== 'tether' && o.t !== 'lift') || o.side === side || o.hp <= 0) continue;
     const dx = o.x - x, dy = o.y - y; if (dx * dx + dy * dy < (r + o.r) * (r + o.r)) { o.hp -= dmg * 0.6 * (o.t === 'lift' ? DM[kind][M_GLASS] : 1); o.flash = 1; if (o.t === 'tether' && o.hp <= 0) tetherPop(o, side); if (o.t === 'lift' && o.hp <= 0) liftBreak(o, side); }
   }

@@ -287,7 +287,9 @@ const LOSE_TIPS_LV = [
   ['魔王每回合會先預告招式：暗黑連射、隕石雨開護罩擋（你的城塌了也會輸）；毀滅光球停在半空，打爆它會掉頭砸回他身上。', '敵城城腳正面的兩顆紫色魔晶：打碎它們，魔王不能回血、結界補不回來、也叫不回魔兵。', '第二階段的黑洞會把砲彈吸過去再甩出來：擦過它、穿過繞著它轉的聖光符，一發變三發（太靠近會被吞）。他放完暗黑連射、隕石雨會累，下一回合打他加倍。'],
   ['潮水四回合一輪：第二回合（之後每四回合）退潮，敵寨的木樁整根露出水面，這時候打木樁、放火最有用；漲潮的時候先打上面的屋子。', '前面望樓腳下那兩根木樁一斷，望樓連人翻進海裡；主屋屋頂上的大水塔打破了，水從頂樓灌下來，把屋裡的兵往前沖。', '大潮那一回合結束時暴潮淹上甲板，退下去把沒有牆、沒有門擋著的兵拖下海：你的門和前牆也要護好（工兵修得好）。'],
   ['敵城風車的四個吊艙各吊在一支帆架的尖端：打斷帆架（火油燒得動），吊艙連人掉下去，城防也掉一截。葉輪每回合轉 45 度，轉到正下方的最好打。', '陣風：砲彈飛到一半風會反過來吹，虛線上的小漩渦就是轉向的地方，照著虛線打就好；龍捲風會把穿過的砲彈往上捲，繞開它或吊高越過去。', '四支帆架和吊艙加起來大約是城防的三分之一：先把帆架都打斷，再打塔身。'],
-  ['敵城半腰的鑄造台靠兩條鐵鍊吊著：鏈彈、雷、磁暴打鐵鍊最痛，兩條都斷了，整座台連人掉進岩漿。', '先打斷吊鐵水鍋的鍊子：鐵水鍋砸穿鑄造台的屋頂，鐵水澆在兵身上；鑄造台先掉了，鐵水鍋就只會掉進岩漿裡。', '岩漿每回合漲一截，漲上崖腳的熔爐，鐵地板發紅變軟；火山彈兩邊一樣會落，紅圈是落點，開著護罩擋得住。']
+  ['敵城半腰的鑄造台靠兩條鐵鍊吊著：鏈彈、雷、磁暴打鐵鍊最痛，兩條都斷了，整座台連人掉進岩漿。', '先打斷吊鐵水鍋的鍊子：鐵水鍋砸穿鑄造台的屋頂，鐵水澆在兵身上；鑄造台先掉了，鐵水鍋就只會掉進岩漿裡。', '岩漿每回合漲一截，漲上崖腳的熔爐，鐵地板發紅變軟；火山彈兩邊一樣會落，紅圈是落點，開著護罩擋得住。'],
+  ['敵車外側那節車廂只靠一個連結器掛著：鏈彈、轟天砲、雷打它最痛，炸在它旁邊也算。打斷了，整節車廂連人被甩下車。', '火車頭的大鍋爐（圓滾滾的那一截）一打爆，蒸汽炸開整個砲室和砲塔。', '每四回合鑽一次隧道：頂上整片岩頂、中間沒東西擋，只能平著打，隧道裡也沒有風。看清楚這一回合路邊擋的是高的還是低的再瞄。'],
+  ['頂上是岩頂，吊太高會撞上去：仰角壓低、力道加大，從中間的礦脈上面擦過去。礦脈打得碎，越打越低，敵城下層就露出來了。', '敵城頂樓那四根坑木頂著兩塊懸石：打斷靠岩壁那一塊底下的兩根，懸石砸穿頂樓、壓住上層的兵；前面那一塊會把前牆撞開。火油燒得動坑木。', '城是石頭造的，酸蝕得最快；岩壁裡那包發綠光的沼氣一炸，一團火衝進上層那一間。']
 ];
 function showResult(won, st) {
   const prac = !!(S.lv && S.lv.practice);
@@ -362,7 +364,7 @@ function hudUpdate() {
   // 敵軍瞄準的彈道會穿過倍增符：先講，讓玩家來得及開護罩
   const eA = S.team[1].ai, em = play && S.phase === 'aim' && S.turn === 1 && eA && eA.st === 2 && eA.warn >= 2 ? Math.round(eA.warn) : 0;
   // 回合結束的環境變化（第三篇）：暴潮、漲潮、退潮
-  const E = S.env, envT = S.phase === 'hazard' && E ? (E.surge ? 'surge' : E.tideA ? (S.water && S.water.lava ? 'lava' : E.tideA.to > E.tideA.from ? 'up' : 'down') : '') : '';
+  const E = S.env, envT = S.phase === 'hazard' && E ? (E.surge ? 'surge' : E.tideA ? (S.water && S.water.lava ? 'lava' : E.tideA.to > E.tideA.from ? 'up' : 'down') : S.pass && S.pass.anim ? 'pass' : '') : '';
   const tk = !play || S.phase === 'intro' || (S.phase === 'hazard' && !S.hz && !envT) ? '' : S.phase === 'hazard' ? (envT ? 'e' + envT : 'hz') : S.phase + S.turn + (S.team[S.turn].ult.armed ? 'u' : '') + (em ? 'm' + em : '');
   if (tk !== HUD.turn) {
     HUD.turn = tk; const el = $('turnChip');
@@ -370,11 +372,11 @@ function hudUpdate() {
     else {
       el.hidden = false;
       el.className = 'chamfer ' + (tk === 'hz' || envT ? 'hz' : S.turn === 0 ? 'me' : 'foe') + (mine ? ' go' : '') + (S.turn === 1 && S.phase === 'aim' && (em || S.team[1].ult.armed) ? ' warn' : '');
-      el.textContent = envT ? (envT === 'surge' ? '暴潮！' : envT === 'lava' ? '岩漿上漲' : envT === 'up' ? '漲潮' : '退潮') : tk === 'hz' ? (S.lv.rocks && S.lv.rocks.sym ? '火山彈！' : '落石！') : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : S.team[1].ult.armed ? '敵軍連珠砲上膛！' : em ? '敵軍的砲彈會穿過' + (S.lv.boss ? '聖光符' : '倍增符') + '：×' + em + '！' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
+      el.textContent = envT ? (envT === 'surge' ? '暴潮！' : envT === 'lava' ? '岩漿上漲' : envT === 'pass' ? (S.pass.kind === 'tunnel' ? '進隧道' : S.pass.outKind === 'tunnel' ? '出隧道' : '路邊換景') : envT === 'up' ? '漲潮' : '退潮') : tk === 'hz' ? (S.lv.rocks && S.lv.rocks.sym ? '火山彈！' : '落石！') : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : S.team[1].ult.armed ? '敵軍連珠砲上膛！' : em ? '敵軍的砲彈會穿過' + (S.lv.boss ? '聖光符' : '倍增符') + '：×' + em + '！' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
     }
   }
   const fk = mine ? 1 : 0; if (fk !== HUD.fire) { HUD.fire = fk; $('btnFire').classList.toggle('ready', !!mine); $('btnFire').classList.toggle('btn-gold', !!mine); }
-  if (S.round !== HUD.round) { HUD.round = S.round; $('roundTxt').textContent = S.round > 0 ? '第 ' + S.round + ' 回合' + (S.lv.tide ? '・' + TIDE_NAME[tideNow()] : '') : ''; }
+  if (S.round !== HUD.round) { HUD.round = S.round; $('roundTxt').textContent = S.round > 0 ? '第 ' + S.round + ' 回合' + (S.lv.tide ? '・' + TIDE_NAME[tideNow()] : S.pass && S.pass.kind === 'tunnel' ? '・隧道' : '') : ''; }
   if ((HUD.n & 3) !== 0) return;
   for (let sd = 0; sd < 2; sd++) for (const k of HUD.crew[sd]) { const st = !k.u.alive ? 'dead' : k.u.frozen > 0 ? 'frozen' : k.u.stun > 0 ? 'stun' : ''; if (st !== k.st) { k.st = st; k.el.className = 'cu' + (st ? ' ' + st : ''); } }
   const T = S.team[0], bu = $('btnUlt'), bs = $('btnShield');

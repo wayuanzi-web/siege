@@ -20,7 +20,7 @@
            rest 放完哪些招會累（下一回合是破綻：不放招、打他加倍；沒寫就是隕石雨）
    sudden  第幾回合起雙方的城每回合自己塌一點、之後砲火也開始加重（沒寫就是第 10 回合）
    fall    城破的門檻：城的完整度掉到多少，城防條就歸零、這一邊輸（沒寫就是 FALL_TH 三成）
-   blockHp 城樓磚的耐久倍率（沒寫就是 CASTLE_HP）；smashK 雪崩（積雪、冰棚）砸下來的力道倍率
+   blockHp 城樓磚的耐久倍率（沒寫就是 CASTLE_HP）；smashK 雪崩（積雪、冰棚）、礦坑的懸石砸下來的力道倍率
    extra   戰場中間另外放的結構 [{ castle 藍圖名, x 中心, y 底 }]：打不壞的岩石，擋住被轟到地上的兵平平地對射
    weak    自動玩家（敵軍、測試用的我方）想打的要害：weak(side) 回傳 side 這一邊要打的目標（對方城上的格子、對方那一頭的機關）
    tip     主畫面上的關卡說明（兩三句就好：這一關的機關是什麼、最該打哪裡；細節進了關卡輪到玩家的時候再講）
@@ -46,6 +46,10 @@ const ropeLeft = (tag, side) => S.ropes.some((r) => !r.cut && r.side === (side =
 const rotorUp = (side) => { const R = S.st[side].rotor; return !!(R && !R.fallen); };
 // 第十五關：鐵水鍋還吊著
 const potUp = (side) => S.ropes.some((r) => !r.cut && r.side === side && r.hang && r.hang.hang === 'pot' && !r.hang.hangFree);
+const couplerUp = (side) => !!(S.st[side] && S.st[side].car && !S.st[side].car.cut);          // 第十六關：連結器還在
+const boilerUp = (side) => S.st[side].blocks.some((b) => b.boiler && !b.dead);
+const propsUp = (side) => S.st[side].blocks.some((b) => b.drop && !b.dead && b.inPlace);          // 第十七關：懸石還在
+const gasUp = (side) => S.st[side].blocks.some((b) => b.gas && !b.dead);
 // 第九關：閘還在、吊籠還吊著
 const brakeUp = (side) => S.st[side].blocks.some((b) => b.brake && !b.dead && b.inPlace);
 const cageUp = (side) => { const PU = S.st[side].pulley; return !!(PU && !PU.cut); };
@@ -356,6 +360,37 @@ const LEVELS = [
     me: { crew: ['chain', 'zap', 'bomb', 'magnet', 'acid', 'eng'] },
     foe: { crew: ['bomb', 'zap', 'rocket', 'magnet', 'chain', 'acid'], hp: 1.15, dmg: 1.2, open: 0.55, ai: { err: 3.2, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.5 } },
     lantern: { at: 3, every: 3, spots: [[52, 41], [60, 31]] }
+  },
+  {
+    name: '鋼鐵列車', sayTop: 1, tag: '連結器・鍋爐・隧道', theme: 15, castle: 'TRAIN', stress: 1, blockHp: 1.5, rules: { ff: 1, crit: 1, elem: 1 },
+    tip: '兩列裝甲列車並排狂奔：外側那節車廂用連結器掛在火車頭後面，連結器打斷了，車廂連人被甩下車；火車頭的大鍋爐打爆了，蒸汽炸開整個砲室。路邊的東西每回合換一樣（水塔、號誌橋、小山），每四回合鑽一次隧道：頂上整片岩頂，只能平著打',
+    hints: [{ r: 1, t: '敵車外側那節車廂（兩個兵）靠一個連結器掛在火車頭後面：打斷它，整節車廂連人被甩下車（鏈彈、重砲、雷打得動；炸在它旁邊也算）', ok: () => couplerUp(1) },
+      { r: 2, t: '火車頭的大鍋爐（圓滾滾的那一截）：打爆了，蒸汽炸開，旁邊的砲室、砲塔一起遭殃', ok: () => boilerUp(1) },
+      { r: 3, t: '下一回合要鑽隧道：頂上整片岩頂，砲彈吊不高，中間也沒東西擋，只能平著打。隧道裡沒有風', ok: () => passKind(S.round + 1) === 'tunnel' },
+      { r: 4, t: '路邊的東西每回合換一樣：水塔、號誌橋擋得高，小山擋得低。看清楚這一回合中間擋著什麼再瞄' }],
+    ground: [[-40, 0], [152, 0]],
+    wind: { max: 6, at: 1 },
+    // 中場：每回合換一樣路邊的東西（第 1、5、9…回合是水塔，接著號誌橋、小山、隧道）
+    pass: { seq: ['tower', 'gantry', 'hill', 'tunnel'] },
+    me: { crew: ['bomb', 'chain', 'zap', 'drill', 'rocket', 'eng'] },
+    foe: { crew: ['bomb', 'rocket', 'chain', 'zap', 'cluster', 'magnet'], hp: 1.1, dmg: 1.1, open: 0.55, ai: { err: 3.3, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
+    weak: (side) => trainWeak(side),
+    lantern: { at: 3, every: 3, spots: [[52, 18], [60, 11]] }
+  },
+  {
+    name: '地底礦坑', tag: '岩頂・懸石・沼氣', theme: 16, castle: 'MINE', stress: 1, blockHp: 3.4, smashK: 1, rules: { ff: 1, crit: 1, elem: 1 },
+    tip: '礦坑深處：頂上整片岩頂，砲彈吊不高，只能壓低了打。敵城頂樓上面四根坑木頂著兩大塊懸石：坑木打斷了，懸石整塊砸穿頂樓。岩壁裡藏著一包沼氣，炸到、燒到就炸成一大團火。中間的礦脈打得碎，越打越低。城是石頭造的，酸蝕得最快',
+    hints: [{ r: 1, t: '頂上是岩頂：砲彈吊太高會撞在岩頂上炸掉。壓低仰角、力道加大，從礦脈上面擦過去', ok: () => true },
+      { r: 2, t: '敵城頂樓上面那四根坑木頂著兩大塊懸石：打斷一塊懸石底下的兩根，整塊砸穿頂樓，壓住底下的兵（火油燒得動坑木）', ok: () => propsUp(1) },
+      { r: 3, t: '敵城後面的岩壁裡有一包沼氣（發綠光的那一格）：炸到、燒到就炸成一大團火，衝進上層那一間', ok: () => gasUp(1) },
+      { r: 4, t: '中間的礦脈打得碎：越打越低，敵城底下那一層慢慢露出來。城的牆、樓板都是石頭：酸蝕得最快' }],
+    ground: [[-40, 0], [152, 0]],
+    ceil: 24.5,
+    extra: [{ castle: 'SEAM', x: 56, hp: 2.5 }],
+    me: { crew: ['fire', 'drill', 'bomb', 'acid', 'chain', 'eng'] },
+    foe: { crew: ['fire', 'bomb', 'rocket', 'drill', 'acid', 'stone'], hp: 1.15, dmg: 1.2, open: 0.55, ai: { err: 3.3, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
+    weak: (side) => mineWeak(side),
+    lantern: { at: 3, every: 3, spots: [[52, 20], [60, 15]] }
   }
 ];
 

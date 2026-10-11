@@ -147,6 +147,9 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
       } else if (o.t === 'balloon' || o.t === 'orb' || o.t === 'tether' || o.t === 'lift') {
         if (o.side === side || o.hp <= 0) continue;
         const dx = nx - o.x, dy = ny - o.y; if (dx * dx + dy * dy < o.r * o.r) { R.obj = o; R.x = nx; R.y = ny; return end(4); }
+      } else if (o.t === 'coupler') {
+        if (o.side === side || o.cut) continue;
+        if (segDist(o.x, o.y, x, y, nx, ny) < o.r) { R.obj = o; R.x = nx; R.y = ny; return end(4); }
       } else if (o.t === 'charge') {
         if (o.side === side || o.hp <= 0 || o.go) continue;
         if (segDist(o.x, o.y, x, y, nx, ny) < o.r) { R.obj = o; R.x = nx; R.y = ny; return end(4); }
@@ -305,6 +308,7 @@ function aiScore(T, t, R) {
     else if (t.arm) hit = R.o === t.arm ? 1 : 0;
     else if (t.hull) hit = R.o === t.hull ? 1 : 0;
     else if (t.fuse) hit = Math.max(0, 1 - Math.hypot(R.x - t.x, R.y - t.y) / 3);
+    else if (t.near) hit = R.hit ? Math.max(0, 1 - Math.hypot(R.x - t.x, R.y - t.y) / t.near) : 0;          // 炸在它附近就算（裝甲列車的連結器）
     const gen = aiGen(T, R);
     sc = hit >= 0 ? Math.max(hit * t.w, gen) : gen;          // 一般的目標只是用來列出彈道：分數照實際打到的算，不乘權重
   }
