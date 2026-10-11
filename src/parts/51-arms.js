@@ -25,6 +25,7 @@ function headShot(u, y) { return !!u && u.alive && !u.def.big && y > u.y + u.bh 
 function armsDone(x, y, side, dacc0) {
   const d = PH.dacc; PH.dk = Math.max(0, PH.dk - 1); PH.dacc = dacc0 + d;
   if (d >= 2) ev('bdmg', x, y + 1.2, d, side);
+  if (side === 0 && d > (S.stat.hit || 0)) S.stat.hit = d;          // 結算畫面：最重的一擊（沒有放大機關的關卡用）
 }
 // 打中的東西剛好被剋（火燒木頭、雷劈鐵甲、酸蝕石頭……）：跳一句
 function armsElem(x, y, kind, flag, b) {
@@ -55,6 +56,7 @@ function stickCharge(side, x, y, o, mass) {
   const P = o && (o.isHull || o.isPlat || o.isPart) ? o.plat || o.part : null;
   if (o && o.isBlock && !o.dead && o.body) { const q = o.body.getLocalPoint({ x, y }); c.host = o; c.lp = { x: q.x, y: q.y }; }
   else if (P && P.body && !P.dead) { const q = P.body.getLocalPoint({ x, y }); c.hostP = P; c.lp = { x: q.x, y: q.y }; c.hullSide = o.st ? o.st.side : 2; }          // 船身、浮島、吊籠：跟著它一起動
+  else if (o && (o.isArm || o.isRotor) && o.rotor && o.rotor.body && !o.broken) { const q = o.rotor.body.getLocalPoint({ x, y }); c.hostR = o; c.lp = { x: q.x, y: q.y }; c.hullSide = o.side; }          // 風車的葉臂、輪轂（第十四關）：跟著葉輪一起轉
   S.objs.push(c); ev('stuck', x, y, side);
 }
 // 這一邊開火：自己黏在別人城上的炸藥一顆一顆引爆
@@ -63,7 +65,7 @@ function chargesGo(side) {
   for (const o of S.objs) if (o.t === 'charge' && o.side === side && o.hp > 0 && !o.go) { o.go = S.time + 0.35 + 0.22 * k++; ev('chargego', o.x, o.y, side); }
 }
 // 炸藥黏在哪一邊的城上（工兵拆得到自己城上的）
-function chargeOn(o) { return o.host ? o.host.side : o.hostP ? o.hullSide : 2; }
+function chargeOn(o) { return o.host ? o.host.side : o.hostP || o.hostR ? o.hullSide : 2; }
 // 黏著的那塊磚（船身、浮島）沒了：已經在引爆（自己開火了）就照樣炸；還沒輪到就跟著掉下去，不會爆
 function chargeLost(o) {
   if (o.go) return;
@@ -76,13 +78,15 @@ function chargeStep(o, dt) {
     else { const q = o.host.body.getWorldPoint(o.lp); o.x = q.x; o.y = q.y; }
   } else if (o.hostP) {
     if (o.hostP.dead || !o.hostP.body) { o.hostP = null; chargeLost(o); } else { const q = o.hostP.body.getWorldPoint(o.lp); o.x = q.x; o.y = q.y; }
+  } else if (o.hostR) {
+    const A = o.hostR; if (A.broken || !A.rotor.body) { o.hostR = null; chargeLost(o); } else { const q = A.rotor.body.getWorldPoint(o.lp); o.x = q.x; o.y = q.y; }          // 帆架斷了：跟著掉下去
   }
   if (o.hp <= 0) return true;
   if (o.go && S.time >= o.go) {
     { const dk = envDud(o); if (dk) { o.hp = 0; ev('defuse', o.x, o.y, 2, dk); return true; } }          // 潮水漲上來泡了水：啞了；掉進岩漿：燒掉了
     const v = 1 - o.side, on = chargeOn(o);
     if (o.side < 2 && S.team[v].shield.on && (on === v || inBubble(S.st[v], o.x, o.y))) { o.hp = 0; ev('defuse', o.x, o.y, v, 2); return true; }          // 對方開著護罩：罩住的炸藥（黏在城上的、掉在城腳的）悶熄，不會爆
-    physExplode(o.x, o.y, WPN.sticky, o.side, o.mass, 0, o.host || null, 0, -1); return true;
+    physExplode(o.x, o.y, WPN.sticky, o.side, o.mass, 0, o.host || o.hostR || null, 0, -1); return true;
   }
   return false;
 }

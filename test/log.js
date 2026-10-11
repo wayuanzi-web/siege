@@ -3,7 +3,7 @@ const G = require('./load')();
 const { S, simInit, simStep, LEVELS, BOTS, teamBar } = G;
 const li = +process.argv[2] - 1, bot = process.argv[3] || 'casual', seed = +(process.argv[4] || 1), diff = +(process.argv[5] === undefined ? 1 : process.argv[5]);
 simInit(li, {}, 9000 + seed * 7919 + li * 131, diff, { botA: BOTS[bot] });
-const HOW = ['擊倒', '砸扁', '?', '燒死', '摔出場', '出城', '轟飛', '沖走'];
+const HOW = ['擊倒', '砸扁', '?', '燒死', '摔出場', '出城', '轟飛', '沖走', '岩漿'];
 const log = [];
 S.on = (t, a, b, c, d, e, f) => {
   const r = 'R' + S.round + (S.turn ? '敵' : '我');

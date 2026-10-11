@@ -417,7 +417,7 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'bdmg': if (c >= 2) numPop(a, b, c, '#f3dca8', 2.1, 'b' + Math.round(a / 5) + ':' + Math.round(b / 5), false); break;
     case 'crit': ring(a, b, 0.5, 4.5, 0.3, '#ffe14a', 0.6); burst(P_SPARK, a, b, 10, 26, 0.4, 0.6, C_YELLOW); if (thr('crit', 260)) { pop(a, b + 3.4, '暴擊！', '#ffe14a', 3.4, 0.9); sfx('crit'); } break;
     case 'elem': if (thr('elem' + c, 700)) pop(a, b, c, ELEM_COL[c] || '#ffffff', 2.8, 0.9); break;
-    case 'douse': burst(P_SMOKE, a, b, 6, 6, 1.0, 2.0, C_WHITE, 4); if (thr('douse', 600)) pop(a, b + 2, '冰滅火', '#bfeeff', 2.8, 0.9); sfx('fizz'); break;
+    case 'douse': burst(P_SMOKE, a, b, 6, 6, 1.0, 2.0, C_WHITE, 4); if (thr('douse', 600)) pop(a, b + 2, d === 1 ? '海水滅火' : '冰滅火', '#bfeeff', 2.8, 0.9); sfx('fizz'); break;          // d 1：泡進海水裡（第十三關的潮水）
     case 'split': part(P_FLASH, a, b, 0, 0, 0.12, 2.6, C_GOLD); ring(a, b, 0.5, 4, 0.25, '#fff0b0', 0.4); burst(P_SMOKE, a, b, 3, 6, 0.6, 1.4, C_GRAY); if (thr('split', 120)) sfx('pop'); break;
     case 'stuck': burst(P_SPARK, a, b, 5, 10, 0.3, 0.4, C_RED); if (thr('stuck', 200)) { sfx('stick'); if (S.state === 'play') pop(a, b + 2.6, c === 0 ? '炸藥黏上去了' : '敵軍的炸藥黏上來了！', c === 0 ? '#ffd0a0' : '#ff9a88', 2.6, 1.1); } break;
     case 'chargego': ring(a, b, 3, 0.5, 0.3, '#ff8a6a', 0.5); if (thr('chargego', 300)) sfx('warn'); break;
@@ -442,6 +442,7 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'rotorturn': if (thr('rotor', 1000)) sfx('creak'); break;
     case 'armbreak': burst(P_DEBRIS, a, b, 12, 18, 0.8, 0.45, C_TAN, 4); burst(P_DUST, a, b, 5, 6, 0.8, 1.6, C_SAND); pop(a, b + 3, '帆架斷了！', '#ffe0a8', 2.8, 1.1); sfx('crash'); shake(0.4); break;
     case 'rotorfall': burst(P_DEBRIS, a, b, 22, 24, 1.0, 0.6, C_TAN, 6); burst(P_DUST, a, b, 10, 10, 1.2, 2.6, C_SAND, 6); pop(a, b + 5, '整具葉輪掉下來了！', '#ffe0a8', 3.6, 1.6); sfx('crash'); shake(1.0); vibrate(120); break;
+    case 'rotorcrash': for (let k = 0; k < 4; k++) { const q = k * Math.PI / 2 + 0.6; burst(P_DEBRIS, a + Math.cos(q) * d * 0.5, b + Math.sin(q) * d * 0.5, 10, 16, 0.9, 0.5, C_TAN, 4); } burst(P_DUST, a, b, 14, 12, 1.4, 2.8, C_SAND, 7); sfx('crash'); shake(0.7); break;          // 掉下來的葉輪砸在地上散掉
     // 第十五關：岩漿湖、鐵水鍋、火山彈
     case 'lavarise': if (thr('lava', 1500)) { pop(MID, 26, c ? '岩漿漲到最高了' : '岩漿上漲', '#ffc27a', 2.8, 1.1); sfx('lava'); shake(0.35); } break;
     case 'melt': burst(P_SMOKE, a, b + 0.3, 2 + Math.min(4, c | 0), 5, 1.0, 1.8, C_DARK, 4); burst(P_EMBER, a, b + 0.2, 5, 9, 0.7, 0.5, C_ORANGE, 3); if (thr('melt', 500)) sfx('fizz'); break;

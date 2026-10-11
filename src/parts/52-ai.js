@@ -109,10 +109,11 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
       if (path) path.push(x, y);
       continue;
     }
-    vy -= GRAV * gk * dt; vx += (gust ? (t - dt * 0.5 >= gust.t ? gust.w : wind) : wind) * dt;
+    const wk = gust ? (t - dt * 0.5 >= gust.t ? gust.w : wind) : wind;          // 陣風（第十四關）：這一步吃的風
+    vy -= GRAV * gk * dt; vx += wk * dt;
     if (!R.ev) { for (const o of AMP.jets) if (x > o.x0 && x < o.x1 && Math.abs(y - o.y) < o.hh && vx * o.U > 0) evt(x, y, vx, vy); for (const o of AMP.holes) if (o.on && (x - o.x) * (x - o.x) + (y - o.y) * (y - o.y) < o.R * o.R) evt(x, y, vx, vy); }
     if (forces) { load(); const f = ampForces(dt); if (f === 2) { R.x = x; R.y = y; return end(5); } vx = SA.vx; vy = SA.vy; mass = SA.mass; kk = SA.k; }
-    let nx = x + vx * dt + cx, ny = y + vy * dt + cy;
+    let nx = x + vx * dt + (gust ? -wk * STEP * STEP : cx), ny = y + vy * dt + cy;
     for (const g of S.gates) {
       if (g.dead || (mask & g.bit)) continue;
       gatePosAt(g, t0 + t, _gp);

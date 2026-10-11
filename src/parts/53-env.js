@@ -6,7 +6,8 @@
 
 /* ---------- 潮汐 ---------- */
 // 這一回合是第幾段潮（關卡 tide.lv 的第幾個）：0 退潮、1 漲到一半、2 大潮、3 退到一半
-function tideIdx(round) { const T = S.lv && S.lv.tide; return T ? (Math.max(1, round) - 1) % T.lv.length : -1; }
+// k0：第一回合從第幾段開始（第十三關從「退到一半」開始：開場的木樁半截泡在水裡，第一輪砲火打不垮整座望樓）
+function tideIdx(round) { const T = S.lv && S.lv.tide; return T ? (Math.max(1, round) - 1 + (T.k0 || 0)) % T.lv.length : -1; }
 function tideNow() { return tideIdx(S.round); }
 // 水塔還在（第十三關）
 function tankUp(side) { return S.st[side].blocks.some((b) => b.tank && !b.dead); }
@@ -14,7 +15,7 @@ function tankUp(side) { return S.st[side].blocks.some((b) => b.tank && !b.dead);
 function envInit() {
   S.env = { tideA: null, surge: null };
   const T = S.lv.tide, L = S.lv.lava;
-  if (T && S.water) { S.water.y = T.lv[0]; S.water.curF = null; }
+  if (T && S.water) { S.water.y = T.lv[tideIdx(1)]; S.water.curF = null; }
   if (L && S.water) { S.water.y = L.y0; S.water.lava = 1; }
 }
 // 回合結束：換下一段潮（大潮那一回合先來一次暴潮）；岩漿漲一截。回傳 true：要等它演完（hazard）
@@ -41,10 +42,10 @@ function envStep(dt) {
   const W = S.water;
   if (W && E.surge) {
     const G = E.surge, t = S.time - G.t0;
-    if (t < SURGE_UP) { W.y = G.base + G.H * smooth(t / SURGE_UP); W.curF = (x) => (x < MID ? -SURGE_CUR : SURGE_CUR); }
-    else if (t < SURGE_UP + SURGE_HOLD) { W.y = G.base + G.H; W.curF = null; }
+    if (t < SURGE_UP) { W.y = G.base + G.H * smooth(t / SURGE_UP); W.curF = (x) => (x < MID ? -SURGE_CUR : SURGE_CUR); surgeMark(); }
+    else if (t < SURGE_UP + SURGE_HOLD) { W.y = G.base + G.H; W.curF = null; surgeMark(); }
     else if (t < SURGE_UP + SURGE_HOLD + SURGE_DOWN) { const u = (t - SURGE_UP - SURGE_HOLD) / SURGE_DOWN; W.y = G.base + G.H * (1 - smooth(u)); W.curF = (x) => (x < MID ? SURGE_BACK : -SURGE_BACK); backwash(dt, 1 - u); }
-    else { W.y = G.base; W.curF = null; E.surge = null; if (Math.abs(G.next - W.y) > 0.05) { E.tideA = { from: W.y, to: G.next, t0: S.time, dur: 1.2 }; ev('tide', MID, G.next, tideIdx(S.round + 1)); } }
+    else { W.y = G.base; W.curF = null; E.surge = null; for (const u of S.units) u.surged = 0; if (Math.abs(G.next - W.y) > 0.05) { E.tideA = { from: W.y, to: G.next, t0: S.time, dur: 1.2 }; ev('tide', MID, G.next, tideIdx(S.round + 1)); } }
   } else if (W && E.tideA) {
     const A = E.tideA, u = (S.time - A.t0) / A.dur;
     if (u >= 1) { W.y = A.to; E.tideA = null; } else W.y = A.from + (A.to - A.from) * smooth(u);
@@ -55,14 +56,16 @@ function envStep(dt) {
   // 泡進水裡的火被撲滅（第三篇的規則；第一、二篇照舊）
   if (W && !W.lava && S.nburn > 0 && S.lv.rules) for (const b of S.blocks) {
     if (b.dead || !(b.burn > 0) || !b.body) continue;
-    const p = b.body.getPosition(); if (p.y < W.y && p.x > W.x0 && p.x < W.x1) { b.burn = 0; S.nburn--; ev('douse', p.x, W.y + 0.5, 2); }
+    const p = b.body.getPosition(); if (p.y < W.y && p.x > W.x0 && p.x < W.x1) { b.burn = 0; S.nburn--; ev('douse', p.x, W.y + 0.5, 2, 1); }
   }
 }
 /* 退潮：泡在水裡、朝戰場那一邊沒有牆擋著的兵，被退下去的海水一把拖向外海（光靠水流的阻力拖不動站著的兵：腳底的摩擦太大）。
    牆、門、還站著的磚擋在前面的不會被拖走 */
+// 暴潮漲上來的時候泡到水的兵（記下來：海水退得比人快，光看當下有沒有泡在水裡，退到一半就拖不動了）
+function surgeMark() { for (const u of S.units) if (u.alive && u.wet > 0.2) u.surged = 1; }
 function backwash(dt, k) {
   for (const u of S.units) {
-    if (!u.alive || !u.body || u.def.big || !(u.wet > 0.2)) continue;
+    if (!u.alive || !u.body || u.def.big || !u.surged) continue;
     const dir = u.x < MID ? 1 : -1, y = u.y + Math.min(1.2, u.bh * 0.5); let cover = false;
     PH.world.rayCast({ x: u.x, y }, { x: u.x + dir * 3.2, y }, (f) => { const o = f.getUserData(); if (o && (o.isRock || (o.isBlock && !o.dead && !o.frag && !o.prop))) { cover = true; return 0; } return -1; });
     if (cover) continue;
@@ -85,6 +88,8 @@ function envDud(o) { const W = S.water; return W && o.y < W.y - 0.2 && o.x > W.x
 /* ---------- 水塔：打破了，水從那裡一路往下灌，把底下的兵往前（戰場那一邊）沖；前牆、門還在就擋得住 ---------- */
 function spawnDeluge(b, by) {
   const p = b.body ? b.body.getPosition() : { x: b.x, y: b.y };
+  // 水塔已經被打離屋頂（掉到海裡、甲板上）才破的：只是一桶水灑出來，不會灌進屋裡
+  if (Math.abs(p.x - b.x0) > CS * 1.2 || b.y0 - p.y > CS * 1.2) { ev('splash', p.x, p.y, 1.6, 0); return; }
   S.objs.push({ t: 'deluge', side: b.side, by: by === undefined ? 2 : by, x: p.x, y: p.y + b.h * 0.3, w: Math.max(3.2, b.w * 0.6), age: 0, life: 2.6, dir: b.side === 0 ? 1 : -1 });
   ev('deluge', p.x, p.y, b.side);
 }
@@ -106,7 +111,7 @@ function delugeStep(o, dt) {
 /* ---------- 第十四關：陣風 ----------
    每回合（gust.at 起）預告一陣風：砲彈飛到第 t 秒，風向突然反過來、變成 w（瞄準線、敵軍都照這個算）。
    windAt(age)：飛了 age 秒的砲彈現在吃多大的風；windDisp、windVel：從開火到 tau 秒，風總共把它往旁邊推了多遠、推出多少橫向速度 */
-function windAt(age) { const G = S.gust; return G && age >= G.t ? G.w : S.wind; }
+function windAt(age) { const G = S.gust; return G && age >= G.t - 1e-4 ? G.w : S.wind; }          // 砲彈的 age 是 Float32 一步一步加的（60 步加起來是 0.9999997）：差一點點也算到了
 function windDisp(w, tau) { const G = S.gust; if (!G || tau <= G.t) return 0.5 * w * tau * tau; const d = tau - G.t; return 0.5 * w * G.t * G.t + w * G.t * d + 0.5 * G.w * d * d; }
 function windVel(w, tau) { const G = S.gust; return !G || tau <= G.t ? w * tau : w * G.t + G.w * (tau - G.t); }
 // 回合開始：這一回合有沒有陣風（有風才有陣風；反著吹、比原本的風強一點）
@@ -130,7 +135,8 @@ function tornadoRound() {
 }
 function vortexForce(o, dt) {
   const dx = SA.x - o.x; if (dx * dx > o.R * o.R || SA.y < o.base - 1 || SA.y > o.top) return 0;
-  const k = 1 - Math.abs(dx) / o.R * 0.5;
+  // 正中最強、往邊上、往頂上慢慢變弱（邊緣不是一刀切：擦過邊的砲彈，瞄準線跟真的打出去才對得上）
+  const u = dx / o.R, k = 1.2 * (1 - u * u) * Math.min(1, (o.top - SA.y) / 5);
   SA.vy += o.up * k * dt; SA.vx *= Math.exp(-o.damp * k * dt);
   return 0;
 }
@@ -202,15 +208,28 @@ function breakArm(A) {
   if (A.fix) { R.body.destroyFixture(A.fix); A.fix = null; R.body.resetMassData(); }
   const G = A.gond; if (G && G.j) { PH.world.destroyJoint(G.j); G.j = null; G.dropped = true; G.body.setAwake(true); G.body.setLinearDamping(0.05); G.body.setAngularDamping(0.6); }
   ev('armbreak', m.x, m.y, R.side, q.x, q.y);
-  S.chainT = S.time; if (A.by < 2 && A.by !== R.side && S.state === 'play') S.chain += 3;
+  // 連珠：只算進正在開砲、打對方葉臂的那一邊（被燒斷在自己的回合裡、回合結束時才斷的，不算誰的：跟繩子一樣）
+  S.chainT = S.time; if (A.by < 2 && A.by !== R.side && R.side !== S.turn && S.phase !== 'hazard' && S.state === 'play') S.chain += 3;
 }
 function rotorFall(R, by) {
-  if (R.fallen) return; R.fallen = true; R.rot = null;
+  if (R.fallen) return; R.fallen = true; R.rot = null; R.fallT = S.time; R.vmax = 0;
   if (R.j) { PH.world.destroyJoint(R.j); R.j = null; }
   R.body.setAwake(true); R.body.setAngularDamping(0.15);
   for (const G of R.gond) if (G.body) G.body.setAwake(true);
   ev('rotorfall', R.x, R.y, R.side);
-  S.chainT = S.time; if (by < 2 && by !== R.side && S.state === 'play') S.chain += 6;
+  S.chainT = S.time; if (by < 2 && by !== R.side && R.side !== S.turn && S.phase !== 'hazard' && S.state === 'play') S.chain += 6;
+}
+// 掉下來的葉輪砸到地上就散了：帆架全斷、吊艙各自掉下去，只剩一個大轂（不然整具 X 字立在城前，變成擋砲彈的牆）
+function rotorShatter(R) {
+  R.shat = true;
+  for (const A of R.arms) {
+    if (A.broken) continue;
+    A.broken = true; A.hp = 0; A.burn = 0;
+    if (A.fix) { R.body.destroyFixture(A.fix); A.fix = null; }
+    const G = A.gond; if (G && G.j) { PH.world.destroyJoint(G.j); G.j = null; G.dropped = true; G.body.setAwake(true); G.body.setLinearDamping(0.05); G.body.setAngularDamping(0.6); }
+  }
+  R.body.resetMassData();
+  const p = R.body.getPosition(); ev('rotorcrash', p.x, p.y, R.side, R.len);
 }
 // 回合結束：兩座城的葉輪照風向各轉 45 度（鏡射：順風的那一邊往外倒）。回傳 true：要等它轉完
 function rotorsTurn() {
@@ -234,7 +253,11 @@ function rotorStep(dt) {
       if (A.burn > 0 && act) { A.burn -= dt; const by = A.burnBy; A.hp -= 7 * dt * (by === undefined || by === R.side ? 1 : 1); if (A.hp <= 0) { A.hp = 0; A.by = by === undefined ? 2 : by; } }
       if (A.hp <= 0 && !R.fallen) breakArm(A);
     }
-    if (R.fallen) continue;
+    if (R.fallen) {
+      // 掉下來的葉輪：撞到地（速度一下子掉一半以上）、或掉了 2.5 秒，就散掉
+      if (!R.shat) { const v = R.body.getLinearVelocity(), sp = Math.hypot(v.x, v.y), tt = S.time - R.fallT; R.vmax = Math.max(R.vmax, sp); if ((tt > 0.3 && R.vmax > 4 && sp < R.vmax * 0.5) || tt > 2.5) rotorShatter(R); }
+      continue;
+    }
     // 軸座被打掉、垮了：整具葉輪掉下來
     const ub = R.ub; if (ub.dead || !ub.inPlace) { rotorFall(R, S.phase === 'hazard' ? 2 : S.turn); continue; }
     if (R.rot) {
@@ -244,6 +267,8 @@ function rotorStep(dt) {
     }
   }
 }
+// 還在燒的帆架（砲擊之後等它燒完再換人，跟城樓上的火一樣）
+function rotorBurning() { for (const R of S.rotors) if (!R.fallen) for (const A of R.arms) if (!A.broken && A.burn > 0) return true; return false; }
 // 城樓完整度裡葉輪那一份：還裝著的葉臂（照耐久）、還吊著的吊艙
 function rotorHp(st) {
   const R = st.rotor; if (!R || R.fallen) return 0;
@@ -334,7 +359,8 @@ function potStep(dt) {
 }
 function spillPot(b) {
   b.spilt = 1;
-  const p = b.body.getPosition(), by = b.hitBy !== undefined ? b.hitBy : 2;
+  const p = b.body.getPosition(), by = b.hitBy !== undefined ? b.hitBy : 2, W = S.water;
+  if (W && W.lava && p.x > W.x0 && p.x < W.x1 && p.y < W.y + 1.2) { ev('melt', p.x, W.y, 6); return; }          // 整鍋掉進岩漿裡了：冒一陣煙就沒了（不跳「鐵水澆下來」）
   b.body.setAwake(true); b.body.applyAngularImpulse((b.side === 0 ? -1 : 1) * b.mass * 4, true);          // 往戰場那一邊翻倒
   S.objs.push({ t: 'pour', side: b.side, by, pot: b, x: p.x, y: p.y, w: POUR_W, age: 0, life: POUR_T, gy: p.y, dir: b.side === 0 ? 1 : -1 });
   ev('pour', p.x, p.y, b.side);

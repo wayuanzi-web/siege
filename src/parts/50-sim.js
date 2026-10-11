@@ -1241,7 +1241,7 @@ function simInit(idx, up, seed, diff, opts) {
   S.gpts = lv.ground || null; S.voids = lv.voids || null;
   S.ropes = []; S.welds = []; S.pivots = []; S.pins = []; S.plats = []; S.pulleys = []; S.rotors = []; S.rollers = []; S.bell = null; S.doms = []; S.water = lv.water ? Object.assign({ rho: 0.85, cur: 2.2 }, lv.water) : null;
   envInit();          // 第三篇的環境（潮汐……）
-  S.stat = { fired: 0, peak: 0, swarm: 1, cells: 0, kills: 0, gates: 0, lost: 0, chain: 0, amp: 1 };
+  S.stat = { fired: 0, peak: 0, swarm: 1, cells: 0, kills: 0, gates: 0, lost: 0, chain: 0, amp: 1, hit: 0 };
   physNew();
   const A = S.team[0] = mkTeam(0), B = S.team[1] = mkTeam(1);
   A.dmg = 1 + 0.08 * (up.dmg || 0); A.hpMul = 1 + 0.09 * (up.hp || 0);
@@ -1321,7 +1321,7 @@ function simStep(dt) {
         break;
       }
       case 'resolve': case 'hazard': {
-        const busy = SH.n > 0 || S.pend.length > 0 || flyersBusy() || envBusy() || ((S.nburn > 0 || ropesBurning()) && S.phaseT < 6);          // 酸液不等它蝕完（下一輪砲擊接著蝕）          // 點著的引信不等它燒完：每一輪（雙方的砲擊、落石）都往下燒一段
+        const busy = SH.n > 0 || S.pend.length > 0 || flyersBusy() || envBusy() || ((S.nburn > 0 || ropesBurning() || (S.rotors.length > 0 && rotorBurning())) && S.phaseT < 6);          // 酸液不等它蝕完（下一輪砲擊接著蝕）          // 點著的引信不等它燒完：每一輪（雙方的砲擊、落石）都往下燒一段
         if (!busy && worldQuiet()) { if (headClear()) S.quietT = 0; else S.quietT += dt; } else S.quietT = 0;
         // 最多等 9 秒；還在一塊接一塊垮的時候多等一下（等最後一塊垮完再過 1.5 秒），最久 14 秒
         if (S.quietT >= 0.5 || S.phaseT > (S.time - S.chainT < 1.5 ? 14 : 9)) { if (S.phase === 'hazard') { endCheck(true); if (S.state === 'play') roundStart(); } else endTurn(); }

@@ -1,9 +1,9 @@
-// node test/first.js <關卡 1-12，或 p0–p11 演武場（戰場幾號）> [場數=150] [敵軍打幾輪=1]（演武場：FOE=cluster,drill,… 指定敵軍的兵，誤傷開著）
+// node test/first.js <關卡 1-15，或 p0–p15 演武場（戰場幾號，p12 魔王城除外）> [場數=150] [敵軍打幾輪=1]（演武場：FOE=cluster,drill,… 指定敵軍的兵，誤傷開著）
 // 開場公平性：我方完全不開火、不開護罩，敵軍（照關卡原本的 AI，含手抖）先打 K 輪，看我方倒幾個兵（跑到第 K+1 回合我方那一輪結束：開場護符護到這裡）
 const G = require('./load')('practiceLevel, PRACTICE_BASE'); const { S, simInit, simStep, simFire, LEVELS } = G;
 const arg = String(process.argv[2] || 1), prac = arg[0] === 'p', li = prac ? -1 : +arg - 1, N = +(process.argv[3] || 150), K = +(process.argv[4] || 1);
 const PL = prac ? G.practiceLevel(+arg.slice(1) || 0, G.PRACTICE_BASE.me.crew, process.env.FOE ? process.env.FOE.split(',') : G.PRACTICE_BASE.foe.crew, 1) : null;
-const HOW = ['擊倒', '砸扁', '?', '燒', '摔出場', '出城', '轟飛', '被水沖走'];
+const HOW = ['擊倒', '砸扁', '?', '燒', '摔出場', '出城', '轟飛', '被水沖走', '掉進岩漿'];
 const hist = [0, 0, 0, 0, 0], who = {}; let lost = 0;
 for (let sd = 0; sd < N; sd++) {
   simInit(prac ? PL : li, {}, 52000 + sd * 7919 + li * 131, 1, { mute: 0 }); S.team[0].ai = null;

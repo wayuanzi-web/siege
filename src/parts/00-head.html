@@ -110,6 +110,8 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 #say.show { animation: say var(--say, 4.2s) ease both; }
 #hint:not([hidden]) ~ #say { bottom: calc(var(--u) * 25.5); }
 #say.top, #hint:not([hidden]) ~ #say.top { bottom: auto; top: calc(var(--u) * 15.5); }
+#hud.gusty #say.top, #hud.gusty #mile { top: calc(var(--u) * 19.5); }
+#hud.aiming #say { opacity: .16 !important; transition: opacity .12s; }          /* 拖著瞄準的時候提示框淡掉（蓋住虛線） */          /* 陣風那一行（第十四關）在回合、風的下面：提示再往下讓一點 */
 #say.alert { color: #ffb0a2; box-shadow: inset 0 0 0 2px var(--red); background: rgba(60, 8, 10, .88); }
 @keyframes say { 0% { opacity: 0; transform: translate(-50%, 8px); } 8%, 88% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, 0); } }
 #mile { position: absolute; left: 50%; top: calc(var(--u) * 15.5); font-family: var(--f-display); font-weight: 900; font-size: calc(var(--u) * 6.6); letter-spacing: .14em; color: var(--gold-lt); white-space: nowrap;

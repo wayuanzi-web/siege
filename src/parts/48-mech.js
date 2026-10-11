@@ -430,6 +430,7 @@ function boulderStep(dt) {
     if (b.bpx !== undefined && S.ropes.length) { const rc = ropeCross(b.bpx, b.bpy, p.x, p.y, b.bSide); if (rc && !(b.bRope && b.bRope.has(rc.r))) { (b.bRope || (b.bRope = new Set())).add(rc.r); ropeHurt(rc.r, b.bW.dmg * b.bMul * 1.25, K_HEAVY, b.bSide); } }
     b.bpx = p.x; b.bpy = p.y;
     b.bAge = (b.bAge || 0) + dt; body.applyForce({ x: (S.gust ? windAt(b.bAge) : S.wind) * body.getMass(), y: 0 }, body.getWorldCenter(), true);         // 跟砲彈一樣吃風（陣風也是）
+    if (AMP.vorts.length) { SA.x = p.x; SA.y = p.y; SA.vx = v.x; SA.vy = v.y; for (const o of AMP.vorts) vortexForce(o, dt); if (SA.vx !== v.x || SA.vy !== v.y) body.setLinearVelocity({ x: SA.vx, y: SA.vy }); }          // 龍捲風（第十四關）：跟砲彈一樣被往上捲（瞄準線也是這樣算）
     const o = 1 - b.bSide;
     if (S.team[o].shield.on && inBubble(S.st[o], p.x, p.y)) { ev('shieldhit', p.x, p.y, o); ev('rockstop', p.x, p.y, o); blockKill(b, 2, K_CRUSH, true); continue; }
     if (b.bHit || (v.x * v.x + v.y * v.y < 30 && !b.bIn)) { b.bFly = 0; body.setBullet(false); body.setAngularDamping(1.2); }
