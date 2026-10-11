@@ -56,13 +56,14 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 .hpbar .tick { position: absolute; bottom: 0; height: 34%; width: calc(var(--u) * .6); margin-right: calc(var(--u) * -.3); background: rgba(255, 240, 176, .95); }
 .hpbar b, .hpbar small { z-index: 1; }
 .hpbar.hit i { filter: brightness(1.8); }
-.vs { display: grid; justify-items: center; gap: calc(var(--u) * .3); min-width: calc(var(--u) * 20); text-align: center; }
+.vs { position: relative; display: grid; justify-items: center; gap: calc(var(--u) * .3); min-width: calc(var(--u) * 20); text-align: center; }
 .vs b { font-family: var(--f-display); font-weight: 900; font-size: calc(var(--u) * 3.9); letter-spacing: .1em; line-height: 1.1; white-space: nowrap; text-shadow: 0 2px 3px rgba(0, 0, 0, .7); }
 .vs .sub { display: flex; align-items: center; gap: calc(var(--u) * 2); font-size: calc(var(--u) * 2.9); letter-spacing: .08em; color: var(--mute); white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, .8); }
 #roundTxt { color: var(--bone); font-variant-numeric: tabular-nums; }
 #windBox { display: flex; align-items: center; gap: calc(var(--u) * 1); font-size: calc(var(--u) * 2.9); letter-spacing: .06em; color: var(--gold-lt); white-space: nowrap; font-variant-numeric: tabular-nums; }
 #windBox i { display: block; width: calc(var(--u) * 6); height: calc(var(--u) * 2.2); background: var(--gold); clip-path: polygon(0 32%, 62% 32%, 62% 0, 100% 50%, 62% 100%, 62% 68%, 0 68%); transition: transform .5s ease; }
 #windBox.calm i { display: none; }
+#gustTxt { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: calc(var(--u) * .4); padding: calc(var(--u) * .3) calc(var(--u) * 1.6); font-size: calc(var(--u) * 2.6); letter-spacing: .06em; color: #d6e8ff; white-space: nowrap; font-variant-numeric: tabular-nums; background: rgba(12, 20, 40, .62); border-radius: calc(var(--u) * 1); text-shadow: 0 1px 2px rgba(0, 0, 0, .8); }          /* 陣風（第十四關）：放在回合、風的下面一行，不擠兩邊的城防條 */
 .hud-bot { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: calc(var(--u) * 2);
   padding: calc(var(--u) * 2) calc(var(--u) * 1.5 + var(--pr)) calc(var(--u) * 2) calc(var(--u) * 2 + var(--pl)); }
 .aimbox { grid-column: 1; display: flex; align-items: flex-end; gap: calc(var(--u) * 1.6); justify-self: start; }
@@ -109,6 +110,8 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 #say.show { animation: say var(--say, 4.2s) ease both; }
 #hint:not([hidden]) ~ #say { bottom: calc(var(--u) * 25.5); }
 #say.top, #hint:not([hidden]) ~ #say.top { bottom: auto; top: calc(var(--u) * 15.5); }
+#hud.gusty #say.top, #hud.gusty #mile { top: calc(var(--u) * 19.5); }
+#hud.aiming #say { opacity: .16 !important; transition: opacity .12s; }          /* 拖著瞄準的時候提示框淡掉（蓋住虛線） */          /* 陣風那一行（第十四關）在回合、風的下面：提示再往下讓一點 */
 #say.alert { color: #ffb0a2; box-shadow: inset 0 0 0 2px var(--red); background: rgba(60, 8, 10, .88); }
 @keyframes say { 0% { opacity: 0; transform: translate(-50%, 8px); } 8%, 88% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, 0); } }
 #mile { position: absolute; left: 50%; top: calc(var(--u) * 15.5); font-family: var(--f-display); font-weight: 900; font-size: calc(var(--u) * 6.6); letter-spacing: .14em; color: var(--gold-lt); white-space: nowrap;
@@ -299,7 +302,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
           <div class="crew" id="crewA"></div>
           <div class="hpbar chamfer" id="hpA"><i id="barA"></i><b id="pctA">100%</b><small>我方</small></div>
         </div>
-        <div class="vs"><b id="hudName">望樓對峙</b><span class="sub"><span id="roundTxt"></span><span id="windBox" hidden><span id="windTxt">無風</span><i id="windArr"></i></span></span></div>
+        <div class="vs"><b id="hudName">望樓對峙</b><span class="sub"><span id="roundTxt"></span><span id="windBox" hidden><span id="windTxt">無風</span><i id="windArr"></i></span></span><span id="gustTxt" hidden></span></div>
         <div class="side foe">
           <div class="hpbar chamfer" id="hpB"><i id="barB"></i><b id="pctB">100%</b><small id="foeLbl">敵城</small></div>
           <div class="crew" id="crewB"></div>

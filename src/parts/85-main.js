@@ -84,7 +84,7 @@ function finishLevel() {
   const won = S.state === 'won', idx = S.idx, bar = S.endBar[0], lost = S.stat.lost;
   if (S.lv.practice) {          // 演武場：試打，不給星星、不給金幣、不解鎖
     G.mode = 'result'; sayClear(); musStop(); sfx(won ? 'win' : 'lose');
-    showResult(won, { idx, stars: 0, bar, lost, rounds: S.round, chain: S.stat.chain, swarm: S.stat.swarm, amp: S.stat.amp, coins: 0, streak: 0 });
+    showResult(won, { idx, stars: 0, bar, lost, rounds: S.round, chain: S.stat.chain, swarm: S.stat.swarm, amp: S.stat.amp, hit: S.stat.hit || 0, coins: 0, streak: 0 });
     return;
   }
   const stars = !won ? 0 : bar >= 0.5 && !lost ? 3 : bar >= 0.25 ? 2 : 1;          // 城防條是照城破門檻拉開的：剩一半，城的完整度大約還有六成五
@@ -95,7 +95,7 @@ function finishLevel() {
   G.mode = 'result'; sayClear(); musStop(); sfx(won ? 'win' : 'lose');
   if (won || G.lossAt !== idx) G.lossN = 0;
   if (!won) { G.lossAt = idx; G.lossN = (G.lossN || 0) + 1; }         // 同一關連輸幾場
-  showResult(won, { idx, stars, bar, lost, rounds: S.round, chain: S.stat.chain, swarm: S.stat.swarm, amp: S.stat.amp, coins, streak: won ? 0 : G.lossN });
+  showResult(won, { idx, stars, bar, lost, rounds: S.round, chain: S.stat.chain, swarm: S.stat.swarm, amp: S.stat.amp, hit: S.stat.hit || 0, coins, streak: won ? 0 : G.lossN });
 }
 // 模擬事件裡跟介面有關的：橫幅、提示
 function uiEvent(t, a, b, c, d, e) {
@@ -139,6 +139,8 @@ function uiEvent(t, a, b, c, d, e) {
       }
       break;
     case 'wind': once('wind', '起風了！每回合的風都不一樣，虛線已經把風算進去'); break;
+    case 'gust': once('gust', '陣風：砲彈飛到一半，風會突然反過來吹（上面寫著飛幾秒後、往哪邊吹多大）。虛線上的小漩渦就是風轉向的地方，虛線已經算進去了'); break;
+    case 'vortex': once('vortex', '中場的小山上捲起一道龍捲風：穿過它的砲彈會被往上捲、往前的速度被拖慢。虛線也算進去了，也可以繞開它'); break;
     case 'ultarm': if (c === 1) { const T = S.team[0]; say(T.shield.c >= T.shield.need && !T.shield.on ? '敵軍連珠砲上膛了，這一輪打三次：快開護罩！' : '敵軍連珠砲上膛了，這一輪打三次！', 1); } break;
     case 'phase': if (a === 2) { banner('魔王結界', 'boss', '第二階段'); later(1900, () => say('魔王張開結界了！結界分三段、每回合換缺口；戰場中間還裂開一個黑洞，會把砲彈吸彎', 1)); } else { banner('魔王暴怒', 'boss', '最終階段'); later(1900, () => say('魔王暴怒了：結界改開兩個缺口，還會放隕石雨（紅圈是落點，開護罩擋）', 1)); } break;
     case 'bossback': once('bback', '魔王摔下去又飛回來了，不過摔一次扣不少血'); break;
@@ -159,7 +161,7 @@ function uiEvent(t, a, b, c, d, e) {
     case 'orb': once('orb', '毀滅光球！它先停在半空中，下一輪砸過來：現在打爆它，它會掉頭砸在魔王自己身上', 1, () => S.objs.some((o) => o.t === 'orb' && o.hp > 0 && (o.st === 'out' || o.st === 'hover'))); break;
     case 'orbback': once('orbb', '漂亮！光球打爆了會掉頭砸回魔王身上，連結界都擋不住'); break;
     case 'lantern': once('lan', '天燈升起來了：打中它有補給（敵軍也會搶），兩回合後就飄走', 0, () => S.objs.some((o) => o.t === 'lantern' && o.hp > 0)); break;
-    case 'rockwarn': once('rock', S.lv.boss ? '紅圈是隕石雨的落點：這一回合結束時砸下來，會砸到你就開護罩' : '紅圈是這一回合結束時落石的位置，會砸到你就開護罩', 1, () => S.marks.length > 0 && S.phase !== 'hazard'); break;          // 紅圈已經砸完了就不講
+    case 'rockwarn': once('rock', S.lv.boss ? '紅圈是隕石雨的落點：這一回合結束時砸下來，會砸到你就開護罩' : b ? '紅圈是火山彈的落點：這一回合結束時從天上砸下來、濺開一團岩漿，會砸到你就開護罩' : '紅圈是這一回合結束時落石的位置，會砸到你就開護罩', 1, () => S.marks.length > 0 && S.phase !== 'hazard'); break;          // 紅圈已經砸完了就不講
     case 'erupt': if (!G.said.gey) later(3200, () => once('gey', '地火噴發：砲彈穿過火柱會著火，威力多五成')); break;        // 晚一點講，先讓這一關的訣竅講完
     case 'freeze': if (c === 0) once('frz', '兵被凍住了，下一輪不能開火；開護罩可以立刻解凍', 1); break;
     case 'udie': if (c === 0) once('lost', '有兵陣亡了，火力變少：兵全倒就輸了，用護罩撐住', 1); else if (S.idx === 0 && S.team[1].alive > 0) once('kill', '打倒一個守軍！守軍全倒也算破城'); break;
@@ -198,6 +200,7 @@ function frame(now) {
     } else if (G.demo && S.state !== 'play') { G.demoWait += rdt; if (G.demoWait > 4.5) demoStart(G.demoIdx); }
   }
   RD.aimOn = !!G.drag;
+  { const fade = !!(G.drag && G.drag.live && G.drag.far > 0); if (fade !== G.aimFade) { G.aimFade = fade; $('hud').classList.toggle('aiming', fade); } }          // 拖著瞄準的時候：提示框淡掉，看得到底下的虛線（陣風的小漩渦常在弧頂）
   renderFrame(sdt, run ? rdt : 0);
   const heat = S.state === 'play' && G.mode === 'play' ? Math.min(1, FX.heat + (S.boss ? 0.2 * S.boss.phase : 0) + (1 - foeBar()) * 0.3) : 0;
   musStep(heat);
@@ -329,7 +332,7 @@ function bindInput() {
   press('btnPause', () => { sfx('click'); pauseGame(); });
   click('btnGo', () => { sfx('click'); startLevel(UI.prac ? pracLevel() : UI.sel); });
   // 演武場：換戰場、誤傷開關、敵軍隨機
-  const pmap = (d) => { SV.prac.map = (SV.prac.map + d + PRACTICE_MAPS) % PRACTICE_MAPS; save(); sfx('click'); homeRender(); homeDemo(); };
+  const pmap = (d) => { const L = PRACTICE_LIST, i = Math.max(0, L.indexOf(SV.prac.map)); SV.prac.map = L[(i + d + L.length) % L.length]; save(); sfx('click'); homeRender(); homeDemo(); };
   click('pMapL', () => pmap(-1)); click('pMapR', () => pmap(1));
   click('pFF', () => { SV.prac.ff = SV.prac.ff ? 0 : 1; save(); sfx('click'); homeRender(); });
   click('pRand', () => { const L = UNIT_LIST.filter((t) => t !== 'eng' || Math.random() < 0.4); for (let k = 0; k < 6; k++) SV.prac.foe[k] = L[(Math.random() * L.length) | 0]; save(); sfx('click'); homeRender(); homeDemo(); });

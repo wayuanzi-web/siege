@@ -63,7 +63,8 @@ function physNew() {
     const m = c.getManifold(); if (!m.pointCount) return;
     const A = c.getFixtureA().getBody(), B = c.getFixtureB().getBody(), va = A.getLinearVelocity(), vb = B.getLinearVelocity();
     // 懸臂樑（插銷釘在岩壁上的）跟那座城的岩壁不碰撞
-    { const oa = A.getUserData(), ob = B.getUserData(); if ((oa && oa.noRock && oa.noRock.rockBody === B) || (ob && ob.noRock && ob.noRock.rockBody === A)) { c.setEnabled(false); return; } }
+    { const oa = A.getUserData(), ob = B.getUserData(); if ((oa && oa.noRock && oa.noRock.rockBody === B) || (ob && ob.noRock && ob.noRock.rockBody === A)) { c.setEnabled(false); return; }
+      if (S.rotors.length && rotorSkip(c.getFixtureA().getUserData(), c.getFixtureB().getUserData(), oa, ob)) { c.setEnabled(false); return; } }          // 風車的葉輪、吊艙跟自己的城不碰撞
     // 投石兵的大石頭還在自己城裡：穿過自己的牆和自己的兵（跟砲彈一樣，飛出城才會撞東西）
     { const oa = A.getUserData() || c.getFixtureA().getUserData(), ob = B.getUserData() || c.getFixtureB().getUserData();          // 吊籠、配重桶的身體沒有掛資料：看零件上的
       if (oa && oa.bIn && ob && ((ob.side === oa.bSide && (ob.isUnit || ob.st === S.st[oa.bSide])) || (ob.dom && (ob.x0 < MID) === (oa.bSide === 0)))) { c.setEnabled(false); return; }
@@ -128,6 +129,7 @@ function mkBlock(st, o) {
   if (o.kind === 'ball') shape = new PL.Circle(o.r);
   else if (o.kind === 'roof') { const hw = o.w / 2, hh = o.h / 2; shape = new PL.Polygon([{ x: -hw, y: -hh }, { x: hw, y: -hh }, { x: hw - b.ir, y: hh }, { x: -hw + b.il, y: hh }]); }
   else if (o.kind === 'bell') { const hw = o.w / 2, hh = o.h / 2; shape = new PL.Polygon([{ x: -hw, y: -hh }, { x: hw, y: -hh }, { x: hw * 0.62, y: hh * 0.55 }, { x: hw * 0.3, y: hh }, { x: -hw * 0.3, y: hh }, { x: -hw * 0.62, y: hh * 0.55 }]); }
+  else if (o.kind === 'pot') { const hw = o.w / 2, hh = o.h / 2; shape = new PL.Polygon([{ x: -hw * 0.7, y: -hh }, { x: hw * 0.7, y: -hh }, { x: hw, y: hh * 0.55 }, { x: hw * 0.9, y: hh }, { x: -hw * 0.9, y: hh }, { x: -hw, y: hh * 0.55 }]); }          // 鐵水鍋：口寬底窄
   else if (poly) { const v = []; for (let i = 0; i < o.pts.length; i += 2) v.push({ x: o.pts[i], y: o.pts[i + 1] }); shape = new PL.Polygon(v); }
   else shape = new PL.Box(Math.max(0.2, o.w / 2 - BOX_GAP), o.h / 2);        // 比格子窄一點點：並排的磚才不會角頂著角卡住，該掉的就掉
   body.createFixture({ shape, density: o.den || M.den, friction: M.fr, restitution: 0.02, filterCategoryBits: CAT_BLOCK, userData: b });
@@ -212,6 +214,7 @@ function blockKill(b, side, kind, clean) {
   if (b.ropes) ropesOff(b, null);
   if (b.pins) pinsOff(b, null);
   if (b.pivot) { b.pivot.b = null; b.pivot = null; }
+  if (b.tank && b.body) spawnDeluge(b, side);          // 水塔破了：水從這裡一路灌下去
   b.dead = true; b.inPlace = false; b.hp = 0;
   const p = b.body.getPosition(); b.x = p.x; b.y = p.y; b.a = b.body.getAngle();
   if (b.burn > 0) S.nburn--;
@@ -305,6 +308,7 @@ function segSplit(b, side, kind) {
   }
   if (pieces) { ropesOff(b, pieces); pinsOff(b, pieces); }
   if (b.pivot) { b.pivot.b = null; b.pivot = null; }
+  if (b.tank && b.body) spawnDeluge(b, side);          // 水塔破了：水從這裡一路灌下去
   b.dead = true; b.inPlace = false; b.hp = 0; b.x = px; b.y = py; b.a = ang;
   if (b.burn > 0) S.nburn--;
   st.ver++;
@@ -535,6 +539,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
     const crit = critOn && hit && (hit.isBlock ? weakSpot(hit, x, y) : headShot(hit, y)), dmg = dmg0 * (crit ? CRIT_K : 1), ud = ud0 * (crit ? CRIT_K : 1);
     if (crit) ev('crit', x, y, side);
     if (hit && hit.isHull) hullHurt(hit, dmg, kind, side);
+    else if (hit && hit.isArm) armHurt(hit, dmg, kind, side);
     else if (hit && hit.isBlock && !hit.dead) {
       if (hit.bigBell) bellPush(side, dmg);
       const b = hit;
@@ -570,6 +575,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
       if (kk > 0) { P.body.setAwake(true); P.body.applyLinearImpulse({ x: nx / nl * j * kk, y: ny / nl * j * kk }, { x: qx, y: qy }, true); }
       continue;
     }
+    if (o.isArm) { armBlast(o, x, y, r, dmg, kind, side, hit); continue; }          // 風車的葉臂
     if (o.isHull) {
       // 船身：照離最近的那一點算傷害；船很重，只被推一點點
       const A = o.fix.getAABB(0), qx = clamp(x, A.lowerBound.x, A.upperBound.x), qy = clamp(y, A.lowerBound.y, A.upperBound.y), d = Math.hypot(x - qx, y - qy);

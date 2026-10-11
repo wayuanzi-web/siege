@@ -30,6 +30,7 @@ for (let li = LR[0] - 1; li <= (LR[1] || LR[0]) - 1; li++) for (const bot of ['n
         const b0 = teamBar(0), b1 = teamBar(1); if (!(b0 >= 0 && b0 <= 1 && b1 >= 0 && b1 <= 1)) fail(`${tag}: 城防超出範圍 ${b0} ${b1}`);
         let bodies = 0; for (let b = PH.world.getBodyList(); b; b = b.getNext()) if (b.isDynamic()) bodies++;      // 只數會動的（地面、第二篇的岩壁是靜態的）
         let live = 0; for (const b of S.blocks) if (!b.dead && (!b.body || b.body.isDynamic())) live++; for (const u of S.units) if (u.alive) live++; for (const p of S.plats) if (!p.dead && p.body && p.body.isDynamic()) live++;       // 滾石坡上還沒放出去的滾石、木樁是靜態的，不算；浮島、船身各是一個物體
+        for (const R of S.rotors || []) if (R.body && R.body.isDynamic()) live++;          // 風車的葉輪（輪轂＋葉臂是一個物體；吊艙在 S.plats 裡）
         if (bodies !== live) fail(`${tag}: 物理世界裡的物體數對不上 ${bodies} vs ${live}`);
       }
     }

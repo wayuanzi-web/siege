@@ -7,9 +7,9 @@ const SA = { x: 0, y: 0, vx: 0, vy: 0, nx: 0, ny: 0, mass: 1, flag: 0, k: 0, a0:
 function saLoad(i) { SA.x = SH.x[i]; SA.y = SH.y[i]; SA.vx = SH.vx[i]; SA.vy = SH.vy[i]; SA.mass = SH.mass[i]; SA.flag = SH.flag[i]; SA.k = SH.k[i]; SA.a0 = SH.a0[i]; SA.a1 = SH.a1[i]; SA.side = SH.side[i]; SA.wi = SH.w[i]; SA.o = null; }
 function saStore(i) { SH.x[i] = SA.x; SH.y[i] = SA.y; SH.vx[i] = SA.vx; SH.vy[i] = SA.vy; SH.mass[i] = SA.mass; SH.flag[i] = SA.flag; SH.k[i] = SA.k; SH.a0[i] = SA.a0; SH.a1[i] = SA.a1; }
 // 這一關有哪些放大（simInit 裡算一次，每一步不用再找）
-const AMP = { roll: null, skip: null, jets: [], holes: [], any: false };
+const AMP = { roll: null, skip: null, jets: [], holes: [], vorts: [], any: false };
 function ampInit() {
-  AMP.roll = S.lv.roll || null; AMP.skip = S.lv.skip || null; AMP.jets.length = 0; AMP.holes.length = 0;
+  AMP.roll = S.lv.roll || null; AMP.skip = S.lv.skip || null; AMP.jets.length = 0; AMP.holes.length = 0; AMP.vorts.length = 0;
   for (const o of S.objs) { if (o.t === 'jet') AMP.jets.push(o); else if (o.t === 'hole') AMP.holes.push(o); }
   AMP.any = !!(AMP.roll || AMP.skip || AMP.jets.length || AMP.holes.length);
 }
@@ -93,6 +93,7 @@ function ampForces(dt) {
   let r = 0;
   for (const o of AMP.jets) if (jetForce(o, dt)) r = 1;
   for (const o of AMP.holes) if (holeForce(o, dt) === 2) return 2;
+  for (const o of AMP.vorts) vortexForce(o, dt);
   return r;
 }
 

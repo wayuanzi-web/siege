@@ -62,7 +62,7 @@ function mkRope(st, A, B, o) {
   const r = {
     st, side: st.side, kind, a: A.b, b: B.b, la: ga.getLocalPoint({ x: A.x, y: A.y }), lb: gb.getLocalPoint({ x: B.x, y: B.y }),
     len: Math.hypot(B.x - A.x, B.y - A.y) * (o.slack || 1), hp: hm, hm, j: null, cut: false, burn: 0, flash: 0, t0: 0, tmax: 1e9, over: 0, tens: 0,
-    aw: o.aw || 0, tag: o.tag || '', e: [A.x, A.y, B.x, B.y], cutT: -99, cx: [0, 0, 0, 0], hang: o.hang || null
+    aw: o.aw || 0, tag: o.tag || '', e: [A.x, A.y, B.x, B.y], cutT: -99, cx: [0, 0, 0, 0], hang: o.hang || null, solid: o.solid || 0
   };
   r.la = { x: r.la.x, y: r.la.y }; r.lb = { x: r.lb.x, y: r.lb.y };
   ropeJoint(r);
@@ -80,7 +80,7 @@ function mkRopeDef(st, d) {
 function mkHang(st, h) {
   const P = cellPt(st, h.at), top = anchorAt(st, P); if (top === undefined) return null;
   const w = h.w || 3.4, hh = h.h || 3.4, y = P.y - h.len - hh / 2;
-  const kind = h.t === 'bell' ? 'bell' : h.t === 'lamp' ? 'lamp' : h.t === 'basket' ? 'basket' : 'box';
+  const kind = h.t === 'bell' ? 'bell' : h.t === 'lamp' ? 'lamp' : h.t === 'basket' ? 'basket' : h.t === 'pot' ? 'pot' : 'box';
   const mat = h.mat !== undefined ? h.mat : h.t === 'bell' ? M_IRON : h.t === 'lamp' ? M_GLASS : M_STONE;
   const b = mkBlock(st, { mat, kind, x: P.x, y, w, h: hh, prop: 1, den: h.den, il: kind === 'bell' ? w * 0.24 : 0, ir: kind === 'bell' ? w * 0.24 : 0 });
   b.hang = h.t; b.cx = P.cx; b.cy = P.cy; b.cw = 1; b.ch = 1; if (h.bal) b.bal = 1;
@@ -322,8 +322,8 @@ function waterForces() {
     b.wet = sub;
     if (first) { const v = body.getLinearVelocity(); if (v.y < -4) ev('splash', p.x, W.y, Math.min(3, b.mass / 8), 0); }
     const m = body.getMass(), den = body.getFixtureList().getDensity() || 1, area = m / den, v = body.getLinearVelocity(), c = body.getWorldCenter();
-    const fb = W.rho * area * sub * GRAV;
-    body.applyForce({ x: (W.cur - v.x) * m * 1.4 * sub, y: fb - v.y * m * 1.8 * sub }, { x: c.x, y: lo + (Math.min(W.y, hi) - lo) * 0.5 }, first);
+    const fb = W.rho * area * sub * GRAV, cur = W.curF ? W.curF(p.x) : W.cur;          // curF：暴潮的時候水流照位置變（漲的時候往兩邊的水寨沖、退的時候往中間拖）
+    body.applyForce({ x: (cur - v.x) * m * 1.4 * sub, y: fb - v.y * m * 1.8 * sub }, { x: c.x, y: lo + (Math.min(W.y, hi) - lo) * 0.5 }, first);
     if (sub > 0.2) body.setAngularVelocity(body.getAngularVelocity() * 0.97);
   }
   for (const u of S.units) {
@@ -331,8 +331,8 @@ function waterForces() {
     const p = u.body.getPosition(); if (p.x < W.x0 || p.x > W.x1 || p.y - u.bh / 2 >= W.y) { u.wet = 0; continue; }
     const sub = clamp((W.y - (p.y - u.bh / 2)) / u.bh, 0, 1), first = !u.wet; u.wet = sub;
     if (first) ev('splash', p.x, W.y, 1.2, 1);
-    const m = u.body.getMass(), v = u.body.getLinearVelocity();
-    u.body.applyForce({ x: (W.cur - v.x) * m * 1.4 * sub, y: m * GRAV * 0.8 * sub - v.y * m * 1.6 * sub }, u.body.getWorldCenter(), true);
+    const m = u.body.getMass(), v = u.body.getLinearVelocity(), cur = W.curF ? W.curF(p.x) : W.cur;
+    u.body.applyForce({ x: (cur - v.x) * m * 1.4 * sub, y: m * GRAV * 0.8 * sub - v.y * m * 1.6 * sub }, u.body.getWorldCenter(), true);
   }
 }
 // 砲彈這一步有沒有打進水面（水面跟地面一樣：砲彈在那裡炸開）
@@ -366,7 +366,7 @@ function stressCalib(k) {
   }
   // 吊殿的鐵鍊（stay）餘裕少：上面那間殿砸下來壓在這間上，它就繃斷
   // 麻繩（索橋）一被扯緊就斷：一棟倒了，不會把另一棟整個拖下去（只會晃一下）
-  for (const r of S.ropes) r.tmax = Math.max(r.t0 * (r.tag === 'stay' ? 2.6 : r.kind === 'chain' ? 4.2 : 2.5), r.kind === 'chain' ? 1800 : r.hang ? 700 : 420);
+  for (const r of S.ropes) r.tmax = r.solid ? 1e12 : Math.max(r.t0 * (r.tag === 'stay' ? 2.6 : r.kind === 'chain' ? 4.2 : 2.5), r.kind === 'chain' ? 1800 : r.hang ? 700 : 420);          // solid：粗鐵鍊，扯不斷（只打得斷）
 }
 /* 兩座城是同一張藍圖（敵城左右鏡射）：開場量出來的「撐得住多重」也要一樣。
    物理引擎解接觸力的時候有左右的偏差，同一根柱子在兩邊量起來會差一兩成——取兩邊的平均，鏡射對應的那一塊、那一條、那一根插銷都設成一樣 */
@@ -429,7 +429,8 @@ function boulderStep(dt) {
     // 飛過對方的繩子、鐵鍊：大石頭一路砸斷（每一條只算一次）
     if (b.bpx !== undefined && S.ropes.length) { const rc = ropeCross(b.bpx, b.bpy, p.x, p.y, b.bSide); if (rc && !(b.bRope && b.bRope.has(rc.r))) { (b.bRope || (b.bRope = new Set())).add(rc.r); ropeHurt(rc.r, b.bW.dmg * b.bMul * 1.25, K_HEAVY, b.bSide); } }
     b.bpx = p.x; b.bpy = p.y;
-    body.applyForce({ x: S.wind * body.getMass(), y: 0 }, body.getWorldCenter(), true);         // 跟砲彈一樣吃風
+    b.bAge = (b.bAge || 0) + dt; body.applyForce({ x: (S.gust ? windAt(b.bAge) : S.wind) * body.getMass(), y: 0 }, body.getWorldCenter(), true);         // 跟砲彈一樣吃風（陣風也是）
+    if (AMP.vorts.length) { SA.x = p.x; SA.y = p.y; SA.vx = v.x; SA.vy = v.y; for (const o of AMP.vorts) vortexForce(o, dt); if (SA.vx !== v.x || SA.vy !== v.y) body.setLinearVelocity({ x: SA.vx, y: SA.vy }); }          // 龍捲風（第十四關）：跟砲彈一樣被往上捲（瞄準線也是這樣算）
     const o = 1 - b.bSide;
     if (S.team[o].shield.on && inBubble(S.st[o], p.x, p.y)) { ev('shieldhit', p.x, p.y, o); ev('rockstop', p.x, p.y, o); blockKill(b, 2, K_CRUSH, true); continue; }
     if (b.bHit || (v.x * v.x + v.y * v.y < 30 && !b.bIn)) { b.bFly = 0; body.setBullet(false); body.setAngularDamping(1.2); }
@@ -611,7 +612,7 @@ function liftBreak(o, side) {
 }
 // 兵都放上去之後才算（simInit 裡呼叫）：整座島（船）連城連兵多重、重心在哪
 function platCalib(P) {
-  if (P.kind === 'cage' || P.kind === 'pan') return;
+  if (P.kind === 'cage' || P.kind === 'pan' || P.kind === 'gondola') return;
   const body = P.body, st = P.st;
   const mass = () => { let M = body.getMass(), mx = M * body.getWorldCenter().x; for (const b of st.blocks) if (!b.dead) { M += b.mass; mx += b.mass * b.body.getWorldCenter().x; } for (const u of st.units) if (u.body) { M += u.mass; mx += u.mass * u.body.getWorldCenter().x; } return [M, mx / M]; };
   let [M, xc] = mass();
@@ -656,7 +657,7 @@ function hullSub(P, c) {
 // 每一步（物理之前）：氣球的拉力、船的浮力和錨鍊
 function platForces() {
   for (const P of S.plats) {
-    if (P.dead || !P.body.isAwake() || P.kind === 'cage' || P.kind === 'pan') continue;
+    if (P.dead || !P.body.isAwake() || P.kind === 'cage' || P.kind === 'pan' || P.kind === 'gondola') continue;
     const body = P.body;
     if (P.kind === 'island') {
       // 浮空晶石的力：量的是晶石那一點沉了多少，但施力點放在高處（城的半腰）—— 從底下往上頂的力會把島頂翻，吊在高處才穩
@@ -713,6 +714,13 @@ function platStep(dt, act) {
     const body = P.body, p = body.getPosition();
     // 掉出戰場（整座島、整艘船沉下去了）
     if (p.y < -48) { PH.world.destroyBody(body); P.dead = true; continue; }
+    if (P.kind === 'gondola') {
+      // 風車的吊艙：晃得慢了就加一點阻力停下來；還吊著的時候晃也等它（回合先別結束）
+      const w = Math.abs(body.getAngularVelocity()), v2 = body.getLinearVelocity().lengthSquared(), calm = !P.dropped && w < 0.3;
+      if (calm !== !!P.calm) { P.calm = calm; body.setAngularDamping(calm ? 6 : P.dropped ? 0.6 : 3.2); }
+      if (act && body.isAwake() && (w > 0.08 || v2 > 0.6)) S.chainT = S.time;
+      continue;
+    }
     if (P.kind === 'cage' || P.kind === 'pan') {
       // 吊籠、配重桶：晃得慢了就加一點阻力，讓它停下來（不然會一直輕輕地盪，回合結束不了）
       const w = Math.abs(body.getAngularVelocity()), v2 = body.getLinearVelocity().lengthSquared(), PU = P.st.pulley, free = PU && PU.mode === 'free' && !PU.cut;

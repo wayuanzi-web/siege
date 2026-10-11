@@ -67,6 +67,8 @@ const ROCK_PAL = {
   crystal: { c: ['#efeaff', '#c3bbee', '#9289cc', '#4f4688'], veg: 'snow', jnt: 0.45, ldg: 0.35 },
   maple: { c: ['#bdb6a6', '#979080', '#6d675b', '#46423a'], veg: 'grass', g: ['#d8c060', '#a8913f', '#6e5c28'], jnt: 0.5, ldg: 0.7 },
   demon: { c: ['#7a5a88', '#553a64', '#352442', '#170d20'], veg: 0, jnt: 0.65, ldg: 0.5 },
+  tide: { c: ['#8f9b94', '#68746e', '#465150', '#29312f'], veg: 0, jnt: 0.55, ldg: 0.6 },
+  forge: { c: ['#6a5d58', '#463b38', '#2b2321', '#120d0c'], veg: 0, jnt: 1.25, ldg: 0.3, heat: 1 },          // 第十五關：玄武岩（一根根直的柱狀節理），底下被岩漿映紅
   def: { c: ['#a39a8c', '#81786b', '#5c554b', '#3e3932'], veg: 'grass', g: ['#a2e070', '#7fae5a', '#4a7a3a'], jnt: 0.85, ldg: 1 }
 };
 // 岩石（藍圖裡的 A；浮島的 R 由 drawPlats 傳 cells 進來）：整片連成一塊畫，不是一格一格的磚。
@@ -328,6 +330,8 @@ function drawRock(c, st, cells) {
   for (const o of outs) { const p = o.p, n = p.length / 2; for (let i = 0; i < n; i++) { if (o.g[i]) continue; const j = (i + 1) % n, dx = p[j * 2] - p[i * 2], dy = p[j * 2 + 1] - p[i * 2 + 1], d = (dy * LX - dx * LY) / (Math.hypot(dx, dy) || 1); if (Math.abs(d) < 0.2) continue; const P2 = B[d > 0 ? 0 : 1]; P2.moveTo(X(p[i * 2]), Y(p[i * 2 + 1])); P2.lineTo(X(p[j * 2]), Y(p[j * 2 + 1])); } }
   c.lineWidth = lw(0.55); c.strokeStyle = rgba(pal[0], 0.4); c.stroke(B[0]);
   c.lineWidth = lw(0.9); c.strokeStyle = rgba(pal[3], 0.2); c.stroke(B[1]);
+  // 玄武岩貼近岩漿的那一截被映紅（第十五關）
+  if (pr.heat) { c.fillStyle = lg(c, 0, Y(by0 - 1), 0, Y(by0 + 13), [0, 'rgba(255,92,30,.5)', 0.45, 'rgba(255,92,30,.16)', 1, 'rgba(255,92,30,0)']); c.fillRect(X(bx0 - 1), Y(by0 + 13), (bx1 - bx0 + 2) * s, 14 * s); }
   // 浮島的底被底下日出的雲海映亮一道暖邊
   if (isle && pr.glow) { const gp = new Path2D(); for (const q of lows) { gp.moveTo(X(q[0]), Y(q[1])); for (let i = 2; i < q.length; i += 2) gp.lineTo(X(q[i]), Y(q[i + 1])); } c.lineWidth = lw(2.2); c.strokeStyle = rgba(pr.glow, 0.14); c.stroke(gp); c.lineWidth = lw(0.95); c.strokeStyle = rgba(pr.glow, 0.42); c.stroke(gp); }
   c.restore();
@@ -479,6 +483,7 @@ function drawPlats(c, t) {
     if (P.dead) continue;
     const st = P.st;
     if (P.kind === 'cage' || P.kind === 'pan') { drawPart(c, P, t, false); continue; }
+    if (P.kind === 'gondola') continue;          // 風車的吊艙：跟葉輪一起畫在城樓前面（drawRotors）
     if (P.kind === 'island') {
       // 吊著浮島的繩子（畫在島的後面）
       for (const o of P.teth) {
@@ -524,6 +529,40 @@ function drawPlats(c, t) {
     c.restore();
   }
 }
+/* ---------- 風車（第十四關）：葉輪（四支帆架、帆布）、轉軸的大轂 ---------- */
+function drawRotors(c, t) {
+  const s = V.s;
+  for (const R of S.rotors) {
+    const b = R.body, p = b.getPosition(), a = b.getAngle(), Pk = SKINS[R.st.skin] || SKINS.blue, wd = Pk.wood, L = R.len;
+    c.save(); c.translate(X(p.x), Y(p.y)); c.rotate(-a);
+    for (const A of R.arms) {
+      if (A.broken) continue;
+      c.save(); c.rotate(-A.a);
+      const hurt = 1 - A.hp / A.hm, x0 = L * 0.18 * s, x1 = L * 0.97 * s, sw = s * 2.4, sd = R.side === 0 ? 1 : -1;
+      // 帆：一片帆布繃在帆架的一側（破了會有洞），隊伍顏色的條紋
+      c.fillStyle = lg(c, 0, 0, 0, sd * sw, [0, '#f2e6cc', 1, '#d6c49c']); c.beginPath(); c.moveTo(x0, sd * s * 0.2); c.lineTo(x1, sd * s * 0.2); c.lineTo(x1 - s * 0.6, sd * sw); c.lineTo(x0 + s * 0.4, sd * sw * 0.8); c.closePath(); c.fill();
+      c.fillStyle = Pk.roof[1]; for (let k = 0; k < 3; k++) { const u = 0.3 + k * 0.25; c.fillRect(lerp(x0, x1, u), sd > 0 ? s * 0.2 : -sw, s * 0.35, sw - s * 0.2); }
+      if (hurt > 0.3) { const Rr = mkRand(A.k * 17 + R.side * 5); c.fillStyle = 'rgba(20,14,10,.75)'; for (let k = 0; k < (hurt > 0.66 ? 4 : 2); k++) { ell(c, lerp(x0, x1, 0.2 + Rr() * 0.7), sd * sw * (0.3 + Rr() * 0.5), s * (0.25 + Rr() * 0.3), s * (0.18 + Rr() * 0.2)); c.fill(); } }
+      c.strokeStyle = 'rgba(60,40,20,.7)'; c.lineWidth = Math.max(1, s * 0.08); c.beginPath(); c.moveTo(x0, sd * s * 0.2); c.lineTo(x1, sd * s * 0.2); c.lineTo(x1 - s * 0.6, sd * sw); c.lineTo(x0 + s * 0.4, sd * sw * 0.8); c.closePath(); c.stroke();
+      // 帆架：一根長木樑，一格一格的橫檔
+      c.fillStyle = lg(c, 0, -s * 0.35, 0, s * 0.35, [0, wd[0], 0.5, wd[1], 1, wd[2]]); c.fillRect(0, -s * 0.3, x1 + s * 0.2, s * 0.6);
+      c.strokeStyle = INK; c.lineWidth = Math.max(1, s * 0.14); c.strokeRect(0, -s * 0.3, x1 + s * 0.2, s * 0.6);
+      c.strokeStyle = wd[2]; c.lineWidth = Math.max(1, s * 0.16); for (let x = x0; x < x1; x += s * 1.3) { c.beginPath(); c.moveTo(x, -s * 0.3); c.lineTo(x, sd * sw); c.stroke(); }
+      if (hurt > 0.5) { c.strokeStyle = 'rgba(10,6,4,.8)'; c.lineWidth = Math.max(1, s * 0.1); c.beginPath(); c.moveTo(x1 * 0.55, -s * 0.3); c.lineTo(x1 * 0.6, 0); c.lineTo(x1 * 0.57, s * 0.3); c.stroke(); }
+      if (A.flash > 0) { c.globalAlpha = A.flash * 0.6; c.fillStyle = '#ffffff'; c.fillRect(0, -s * 0.35, x1, s * 0.7); c.globalAlpha = 1; }
+      // 尖端的吊環
+      c.fillStyle = '#4a4252'; c.beginPath(); c.arc(L * s, 0, s * 0.42, 0, TAU); c.fill();
+      c.restore();
+      if (A.burn > 0) { const fl = flameSprite(); c.globalCompositeOperation = 'lighter'; for (let k = 0; k < 3; k++) { const u = 0.35 + k * 0.25, ca = Math.cos(A.a), sa = Math.sin(A.a), fx = ca * L * u * s, fy = -sa * L * u * s, fw = V.T * (0.7 + 0.2 * Math.sin(t * 9 + k)); c.save(); c.translate(fx, fy); c.rotate(a); c.globalAlpha = Math.min(1, A.burn) * 0.85; c.drawImage(fl, -fw / 2, -fw * 1.4, fw, fw * 1.5); c.restore(); } c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
+    }
+    // 轉軸的大轂：一塊圓木板、一圈鐵箍、正中一顆大鐵栓
+    c.fillStyle = lg(c, -s, -s, s, s, [0, wd[0], 1, wd[2]]); c.beginPath(); c.arc(0, 0, s * 1.35, 0, TAU); c.fill(); c.strokeStyle = INK; c.lineWidth = Math.max(1.5, s * 0.2); c.stroke();
+    c.strokeStyle = '#3a3440'; c.lineWidth = Math.max(1, s * 0.22); c.beginPath(); c.arc(0, 0, s * 0.95, 0, TAU); c.stroke();
+    c.fillStyle = '#2a2430'; c.beginPath(); c.arc(0, 0, s * 0.45, 0, TAU); c.fill(); c.fillStyle = Pk.trim; c.beginPath(); c.arc(0, 0, s * 0.18, 0, TAU); c.fill();
+    c.restore();
+    for (const G of R.gond) if (!G.dead) drawPart(c, G, t, false);
+  }
+}
 /* ---------- 吊籠寨：鐵籠、配重桶、滑輪 ---------- */
 // front：畫在兵前面的那幾根鐵條（兵站在籠子裡）
 function drawPart(c, P, t, front) {
@@ -557,6 +596,24 @@ function drawPart(c, P, t, front) {
       // 前面一排細鐵條（畫在兵前面）
       c.strokeStyle = 'rgba(40,34,48,.85)'; c.lineWidth = Math.max(1, s * 0.2); c.beginPath(); for (let k = 1; k < n; k++) { const x = lerp(x0, x1, k / n); c.moveTo(x, y0 + th); c.lineTo(x, y1 - th * 1.3); } c.stroke();
       c.strokeStyle = 'rgba(200,190,215,.35)'; c.lineWidth = Math.max(1, s * 0.07); c.stroke();
+    }
+  } else if (P.kind === 'gondola') {
+    // 風車的吊艙：木頭的小艙，鐵框、四角鐵箍，頂上一根吊桿掛在帆架尖端
+    const Pk = SKINS[st.skin] || SKINS.blue, wd = Pk.wood, x0 = X(P.xa), x1 = X(P.xb), yt = Y(P.fy + P.ch), yf = Y(P.fy), yp = Y(P.py), cx = (x0 + x1) / 2, rail = Y(P.fy + 1.25);
+    if (!front) {
+      c.fillStyle = 'rgba(30,18,10,.35)'; c.fillRect(x0, yt, x1 - x0, yf - yt);
+      c.strokeStyle = '#2c2420'; c.lineWidth = Math.max(1.5, s * 0.26); c.beginPath(); c.moveTo(cx, yt); c.lineTo(cx, yp); c.stroke();
+      c.fillStyle = '#5a5262'; c.beginPath(); c.arc(cx, yp, s * 0.35, 0, TAU); c.fill();
+      // 頂棚（隊伍顏色的帆布）
+      c.fillStyle = Pk.roof[1]; c.beginPath(); c.moveTo(x0 - s * 0.35, yt + s * 0.5); c.lineTo(cx, yt - s * 0.55); c.lineTo(x1 + s * 0.35, yt + s * 0.5); c.closePath(); c.fill(); c.strokeStyle = INK; c.lineWidth = Math.max(1, s * 0.16); c.stroke();
+      for (const x of [x0 + s * 0.2, x1 - s * 0.2]) { c.strokeStyle = '#2c2420'; c.lineWidth = s * 0.36; c.beginPath(); c.moveTo(x, yt + s * 0.4); c.lineTo(x, yf); c.stroke(); c.strokeStyle = wd[1]; c.lineWidth = s * 0.18; c.stroke(); }
+      c.fillStyle = lg(c, 0, yf - s * 0.1, 0, yf + s * 0.55, [0, wd[0], 1, wd[2]]); c.fillRect(x0 - s * 0.1, yf - s * 0.05, x1 - x0 + s * 0.2, s * 0.55); c.strokeStyle = INK; c.lineWidth = Math.max(1, s * 0.15); c.strokeRect(x0 - s * 0.1, yf - s * 0.05, x1 - x0 + s * 0.2, s * 0.55);
+    } else {
+      // 前面一道木欄杆（畫在兵前面，只到腰）
+      c.fillStyle = lg(c, 0, rail, 0, yf, [0, wd[0], 0.5, wd[1], 1, wd[2]]); c.fillRect(x0, rail, x1 - x0, yf - rail);
+      c.strokeStyle = 'rgba(40,22,10,.6)'; c.lineWidth = Math.max(1, s * 0.08); for (let k = 1; k < 4; k++) { const x = lerp(x0, x1, k / 4); c.beginPath(); c.moveTo(x, rail); c.lineTo(x, yf); c.stroke(); }
+      c.strokeStyle = INK; c.lineWidth = Math.max(1, s * 0.15); c.strokeRect(x0, rail, x1 - x0, yf - rail);
+      c.fillStyle = '#3a3440'; c.fillRect(x0, rail - s * 0.08, x1 - x0, s * 0.2);
     }
   } else if (P.kind === 'pan' && !front) {
     // 配重桶：木桶、兩道鐵箍
@@ -641,6 +698,12 @@ function frostSprite(sp) {
   c.drawImage(sp.cv, 0, 0); c.globalCompositeOperation = 'source-in'; c.fillStyle = '#9fdcff'; c.fillRect(0, 0, cv.width, cv.height);
   sp.frost = cv; return cv;
 }
+function heatSprite(sp) {
+  if (sp.heat) return sp.heat;
+  const cv = mkCanvas(sp.cv.width, sp.cv.height), c = cv.getContext('2d');
+  c.drawImage(sp.cv, 0, 0); c.globalCompositeOperation = 'source-in'; c.fillStyle = lg(c, 0, 0, 0, cv.height, [0, '#ff9a2a', 1, '#ff3a10']); c.fillRect(0, 0, cv.width, cv.height);
+  sp.heat = cv; return cv;
+}
 function acidSprite(sp) {
   if (sp.acid) return sp.acid;
   const cv = mkCanvas(sp.cv.width, sp.cv.height), c = cv.getContext('2d');
@@ -683,11 +746,14 @@ function drawBlocks(c, t, rdt, hp) {
     if (b.brit > 0 && !b.frag) { const fr = frostSprite(sp); c.globalAlpha = 0.34; c.drawImage(fr, -sp.ax, -sp.ay); c.globalAlpha = 1; }
     // 被酸液蝕著的磚：一層綠，偶爾冒一個泡
     if (b.acid > 0) { const ac = acidSprite(sp); c.globalAlpha = Math.min(1, b.acid) * (0.32 + 0.1 * Math.sin(t * 5 + b.id)); c.drawImage(ac, -sp.ax, -sp.ay); c.globalAlpha = 1; if (!FX.low && ((RD.frame + b.id) & 7) === 0) part(P_EMBER, p.x + rndS() * b.w * 0.8, p.y + rndS() * b.h * 0.6, rndS() * 2, 2 + Math.random() * 3, 0.5, 0.45, C_GREEN); }
+    // 泡到岩漿、被鐵水澆到的磚：整塊發紅（越燙越亮），偶爾冒一點火星
+    if (b.heat > 0.02) { const hs = heatSprite(sp); c.globalCompositeOperation = 'lighter'; c.globalAlpha = Math.min(1, b.heat) * (0.42 + 0.12 * Math.sin(t * 3.4 + b.id)); c.drawImage(hs, -sp.ax, -sp.ay); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; if (!FX.low && b.heat > 0.4 && ((RD.frame + b.id) & 15) === 0) part(P_EMBER, p.x + rndS() * b.w * 0.5, p.y + rndS() * b.h * 0.4, rndS() * 2, 3 + Math.random() * 3, 0.6, 0.4, C_ORANGE); }
     // 避雷針：頂上一顆亮點（雷就是劈在這裡）
     if (b.rod) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.55 + 0.3 * Math.sin(t * 6 + b.id) + (b.flash > 0 ? 0.5 : 0); const g = glowSprite(C_YELLOW), r = V.T * 0.45; c.drawImage(g, -r, -sp.ay + sp.ax * 0 - r * 0.2 - r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
     // 魔晶：紫紅色的光一脹一縮
     if (b.core) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.4 + 0.25 * Math.sin(t * 3 + b.id); const g = glowSprite(C_PINK), r = V.T * 1.15; c.drawImage(g, -r, -r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
     // 共鳴晶柱：一閃一閃的紫光；吊燈：一團暖光
+    if (b.kind === 'pot' && !b.spilt) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.5 + 0.12 * Math.sin(t * 2.6); const g = glowSprite(C_ORANGE), r = V.T * 1.25; c.drawImage(g, -r, -sp.ay - r * 0.6, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; if (!FX.low && (RD.frame & 7) === 0) part(P_EMBER, p.x + rndS() * b.w * 0.3, p.y + b.h * 0.5, rndS() * 2, 4 + Math.random() * 4, 0.7, 0.4, C_ORANGE); }
     if ((b.reso && !b.resoDone) || b.kind === 'lamp') { c.globalCompositeOperation = 'lighter'; c.globalAlpha = b.reso ? 0.35 + 0.25 * Math.sin(t * 3.4) : 0.45; const g = glowSprite(b.reso || b.mat === M_IRON ? C_PURPLE : C_GOLD), r = V.T * (b.reso ? 1.1 : 1.3); c.drawImage(g, -r, -r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
     if (b.burn > 0) burn.push(b);
   }
@@ -771,18 +837,56 @@ function drawRopes(c, t) {
   }
 }
 /* ---------- 河水、海水：畫在東西前面（半透明），泡在水裡的看起來在水面下 ---------- */
+/* 岩漿湖（第十五關）：不透明，泡進去的東西看不到（反正都熔掉了）。上面亮橘、往下暗紅；一塊塊黑色的岩殼慢慢漂，殼縫透出亮光；
+   咕嘟咕嘟冒泡、飄火星；岩漿面上一層熱氣的光 */
+function drawLava(c, t, W, x0, x1, yb) {
+  const s = V.s, D = drawLava.d || (drawLava.d = { key: '', g: null, gy: 0, p: new Float32Array(0) }), key = V.W + '|' + V.H + '|' + s;
+  if (D.gy !== W.y || D.key !== key) { D.gy = W.y; D.key = key; D.g = lg(c, 0, Y(W.y + 0.4), 0, yb, [0, '#ffd866', 0.03, '#ffa632', 0.12, '#f06a1e', 0.4, '#a8240e', 0.75, '#5a0e08', 1, '#2a0604']); }
+  const hgt = (wx) => Math.sin(wx * 0.31 + t * 0.9) * 0.14 + Math.sin(wx * 0.77 - t * 1.25) * 0.07;
+  const n = Math.ceil((x1 - x0) / 6) + 3; if (D.p.length < n * 2) D.p = new Float32Array(n * 2 + 64);
+  const P = D.p; let m = 0;
+  for (let px = x0; ; px += 6) { const q = Math.min(px, x1); P[m++] = q; P[m++] = Y(W.y + hgt(WX(q))); if (q >= x1) break; }
+  c.save();
+  // 熱氣：岩漿面上一層往上淡掉的紅光
+  c.globalCompositeOperation = 'lighter'; c.fillStyle = lg(c, 0, Y(W.y + 4.5), 0, Y(W.y), [0, 'rgba(255,90,30,0)', 1, 'rgba(255,120,40,.3)']); c.fillRect(x0, Y(W.y + 4.5), x1 - x0, 4.5 * s); c.globalCompositeOperation = 'source-over';
+  c.beginPath(); c.moveTo(x0, yb); for (let i = 0; i < m; i += 2) c.lineTo(P[i], P[i + 1]); c.lineTo(x1, yb); c.closePath();
+  c.fillStyle = D.g; c.fill();
+  c.clip();
+  // 黑色的岩殼：一塊一塊照自己的速度漂（往兩邊都有），邊上一圈亮紅的縫
+  const span = W.x1 - W.x0;
+  for (let k = 0; k < 16; k++) {
+    const sp = (k % 3 === 0 ? -0.22 : 0.16) * (0.6 + (k * 0.37) % 0.8), cx = W.x0 + (((k * 13.7 + t * sp) % span) + span) % span, w = 1.6 + (k * 1.93) % 2.8, hh = 0.35 + (k * 0.71) % 0.3;
+    const px = X(cx), py = Y(W.y + hgt(cx) - hh * 0.35);
+    if (px < x0 - w * s || px > x1 + w * s) continue;
+    c.fillStyle = 'rgba(40,14,10,.85)'; ell(c, px, py, w * s, hh * s); c.fill();
+    c.strokeStyle = 'rgba(255,170,60,.7)'; c.lineWidth = Math.max(1, s * 0.14); c.stroke();
+    c.fillStyle = 'rgba(70,26,16,.9)'; ell(c, px - w * s * 0.2, py - hh * s * 0.25, w * s * 0.45, hh * s * 0.4); c.fill();
+  }
+  // 冒泡：一顆一顆鼓起來又破掉
+  for (let k = 0; k < 7; k++) {
+    const ph = (t * 0.55 + k * 0.143) % 1, bx = W.x0 + ((k * 23.1 + Math.floor(t * 0.55 + k * 0.143) * 7.7) % span), r = s * (0.25 + ph * 0.55);
+    if (ph > 0.85) continue;
+    c.fillStyle = 'rgba(255,220,120,' + (0.55 * (1 - ph)).toFixed(2) + ')'; c.beginPath(); c.arc(X(bx), Y(W.y + hgt(bx)) + r * 0.3, r, Math.PI, TAU); c.fill();
+  }
+  c.restore();
+  // 岩漿面的亮線
+  c.beginPath(); c.moveTo(P[0], P[1]); for (let i = 2; i < m; i += 2) c.lineTo(P[i], P[i + 1]);
+  c.strokeStyle = 'rgba(255,236,150,.85)'; c.lineWidth = Math.max(1.2, s * 0.2); c.lineJoin = 'round'; c.stroke();
+  if (!FX.low && (RD.frame & 3) === 0) { const x = W.x0 + Math.random() * span; if (x > V.x0 && x < V.x1) part(P_EMBER, x, W.y + 0.2, rndS() * 1.5, 3 + Math.random() * 5, 1.2, 0.35, C_ORANGE); }
+}
 function drawWater(c, t) {
   const W = S.water; if (!W) return;
   const s = V.s, x0 = X(Math.max(W.x0, V.x0 - 2)), x1 = X(Math.min(W.x1, V.x1 + 2)), y = Y(W.y), yb = V.H + 2;
+  if (W.lava) { drawLava(c, t, W, x0, x1, yb); return; }
   let surf = null;          // 外海：戰場 x 那裡畫出來的水面高度（河面是平的，不用）
   if (W.sea) {
     /* 外海：一道道湧浪往右推，浪頭碎成白沫。只是畫出來的 —— 物理的水面一直平平地在 W.y，
        所以船身附近的起伏壓在 ±0.4 以內（船才不會看起來浮在半空或沉下去），兩船之間、畫面兩頭的開闊海面才湧得高 */
     const D = drawWater.sea || (drawWater.sea = { key: '', g: null, cap: null, wash: null, p: new Float32Array(0), sp: [0, 0, 0, 0] });
-    const key = V.W + '|' + V.H + '|' + s + '|' + W.y;
+    const key = V.W + '|' + V.H + '|' + s;          // 水面高度不放進來：第十三關的潮水一直在漲退（漸層每次照現在的水面重做，很便宜）
+    if (D.gy !== W.y || D.key !== key) { D.gy = W.y; D.g = lg(c, 0, Y(W.y + 1), 0, yb, [0, 'rgba(78,168,170,.3)', 0.07, 'rgba(44,134,148,.42)', 0.32, 'rgba(16,84,112,.62)', 1, 'rgba(6,30,58,.86)']); }
     if (D.key !== key) {
       D.key = key;
-      D.g = lg(c, 0, Y(W.y + 1), 0, yb, [0, 'rgba(78,168,170,.3)', 0.07, 'rgba(44,134,148,.42)', 0.32, 'rgba(16,84,112,.62)', 1, 'rgba(6,30,58,.86)']);
       // 浪頭的白沫：沿著浪峰一串大小不一的泡沫，往前坡（右邊）淌下去一點，底下帶幾顆氣泡。(D.cx, D.cy) 是浪峰
       const R = mkRand(29), cw = Math.ceil(s * 4.2), ch = Math.ceil(s * 1.9), cap = mkCanvas(cw, ch), g = cap.getContext('2d');
       D.cx = cw * 0.42; D.cy = ch * 0.34;
@@ -925,6 +1029,29 @@ function drawArms(c, t) {
       }
       c.globalAlpha = 1;
       if (!FX.low && (RD.frame & 1) === 0) part(P_DUST, o.x + rndS() * o.R, o.y + Math.random() * o.H * 0.7, rndS() * 18, 6 + Math.random() * 10, 0.6, 1.2, C_SAND);
+    } else if (o.t === 'deluge') {
+      // 水塔破了：一道水柱從那裡往下灌，邊上一條條白水紋往下流，越到後來越細
+      const k = o.age < 0.25 ? o.age / 0.25 : o.age > o.life - 0.7 ? Math.max(0, (o.life - o.age) / 0.7) : 1, x0 = X(o.x), y0 = Y(o.y), L = Math.min(o.age * 34, 24) * s, hw = o.w * s * 0.5 * (0.45 + 0.55 * k);
+      c.globalAlpha = 0.55 * k; c.fillStyle = lg(c, 0, y0, 0, y0 + L, [0, 'rgba(190,240,255,.95)', 0.6, 'rgba(110,200,235,.8)', 1, 'rgba(110,200,235,0)']);
+      c.beginPath(); c.moveTo(x0 - hw * 0.7, y0); c.lineTo(x0 + hw * 0.7, y0); c.lineTo(x0 + hw, y0 + L); c.lineTo(x0 - hw, y0 + L); c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(240,252,255,.85)'; c.lineWidth = Math.max(1, s * 0.16);
+      for (let j = 0; j < 5; j++) { const fx = (j / 4 - 0.5) * 1.6 * hw, off = ((t * 3.2 + j * 0.37) % 1) * L; c.globalAlpha = 0.7 * k; c.beginPath(); c.moveTo(x0 + fx, y0 + off * 0.6); c.lineTo(x0 + fx * 1.1, y0 + Math.min(L, off * 0.6 + s * 2.2)); c.stroke(); }
+      c.globalAlpha = 1;
+      if (!FX.low && (RD.frame & 1) === 0) part(P_SPARK, o.x + rndS() * o.w * 0.6, o.y - Math.random() * Math.min(o.age * 34, 24), rndS() * 8, -4 - Math.random() * 6, 0.35, 0.5, C_SKY);
+    } else if (o.t === 'pour') {
+      // 鐵水：從翻倒的鍋口一道亮黃的鐵水柱往下流，落在第一個擋住它的東西上，攤成一灘、四處濺火星
+      const k = o.age < 0.25 ? o.age / 0.25 : o.age > o.life - 0.6 ? Math.max(0, (o.life - o.age) / 0.6) : 1, x0 = X(o.x), y0 = Y(o.y), y1 = Y(o.gy), L = Math.max(0, y1 - y0), hw = s * (0.45 + 0.25 * k);
+      c.globalCompositeOperation = 'lighter';
+      const g = glowSprite(C_ORANGE), r = s * 3.4 * k; c.globalAlpha = 0.6 * k; c.drawImage(g, x0 - r, y1 - r * 0.7, r * 2, r * 1.4);
+      c.globalCompositeOperation = 'source-over';
+      c.globalAlpha = k; c.fillStyle = lg(c, 0, y0, 0, y1, [0, '#fff4c0', 0.5, '#ffb43a', 1, '#ff7a1e']);
+      c.beginPath(); c.moveTo(x0 - hw, y0);
+      for (let j = 0; j <= 6; j++) { const u = j / 6; c.lineTo(x0 - hw * (1 - u * 0.25) + Math.sin(t * 9 + u * 6) * s * 0.12, y0 + L * u); }
+      for (let j = 6; j >= 0; j--) { const u = j / 6; c.lineTo(x0 + hw * (1 - u * 0.25) + Math.sin(t * 9 + u * 6 + 1.3) * s * 0.12, y0 + L * u); }
+      c.closePath(); c.fill();
+      c.fillStyle = '#ffd25a'; ell(c, x0, y1, s * (1.2 + 1.6 * k) * (o.w / 2.6), s * 0.35); c.fill();
+      c.globalAlpha = 1;
+      if (!FX.low && (RD.frame & 1) === 0) { part(P_EMBER, o.x + rndS() * o.w * 0.7, o.gy + 0.3, rndS() * 9, 5 + Math.random() * 8, 0.5, 0.45, C_ORANGE); if ((RD.frame & 7) === 0) part(P_SMOKE, o.x + rndS() * o.w, o.gy + 0.8, rndS() * 2, 3, 1.2, 1.6, C_DARK); }
     }
   }
 }
@@ -969,6 +1096,21 @@ function drawObjs(c, t) {
   const s = V.s;
   for (const o of S.objs) {
     switch (o.t) {
+      case 'vortex': {
+        // 龍捲風（第十四關）：一道灰白的漏斗雲，底下捲著塵土，上面散開；一圈一圈往上轉（物理上的風柱位置不動，畫的時候擺一擺）
+        o.age += RD.dt || 0.016; const k = Math.min(1, o.age / 0.8), H = o.top - o.base, x0 = X(o.x), yb = Y(o.base);
+        for (let j = 0; j < 14; j++) {
+          const u = j / 13, yy = yb - u * H * s, rw = (0.35 + u * u * 1.6) * o.R * s, sway = Math.sin(t * 1.3 + u * 2.4) * s * (0.6 + u * 2.2), ph = t * (6 - u * 3) + j * 0.7;
+          c.globalAlpha = k * (0.16 + 0.22 * (1 - u)); c.strokeStyle = j & 1 ? '#d8dde4' : '#9aa4b2'; c.lineWidth = Math.max(1.5, s * (0.9 - u * 0.5));
+          c.beginPath(); c.ellipse(x0 + sway, yy, rw, rw * 0.26, 0, ph % TAU, ph % TAU + 4.6); c.stroke();
+        }
+        c.globalAlpha = k * 0.22; c.fillStyle = lg(c, 0, yb - H * s, 0, yb, [0, 'rgba(200,206,214,0)', 0.5, 'rgba(170,178,190,.55)', 1, 'rgba(140,128,110,.7)']);
+        c.beginPath(); c.moveTo(x0 - o.R * s * 0.35, yb); for (let u = 0; u <= 1.001; u += 0.1) c.lineTo(x0 - (0.35 + u * u * 1.6) * o.R * s + Math.sin(t * 1.3 + u * 2.4) * s * (0.6 + u * 2.2), yb - u * H * s); for (let u = 1; u >= -0.001; u -= 0.1) c.lineTo(x0 + (0.35 + u * u * 1.6) * o.R * s + Math.sin(t * 1.3 + u * 2.4) * s * (0.6 + u * 2.2), yb - u * H * s); c.closePath(); c.fill();
+        c.globalAlpha = 1;
+        if (!FX.low && (RD.frame & 1) === 0) part(P_DUST, o.x + rndS() * o.R, o.base + Math.random() * 3, rndS() * 14, 6 + Math.random() * 10, 0.7, 1.4, C_SAND);
+        if (!FX.low && (RD.frame & 3) === 0) part(P_DEBRIS, o.x + rndS() * o.R * 1.5, o.base + Math.random() * H * 0.8, rndS() * 16, 10 + Math.random() * 10, 0.8, 0.35, C_TAN);
+        break;
+      }
       case 'geyser': {
         const x = X(o.x), yb = Y(o.base);
         // 下一回合輪到它噴：地面先冒火星
@@ -1093,7 +1235,7 @@ function drawFlyers(c, t) {
   }
   // 落石的預告：這一回合結束時會砸在這裡。落點一圈紅、往上一條虛線
   for (const mk of S.marks) {
-    if (mk.sy === undefined || (RD.frame & 7) === 0) { const y = surfaceY(mk.x); mk.sy = y > -100 ? y : 0; }
+    if (mk.sy === undefined || (RD.frame & 7) === 0) { const y = surfaceY(mk.x), W = S.water; mk.sy = Math.max(y, W && mk.x > W.x0 && mk.x < W.x1 ? W.y : -999); if (mk.sy < -100) mk.sy = 0; }          // 落在岩漿、水面上：圈畫在水面
     const x = X(mk.x), y = Y(mk.sy), r = s * (mk.big ? 4.2 : 3.2) * (0.9 + 0.1 * Math.sin(t * 8));
     c.strokeStyle = 'rgba(255,80,40,' + (0.55 + 0.35 * Math.sin(t * 12)) + ')'; c.lineWidth = Math.max(1.5, s * 0.4);
     c.beginPath(); c.ellipse(x, y, r, r * 0.4, 0, 0, TAU); c.stroke();
@@ -1291,6 +1433,8 @@ function drawAim(c, t) {
       if (!pathDots(c, P, mx, my, 0.05 + flow, end, maxT, first ? 0.6 : 0.36, first ? 0.26 : 0.18, inBox)) { first = false; continue; }
       c.fillStyle = mine ? (first ? 'rgba(255,255,255,.97)' : 'rgba(255,255,255,.55)') : 'rgba(255,255,255,.4)'; c.fill();
       if (mine && first) { c.strokeStyle = 'rgba(15,42,120,.85)'; c.lineWidth = Math.max(1, s * 0.16); c.stroke(); }
+      // 陣風（第十四關）：砲彈飛到風向反過來的那一點，畫一個小漩渦和新的風向
+      if (mine && first && S.gust && S.gust.t < end) { const i = (Math.min(P.length / 2, Math.round(S.gust.t * 30)) - 1) * 2; if (i >= 0) { const gx = X(P[i]), gy = Y(P[i + 1]), r = s * 0.9, d = S.gust.w < 0 ? -1 : 1; c.lineCap = 'round'; for (const [col, lw] of [['rgba(15,42,120,.85)', 0.5], ['#ffffff', 0.24]]) { c.strokeStyle = col; c.lineWidth = Math.max(1, s * lw); c.beginPath(); c.arc(gx, gy, r, 0.3, TAU - 0.6); c.stroke(); c.beginPath(); c.arc(gx, gy, r * 0.45, 1.2, TAU); c.stroke(); c.beginPath(); c.moveTo(gx + d * r * 1.3, gy - r * 1.6); c.lineTo(gx + d * r * 3.1, gy - r * 1.6); c.moveTo(gx + d * r * 2.4, gy - r * 2.2); c.lineTo(gx + d * r * 3.1, gy - r * 1.6); c.lineTo(gx + d * r * 2.4, gy - r * 1.0); c.stroke(); } } }
       first = false;
     }
   }
@@ -1321,10 +1465,11 @@ function renderFrame(dt, rdt) {
   drawBlocks(c, t, rdt);
   drawFuses(c, t);
   drawRopes(c, t);
+  if (S.rotors.length) drawRotors(c, t);
   drawGates(c, t);
   drawUnits(c, t);
   drawArms(c, t);
-  for (const P of S.plats) if (P.kind === 'cage' && !P.dead) drawPart(c, P, t, true);
+  for (const P of S.plats) if ((P.kind === 'cage' || P.kind === 'gondola') && !P.dead) drawPart(c, P, t, true);
   if (S.ropes.length) { drawBlocks(c, t, rdt, 1); c.setTransform(1, 0, 0, 1, FX.shx, FX.shy); }
   drawWater(c, t);
   if (S.plats.length) drawShipMag(c);

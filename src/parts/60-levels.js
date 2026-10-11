@@ -42,6 +42,10 @@ const tgC = (side, cells, w) => { const out = [], o = 1 - side, st = S.st[o]; fo
 const steles = () => { const out = []; for (const q of S.structs) if (q.side === 2 && !q.loose) for (const b of q.blocks) if (!b.dead && b.dom && b.inPlace) out.push(b); return out.sort((a, b) => a.x0 - b.x0); };
 // 某一邊的繩索、鐵鍊還在不在（tag）
 const ropeLeft = (tag, side) => S.ropes.some((r) => !r.cut && r.side === (side === undefined ? 1 : side) && r.tag === tag);
+// 第十四關：side 那一邊的葉輪還裝在軸上
+const rotorUp = (side) => { const R = S.st[side].rotor; return !!(R && !R.fallen); };
+// 第十五關：鐵水鍋還吊著
+const potUp = (side) => S.ropes.some((r) => !r.cut && r.side === side && r.hang && r.hang.hang === 'pot' && !r.hang.hangFree);
 // 第九關：閘還在、吊籠還吊著
 const brakeUp = (side) => S.st[side].blocks.some((b) => b.brake && !b.dead && b.inPlace);
 const cageUp = (side) => { const PU = S.st[side].pulley; return !!(PU && !PU.cut); };
@@ -296,22 +300,79 @@ const LEVELS = [
     ],
     lantern: { at: 3, every: 3, spots: [[56, 22], [48, 48], [62, 48]] },
     sudden: 14
+  },
+  /* ===== 第三篇（第 13–18 關）：每邊六個兵、誤傷、弱點暴擊、冰能滅火；環境每回合在變 ===== */
+  {
+    name: '潮汐水寨', sayTop: 1, tag: '潮汐・暴潮・水塔', theme: 12, castle: 'TIDE', y0: -8, stress: 1, blockHp: 3.0, damp: 0.55, rules: { ff: 1, crit: 1, elem: 1 },          // damp：泡著海水的木頭燒得慢（火只燒一半多、延燒少一半：全木頭的水寨不會被第一輪的火燒垮）
+    tip: '海上的高腳水寨：甲板架在木樁上。潮水四回合一輪：退潮（第二回合起每四回合）木樁整根露出來，打得到、燒得著；漲潮泡在水裡，打在水面上就炸了。大潮（第四回合起每四回合）那一回合結束時暴潮淹上甲板，退下去會把沒有牆擋著的兵拖下海。主屋屋頂上一座大水塔，打破它，水從頂樓一路灌下來',
+    hints: [{ r: 1, t: '潮水還淹著敵寨木樁的下半截（打在水面上就炸了、火被撲滅、黏在水下的炸藥泡水啞掉）：先打上面的屋子，下一回合退潮，木樁整根露出來再打', ok: () => tideNow() !== 0 },
+      { r: 2, t: '退潮了：敵寨的木樁整根露在水面上，這時候打得到、火也燒得著。前面望樓腳下那兩根一斷，望樓連人翻進海裡', ok: () => tideNow() === 0 },
+      { r: 3, t: '敵寨主屋屋頂上那座大水塔：打破它，水從頂樓一路灌下來，把屋裡的兵往前沖；前牆打掉了就沖出屋外', ok: () => tankUp(1) },
+      { r: 4, t: '大潮：這一回合結束時暴潮會淹上甲板，退下去的時候把沒有牆、沒有門擋著的兵拖下海。先把敵寨的門、前牆打掉', ok: () => tideNow() === 2 }],
+    ground: [[-60, -8], [172, -8]],
+    water: { x0: -60, x1: 172, y: -3, cur: 0, rho: 0.85, sea: 1 },
+    // 潮汐：四回合一輪（低、中、高、中），水面高度；k0 3：第一回合從「落潮」開始（第二回合退潮、第四回合大潮：開場的木樁半截泡在水裡，第一輪砲火打不垮整座望樓）；
+    // 大潮（高）那一回合結束時暴潮：水面猛漲 surge、再退下去；deck：甲板底（比這裡低、或在自己城外泡水的兵會被沖走）
+    tide: { lv: [-5.5, -3, -0.5, -3], k0: 3, surge: 7, deck: 2.2 },
+    extra: [{ castle: 'ROCK_REEF', x: 56, y: -8 }],
+    me: { crew: ['chain', 'bomb', 'fire', 'drill', 'rocket', 'eng'] },
+    foe: { crew: ['bomb', 'chain', 'rocket', 'fire', 'sniper', 'wind'], hp: 1.1, dmg: 1.15, open: 0.55, ai: { err: 3.4, think: 1.1, gate: 0.6, hate: 0.2, skill: 0.6, sap: 0.6, warm: 1.8 } },
+    weak: (side) => tideWeak(side),
+    lantern: { at: 3, every: 3, spots: [[52, 41], [60, 30]] }          // 高的那一個放低一點：這一關的提示框在上面
+  },
+  {
+    name: '颶風風車', sayTop: 1, tag: '轉動的葉輪・吊艙・颶風', theme: 13, castle: 'MILL', stress: 1, blockHp: 2.3, rules: { ff: 1, crit: 1, elem: 1 },
+    tip: '兩座城前面各一具大風車：四支帆架的尖端各吊一個吊艙，各站一個兵。每回合結束，葉輪照風向轉 45 度，吊艙轉到新的位置。打斷帆架，吊艙連人掉下去；打掉塔腰的軸座，整具葉輪掉下來。颱風天：第二回合起砲彈飛到一半會撞上反吹的陣風，第三回合起中場的小山上不時捲起龍捲風',
+    hints: [{ r: 1, t: '敵城風車的四個吊艙各站一個兵，吊在帆架的尖端：打斷那支帆架（木頭的，火油燒得動），吊艙連人掉下去', ok: () => rotorUp(1) },
+      { r: 2, t: '每回合結束，葉輪照這一回合的風向轉 45 度：吊艙會轉到新的位置（轉到正下方的最好打）', ok: () => rotorUp(1) },
+      { r: 3, t: '葉輪的轉軸裝在敵塔塔腰的鐵軸座上，藏在石牆中間：把牆打開、打掉軸座，整具葉輪連吊艙一起掉下來', ok: () => rotorUp(1) },
+      { r: 4, t: '掉下來的兵沒有死，會從地上接著打；中間的小山擋著，地上的兵要吊高才打得到對面' }],
+    ground: [[-40, 3], [0, 0], [41, 0], [46, 2.2], [51, 6.4], [56, 7.6], [61, 6.4], [66, 2.2], [71, 0], [112, 0], [152, 3]],
+    wind: { max: 7, at: 1 },
+    // 陣風：第二回合起，砲彈飛到第 t0–t1 秒的時候風向反過來（最大 max；標準難度瞄準的虛線畫 0.95 秒，畫得到風轉向的那一點）；
+    // 龍捲風：第三回合起每三回合一道，在中場 x0–x1 之間（高 h、半徑 R）
+    gust: { at: 2, max: 8, t0: 0.5, t1: 0.9 },
+    tornado: { at: 3, every: 3, x0: 50, x1: 62, h: 32, R: 3.4, up: 150, damp: 2.4 },
+    me: { crew: ['fire', 'cluster', 'rocket', 'wind', 'bomb', 'eng'] },
+    foe: { crew: ['rocket', 'fire', 'cluster', 'bolt', 'bomb', 'stone'], hp: 1.15, dmg: 1.08, open: 0.55, ai: { err: 3.3, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.55 } },
+    weak: (side) => millWeak(side),
+    lantern: { at: 3, every: 3, spots: [[52, 41], [60, 31]] }
+  },
+  {
+    name: '熔岩鑄城', sayTop: 1, tag: '鐵懸臂・鐵水鍋・岩漿上漲', theme: 14, castle: 'FORGE', y0: -4, stress: 1, blockHp: 1.4, rules: { ff: 1, crit: 1, elem: 1 },
+    tip: '兩座鑄城蓋在岩漿湖邊的懸崖上：崖頂一間哨屋，半腰伸出一座鐵造的鑄造台（靠吊臂垂下來的兩條鐵鍊吊著），崖腳的岩台上是熔爐。兩條鐵鍊都打斷，鑄造台連人掉進岩漿；吊臂上還吊著一鍋鐵水。岩漿每回合漲一截，火山彈每回合亂落。鐵城最怕磁暴、雷、酸',
+    hints: [{ r: 1, t: '敵城半腰那座鑄造台是插在崖壁上的鐵懸臂，靠吊臂垂下來的兩條鐵鍊吊著：兩條都打斷，整座台往下垂、斷掉，連人掉進岩漿（鏈彈、雷、磁暴打鐵鍊最痛）', ok: () => ropeLeft('up') && ropeLeft('mid') },
+      { r: 2, t: '敵城吊臂中間吊著一鍋鐵水，正下方是鑄造台：打斷吊它的鐵鍊，鐵水鍋砸穿鑄造台的屋頂，鐵水澆在兵身上（鑄造台先掉了，鐵水鍋就只會掉進岩漿裡）', ok: () => potUp(1) },
+      { r: 3, t: '整座城是鐵造的：磁暴把附近的鐵一把吸過去、雷劈鐵兩倍痛、酸蝕鐵也快；火和冰燒不太動' },
+      { r: 4, t: '岩漿每回合漲一截：漲上崖腳的岩台，熔爐的鐵地板發紅變軟，撐不了多久（兩邊都一樣）。在那之前先把敵城打塌', ok: () => !lavaReach(1) }],
+    ground: [[-40, 36], [-12, 35], [3.0, 33.4], [3.4, -4], [108.6, -4], [109, 33.4], [124, 35], [152, 36]],
+    voids: [[17, 95]],
+    water: { x0: 17, x1: 95, y: -6.5, rho: 1.6, cur: 0, lava: 1 },
+    // 岩漿：開場在 y0，每回合結束漲 dy，最高漲到 max（下層鑄造台的鐵樑泡進去一半）
+    lava: { y0: -6.5, dy: 2.2, max: 4.4 },
+    // 火山彈：第二回合起每回合兩顆，兩座城一樣機會（預告紅圈、回合結束砸下來，落地濺開一團岩漿）
+    rocks: { at: 2, every: 1, n: 2, sym: 1 },
+    extra: [{ castle: 'ROCK_VOLC', x: 56, y: -10 }],
+    me: { crew: ['chain', 'zap', 'bomb', 'magnet', 'acid', 'eng'] },
+    foe: { crew: ['bomb', 'zap', 'rocket', 'magnet', 'chain', 'acid'], hp: 1.15, dmg: 1.2, open: 0.55, ai: { err: 3.2, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.5 } },
+    lantern: { at: 3, every: 3, spots: [[52, 41], [60, 31]] }
   }
 ];
 
-/* ===== 演武場：十八種兵任選、戰場任選（演武城，或第一到十一關的城和地形），先試打第三篇的兵器和規則 =====
+/* ===== 演武場：十八種兵任選、戰場任選（演武城，或魔王城以外各關的城、地形和環境），先試打第三篇的兵器和規則 =====
    practice：不給星星、不解鎖；rules：ff 誤傷、crit 弱點暴擊、elem 冰能滅火（屬性剋制的字每一關都會跳，這條是真的改戰局） */
 const PRACTICE_BASE = {
   name: '演武場', tag: '十八種兵器・誤傷・弱點暴擊', theme: 0, castle: 'DRILL', practice: 1, rules: { ff: 1, crit: 1, elem: 1 },
-  tip: '十八種兵任你挑，每邊最多六個；戰場也可以換成第一到十一關的城。第三篇的規則都在：自己的砲炸到自己人一樣會傷，打中接點、核心、兵的頭是暴擊 ×2',
+  tip: '十八種兵任你挑，每邊最多六個；戰場也可以換成各關的城（魔王城除外）。第三篇的規則都在：自己的砲炸到自己人一樣會傷，打中接點、核心、兵的頭是暴擊 ×2',
   hints: [],
   ground: [[-40, 3], [0, 0], [47, 0], [51, 3.6], [56, 5.2], [61, 3.6], [65, 0], [112, 0], [152, 3]],
   me: { crew: ['chain', 'drill', 'cluster', 'sapper', 'magnet', 'eng'] },
   foe: { crew: ['wind', 'acid', 'sniper', 'bomb', 'rocket', 'eng'], hp: 1, dmg: 1, open: 0.55, ai: { err: 4.2, think: 1.0, gate: 0.6, hate: 0.2, skill: 0.5, sap: 0.6, warm: 1.6 } },
   wind: { max: 5, at: 2 }, sudden: 12
 };
-// 演武場的戰場清單：0 演武城，1–11 照那一關（城、地形、中間的機關都一樣，兵換成挑的）。魔王城不能選（要有魔王）
-const PRACTICE_MAPS = 12;
+// 演武場的戰場清單：0 演武城，其他照那一關（第幾關；城、地形、中間的機關、環境都一樣，兵換成挑的）。魔王城不能選（要有魔王）
+const PRACTICE_LIST = [0].concat(LEVELS.map((l, i) => i + 1).filter((m) => !LEVELS[m - 1].boss));
+const PRACTICE_MAPS = LEVELS.length + 1;          // 戰場編號的上限（存檔檢查用）
 function practiceSlots(map) { const lv = map > 0 ? LEVELS[map - 1] : PRACTICE_BASE, d = CASTLES[lv.castle || lv.me.castle]; let n = 0; for (const r of d.map) for (const ch of r) if (ch >= '1' && ch <= '9') n++; return n; }
 function practiceLevel(map, me, foe, ff) {
   const base = map > 0 ? LEVELS[map - 1] : PRACTICE_BASE;

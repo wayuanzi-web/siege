@@ -20,7 +20,7 @@ function loadSave() {
       SV.diff = s.diff === 0 || s.diff === 2 ? s.diff : 1;
       if (s.prac && typeof s.prac === 'object') {
         const ok = (a) => Array.isArray(a) && a.length === 6 && a.every((t) => UNIT_LIST.indexOf(t) >= 0);
-        SV.prac.map = int(s.prac.map, 0, PRACTICE_MAPS - 1); SV.prac.ff = s.prac.ff ? 1 : 0;
+        SV.prac.map = int(s.prac.map, 0, PRACTICE_MAPS - 1); if (!PRACTICE_LIST.includes(SV.prac.map)) SV.prac.map = 0; SV.prac.ff = s.prac.ff ? 1 : 0;
         if (ok(s.prac.me)) SV.prac.me = s.prac.me.slice(); if (ok(s.prac.foe)) SV.prac.foe = s.prac.foe.slice();
       }
       // 從第一關起一路過了幾關（存檔裡的「解鎖到第幾關」壞了也救得回來；舊存檔搬過去的魔王城星星不算，不會一口氣解鎖整個第二篇）
@@ -103,19 +103,24 @@ function mile(txt) { const el = $('mile'); el.textContent = txt; replay(el, 'sho
 
 function starsHtml(n) { return '<em>' + '★'.repeat(n) + '</em>' + '★'.repeat(3 - n); }
 // 換一篇：選那一篇裡打到的最後一關（還沒解鎖就選那一篇的第一關）
+const LEVEL_MAX = 18;          // 三篇一共十八關：還沒做好的那幾關，第三篇的清單上先寫「製作中」
 function chapGo(k) {
   if (UI.chap === k) return;
-  sfx('click'); UI.chap = k; UI.prac = k * CHAP >= LEVELS.length;          // 第三篇：第十三到十八關還在做，先放演武場
-  if (!UI.prac) { const a = k * CHAP, b = Math.min(LEVELS.length, a + CHAP); UI.sel = clamp(SV.open - 1, a, b - 1); }
+  sfx('click'); UI.chap = k;
+  const a = k * CHAP, b = Math.min(LEVELS.length, a + CHAP);
+  // 第三篇（最後一個分頁，裡面也放演武場）：這一篇的關卡還沒解鎖，就先選演武場
+  if (k === CHAPS.length - 1 && (a >= LEVELS.length || SV.open - 1 < a)) UI.prac = true;
+  else { UI.prac = false; UI.sel = clamp(SV.open - 1, a, b - 1); }
   homeRender(); homeDemo();
 }
 function homeRender() {
   const box = $('lvls'); box.textContent = '';
-  if (!UI.prac) UI.chap = Math.floor(UI.sel / CHAP);
-  // 兩篇各一個分頁：一次只列一篇的六關（十二關排成一長條放不下）
+  const last = CHAPS.length - 1;
+  UI.chap = UI.prac ? last : Math.floor(UI.sel / CHAP);
+  // 三篇各一個分頁：一次只列一篇的六關（十八關排成一長條放不下）
   const tabs = $('chaps'); tabs.textContent = '';
   CHAPS.forEach((nm, k) => {
-    const t = document.createElement('button'), lock = k * CHAP >= SV.open && k * CHAP < LEVELS.length;          // 第三篇的演武場一直都能進
+    const t = document.createElement('button'), lock = k * CHAP >= SV.open && k < last;          // 第三篇的演武場一直都能進
     t.className = 'chap chamfer' + (lock ? ' locked' : ''); t.setAttribute('role', 'tab'); t.setAttribute('aria-selected', String(k === UI.chap));
     t.innerHTML = '<span>' + nm + '</span><small>' + (k * CHAP + 1) + '–' + (k + 1) * CHAP + '</small>';
     t.tabIndex = k === UI.chap ? 0 : -1;
@@ -124,24 +129,34 @@ function homeRender() {
     t.addEventListener('keydown', (e) => { if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; e.preventDefault(); const n = CHAPS.length, k2 = (k + (e.key === 'ArrowRight' ? 1 : n - 1)) % n; chapGo(k2); const nt = $('chaps').children[k2]; if (nt) nt.focus({ preventScroll: true }); });
     tabs.appendChild(t);
   });
-  $('liPrac').hidden = !UI.prac; $('home').classList.toggle('pmode', UI.prac);
-  if (UI.prac) { pracRender(box); return; }
+  // 每邊六個兵（演武場、第三篇）：中間的卡片放寬，頭像排得下
+  const six = UI.prac || LEVELS[UI.sel].me.crew.length > 4;
+  $('liPrac').hidden = !UI.prac; $('home').classList.toggle('pmode', six);
   LEVELS.forEach((lv, i) => {
     if (Math.floor(i / CHAP) !== UI.chap) return;
     const b = document.createElement('button'), locked = i >= SV.open;
     // 還沒解鎖、可是有星星的（舊版存檔打過的魔王城搬到第十二關）：星星照樣顯示，不畫鎖頭
-    b.className = 'lv chamfer' + (locked ? ' locked' : '') + (locked && SV.stars[i] > 0 ? ' had' : ''); b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(i === UI.sel));
+    b.className = 'lv chamfer' + (locked ? ' locked' : '') + (locked && SV.stars[i] > 0 ? ' had' : ''); b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(i === UI.sel && !UI.prac));
     b.setAttribute('aria-label', '第' + numZh(i + 1) + '關 ' + lv.name + (locked ? '（未解鎖）' : ''));
     const n = document.createElement('b'); n.textContent = String(i + 1);
     const nm = document.createElement('strong'); nm.textContent = lv.name;
     const st = document.createElement('span'); st.className = 'stars'; st.innerHTML = starsHtml(SV.stars[i]);
     b.appendChild(n); b.appendChild(nm); b.appendChild(st);
     onTap(b, () => {
-      sfx('click'); if (UI.sel === i) return; UI.sel = i; homeRender(); if (typeof demoStart === 'function') demoStart(i);
+      sfx('click'); if (UI.sel === i && !UI.prac) return; UI.sel = i; UI.prac = false; homeRender(); if (typeof demoStart === 'function') demoStart(i);
       const nb = $('lvls').children[i % CHAP]; if (nb) nb.focus({ preventScroll: true });      // 清單重畫過了，把焦點放回同一關（用鍵盤選關才不會跳掉）
     });
     box.appendChild(b);
   });
+  if (UI.chap === last) {
+    // 第三篇：還沒做好的關先寫「製作中」，最後是演武場（一直都能進）
+    if (LEVELS.length < LEVEL_MAX) { const soon = document.createElement('div'); soon.className = 'lv chamfer locked had'; soon.setAttribute('aria-hidden', 'true'); soon.innerHTML = '<b>' + (LEVELS.length + 1) + '</b><strong>製作中</strong><span class="stars">' + (LEVELS.length + 1 < LEVEL_MAX ? (LEVELS.length + 1) + '–' + LEVEL_MAX + ' 關' : '第 ' + LEVEL_MAX + ' 關') + '</span>'; box.appendChild(soon); }          // 名字放不下「十六到十八關製作中」：關數放在星星那一格
+    const b = document.createElement('button'); b.className = 'lv chamfer'; b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(UI.prac)); b.setAttribute('aria-label', '演武場');
+    b.innerHTML = '<b>演</b><strong>演武場</strong><span class="stars">試打</span>';
+    onTap(b, () => { sfx('click'); if (UI.prac) return; UI.prac = true; homeRender(); homeDemo(); const nb = $('lvls').lastElementChild; if (nb) nb.focus({ preventScroll: true }); });
+    box.appendChild(b);
+  }
+  if (UI.prac) { pracRender(); return; }
   const lv = LEVELS[UI.sel], locked = UI.sel >= SV.open;
   $('liName').textContent = lv.name; $('liTag').textContent = lv.tag;
   const tipTxt = locked ? '先打下第' + numZh(UI.sel) + '關「' + LEVELS[UI.sel - 1].name + '」才能出戰。' : lv.tip + '。';
@@ -152,7 +167,7 @@ function homeRender() {
     const p = document.createElement('p'); p.className = 'sizer'; p.setAttribute('aria-hidden', 'true'); p.textContent = t; tb.appendChild(p);
   }
   // 這一關雙方派誰上場：一排頭像，點一下看那個兵會什麼（再點一下回到關卡說明）
-  const cr = $('liCrew'); cr.textContent = ''; cr.classList.remove('prac6'); let picked = null;
+  const cr = $('liCrew'); cr.textContent = ''; cr.classList.toggle('prac6', six); let picked = null;
   [[0, lv.me.crew, '我方'], [1, lv.foe.crew, '敵軍']].forEach(([sd, crew, label]) => {
     const row = document.createElement('div'); row.className = 'grp ' + (sd ? 'foe' : 'me');
     const lb = document.createElement('small'); lb.textContent = label; row.appendChild(lb);
@@ -173,14 +188,10 @@ function homeRender() {
   $('homeCoins').textContent = fmt(SV.coins);
 }
 /* ---------- 演武場（第三篇的分頁）：挑戰場、挑兵、誤傷開關 ---------- */
-function pracRender(box) {
+function pracRender() {
   const P = SV.prac, base = P.map > 0 ? LEVELS[P.map - 1] : PRACTICE_BASE, n = practiceSlots(P.map);
-  const b = document.createElement('button'); b.className = 'lv chamfer'; b.setAttribute('role', 'option'); b.setAttribute('aria-selected', 'true'); b.setAttribute('aria-label', '演武場');
-  b.innerHTML = '<b>演</b><strong>演武場</strong><span class="stars">試打</span>'; box.appendChild(b);
-  const soon = document.createElement('div'); soon.className = 'lv chamfer locked had'; soon.setAttribute('aria-hidden', 'true');
-  soon.innerHTML = '<b>13</b><strong>十三到十八關製作中</strong><span class="stars"></span>'; box.appendChild(soon);
   $('liName').textContent = '演武場'; $('liTag').textContent = PRACTICE_BASE.tag;
-  const tip = $('liTip'), tipTxt = '十八種兵任你挑（點頭像換人），戰場換得到第一到十一關的城。第三篇的規則：' + (P.ff ? '自己的砲炸到自己人一樣會傷；' : '誤傷現在關著；') + '打中接點、核心、兵的頭是暴擊 ×2。';
+  const tip = $('liTip'), tipTxt = '十八種兵任你挑（點頭像換人），戰場也換得到各關的城（魔王城除外）。第三篇的規則：' + (P.ff ? '自己的砲炸到自己人一樣會傷；' : '誤傷現在關著；') + '打中接點、核心、兵的頭是暴擊 ×2。';
   tip.textContent = tipTxt; tip.classList.remove('blurb');
   const tb = $('liTipBox'); tb.querySelectorAll('.sizer').forEach((e) => e.remove());
   for (const t of [tipTxt].concat(UNIT_LIST.map((k) => UNIT[k].name + '：' + UNIT[k].blurb + '。'))) { const p = document.createElement('p'); p.className = 'sizer'; p.setAttribute('aria-hidden', 'true'); p.textContent = t; tb.appendChild(p); }
@@ -273,11 +284,14 @@ const LOSE_TIPS_LV = [
   ['敵寨岩柱腳下那台木頭絞盤是閘：打斷它，吊籠開始慢慢往下沉，沉到底配重桶升到岩臂，鋼纜一扯就斷。', '閘斷了以後打碎配重桶裡的石頭，吊籠沉得更快；吊籠上面那段鋼纜也打得斷（轟天砲、大石頭）。', '岩臂上的瞭望棚很窄：把它的牆打掉，兵很容易被炸下岩臂。', '峽谷正中間石柱頂上的彈簧板：打下去的砲彈會彈起來（×1.25），從底下打吊籠。'],
   ['穿過中間的稜鏡，一發砲彈分成紅（火）黃（雷）藍（霜）三發扇形散開：吊高、平射各散到不同的樓層。', '共鳴晶柱藏在敵宮石台的地窖裡，前面只隔一扇琉璃窗：打破窗、再重重打中晶柱，每打一次震一次，先震碎頂樓、再震二樓，打碎它整座宮殿的琉璃一起碎；剩下的石頭骨架再打垮，城才算破。', '大廳天花板吊著水晶吊燈，正下方就是一個兵：把天花板打穿，吊燈砸下來。'],
   ['打在大鐘上的力道會累積（鐘兩邊的弧是雙方的鐘鳴）：你那條滿了就「噹」一聲，震波打在敵塔每一塊木頭上。', '敵塔一樓正中間那根紅色的是心柱：它還在，震波大半被它吃掉，只震得裂柱子；先打斷它，鐘鳴一響柱子整排斷、兵還會被震暈。', '一輪打得夠重，大鐘會盪過去撞進敵塔。五重塔整座榫接：柱子斷了、榫頭碎了才會一層層壓下來，要打到連一樓都垮了才算破城（守軍全倒也算贏）。'],
-  ['魔王每回合會先預告招式：暗黑連射、隕石雨開護罩擋（你的城塌了也會輸）；毀滅光球停在半空，打爆它會掉頭砸回他身上。', '敵城城腳正面的兩顆紫色魔晶：打碎它們，魔王不能回血、結界補不回來、也叫不回魔兵。', '第二階段的黑洞會把砲彈吸過去再甩出來：擦過它、穿過繞著它轉的聖光符，一發變三發（太靠近會被吞）。他放完暗黑連射、隕石雨會累，下一回合打他加倍。']
+  ['魔王每回合會先預告招式：暗黑連射、隕石雨開護罩擋（你的城塌了也會輸）；毀滅光球停在半空，打爆它會掉頭砸回他身上。', '敵城城腳正面的兩顆紫色魔晶：打碎它們，魔王不能回血、結界補不回來、也叫不回魔兵。', '第二階段的黑洞會把砲彈吸過去再甩出來：擦過它、穿過繞著它轉的聖光符，一發變三發（太靠近會被吞）。他放完暗黑連射、隕石雨會累，下一回合打他加倍。'],
+  ['潮水四回合一輪：第二回合（之後每四回合）退潮，敵寨的木樁整根露出水面，這時候打木樁、放火最有用；漲潮的時候先打上面的屋子。', '前面望樓腳下那兩根木樁一斷，望樓連人翻進海裡；主屋屋頂上的大水塔打破了，水從頂樓灌下來，把屋裡的兵往前沖。', '大潮那一回合結束時暴潮淹上甲板，退下去把沒有牆、沒有門擋著的兵拖下海：你的門和前牆也要護好（工兵修得好）。'],
+  ['敵城風車的四個吊艙各吊在一支帆架的尖端：打斷帆架（火油燒得動），吊艙連人掉下去，城防也掉一截。葉輪每回合轉 45 度，轉到正下方的最好打。', '陣風：砲彈飛到一半風會反過來吹，虛線上的小漩渦就是轉向的地方，照著虛線打就好；龍捲風會把穿過的砲彈往上捲，繞開它或吊高越過去。', '四支帆架和吊艙加起來大約是城防的三分之一：先把帆架都打斷，再打塔身。'],
+  ['敵城半腰的鑄造台靠兩條鐵鍊吊著：鏈彈、雷、磁暴打鐵鍊最痛，兩條都斷了，整座台連人掉進岩漿。', '先打斷吊鐵水鍋的鍊子：鐵水鍋砸穿鑄造台的屋頂，鐵水澆在兵身上；鑄造台先掉了，鐵水鍋就只會掉進岩漿裡。', '岩漿每回合漲一截，漲上崖腳的熔爐，鐵地板發紅變軟；火山彈兩邊一樣會落，紅圈是落點，開著護罩擋得住。']
 ];
 function showResult(won, st) {
   const prac = !!(S.lv && S.lv.practice);
-  $('resTitle').textContent = won ? (st.idx === LEVELS.length - 1 ? '魔王伏誅' : '敵城攻破') : '城樓失守';
+  $('resTitle').textContent = won ? (!prac && LEVELS[st.idx] && LEVELS[st.idx].boss ? '魔王伏誅' : '敵城攻破') : '城樓失守';
   $('resTitle').className = won ? '' : 'lose';
   $('resSub').textContent = prac ? S.lv.name + '（試打，不算星星）' : '第' + numZh(st.idx + 1) + '關 ' + LEVELS[st.idx].name;
   const stars = $('resStars'); stars.hidden = !won || prac;
@@ -285,13 +299,14 @@ function showResult(won, st) {
   [...stars.children].forEach((s, i) => { s.className = ''; if (won && i < st.stars) setTimeout(() => { if (UI.resRun === run && !$('result').hidden) { s.className = 'on'; sfx('star', i); } }, 350 + i * 320); });
   $('rsBar').textContent = Math.round(st.bar * 100) + '%'; $('rsRounds').textContent = String(st.rounds);
   $('rsChain').textContent = st.chain ? st.chain + ' 塊' : '—'; // 有倍增符、稜鏡的關：一發最多分成幾發；其他關：最強的一發放大到幾倍（滾地、打水漂、噴流、彈簧板…）
-  if (st.swarm > 1) { $('rsSwarmT').textContent = '一發最多變成'; $('rsSwarm').textContent = fmt(st.swarm) + ' 發'; } else { $('rsSwarmT').textContent = '最強的一發'; $('rsSwarm').textContent = st.amp > 1.05 ? '×' + st.amp.toFixed(1) : '—'; }
+  if (st.swarm > 1) { $('rsSwarmT').textContent = '一發最多變成'; $('rsSwarm').textContent = fmt(st.swarm) + ' 發'; } else if (st.amp > 1.05 || !(st.hit >= 1)) { $('rsSwarmT').textContent = '最強的一發'; $('rsSwarm').textContent = st.amp > 1.05 ? '×' + st.amp.toFixed(1) : '—'; } else { $('rsSwarmT').textContent = '最重的一擊'; $('rsSwarm').textContent = fmt(Math.round(st.hit)); }          // 沒有放大機關的關卡（第三篇）：改成一炸打掉城樓多少
   $('rsCoins').textContent = '+' + fmt(st.coins); $('rsCoins').parentElement.hidden = prac;          // 演武場不給金幣：整行藏起來
   const tip = $('resTip'), own = (!prac && LOSE_TIPS_LV[st.idx]) || [], tips = Math.random() < 0.7 && own.length ? own : LOSE_TIPS;      // 多半講這一關自己的訣竅
   if (prac) { tip.hidden = false; tip.textContent = '演武場隨時都能再來：點主畫面上的頭像換兵、換戰場。'; }
   else if (won) { tip.hidden = st.stars >= 3; if (st.stars < 3) tip.textContent = st.lost ? '三顆星：一個兵都不能倒，城防還要剩一半以上。' : '三顆星：城防要剩一半以上。'; }
   else { tip.hidden = false; tip.textContent = st.streak >= 3 && SV.diff > 0 && st.streak % 2 === 1 ? TIP_EASY : tips[(Math.random() * tips.length) | 0]; }        // 同一關連輸三場、五場…：提醒可以調難度
   const next = won && !prac && st.idx < LEVELS.length - 1;
+  if (won && !prac && st.idx === LEVELS.length - 1 && LEVELS.length < LEVEL_MAX) { tip.hidden = false; tip.textContent = '第' + numZh(LEVELS.length + 1) + '到十八關還在做，做好了會出現在第三篇的分頁。先到演武場，用十八種兵試打吧。'; }          // 打完目前最後一關：沒有「下一關」，講一聲後面的還在做
   $('btnNext').hidden = !next; $('resBtns').className = 'stack ' + (next ? 'three' : 'two');         // 沒有「下一關」的時候兩顆按鈕各佔一半
   $('btnAgain').firstChild.textContent = won ? '再玩一次' : '再戰';
   $('btnAgain').className = 'btn' + (next ? '' : ' btn-gold');
@@ -322,7 +337,7 @@ function hudBuild() {
   const hb = $('hpB'); hb.querySelectorAll('.tick').forEach((e) => e.remove());
   if (S.lv.boss) for (const p of [S.lv.boss.p2, S.lv.boss.p3]) { const t = document.createElement('span'); t.className = 'tick'; t.style.right = (p * 100) + '%'; hb.appendChild(t); }
   $('foeLbl').textContent = S.lv.boss ? '魔王' : '敵城';
-  $('windBox').hidden = !S.lv.wind;
+  $('windBox').hidden = !S.lv.wind; $('gustTxt').hidden = true; $('hud').classList.remove('gusty');
   HUD.a = HUD.b = -1; HUD.ult = HUD.sh = -1; HUD.wind = 99; HUD.deg = HUD.pow = -1; HUD.mile = 0; HUD.turn = ''; HUD.round = -1; HUD.fire = -1; HUD.boost = null;
   $('turnChip').hidden = true;                                       // 上一局留下來的「輪到你」不能帶進新的一局
 }
@@ -346,18 +361,20 @@ function hudUpdate() {
   const play = S.state === 'play', mine = play && S.phase === 'aim' && S.turn === 0;
   // 敵軍瞄準的彈道會穿過倍增符：先講，讓玩家來得及開護罩
   const eA = S.team[1].ai, em = play && S.phase === 'aim' && S.turn === 1 && eA && eA.st === 2 && eA.warn >= 2 ? Math.round(eA.warn) : 0;
-  const tk = !play || S.phase === 'intro' || (S.phase === 'hazard' && !S.hz) ? '' : S.phase === 'hazard' ? 'hz' : S.phase + S.turn + (S.team[S.turn].ult.armed ? 'u' : '') + (em ? 'm' + em : '');
+  // 回合結束的環境變化（第三篇）：暴潮、漲潮、退潮
+  const E = S.env, envT = S.phase === 'hazard' && E ? (E.surge ? 'surge' : E.tideA ? (S.water && S.water.lava ? 'lava' : E.tideA.to > E.tideA.from ? 'up' : 'down') : '') : '';
+  const tk = !play || S.phase === 'intro' || (S.phase === 'hazard' && !S.hz && !envT) ? '' : S.phase === 'hazard' ? (envT ? 'e' + envT : 'hz') : S.phase + S.turn + (S.team[S.turn].ult.armed ? 'u' : '') + (em ? 'm' + em : '');
   if (tk !== HUD.turn) {
     HUD.turn = tk; const el = $('turnChip');
     if (!tk) el.hidden = true;
     else {
       el.hidden = false;
-      el.className = 'chamfer ' + (tk === 'hz' ? 'hz' : S.turn === 0 ? 'me' : 'foe') + (mine ? ' go' : '') + (S.turn === 1 && S.phase === 'aim' && (em || S.team[1].ult.armed) ? ' warn' : '');
-      el.textContent = tk === 'hz' ? '落石！' : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : S.team[1].ult.armed ? '敵軍連珠砲上膛！' : em ? '敵軍的砲彈會穿過' + (S.lv.boss ? '聖光符' : '倍增符') + '：×' + em + '！' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
+      el.className = 'chamfer ' + (tk === 'hz' || envT ? 'hz' : S.turn === 0 ? 'me' : 'foe') + (mine ? ' go' : '') + (S.turn === 1 && S.phase === 'aim' && (em || S.team[1].ult.armed) ? ' warn' : '');
+      el.textContent = envT ? (envT === 'surge' ? '暴潮！' : envT === 'lava' ? '岩漿上漲' : envT === 'up' ? '漲潮' : '退潮') : tk === 'hz' ? (S.lv.rocks && S.lv.rocks.sym ? '火山彈！' : '落石！') : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : S.team[1].ult.armed ? '敵軍連珠砲上膛！' : em ? '敵軍的砲彈會穿過' + (S.lv.boss ? '聖光符' : '倍增符') + '：×' + em + '！' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
     }
   }
   const fk = mine ? 1 : 0; if (fk !== HUD.fire) { HUD.fire = fk; $('btnFire').classList.toggle('ready', !!mine); $('btnFire').classList.toggle('btn-gold', !!mine); }
-  if (S.round !== HUD.round) { HUD.round = S.round; $('roundTxt').textContent = S.round > 0 ? '第 ' + S.round + ' 回合' : ''; }
+  if (S.round !== HUD.round) { HUD.round = S.round; $('roundTxt').textContent = S.round > 0 ? '第 ' + S.round + ' 回合' + (S.lv.tide ? '・' + TIDE_NAME[tideNow()] : '') : ''; }
   if ((HUD.n & 3) !== 0) return;
   for (let sd = 0; sd < 2; sd++) for (const k of HUD.crew[sd]) { const st = !k.u.alive ? 'dead' : k.u.frozen > 0 ? 'frozen' : k.u.stun > 0 ? 'stun' : ''; if (st !== k.st) { k.st = st; k.el.className = 'cu' + (st ? ' ' + st : ''); } }
   const T = S.team[0], bu = $('btnUlt'), bs = $('btnShield');
@@ -368,12 +385,14 @@ function hudUpdate() {
   const sp = clamp(T.shield.c / T.shield.need, 0, 1), son = T.shield.on, sk = Math.round(sp * 100) + (son ? 1000 : 0);
   if (sk !== HUD.sh) { HUD.sh = sk; bs.style.setProperty('--p', son ? '1' : sp.toFixed(3)); bs.classList.toggle('ready', sp >= 1 && !son); bs.classList.toggle('on', son); $('shNum').textContent = son ? '展開中' : sp >= 1 ? '可用' : Math.floor(sp * 100) + '%'; }
   if (S.lv.wind) {
-    const w = S.wind;
-    if (w !== HUD.wind) { HUD.wind = w; const box = $('windBox'), m = Math.abs(w); box.classList.toggle('calm', m < 1); $('windTxt').textContent = m < 1 ? '無風' : '風 ' + m; $('windArr').style.transform = 'scaleX(' + (w < 0 ? -1 : 1) * (0.55 + Math.min(1, m / 12) * 0.6) + ')'; }
+    const w = S.wind, G = S.gust, wk = w + (G ? '|' + G.t + ':' + G.w : '');
+    // 陣風（第十四關）：回合、風的下面多一行「飛幾秒後反過來、變多強」
+    if (wk !== HUD.wind) { HUD.wind = wk; const box = $('windBox'), m = Math.abs(w); box.classList.toggle('calm', m < 1); $('windTxt').textContent = m < 1 ? '無風' : '風 ' + m; const gt = $('gustTxt'); gt.hidden = !G; $('hud').classList.toggle('gusty', !!G); if (G) gt.textContent = '陣風：飛 ' + G.t + ' 秒後' + (G.w < 0 ? '←' : '→') + Math.abs(G.w); $('windArr').style.transform = 'scaleX(' + (w < 0 ? -1 : 1) * (0.55 + Math.min(1, m / 12) * 0.6) + ')'; }
   }
   const ang = Math.round(Math.atan2(T.aim[1], T.aim[0]) * 180 / Math.PI), pw = Math.round((Math.hypot(T.aim[0], T.aim[1]) - VMIN) / (VMAX - VMIN) * 100);
   if (ang !== HUD.deg) { HUD.deg = ang; $('aimDeg').textContent = ang; }
   if (pw !== HUD.pow) { HUD.pow = pw; $('aimPow').textContent = pw; }
   while (HUD.mile < MILES.length && S.stat.peak >= MILES[HUD.mile][0]) { mile(MILES[HUD.mile][1]); HUD.mile++; }
 }
+const TIDE_NAME = ['退潮', '漲潮', '大潮', '落潮'];          // 第十三關：這一回合的潮（大潮那一回合結束時有暴潮）
 function replayFlash(el) { el.classList.add('hit'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('hit'), 90); }

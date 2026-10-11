@@ -15,7 +15,11 @@ const SKINS = {
   canyon: { stone: ['#e8a47e', '#c97a52', '#9a5433', '#6e3720'], wood: ['#8f6a4a', '#6c4c32', '#43301e'], roof: ['#d9644a', '#a94330', '#6c2618'], iron: ['#a59a8e', '#776c61', '#4a423a'], panel: ['#4a2a1e', '#371f16'], ink: '#26140c', trim: '#ffcf7a', flag: '#dc3a2e', flagDk: '#8f1418' },
   crystal: { stone: ['#ece6f6', '#c8bfe0', '#958bb6', '#6a6190'], wood: ['#b8c4dc', '#8d9bba', '#5d6a88'], roof: ['#8fe6f0', '#46b6c8', '#22788a'], iron: ['#d8d2f0', '#a69ec8', '#6c6494'], panel: ['#1f2550', '#161b3e'], ink: '#10133a', trim: '#b9f6ff', flag: '#dc3a2e', flagDk: '#8f1418' },
   maple: { stone: ['#d8d2c8', '#b0a89b', '#80786c', '#5a5348'], wood: ['#b85a34', '#8c3e22', '#5a2412'], roof: ['#6f8a7e', '#4b6559', '#2e423a'], iron: ['#c4a45e', '#957732', '#5c4618'], panel: ['#3e2418', '#2f1a11'], ink: '#1e0f08', trim: '#ffcf6a', flag: '#dc3a2e', flagDk: '#8f1418' },
-  ship: { stone: ['#d9cdb4', '#b3a585', '#857858', '#5d523a'], wood: ['#a8673a', '#7e4624', '#4c2610'], roof: ['#d9a35c', '#b07a34', '#76501c'], iron: ['#a9a49c', '#7a756d', '#4a4640'], panel: ['#3e2a1c', '#2e1f14'], ink: '#1f120a', trim: '#ffd27a', flag: '#dc3a2e', flagDk: '#8f1418' }
+  ship: { stone: ['#d9cdb4', '#b3a585', '#857858', '#5d523a'], wood: ['#a8673a', '#7e4624', '#4c2610'], roof: ['#d9a35c', '#b07a34', '#76501c'], iron: ['#a9a49c', '#7a756d', '#4a4640'], panel: ['#3e2a1c', '#2e1f14'], ink: '#1f120a', trim: '#ffd27a', flag: '#dc3a2e', flagDk: '#8f1418' },
+  // 第三篇
+  tide: { stone: ['#dfe4dc', '#b4bfb6', '#81918a', '#5b6a64'], wood: ['#b9a07c', '#8f7653', '#5a4831'], roof: ['#d8b56e', '#ad8942', '#715823'], iron: ['#a7b0ae', '#79837f', '#49524f'], panel: ['#2c3836', '#212b2a'], ink: '#131c1b', trim: '#ffe6a0', flag: '#dc3a2e', flagDk: '#8f1418' },
+  mill: { stone: ['#d9d2c2', '#b3a993', '#857b66', '#5e5646'], wood: ['#c99a62', '#a3743f', '#6a4824'], roof: ['#8aa0b8', '#5d7590', '#3a4c62'], iron: ['#a8acb4', '#7a7f88', '#4b4f57'], panel: ['#3c3026', '#2d241c'], ink: '#1e160f', trim: '#ffd27a', flag: '#dc3a2e', flagDk: '#8f1418' },
+  forge: { stone: ['#8a807c', '#655c59', '#433c3a', '#2a2423'], wood: ['#8e5c36', '#6a4022', '#40250f'], roof: ['#a0968f', '#706761', '#45403c'], iron: ['#a3abb6', '#6b7480', '#3a414c'], panel: ['#2e2424', '#201818'], ink: '#130c0c', trim: '#ffb347', flag: '#dc3a2e', flagDk: '#8f1418' }
 };
 // 每一關雙方的城樓一模一樣，只有屋瓦和旗子分顏色：我方藍、敵方紅（藍圖的外觀名稱後面接 @0、@1）
 const ROOF_TEAM = [['#78b2ff', '#2f6fe0', '#1a429c'], ['#ff8a6c', '#d43c2a', '#86180f']], FLAG_TEAM = [['#2f7bff', '#1b46b8'], ['#dc3a2e', '#8f1418']];
@@ -30,7 +34,7 @@ const PAL_ROCK = ['#8e8794', '#665f70', '#403a49', '#2a2532'];
 /* ---------- 磚塊：每一塊一張貼圖（依外觀、材質、形狀、大小、破損程度），第一次用到時才畫 ---------- */
 const BSPR = {};
 function blockSprite(b, ds) {
-  const key = b.skin + ':' + b.mat + ':' + b.kind + ':' + Math.round(b.w * 10) + ':' + Math.round(b.h * 10) + ':' + Math.round(b.il * 10) + ':' + Math.round(b.ir * 10) + ':' + b.deco + ':' + ds + ':' + (b.vr & 1) + (b.hot ? 'h' : '') + (b.prop ? 'p' : '') + (b.seg ? 's' : '') + (b.dom ? 'd' : '') + (b.beam ? 'b' : '') + (b.reso ? 'r' : '') + (b.mag ? 'm' : '') + (b.core ? 'c' : '') + (b.heart ? 'H' : '') + (b.brake ? 'k' : '');
+  const key = b.skin + ':' + b.mat + ':' + b.kind + ':' + Math.round(b.w * 10) + ':' + Math.round(b.h * 10) + ':' + Math.round(b.il * 10) + ':' + Math.round(b.ir * 10) + ':' + b.deco + ':' + ds + ':' + (b.vr & 1) + (b.hot ? 'h' : '') + (b.prop ? 'p' : '') + (b.seg ? 's' : '') + (b.dom ? 'd' : '') + (b.beam ? 'b' : '') + (b.reso ? 'r' : '') + (b.mag ? 'm' : '') + (b.core ? 'c' : '') + (b.heart ? 'H' : '') + (b.brake ? 'k' : '') + (b.tank ? 'T' : '') + (b.crane ? 'C' : '') + (b.spilt ? 'S' : '');
   let s = BSPR[key]; if (s) return s;
   const sc = V.s, w = b.w * sc, h = b.h * sc, roof = b.kind === 'roof';
   const padX = Math.ceil((roof ? 0.62 : 0.14) * CS * sc), padY = Math.ceil((roof ? 0.5 : 0.14) * CS * sc);
@@ -69,6 +73,7 @@ function paintBlock(c, b, ds, w, h, sc) {
       c.beginPath(); c.moveTo(w * 0.26, 0); c.lineTo(w * 0.74, 0); c.lineTo(w * 0.7, h * 0.1); c.quadraticCurveTo(w * 0.62, h * 0.2, w * 0.86, h * 0.34);
       c.quadraticCurveTo(w * 1.06, h * 0.62, w * 0.72, h); c.lineTo(w * 0.28, h); c.quadraticCurveTo(w * -0.06, h * 0.62, w * 0.14, h * 0.34); c.quadraticCurveTo(w * 0.38, h * 0.2, w * 0.3, h * 0.1); c.closePath();
     }
+    else if (b.kind === 'pot') { c.beginPath(); c.moveTo(w * 0.05, 0); c.lineTo(w * 0.95, 0); c.lineTo(w, h * 0.225); c.lineTo(w * 0.85, h); c.lineTo(w * 0.15, h); c.lineTo(0, h * 0.225); c.closePath(); }
     else if (b.kind === 'bell') { c.beginPath(); c.moveTo(0, h); c.lineTo(w, h); c.quadraticCurveTo(w * 0.86, h * 0.62, w * 0.81, h * 0.36); c.quadraticCurveTo(w * 0.76, 0, w * 0.5, 0); c.quadraticCurveTo(w * 0.24, 0, w * 0.19, h * 0.36); c.quadraticCurveTo(w * 0.14, h * 0.62, 0, h); c.closePath(); }
     else if (b.dom) { const r = w * 0.48; c.beginPath(); c.moveTo(0, h); c.lineTo(0, r); c.quadraticCurveTo(0, 0, r, 0); c.lineTo(w - r, 0); c.quadraticCurveTo(w, 0, w, r); c.lineTo(w, h); c.closePath(); }      // 石碑：圓頂
     else if (b.reso || b.core) { c.beginPath(); c.moveTo(w * 0.5, 0); c.lineTo(w * 0.95, h * 0.2); c.lineTo(w * 0.95, h * 0.86); c.lineTo(w * 0.5, h); c.lineTo(w * 0.05, h * 0.86); c.lineTo(w * 0.05, h * 0.2); c.closePath(); }
@@ -108,6 +113,17 @@ function paintBlock(c, b, ds, w, h, sc) {
       break;
     }
     case M_WOOD: {
+      if (b.tank) {
+        // 水塔：一圈圈直立的木板箍著兩道鐵箍，桶口露出一層亮藍的水
+        const p = P.wood;
+        c.fillStyle = lg(c, 0, 0, w, 0, [0, p[2], 0.18, p[1], 0.45, mix(p[0], p[1], 0.3), 0.7, p[1], 1, p[2]]); c.fillRect(0, 0, w, h);
+        c.strokeStyle = rgba(p[2], 0.8); c.lineWidth = Math.max(1, u * 0.05);
+        for (let x = u * 0.36; x < w - u * 0.2; x += u * 0.42) { c.beginPath(); c.moveTo(x, h * 0.16); c.lineTo(x, h); c.stroke(); }
+        c.fillStyle = '#5c6670'; for (const f of [0.34, 0.78]) { c.fillRect(0, h * f - u * 0.07, w, u * 0.14); c.fillStyle = '#8d98a2'; c.fillRect(0, h * f - u * 0.07, w, Math.max(1, u * 0.04)); c.fillStyle = '#5c6670'; }
+        c.fillStyle = lg(c, 0, 0, 0, h * 0.18, [0, '#bfeefc', 0.5, '#5cc0e6', 1, '#2b86b8']); c.fillRect(u * 0.12, 0, w - u * 0.24, h * 0.16);
+        c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(w * 0.2, h * 0.04, w * 0.3, Math.max(1, u * 0.04));
+        break;
+      }
       if (b.heart) {
         // 五重塔的心柱：朱漆、上下兩道金箍
         c.fillStyle = lg(c, 0, 0, w, 0, [0, '#6a1410', 0.3, '#b8281c', 0.55, '#d8402a', 0.8, '#b8281c', 1, '#6a1410']); c.fillRect(0, 0, w, h);
@@ -178,6 +194,29 @@ function paintBlock(c, b, ds, w, h, sc) {
     }
     case M_IRON: {
       const p = P.iron, bz = u * 0.11;
+      if (roof) {
+        // 鐵皮屋頂：一條條直的波浪鐵皮、幾塊鏽斑，上緣一道壓條，下緣一道隊伍顏色的滴水邊
+        c.fillStyle = lg(c, 0, 0, 0, h, [0, mix(p[0], '#ffffff', 0.12), 0.45, p[1], 1, p[2]]); c.fillRect(0, 0, w, h);
+        for (let x = u * 0.05; x < w; x += u * 0.3) { c.fillStyle = rgba(p[2], 0.55); c.fillRect(x, 0, Math.max(1, u * 0.08), h); c.fillStyle = rgba(p[0], 0.45); c.fillRect(x + u * 0.12, 0, Math.max(1, u * 0.05), h); }
+        for (let k = 0; k < 3; k++) { c.fillStyle = 'rgba(150,70,30,' + (0.18 + R() * 0.2).toFixed(2) + ')'; ell(c, R() * w, h * (0.3 + R() * 0.5), u * (0.2 + R() * 0.3), u * (0.1 + R() * 0.12)); c.fill(); }
+        c.fillStyle = p[2]; c.fillRect(0, 0, w, Math.max(2, u * 0.12));
+        c.fillStyle = P.roof[1]; c.fillRect(0, h - u * 0.24, w, u * 0.24); c.fillStyle = P.roof[0]; c.fillRect(0, h - u * 0.24, w, Math.max(1, u * 0.06));
+        break;
+      }
+      if (b.crane || (w > u * 2.5 && h <= u * 1.05)) {
+        // 鐵樑、吊臂：兩道翼板、一格一格的斜撐（桁架，中間是空的），翼板上一排鉚釘。直立的吊臂鐵柱轉九十度畫
+        const vt = h > w * 1.2, W = vt ? h : w, H = vt ? w : h;
+        if (vt) { c.save(); c.translate(w, 0); c.rotate(Math.PI / 2); }
+        const fl = Math.max(2, H * (b.crane ? 0.24 : 0.18)), bays = Math.max(b.crane ? 3 : 1, Math.round(W / (u * (b.crane ? 0.42 : 1))));
+        c.fillStyle = 'rgba(20,14,14,.35)'; c.fillRect(0, fl, W, H - fl * 2);
+        for (const [col, lw] of [[p[2], 0.12], [p[1], 0.06]]) {
+          c.strokeStyle = col; c.lineWidth = Math.max(1, u * lw);
+          for (let k = 0; k < bays; k++) { const x0 = W * k / bays, x1 = W * (k + 1) / bays; c.beginPath(); if (lw > 0.1) { c.moveTo(x0, fl); c.lineTo(x0, H - fl); } if (k & 1) { c.moveTo(x0, fl); c.lineTo(x1, H - fl); } else { c.moveTo(x0, H - fl); c.lineTo(x1, fl); } c.stroke(); }
+        }
+        for (const y0 of [0, H - fl]) { c.fillStyle = lg(c, 0, y0, 0, y0 + fl, [0, p[0], 1, p[1]]); c.fillRect(0, y0, W, fl); c.fillStyle = p[2]; for (let x = u * 0.25; x < W; x += u * 0.5) { c.beginPath(); c.arc(x, y0 + fl * 0.5, Math.max(0.8, u * 0.045), 0, TAU); c.fill(); } }
+        if (vt) c.restore();
+        break;
+      }
       c.fillStyle = lg(c, 0, 0, w, h, [0, mix(p[1], p[0], 0.5), 0.5, p[1], 1, mix(p[1], p[2], 0.5)]); c.fillRect(0, 0, w, h);
       c.strokeStyle = rgba(p[2], 0.7); c.lineWidth = Math.max(1, u * 0.05);
       const n = Math.max(1, Math.round(h / u)), m = Math.max(1, Math.round(w / u));
@@ -286,8 +325,8 @@ function paintBlock(c, b, ds, w, h, sc) {
   c.restore();
   if (ds === 3) return;
   path(); c.strokeStyle = b.mat === M_KEG ? '#2a1608' : b.mat === M_CLAY ? '#3a1c0a' : b.mat === M_SNOW ? '#7f9cc4' : P.ink; c.lineWidth = b.prop || b.mat === M_SNOW ? lw * 0.8 : lw; c.stroke();
-  if (roof) {
-    // 屋簷兩端往上翹的角（只是畫的，不算在碰撞裡）
+  if (roof && b.mat !== M_IRON) {
+    // 屋簷兩端往上翹的角（只是畫的，不算在碰撞裡；鐵皮屋頂沒有）
     const p = P.roof, T = u;
     for (let sd = -1; sd <= 1; sd += 2) {
       const xe = sd < 0 ? 0 : w;
@@ -305,6 +344,15 @@ function paintSpecial(c, b, w, h, u, P, R) {
     c.fillStyle = 'rgba(70,45,10,.6)'; c.fillRect(0, h * 0.32, w, Math.max(1, u * 0.1)); c.fillRect(0, h * 0.72, w, Math.max(1.5, u * 0.14));
     c.fillStyle = 'rgba(255,240,180,.55)'; for (let k = 0; k < 6; k++) { c.beginPath(); c.arc(w * (0.28 + 0.088 * k), h * 0.5, Math.max(1, u * 0.07), 0, TAU); c.fill(); }
     c.fillStyle = '#4a3008'; c.fillRect(0, h - u * 0.22, w, u * 0.22);
+    return true;
+  }
+  if (b.kind === 'pot') {
+    // 鐵水鍋：黑鐵的鍋身、兩道粗箍、兩邊的提耳；鍋口一層發亮的鐵水（澆出去了就只剩一層暗紅的渣）
+    c.fillStyle = lg(c, 0, 0, w, 0, [0, '#1b1719', 0.25, '#433b40', 0.5, '#5e555b', 0.75, '#3c3439', 1, '#171315']); c.fillRect(0, 0, w, h);
+    c.fillStyle = '#231e21'; for (const f of [0.34, 0.7]) { c.fillRect(0, h * f, w, u * 0.16); c.fillStyle = '#6d646a'; c.fillRect(0, h * f, w, Math.max(1, u * 0.04)); c.fillStyle = '#231e21'; }
+    for (const sd of [0, 1]) { c.fillStyle = '#2c2629'; c.beginPath(); c.arc(sd ? w * 0.96 : w * 0.04, h * 0.3, u * 0.22, 0, TAU); c.fill(); }
+    if (!b.spilt) { c.fillStyle = lg(c, 0, 0, 0, h * 0.2, [0, '#fff6c0', 0.35, '#ffc040', 0.75, '#ff7a1e', 1, '#c8400e']); c.fillRect(w * 0.05, 0, w * 0.9, h * 0.17); c.fillStyle = 'rgba(255,255,220,.7)'; c.fillRect(w * 0.2, h * 0.03, w * 0.3, Math.max(1, u * 0.05)); }
+    else { c.fillStyle = lg(c, 0, 0, 0, h * 0.2, [0, '#6a2a14', 1, '#2a1410']); c.fillRect(w * 0.05, 0, w * 0.9, h * 0.15); }
     return true;
   }
   if (b.kind === 'lamp' && b.mat === M_IRON) {
