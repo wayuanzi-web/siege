@@ -18,6 +18,7 @@ const SKINS = {
   ship: { stone: ['#d9cdb4', '#b3a585', '#857858', '#5d523a'], wood: ['#a8673a', '#7e4624', '#4c2610'], roof: ['#d9a35c', '#b07a34', '#76501c'], iron: ['#a9a49c', '#7a756d', '#4a4640'], panel: ['#3e2a1c', '#2e1f14'], ink: '#1f120a', trim: '#ffd27a', flag: '#dc3a2e', flagDk: '#8f1418' },
   // 第三篇
   tide: { stone: ['#dfe4dc', '#b4bfb6', '#81918a', '#5b6a64'], wood: ['#b9a07c', '#8f7653', '#5a4831'], roof: ['#d8b56e', '#ad8942', '#715823'], iron: ['#a7b0ae', '#79837f', '#49524f'], panel: ['#2c3836', '#212b2a'], ink: '#131c1b', trim: '#ffe6a0', flag: '#dc3a2e', flagDk: '#8f1418' },
+  mill: { stone: ['#d9d2c2', '#b3a993', '#857b66', '#5e5646'], wood: ['#c99a62', '#a3743f', '#6a4824'], roof: ['#8aa0b8', '#5d7590', '#3a4c62'], iron: ['#a8acb4', '#7a7f88', '#4b4f57'], panel: ['#3c3026', '#2d241c'], ink: '#1e160f', trim: '#ffd27a', flag: '#dc3a2e', flagDk: '#8f1418' },
   forge: { stone: ['#8a807c', '#655c59', '#433c3a', '#2a2423'], wood: ['#8e5c36', '#6a4022', '#40250f'], roof: ['#a0968f', '#706761', '#45403c'], iron: ['#a3abb6', '#6b7480', '#3a414c'], panel: ['#2e2424', '#201818'], ink: '#130c0c', trim: '#ffb347', flag: '#dc3a2e', flagDk: '#8f1418' }
 };
 // 每一關雙方的城樓一模一樣，只有屋瓦和旗子分顏色：我方藍、敵方紅（藍圖的外觀名稱後面接 @0、@1）

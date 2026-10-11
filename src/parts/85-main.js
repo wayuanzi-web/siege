@@ -139,6 +139,8 @@ function uiEvent(t, a, b, c, d, e) {
       }
       break;
     case 'wind': once('wind', '起風了！每回合的風都不一樣，虛線已經把風算進去'); break;
+    case 'gust': once('gust', '陣風：砲彈飛到一半，風會突然反過來吹（上面寫著飛幾秒後、往哪邊吹多大）。虛線已經算進去了，照著打就好'); break;
+    case 'vortex': once('vortex', '中場的小山上捲起一道龍捲風：穿過它的砲彈會被往上捲、往前的速度被拖慢。虛線也算進去了，也可以繞開它'); break;
     case 'ultarm': if (c === 1) { const T = S.team[0]; say(T.shield.c >= T.shield.need && !T.shield.on ? '敵軍連珠砲上膛了，這一輪打三次：快開護罩！' : '敵軍連珠砲上膛了，這一輪打三次！', 1); } break;
     case 'phase': if (a === 2) { banner('魔王結界', 'boss', '第二階段'); later(1900, () => say('魔王張開結界了！結界分三段、每回合換缺口；戰場中間還裂開一個黑洞，會把砲彈吸彎', 1)); } else { banner('魔王暴怒', 'boss', '最終階段'); later(1900, () => say('魔王暴怒了：結界改開兩個缺口，還會放隕石雨（紅圈是落點，開護罩擋）', 1)); } break;
     case 'bossback': once('bback', '魔王摔下去又飛回來了，不過摔一次扣不少血'); break;

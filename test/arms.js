@@ -1,4 +1,4 @@
-// node test/arms.js [場數=3] [戰場 0–11]：演武場（第三篇的兵器、誤傷、暴擊）各種組合打完整場，檢查會不會出錯、卡住
+// node test/arms.js [場數=3] [戰場 0–15，12 是魔王城不能選]：演武場（第三篇的兵器、誤傷、暴擊）各種組合打完整場，檢查會不會出錯、卡住
 const G = require('./load')('practiceLevel, PRACTICE_BASE, UNIT_LIST'); const { S, simInit, simStep, BOTS, structBar } = G;
 const N = +(process.argv[2] || 3), map = +(process.argv[3] || 0);
 const NEW = ['chain', 'drill', 'cluster', 'sapper', 'magnet', 'wind', 'acid', 'sniper', 'eng'];

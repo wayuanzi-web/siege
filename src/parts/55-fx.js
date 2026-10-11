@@ -435,6 +435,13 @@ function fxOn(t, a, b, c, d, e, f) {
     }
     case 'tide': if (thr('tide', 1500)) { pop(MID, 26, d === 2 ? '大潮：回合結束時暴潮' : b > (S.water ? S.water.y : 0) ? '漲潮' : '退潮', '#cfeefa', 2.8, 1.1); sfx('tide'); } break;
     case 'deluge': burst(P_SPARK, a, b, 20, 18, 0.6, 0.7, C_SKY); burst(P_SMOKE, a, b, 5, 6, 0.8, 1.8, C_WHITE, 4); pop(a, b + 3, '水塔破了！', '#cfeefa', 3, 1.2); sfx('splash'); shake(0.5); break;
+    // 第十四關：風車、陣風、龍捲風
+    case 'gust': if (thr('gust', 1200)) { pop(MID, 30, '陣風！飛 ' + a + ' 秒後風向反過來', '#e8f0ff', 2.6, 1.6); sfx('gust'); } break;
+    case 'vortex': pop(a, b + 12, '龍捲風！', '#e8f0ff', 3.4, 1.4); sfx('gust'); shake(0.3); break;
+    case 'vortexoff': burst(P_DUST, a, b + 2, 10, 10, 1.0, 2.2, C_SAND, 5); break;
+    case 'rotorturn': if (thr('rotor', 1000)) sfx('creak'); break;
+    case 'armbreak': burst(P_DEBRIS, a, b, 12, 18, 0.8, 0.45, C_TAN, 4); burst(P_DUST, a, b, 5, 6, 0.8, 1.6, C_SAND); pop(a, b + 3, '帆架斷了！', '#ffe0a8', 2.8, 1.1); sfx('crash'); shake(0.4); break;
+    case 'rotorfall': burst(P_DEBRIS, a, b, 22, 24, 1.0, 0.6, C_TAN, 6); burst(P_DUST, a, b, 10, 10, 1.2, 2.6, C_SAND, 6); pop(a, b + 5, '整具葉輪掉下來了！', '#ffe0a8', 3.6, 1.6); sfx('crash'); shake(1.0); vibrate(120); break;
     // 第十五關：岩漿湖、鐵水鍋、火山彈
     case 'lavarise': if (thr('lava', 1500)) { pop(MID, 26, c ? '岩漿漲到最高了' : '岩漿上漲', '#ffc27a', 2.8, 1.1); sfx('lava'); shake(0.35); } break;
     case 'melt': burst(P_SMOKE, a, b + 0.3, 2 + Math.min(4, c | 0), 5, 1.0, 1.8, C_DARK, 4); burst(P_EMBER, a, b + 0.2, 5, 9, 0.7, 0.5, C_ORANGE, 3); if (thr('melt', 500)) sfx('fizz'); break;

@@ -333,7 +333,7 @@ function hudBuild() {
   const hb = $('hpB'); hb.querySelectorAll('.tick').forEach((e) => e.remove());
   if (S.lv.boss) for (const p of [S.lv.boss.p2, S.lv.boss.p3]) { const t = document.createElement('span'); t.className = 'tick'; t.style.right = (p * 100) + '%'; hb.appendChild(t); }
   $('foeLbl').textContent = S.lv.boss ? '魔王' : '敵城';
-  $('windBox').hidden = !S.lv.wind;
+  $('windBox').hidden = !S.lv.wind; $('gustTxt').hidden = true;
   HUD.a = HUD.b = -1; HUD.ult = HUD.sh = -1; HUD.wind = 99; HUD.deg = HUD.pow = -1; HUD.mile = 0; HUD.turn = ''; HUD.round = -1; HUD.fire = -1; HUD.boost = null;
   $('turnChip').hidden = true;                                       // 上一局留下來的「輪到你」不能帶進新的一局
 }
@@ -381,8 +381,9 @@ function hudUpdate() {
   const sp = clamp(T.shield.c / T.shield.need, 0, 1), son = T.shield.on, sk = Math.round(sp * 100) + (son ? 1000 : 0);
   if (sk !== HUD.sh) { HUD.sh = sk; bs.style.setProperty('--p', son ? '1' : sp.toFixed(3)); bs.classList.toggle('ready', sp >= 1 && !son); bs.classList.toggle('on', son); $('shNum').textContent = son ? '展開中' : sp >= 1 ? '可用' : Math.floor(sp * 100) + '%'; }
   if (S.lv.wind) {
-    const w = S.wind;
-    if (w !== HUD.wind) { HUD.wind = w; const box = $('windBox'), m = Math.abs(w); box.classList.toggle('calm', m < 1); $('windTxt').textContent = m < 1 ? '無風' : '風 ' + m; $('windArr').style.transform = 'scaleX(' + (w < 0 ? -1 : 1) * (0.55 + Math.min(1, m / 12) * 0.6) + ')'; }
+    const w = S.wind, G = S.gust, wk = w + (G ? '|' + G.t + ':' + G.w : '');
+    // 陣風（第十四關）：回合、風的下面多一行「飛幾秒後反過來、變多強」
+    if (wk !== HUD.wind) { HUD.wind = wk; const box = $('windBox'), m = Math.abs(w); box.classList.toggle('calm', m < 1); $('windTxt').textContent = m < 1 ? '無風' : '風 ' + m; const gt = $('gustTxt'); gt.hidden = !G; if (G) gt.textContent = '陣風：飛 ' + G.t + ' 秒後' + (G.w < 0 ? '←' : '→') + Math.abs(G.w); $('windArr').style.transform = 'scaleX(' + (w < 0 ? -1 : 1) * (0.55 + Math.min(1, m / 12) * 0.6) + ')'; }
   }
   const ang = Math.round(Math.atan2(T.aim[1], T.aim[0]) * 180 / Math.PI), pw = Math.round((Math.hypot(T.aim[0], T.aim[1]) - VMIN) / (VMAX - VMIN) * 100);
   if (ang !== HUD.deg) { HUD.deg = ang; $('aimDeg').textContent = ang; }

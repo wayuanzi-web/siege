@@ -483,6 +483,7 @@ function drawPlats(c, t) {
     if (P.dead) continue;
     const st = P.st;
     if (P.kind === 'cage' || P.kind === 'pan') { drawPart(c, P, t, false); continue; }
+    if (P.kind === 'gondola') continue;          // 風車的吊艙：跟葉輪一起畫在城樓前面（drawRotors）
     if (P.kind === 'island') {
       // 吊著浮島的繩子（畫在島的後面）
       for (const o of P.teth) {
@@ -528,6 +529,40 @@ function drawPlats(c, t) {
     c.restore();
   }
 }
+/* ---------- 風車（第十四關）：葉輪（四支帆架、帆布）、轉軸的大轂 ---------- */
+function drawRotors(c, t) {
+  const s = V.s;
+  for (const R of S.rotors) {
+    const b = R.body, p = b.getPosition(), a = b.getAngle(), Pk = SKINS[R.st.skin] || SKINS.blue, wd = Pk.wood, L = R.len;
+    c.save(); c.translate(X(p.x), Y(p.y)); c.rotate(-a);
+    for (const A of R.arms) {
+      if (A.broken) continue;
+      c.save(); c.rotate(-A.a);
+      const hurt = 1 - A.hp / A.hm, x0 = L * 0.18 * s, x1 = L * 0.97 * s, sw = s * 2.4, sd = R.side === 0 ? 1 : -1;
+      // 帆：一片帆布繃在帆架的一側（破了會有洞），隊伍顏色的條紋
+      c.fillStyle = lg(c, 0, 0, 0, sd * sw, [0, '#f2e6cc', 1, '#d6c49c']); c.beginPath(); c.moveTo(x0, sd * s * 0.2); c.lineTo(x1, sd * s * 0.2); c.lineTo(x1 - s * 0.6, sd * sw); c.lineTo(x0 + s * 0.4, sd * sw * 0.8); c.closePath(); c.fill();
+      c.fillStyle = Pk.roof[1]; for (let k = 0; k < 3; k++) { const u = 0.3 + k * 0.25; c.fillRect(lerp(x0, x1, u), sd > 0 ? s * 0.2 : -sw, s * 0.35, sw - s * 0.2); }
+      if (hurt > 0.3) { const Rr = mkRand(A.k * 17 + R.side * 5); c.fillStyle = 'rgba(20,14,10,.75)'; for (let k = 0; k < (hurt > 0.66 ? 4 : 2); k++) { ell(c, lerp(x0, x1, 0.2 + Rr() * 0.7), sd * sw * (0.3 + Rr() * 0.5), s * (0.25 + Rr() * 0.3), s * (0.18 + Rr() * 0.2)); c.fill(); } }
+      c.strokeStyle = 'rgba(60,40,20,.7)'; c.lineWidth = Math.max(1, s * 0.08); c.beginPath(); c.moveTo(x0, sd * s * 0.2); c.lineTo(x1, sd * s * 0.2); c.lineTo(x1 - s * 0.6, sd * sw); c.lineTo(x0 + s * 0.4, sd * sw * 0.8); c.closePath(); c.stroke();
+      // 帆架：一根長木樑，一格一格的橫檔
+      c.fillStyle = lg(c, 0, -s * 0.35, 0, s * 0.35, [0, wd[0], 0.5, wd[1], 1, wd[2]]); c.fillRect(0, -s * 0.3, x1 + s * 0.2, s * 0.6);
+      c.strokeStyle = INK; c.lineWidth = Math.max(1, s * 0.14); c.strokeRect(0, -s * 0.3, x1 + s * 0.2, s * 0.6);
+      c.strokeStyle = wd[2]; c.lineWidth = Math.max(1, s * 0.16); for (let x = x0; x < x1; x += s * 1.3) { c.beginPath(); c.moveTo(x, -s * 0.3); c.lineTo(x, sd * sw); c.stroke(); }
+      if (hurt > 0.5) { c.strokeStyle = 'rgba(10,6,4,.8)'; c.lineWidth = Math.max(1, s * 0.1); c.beginPath(); c.moveTo(x1 * 0.55, -s * 0.3); c.lineTo(x1 * 0.6, 0); c.lineTo(x1 * 0.57, s * 0.3); c.stroke(); }
+      if (A.flash > 0) { c.globalAlpha = A.flash * 0.6; c.fillStyle = '#ffffff'; c.fillRect(0, -s * 0.35, x1, s * 0.7); c.globalAlpha = 1; }
+      // 尖端的吊環
+      c.fillStyle = '#4a4252'; c.beginPath(); c.arc(L * s, 0, s * 0.42, 0, TAU); c.fill();
+      c.restore();
+      if (A.burn > 0) { const fl = flameSprite(); c.globalCompositeOperation = 'lighter'; for (let k = 0; k < 3; k++) { const u = 0.35 + k * 0.25, ca = Math.cos(A.a), sa = Math.sin(A.a), fx = ca * L * u * s, fy = -sa * L * u * s, fw = V.T * (0.7 + 0.2 * Math.sin(t * 9 + k)); c.save(); c.translate(fx, fy); c.rotate(a); c.globalAlpha = Math.min(1, A.burn) * 0.85; c.drawImage(fl, -fw / 2, -fw * 1.4, fw, fw * 1.5); c.restore(); } c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
+    }
+    // 轉軸的大轂：一塊圓木板、一圈鐵箍、正中一顆大鐵栓
+    c.fillStyle = lg(c, -s, -s, s, s, [0, wd[0], 1, wd[2]]); c.beginPath(); c.arc(0, 0, s * 1.35, 0, TAU); c.fill(); c.strokeStyle = INK; c.lineWidth = Math.max(1.5, s * 0.2); c.stroke();
+    c.strokeStyle = '#3a3440'; c.lineWidth = Math.max(1, s * 0.22); c.beginPath(); c.arc(0, 0, s * 0.95, 0, TAU); c.stroke();
+    c.fillStyle = '#2a2430'; c.beginPath(); c.arc(0, 0, s * 0.45, 0, TAU); c.fill(); c.fillStyle = Pk.trim; c.beginPath(); c.arc(0, 0, s * 0.18, 0, TAU); c.fill();
+    c.restore();
+    for (const G of R.gond) if (!G.dead) drawPart(c, G, t, false);
+  }
+}
 /* ---------- 吊籠寨：鐵籠、配重桶、滑輪 ---------- */
 // front：畫在兵前面的那幾根鐵條（兵站在籠子裡）
 function drawPart(c, P, t, front) {
@@ -561,6 +596,24 @@ function drawPart(c, P, t, front) {
       // 前面一排細鐵條（畫在兵前面）
       c.strokeStyle = 'rgba(40,34,48,.85)'; c.lineWidth = Math.max(1, s * 0.2); c.beginPath(); for (let k = 1; k < n; k++) { const x = lerp(x0, x1, k / n); c.moveTo(x, y0 + th); c.lineTo(x, y1 - th * 1.3); } c.stroke();
       c.strokeStyle = 'rgba(200,190,215,.35)'; c.lineWidth = Math.max(1, s * 0.07); c.stroke();
+    }
+  } else if (P.kind === 'gondola') {
+    // 風車的吊艙：木頭的小艙，鐵框、四角鐵箍，頂上一根吊桿掛在帆架尖端
+    const Pk = SKINS[st.skin] || SKINS.blue, wd = Pk.wood, x0 = X(P.xa), x1 = X(P.xb), yt = Y(P.fy + P.ch), yf = Y(P.fy), yp = Y(P.py), cx = (x0 + x1) / 2, rail = Y(P.fy + 1.25);
+    if (!front) {
+      c.fillStyle = 'rgba(30,18,10,.35)'; c.fillRect(x0, yt, x1 - x0, yf - yt);
+      c.strokeStyle = '#2c2420'; c.lineWidth = Math.max(1.5, s * 0.26); c.beginPath(); c.moveTo(cx, yt); c.lineTo(cx, yp); c.stroke();
+      c.fillStyle = '#5a5262'; c.beginPath(); c.arc(cx, yp, s * 0.35, 0, TAU); c.fill();
+      // 頂棚（隊伍顏色的帆布）
+      c.fillStyle = Pk.roof[1]; c.beginPath(); c.moveTo(x0 - s * 0.35, yt + s * 0.5); c.lineTo(cx, yt - s * 0.55); c.lineTo(x1 + s * 0.35, yt + s * 0.5); c.closePath(); c.fill(); c.strokeStyle = INK; c.lineWidth = Math.max(1, s * 0.16); c.stroke();
+      for (const x of [x0 + s * 0.2, x1 - s * 0.2]) { c.strokeStyle = '#2c2420'; c.lineWidth = s * 0.36; c.beginPath(); c.moveTo(x, yt + s * 0.4); c.lineTo(x, yf); c.stroke(); c.strokeStyle = wd[1]; c.lineWidth = s * 0.18; c.stroke(); }
+      c.fillStyle = lg(c, 0, yf - s * 0.1, 0, yf + s * 0.55, [0, wd[0], 1, wd[2]]); c.fillRect(x0 - s * 0.1, yf - s * 0.05, x1 - x0 + s * 0.2, s * 0.55); c.strokeStyle = INK; c.lineWidth = Math.max(1, s * 0.15); c.strokeRect(x0 - s * 0.1, yf - s * 0.05, x1 - x0 + s * 0.2, s * 0.55);
+    } else {
+      // 前面一道木欄杆（畫在兵前面，只到腰）
+      c.fillStyle = lg(c, 0, rail, 0, yf, [0, wd[0], 0.5, wd[1], 1, wd[2]]); c.fillRect(x0, rail, x1 - x0, yf - rail);
+      c.strokeStyle = 'rgba(40,22,10,.6)'; c.lineWidth = Math.max(1, s * 0.08); for (let k = 1; k < 4; k++) { const x = lerp(x0, x1, k / 4); c.beginPath(); c.moveTo(x, rail); c.lineTo(x, yf); c.stroke(); }
+      c.strokeStyle = INK; c.lineWidth = Math.max(1, s * 0.15); c.strokeRect(x0, rail, x1 - x0, yf - rail);
+      c.fillStyle = '#3a3440'; c.fillRect(x0, rail - s * 0.08, x1 - x0, s * 0.2);
     }
   } else if (P.kind === 'pan' && !front) {
     // 配重桶：木桶、兩道鐵箍
@@ -1043,6 +1096,21 @@ function drawObjs(c, t) {
   const s = V.s;
   for (const o of S.objs) {
     switch (o.t) {
+      case 'vortex': {
+        // 龍捲風（第十四關）：一道灰白的漏斗雲，底下捲著塵土，上面散開；一圈一圈往上轉（物理上的風柱位置不動，畫的時候擺一擺）
+        o.age += RD.dt || 0.016; const k = Math.min(1, o.age / 0.8), H = o.top - o.base, x0 = X(o.x), yb = Y(o.base);
+        for (let j = 0; j < 14; j++) {
+          const u = j / 13, yy = yb - u * H * s, rw = (0.35 + u * u * 1.6) * o.R * s, sway = Math.sin(t * 1.3 + u * 2.4) * s * (0.6 + u * 2.2), ph = t * (6 - u * 3) + j * 0.7;
+          c.globalAlpha = k * (0.16 + 0.22 * (1 - u)); c.strokeStyle = j & 1 ? '#d8dde4' : '#9aa4b2'; c.lineWidth = Math.max(1.5, s * (0.9 - u * 0.5));
+          c.beginPath(); c.ellipse(x0 + sway, yy, rw, rw * 0.26, 0, ph % TAU, ph % TAU + 4.6); c.stroke();
+        }
+        c.globalAlpha = k * 0.22; c.fillStyle = lg(c, 0, yb - H * s, 0, yb, [0, 'rgba(200,206,214,0)', 0.5, 'rgba(170,178,190,.55)', 1, 'rgba(140,128,110,.7)']);
+        c.beginPath(); c.moveTo(x0 - o.R * s * 0.35, yb); for (let u = 0; u <= 1.001; u += 0.1) c.lineTo(x0 - (0.35 + u * u * 1.6) * o.R * s + Math.sin(t * 1.3 + u * 2.4) * s * (0.6 + u * 2.2), yb - u * H * s); for (let u = 1; u >= -0.001; u -= 0.1) c.lineTo(x0 + (0.35 + u * u * 1.6) * o.R * s + Math.sin(t * 1.3 + u * 2.4) * s * (0.6 + u * 2.2), yb - u * H * s); c.closePath(); c.fill();
+        c.globalAlpha = 1;
+        if (!FX.low && (RD.frame & 1) === 0) part(P_DUST, o.x + rndS() * o.R, o.base + Math.random() * 3, rndS() * 14, 6 + Math.random() * 10, 0.7, 1.4, C_SAND);
+        if (!FX.low && (RD.frame & 3) === 0) part(P_DEBRIS, o.x + rndS() * o.R * 1.5, o.base + Math.random() * H * 0.8, rndS() * 16, 10 + Math.random() * 10, 0.8, 0.35, C_TAN);
+        break;
+      }
       case 'geyser': {
         const x = X(o.x), yb = Y(o.base);
         // 下一回合輪到它噴：地面先冒火星
@@ -1365,6 +1433,8 @@ function drawAim(c, t) {
       if (!pathDots(c, P, mx, my, 0.05 + flow, end, maxT, first ? 0.6 : 0.36, first ? 0.26 : 0.18, inBox)) { first = false; continue; }
       c.fillStyle = mine ? (first ? 'rgba(255,255,255,.97)' : 'rgba(255,255,255,.55)') : 'rgba(255,255,255,.4)'; c.fill();
       if (mine && first) { c.strokeStyle = 'rgba(15,42,120,.85)'; c.lineWidth = Math.max(1, s * 0.16); c.stroke(); }
+      // 陣風（第十四關）：砲彈飛到風向反過來的那一點，畫一個小漩渦和新的風向
+      if (mine && first && S.gust && S.gust.t < end) { const i = (Math.min(P.length / 2, Math.round(S.gust.t * 30)) - 1) * 2; if (i >= 0) { const gx = X(P[i]), gy = Y(P[i + 1]), r = s * 0.9, d = S.gust.w < 0 ? -1 : 1; c.lineCap = 'round'; for (const [col, lw] of [['rgba(15,42,120,.85)', 0.5], ['#ffffff', 0.24]]) { c.strokeStyle = col; c.lineWidth = Math.max(1, s * lw); c.beginPath(); c.arc(gx, gy, r, 0.3, TAU - 0.6); c.stroke(); c.beginPath(); c.arc(gx, gy, r * 0.45, 1.2, TAU); c.stroke(); c.beginPath(); c.moveTo(gx + d * r * 1.3, gy - r * 1.6); c.lineTo(gx + d * r * 3.1, gy - r * 1.6); c.moveTo(gx + d * r * 2.4, gy - r * 2.2); c.lineTo(gx + d * r * 3.1, gy - r * 1.6); c.lineTo(gx + d * r * 2.4, gy - r * 1.0); c.stroke(); } } }
       first = false;
     }
   }
@@ -1395,10 +1465,11 @@ function renderFrame(dt, rdt) {
   drawBlocks(c, t, rdt);
   drawFuses(c, t);
   drawRopes(c, t);
+  if (S.rotors.length) drawRotors(c, t);
   drawGates(c, t);
   drawUnits(c, t);
   drawArms(c, t);
-  for (const P of S.plats) if (P.kind === 'cage' && !P.dead) drawPart(c, P, t, true);
+  for (const P of S.plats) if ((P.kind === 'cage' || P.kind === 'gondola') && !P.dead) drawPart(c, P, t, true);
   if (S.ropes.length) { drawBlocks(c, t, rdt, 1); c.setTransform(1, 0, 0, 1, FX.shx, FX.shy); }
   drawWater(c, t);
   if (S.plats.length) drawShipMag(c);

@@ -63,7 +63,8 @@ function physNew() {
     const m = c.getManifold(); if (!m.pointCount) return;
     const A = c.getFixtureA().getBody(), B = c.getFixtureB().getBody(), va = A.getLinearVelocity(), vb = B.getLinearVelocity();
     // 懸臂樑（插銷釘在岩壁上的）跟那座城的岩壁不碰撞
-    { const oa = A.getUserData(), ob = B.getUserData(); if ((oa && oa.noRock && oa.noRock.rockBody === B) || (ob && ob.noRock && ob.noRock.rockBody === A)) { c.setEnabled(false); return; } }
+    { const oa = A.getUserData(), ob = B.getUserData(); if ((oa && oa.noRock && oa.noRock.rockBody === B) || (ob && ob.noRock && ob.noRock.rockBody === A)) { c.setEnabled(false); return; }
+      if (S.rotors.length && rotorSkip(c.getFixtureA().getUserData(), c.getFixtureB().getUserData(), oa, ob)) { c.setEnabled(false); return; } }          // 風車的葉輪、吊艙跟自己的城不碰撞
     // 投石兵的大石頭還在自己城裡：穿過自己的牆和自己的兵（跟砲彈一樣，飛出城才會撞東西）
     { const oa = A.getUserData() || c.getFixtureA().getUserData(), ob = B.getUserData() || c.getFixtureB().getUserData();          // 吊籠、配重桶的身體沒有掛資料：看零件上的
       if (oa && oa.bIn && ob && ((ob.side === oa.bSide && (ob.isUnit || ob.st === S.st[oa.bSide])) || (ob.dom && (ob.x0 < MID) === (oa.bSide === 0)))) { c.setEnabled(false); return; }
@@ -538,6 +539,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
     const crit = critOn && hit && (hit.isBlock ? weakSpot(hit, x, y) : headShot(hit, y)), dmg = dmg0 * (crit ? CRIT_K : 1), ud = ud0 * (crit ? CRIT_K : 1);
     if (crit) ev('crit', x, y, side);
     if (hit && hit.isHull) hullHurt(hit, dmg, kind, side);
+    else if (hit && hit.isArm) armHurt(hit, dmg, kind, side);
     else if (hit && hit.isBlock && !hit.dead) {
       if (hit.bigBell) bellPush(side, dmg);
       const b = hit;
@@ -573,6 +575,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
       if (kk > 0) { P.body.setAwake(true); P.body.applyLinearImpulse({ x: nx / nl * j * kk, y: ny / nl * j * kk }, { x: qx, y: qy }, true); }
       continue;
     }
+    if (o.isArm) { armBlast(o, x, y, r, dmg, kind, side, hit); continue; }          // 風車的葉臂
     if (o.isHull) {
       // 船身：照離最近的那一點算傷害；船很重，只被推一點點
       const A = o.fix.getAABB(0), qx = clamp(x, A.lowerBound.x, A.upperBound.x), qy = clamp(y, A.lowerBound.y, A.upperBound.y), d = Math.hypot(x - qx, y - qy);

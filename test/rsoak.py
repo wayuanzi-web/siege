@@ -38,7 +38,7 @@ async ([lvl, bot, seed, monkey, maxSec]) => {
   const q = window.__qp, S = q.S, G = q.G, $ = (id) => document.getElementById(id);
   window.__hold = true;
   let s = seed; const rnd = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
-  q.SV.open = 12; q.SV.seen = true;
+  q.SV.open = q.LEVELS.length; q.SV.seen = true;
   const prac = typeof lvl === 'string' && lvl[0] === 'p';
   if (prac) {
     // 演武場：雙方各挑六個兵（十八種隨機），戰場照清單

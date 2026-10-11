@@ -42,6 +42,8 @@ const tgC = (side, cells, w) => { const out = [], o = 1 - side, st = S.st[o]; fo
 const steles = () => { const out = []; for (const q of S.structs) if (q.side === 2 && !q.loose) for (const b of q.blocks) if (!b.dead && b.dom && b.inPlace) out.push(b); return out.sort((a, b) => a.x0 - b.x0); };
 // 某一邊的繩索、鐵鍊還在不在（tag）
 const ropeLeft = (tag, side) => S.ropes.some((r) => !r.cut && r.side === (side === undefined ? 1 : side) && r.tag === tag);
+// 第十四關：side 那一邊的葉輪還裝在軸上
+const rotorUp = (side) => { const R = S.st[side].rotor; return !!(R && !R.fallen); };
 // 第十五關：鐵水鍋還吊著
 const potUp = (side) => S.ropes.some((r) => !r.cut && r.side === side && r.hang && r.hang.hang === 'pot' && !r.hang.hangFree);
 // 第九關：閘還在、吊籠還吊著
@@ -316,6 +318,23 @@ const LEVELS = [
     foe: { crew: ['bomb', 'chain', 'rocket', 'fire', 'sniper', 'wind'], hp: 1.1, dmg: 1.15, open: 0.55, ai: { err: 3.4, think: 1.1, gate: 0.6, hate: 0.2, skill: 0.6, sap: 0.6, warm: 1.8 } },
     weak: (side) => tideWeak(side),
     lantern: { at: 3, every: 3, spots: [[52, 46], [60, 30]] }
+  },
+  {
+    name: '颶風風車', sayTop: 1, tag: '轉動的葉輪・吊艙・颶風', theme: 13, castle: 'MILL', stress: 1, blockHp: 2.3, rules: { ff: 1, crit: 1, elem: 1 },
+    tip: '兩座城前面各一具大風車：四支帆架的尖端各吊一個吊艙，各站一個兵。每回合結束，葉輪照風向轉 45 度，吊艙轉到新的位置。打斷帆架，吊艙連人掉下去；打掉塔腰的軸座，整具葉輪掉下來。颱風天：第二回合起砲彈飛到一半會撞上反吹的陣風，第三回合起中場的小山上不時捲起龍捲風',
+    hints: [{ r: 1, t: '敵城風車的四個吊艙各站一個兵，吊在帆架的尖端：打斷那支帆架（木頭的，火油燒得動），吊艙連人掉下去', ok: () => rotorUp(1) },
+      { r: 2, t: '每回合結束，葉輪照這一回合的風向轉 45 度：吊艙會轉到新的位置（轉到正下方的最好打）', ok: () => rotorUp(1) },
+      { r: 3, t: '葉輪的轉軸裝在敵塔塔腰的鐵軸座上，藏在石牆中間：把牆打開、打掉軸座，整具葉輪連吊艙一起掉下來', ok: () => rotorUp(1) },
+      { r: 4, t: '掉下來的兵沒有死，會從地上接著打；中間的小山擋著，地上的兵要吊高才打得到對面' }],
+    ground: [[-40, 3], [0, 0], [41, 0], [46, 2.2], [51, 6.4], [56, 7.6], [61, 6.4], [66, 2.2], [71, 0], [112, 0], [152, 3]],
+    wind: { max: 7, at: 1 },
+    // 陣風：第二回合起，砲彈飛到第 t0–t1 秒的時候風向反過來（最大 max）；龍捲風：第三回合起每三回合一道，在中場 x0–x1 之間（高 h、半徑 R）
+    gust: { at: 2, max: 9, t0: 0.9, t1: 1.6 },
+    tornado: { at: 3, every: 3, x0: 50, x1: 62, h: 32, R: 3.4, up: 150, damp: 2.4 },
+    me: { crew: ['fire', 'cluster', 'rocket', 'wind', 'bomb', 'eng'] },
+    foe: { crew: ['rocket', 'fire', 'cluster', 'bolt', 'bomb', 'stone'], hp: 1.15, dmg: 1.08, open: 0.55, ai: { err: 3.3, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.55 } },
+    weak: (side) => millWeak(side),
+    lantern: { at: 3, every: 3, spots: [[52, 47], [60, 31]] }
   },
   {
     name: '熔岩鑄城', tag: '鐵懸臂・鐵水鍋・岩漿上漲', theme: 14, castle: 'FORGE', y0: -4, stress: 1, blockHp: 1.4, rules: { ff: 1, crit: 1, elem: 1 },

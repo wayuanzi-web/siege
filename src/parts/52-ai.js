@@ -62,7 +62,7 @@ const BOSS_W = 0.9;      // 魔王關：自動玩家特別想打魔王（打倒�
 // 從砲口 (mx,my) 出發，tau 秒後要到 (tx,ty)，需要的初速（把風算進去）
 // gk、spd：這種砲彈的重力剩幾倍、打出去比瞄準的快幾倍（狙擊彈）。回傳的是「瞄準」的那個速度
 function aimFor(mx, my, tx, ty, tau, wind, out, gk, spd) {
-  const s = spd || 1; out[0] = (tx - mx - 0.5 * wind * tau * tau) / tau / s; out[1] = (ty - my + 0.5 * GRAV * (gk || 1) * tau * tau) / tau / s; return out;
+  const s = spd || 1; out[0] = (tx - mx - windDisp(wind, tau)) / tau / s; out[1] = (ty - my + 0.5 * GRAV * (gk || 1) * tau * tau) / tau / s; return out;
 }
 function aimOk(vx, vy, dir) {
   const fx = vx * dir; if (fx <= 0) return false;
@@ -84,7 +84,7 @@ function gatePosAt(g, t, out) {
 const _tr = { hit: 0, x: 0, y: 0, t: 0, mult: 1, gm: 0, o: null, obj: null, lan: null, gate: null, port: false, rope: null, amp: 1, fire: false, zap: false, frost: false, roll: false, ev: false, ex: 0, ey: 0, evx: 0, evy: 0, et: 0 };
 function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
   const R = _tr; R.hit = 0; R.mult = 1; R.gm = 0; R.o = null; R.obj = null; R.lan = null; R.gate = null; R.port = false; R.rope = null; R.amp = 1; R.fire = false; R.zap = false; R.frost = false; R.roll = false; R.ev = false; R.split = false;
-  const dt = 1 / 30, own = S.st[side], foeT = S.team[1 - side], fst = S.st[1 - side], forces = AMP.jets.length || AMP.holes.length;
+  const dt = 1 / 30, own = S.st[side], foeT = S.team[1 - side], fst = S.st[1 - side], forces = AMP.jets.length || AMP.holes.length || AMP.vorts.length, gust = S.gust;
   if (wi === undefined) wi = 0;
   const W = WL[wi], gk = W.gk || 1;
   if (W.spd) { vx *= W.spd; vy *= W.spd; }          // 狙擊彈：打出去比瞄準的快
@@ -109,7 +109,7 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
       if (path) path.push(x, y);
       continue;
     }
-    vy -= GRAV * gk * dt; vx += wind * dt;
+    vy -= GRAV * gk * dt; vx += (gust ? (t - dt * 0.5 >= gust.t ? gust.w : wind) : wind) * dt;
     if (!R.ev) { for (const o of AMP.jets) if (x > o.x0 && x < o.x1 && Math.abs(y - o.y) < o.hh && vx * o.U > 0) evt(x, y, vx, vy); for (const o of AMP.holes) if (o.on && (x - o.x) * (x - o.x) + (y - o.y) * (y - o.y) < o.R * o.R) evt(x, y, vx, vy); }
     if (forces) { load(); const f = ampForces(dt); if (f === 2) { R.x = x; R.y = y; return end(5); } vx = SA.vx; vy = SA.vy; mass = SA.mass; kk = SA.k; }
     let nx = x + vx * dt + cx, ny = y + vy * dt + cy;
@@ -200,9 +200,9 @@ function volleyAim(side, u, ax, ay, E, out) {
   const W = u.w || {}, g = GRAV * (W.gk || 1), spd = W.spd || 1;          // 狙擊彈：重力小、打出去比瞄準的快（算出來的初速再換回瞄準的速度）
   let best = 1e9;
   for (let tau = spd > 1 ? 0.12 : 0.25; tau <= 4.5; tau += 0.05) {
-    const vx = (E.x - mx - 0.5 * wind * tau * tau) / tau, vy = (E.y - my + 0.5 * g * tau * tau) / tau;
+    const vx = (E.x - mx - windDisp(wind, tau)) / tau, vy = (E.y - my + 0.5 * g * tau * tau) / tau;
     if (!aimOk(vx / spd, vy / spd, dir)) continue;
-    const avx = vx + wind * tau, avy = vy - g * tau;
+    const avx = vx + windVel(wind, tau), avy = vy - g * tau;
     let da = Math.abs(Math.atan2(avy, avx) - ta); if (da > Math.PI) da = TAU - da;
     const err = da + 0.25 * Math.abs(Math.hypot(avx, avy) - sp0) / Math.max(10, sp0);
     if (err < best) { best = err; out[0] = vx / spd; out[1] = vy / spd; }
@@ -301,6 +301,7 @@ function aiScore(T, t, R) {
     else if (t.hg) hit = R.hit === 5 && R.gate === t.hg ? 1 : 0;
     else if (t.rope) hit = R.hit === 6 && R.rope === t.rope ? 1 : 0;
     else if (t.blk) hit = R.hit === 2 && R.o === t.blk ? 1 : 0;
+    else if (t.arm) hit = R.o === t.arm ? 1 : 0;
     else if (t.hull) hit = R.o === t.hull ? 1 : 0;
     else if (t.fuse) hit = Math.max(0, 1 - Math.hypot(R.x - t.x, R.y - t.y) / 3);
     const gen = aiGen(T, R);

@@ -429,7 +429,7 @@ function boulderStep(dt) {
     // 飛過對方的繩子、鐵鍊：大石頭一路砸斷（每一條只算一次）
     if (b.bpx !== undefined && S.ropes.length) { const rc = ropeCross(b.bpx, b.bpy, p.x, p.y, b.bSide); if (rc && !(b.bRope && b.bRope.has(rc.r))) { (b.bRope || (b.bRope = new Set())).add(rc.r); ropeHurt(rc.r, b.bW.dmg * b.bMul * 1.25, K_HEAVY, b.bSide); } }
     b.bpx = p.x; b.bpy = p.y;
-    body.applyForce({ x: S.wind * body.getMass(), y: 0 }, body.getWorldCenter(), true);         // 跟砲彈一樣吃風
+    b.bAge = (b.bAge || 0) + dt; body.applyForce({ x: (S.gust ? windAt(b.bAge) : S.wind) * body.getMass(), y: 0 }, body.getWorldCenter(), true);         // 跟砲彈一樣吃風（陣風也是）
     const o = 1 - b.bSide;
     if (S.team[o].shield.on && inBubble(S.st[o], p.x, p.y)) { ev('shieldhit', p.x, p.y, o); ev('rockstop', p.x, p.y, o); blockKill(b, 2, K_CRUSH, true); continue; }
     if (b.bHit || (v.x * v.x + v.y * v.y < 30 && !b.bIn)) { b.bFly = 0; body.setBullet(false); body.setAngularDamping(1.2); }
@@ -611,7 +611,7 @@ function liftBreak(o, side) {
 }
 // 兵都放上去之後才算（simInit 裡呼叫）：整座島（船）連城連兵多重、重心在哪
 function platCalib(P) {
-  if (P.kind === 'cage' || P.kind === 'pan') return;
+  if (P.kind === 'cage' || P.kind === 'pan' || P.kind === 'gondola') return;
   const body = P.body, st = P.st;
   const mass = () => { let M = body.getMass(), mx = M * body.getWorldCenter().x; for (const b of st.blocks) if (!b.dead) { M += b.mass; mx += b.mass * b.body.getWorldCenter().x; } for (const u of st.units) if (u.body) { M += u.mass; mx += u.mass * u.body.getWorldCenter().x; } return [M, mx / M]; };
   let [M, xc] = mass();
@@ -656,7 +656,7 @@ function hullSub(P, c) {
 // 每一步（物理之前）：氣球的拉力、船的浮力和錨鍊
 function platForces() {
   for (const P of S.plats) {
-    if (P.dead || !P.body.isAwake() || P.kind === 'cage' || P.kind === 'pan') continue;
+    if (P.dead || !P.body.isAwake() || P.kind === 'cage' || P.kind === 'pan' || P.kind === 'gondola') continue;
     const body = P.body;
     if (P.kind === 'island') {
       // 浮空晶石的力：量的是晶石那一點沉了多少，但施力點放在高處（城的半腰）—— 從底下往上頂的力會把島頂翻，吊在高處才穩
@@ -713,6 +713,13 @@ function platStep(dt, act) {
     const body = P.body, p = body.getPosition();
     // 掉出戰場（整座島、整艘船沉下去了）
     if (p.y < -48) { PH.world.destroyBody(body); P.dead = true; continue; }
+    if (P.kind === 'gondola') {
+      // 風車的吊艙：晃得慢了就加一點阻力停下來；還吊著的時候晃也等它（回合先別結束）
+      const w = Math.abs(body.getAngularVelocity()), v2 = body.getLinearVelocity().lengthSquared(), calm = !P.dropped && w < 0.3;
+      if (calm !== !!P.calm) { P.calm = calm; body.setAngularDamping(calm ? 6 : P.dropped ? 0.6 : 3.2); }
+      if (act && body.isAwake() && (w > 0.08 || v2 > 0.6)) S.chainT = S.time;
+      continue;
+    }
     if (P.kind === 'cage' || P.kind === 'pan') {
       // 吊籠、配重桶：晃得慢了就加一點阻力，讓它停下來（不然會一直輕輕地盪，回合結束不了）
       const w = Math.abs(body.getAngularVelocity()), v2 = body.getLinearVelocity().lengthSquared(), PU = P.st.pulley, free = PU && PU.mode === 'free' && !PU.cut;

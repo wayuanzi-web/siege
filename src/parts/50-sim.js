@@ -59,7 +59,7 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
     if (ex) { o.deco = ex.deco || 0; if (kind === 'roof') { o.il = (mirror ? ex.ir : ex.il) * CS; o.ir = (mirror ? ex.il : ex.ir) * CS; } if (kind === 'ball') { o.r = ex.r; o.y = y0 + cy * CS + ex.r; } if (ex.bw) { o.w = ex.bw; o.h = ex.bh; o.y = y0 + cy * CS + ex.bh / 2; } if (ex.sw) o.w = cw * CS * ex.sw; if (ex.den) o.den = ex.den; }
     const b = mkBlock(st, o);
     b.cx = mx; b.cy = cy; b.cw = cw; b.ch = ch;
-    if (ex) { if (ex.dom) { b.dom = 1; b.body.getFixtureList().setFriction(0.3); } if (ex.reso) { b.reso = 1; b.hp = b.hm = 180; } /* 共鳴晶柱很硬，兩邊一樣硬（不吃城防倍率）：轟天砲正中一發、或火箭五六發才震得起來 */ if (ex.sk) b.sk = ex.sk; if (ex.beam) { b.beam = 1; b.hp *= 12; b.hm *= 12; b.body.getFixtureList().setFriction(0.22); } if (ex.snow) b.snow = 1; if (ex.mag) b.mag = 1; if (ex.rod) { b.rod = 1; b.wt = 0; b.body.setType('static'); } /* 避雷針用鐵栓釘在岩簷上：推不倒，只會被打斷 */ if (ex.tslab) b.tslab = 1; if (ex.brake) b.brake = 1; if (ex.heart) { b.heart = 1; b.hp *= 3; b.hm *= 3; } if (ex.core) { b.core = 1; b.hp = b.hm = 150; } if (ex.tank) b.tank = 1; if (ex.crane) b.crane = 1; }      // 天秤的大樑很滑：一歪，上面的東西就往下滑
+    if (ex) { if (ex.dom) { b.dom = 1; b.body.getFixtureList().setFriction(0.3); } if (ex.reso) { b.reso = 1; b.hp = b.hm = 180; } /* 共鳴晶柱很硬，兩邊一樣硬（不吃城防倍率）：轟天砲正中一發、或火箭五六發才震得起來 */ if (ex.sk) b.sk = ex.sk; if (ex.beam) { b.beam = 1; b.hp *= 12; b.hm *= 12; b.body.getFixtureList().setFriction(0.22); } if (ex.snow) b.snow = 1; if (ex.mag) b.mag = 1; if (ex.rod) { b.rod = 1; b.wt = 0; b.body.setType('static'); } /* 避雷針用鐵栓釘在岩簷上：推不倒，只會被打斷 */ if (ex.tslab) b.tslab = 1; if (ex.brake) b.brake = 1; if (ex.heart) { b.heart = 1; b.hp *= 3; b.hm *= 3; } if (ex.core) { b.core = 1; b.hp = b.hm = 150; } if (ex.tank) b.tank = 1; if (ex.crane) b.crane = 1; if (ex.axle) { b.axle = 1; b.body.setType('static'); } }          // 風車的軸座：用大鐵栓釘在塔裡，推不動，只打得壞      // 天秤的大樑很滑：一歪，上面的東西就往下滑
     if (kind === 'box' && ch === 1 && cw >= 3 && !(ex && (ex.deco || ex.beam)) && (mat === M_STONE || mat === M_WOOD || mat === M_ICE || mat === M_BAMBOO || mat === M_GLASS)) segInit(b);        // 長樑、樓板：分段算耐久
     if (ex && ex.hard) { b.hp *= ex.hard; b.hm *= ex.hard; b.hard = 1; if (b.seg) { b.segM *= ex.hard; for (let k = 0; k < b.cw; k++) b.seg[k] *= ex.hard; } }
     for (let a = 0; a < cw; a++) for (let bb = 0; bb < ch; bb++) { const i = (cy + bb) * cols + mx + a; st.cellB[i] = b; st.cellK[i] = 1; }
@@ -112,6 +112,7 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
       case 'F': put(M_IRON, 'box', cx, cy, hrun(cx, cy, ch), 1); break;                         // 鐵樑
       case 'j': put(M_IRON, 'box', cx, cy, 1, vrun(cx, cy, ch), { sw: 0.5, crane: 1, hard: 8 }); break;          // 吊臂的鐵柱
       case 'f': { const k = hrun(cx, cy, ch); put(M_IRON, 'box', cx, cy, k, 1, { bw: k * CS, bh: CS * 0.5, crane: 1, hard: 8 }); break; }          // 吊臂（扁的，貼在那一格的底）
+      case 'U': put(M_IRON, 'box', cx, cy, 1, 1, { axle: 1, hard: 1.2 }); break;                   // 風車的軸座（葉輪的轉軸裝在它前面）
       case 'D': { const w = hrun(cx, cy, ch), h = vrun(cx, cy, ch); put(M_WOOD, 'box', cx, cy, w, h, { deco: 1 }); break; }
       case 'K': put(M_KEG, 'box', cx, cy, 1, 1, { bw: CS * 0.78, bh: CS * 0.88 }); break;
       case 'M': put(M_KEG, 'box', cx, cy, 1, 1, { bw: CS * 0.92, bh: CS * 0.94, mag: 1 }); break;          // 地窖火藥庫的大桶（封得很緊：只有火點得著）
@@ -187,6 +188,7 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
   if (def.pivot) mkPivot(st, def.pivot);
   if (def.pins) for (const pd of def.pins) mkPin(st, pd);
   if (def.fuse) mkFuse(st, def.fuse);
+  if (def.rotor) mkRotor(st, def.rotor);          // 風車的葉輪、吊艙（第十四關）
   // 吊著的殿：鐵鍊吊著的樓板、和它上面的牆、屋頂（盪起來不要被「快停就幫它停」的阻尼煞住）
   if (def.swingy) for (const b of st.blocks) if (b.mat !== M_IRON || !b.rod) { if (!b.rod) b.swingy = 1; }
   if (def.weld) mkWelds(st, def.weld);
@@ -228,6 +230,7 @@ function castleScan(st) {
     if (b.inPlace && !b.lost) hp += b.wt * (STAND_K + (1 - STAND_K) * clamp(b.hp / b.hm, 0, 1));          // 還站著就先算 STAND_K；其餘看打裂了多少
   }
   if (P && P.comps) for (const c of P.comps) if (c.wt) hp += P.dead ? 0 : c.wt * clamp(c.hp / c.hm, 0, 1) * (1 - 0.5 * c.flood);          // 船身：打破的、進水的船艙少算
+  if (st.rotor) hp += rotorHp(st);          // 風車的葉輪：還裝著的葉臂、還吊著的吊艙
   if (st.cageWt) { const PU = st.pulley, cb = PU.cage; if (!PU.cut && !cb.dead && cb.body) { PU.sunk = Math.max(PU.sunk || 0, cb.y0 - cb.body.getPosition().y); hp += st.cageWt * clamp(1 - PU.sunk / (PU.maxSink || 20), 0, 1); } }          // 吊籠：沉得越深算得越少（照沉到最深的那一次算：籠裡的兵倒了、籠子變輕升回來，城防也不會漲回去）
   st.hpNow = hp;
   // 屋內的暗色背景：頭頂上還有東西蓋著的格子才畫。地板破了一格不影響（還是在屋裡），天花板那一格沒了就透天
@@ -267,7 +270,7 @@ function mkUnit(side, type, st, slot, hpMul) {
   u.hx = u.x; u.hy = u.y; u.hx0 = u.x; u.hy0 = u.y;           // hx0、hy0：原本站的位置（浮島、船上的城用它自己的座標）
   { const b = st.cellB[(slot.cy - 1) * st.cols + slot.cx]; if (slot.cy > 0 && b) { u.homeB = b; u.homeL = b.body.getLocalPoint({ x: u.x, y: u.y }); u.homeL = { x: u.homeL.x, y: u.homeL.y }; } }          // 腳下那塊磚
   // 站在吊籠裡的兵：他的「原位」跟著吊籠走
-  if (st.parts) for (const P of st.parts) if (P.kind === 'cage' && u.x > P.xa && u.x < P.xb && u.y + 0.5 > P.ya && u.y < P.yb) u.fr = P;
+  if (st.parts) for (const P of st.parts) if ((P.kind === 'cage' || P.kind === 'gondola') && u.x > P.xa && u.x < P.xb && u.y + 0.5 > P.ya && u.y < P.yb) u.fr = P;
   mkUnitBody(u);
   st.units.push(u); T.units.push(u); S.units.push(u);
   return u;
@@ -448,7 +451,7 @@ function inBubble(st, x, y) {
 function shotsStep(dt) {
   const wind = S.wind, gates = S.gates, objs = S.objs, team = S.team;
   const sh0 = team[0].shield.on ? S.st[0] : null, sh1 = team[1].shield.on ? S.st[1] : null;
-  const forces = AMP.jets.length || AMP.holes.length;
+  const forces = AMP.jets.length || AMP.holes.length || AMP.vorts.length;
   for (let i = 0; i < SH.n; i++) {
     // 滾地砲（第 2 關）：沿著地面滾，跟在天上飛的分開算
     if (SH.flag[i] & F_ROLL) {
@@ -462,7 +465,7 @@ function shotsStep(dt) {
     }
     let x = SH.x[i], y = SH.y[i], vx = SH.vx[i], vy = SH.vy[i];
     const side = SH.side[i], W = WL[SH.w[i]];
-    vy -= GRAV * dt * (W.gk || 1); vx += wind * dt;          // gk：狙擊彈幾乎不往下掉
+    vy -= GRAV * dt * (W.gk || 1); vx += (S.gust ? windAt(SH.age[i]) : wind) * dt;          // gk：狙擊彈幾乎不往下掉；陣風（第十四關）：飛到一半風向反過來
     // 子母彈：過了最高點、也飛出自己的城了，分成小炸彈
     if (W.split && vy <= 0 && !clusterOverOwn(side, x)) { clusterSplit(i, x, y, vx, vy); killShot(i); i--; continue; }
     // 噴流、黑洞：改速度
@@ -618,7 +621,7 @@ function shotsStep(dt) {
       // 落在滾石坡往對方那一面：不炸，滾下去
       if (hit === 1 && !RAY.o && AMP.roll && rollOk(RAY.x, side, SH.w[i], vx, vy)) { saLoad(i); SA.vx = vx; SA.vy = vy; rollStart(RAY.x); saStore(i); ev('rollgo', RAY.x, RAY.y, side); continue; }
       physExplode(RAY.x, RAY.y, WL[SH.w[i]], side, SH.mass[i], flag, RAY.o, vx, vy);
-      if (hit === 1) ev(RAY.o && RAY.o.isHull ? 'splinter' : 'dirt', RAY.x, RAY.y);
+      if (hit === 1) ev(RAY.o && (RAY.o.isHull || RAY.o.isArm) ? 'splinter' : 'dirt', RAY.x, RAY.y);
       killShot(i); i--; continue;
     }
     if (wt >= 0) {
@@ -1052,6 +1055,8 @@ function roundStart() {
   S.round++;
   const lv = S.lv;
   if (lv.wind) { let w = (0.3 + rnd() * 0.7) * lv.wind.max; if (S.wind > 0 || (S.wind === 0 && rnd() < 0.5)) w = -w; if (rnd() < 0.22) w = -w; if (S.round < (lv.wind.at || 1)) w = 0; S.wind = Math.round(w); if (w) ev('wind', S.wind); }
+  if (lv.gust || S.gust) gustRound();          // 第十四關：陣風
+  if (lv.tornado) tornadoRound();             // 第十四關：龍捲風
   for (let s = 0; s < 2; s++) { const T = S.team[s]; T.shield.c = Math.min(T.shield.need, T.shield.c + T.shield.gain + (S.boss ? 6 * coresLeft(s) : 0)); }          // 魔王城：自己城腳的魔晶每一顆讓護罩多充一點
   for (const b of S.blocks) if (b.brit > 0) b.brit--;
   if (S.boss) bossRound();
@@ -1232,9 +1237,9 @@ function simInit(idx, up, seed, diff, opts) {
   S.phase = 'intro'; S.turn = 0; S.round = 0; S.phaseT = 0; S.quietT = 0; S.vq.length = 0; S.vqi = 0;
   SH.n = 0; SH.cnt[0] = SH.cnt[1] = SH.cnt[2] = 0;
   S.structs = []; S.blocks = []; S.balls = []; S.units = []; S.gates = []; S.gsp = []; S.objs = []; S.marks = []; S.pend = []; S.bitUse.fill(0);
-  S.wind = 0; S.rage = 1; S.sudden = false; S.nburn = 0; S.burnT = 0; S.chain = 0; S.chainT = -99; S.vol = 0; S.nfrag = 0; S.bid = 0; S.hz = 0; S.endBar[0] = S.endBar[1] = 0;
+  S.wind = 0; S.gust = null; S.rage = 1; S.sudden = false; S.nburn = 0; S.burnT = 0; S.chain = 0; S.chainT = -99; S.vol = 0; S.nfrag = 0; S.bid = 0; S.hz = 0; S.endBar[0] = S.endBar[1] = 0;
   S.gpts = lv.ground || null; S.voids = lv.voids || null;
-  S.ropes = []; S.welds = []; S.pivots = []; S.pins = []; S.plats = []; S.pulleys = []; S.rollers = []; S.bell = null; S.doms = []; S.water = lv.water ? Object.assign({ rho: 0.85, cur: 2.2 }, lv.water) : null;
+  S.ropes = []; S.welds = []; S.pivots = []; S.pins = []; S.plats = []; S.pulleys = []; S.rotors = []; S.rollers = []; S.bell = null; S.doms = []; S.water = lv.water ? Object.assign({ rho: 0.85, cur: 2.2 }, lv.water) : null;
   envInit();          // 第三篇的環境（潮汐……）
   S.stat = { fired: 0, peak: 0, swarm: 1, cells: 0, kills: 0, gates: 0, lost: 0, chain: 0, amp: 1 };
   physNew();
@@ -1289,6 +1294,7 @@ function simInit(idx, up, seed, diff, opts) {
   for (const b of S.blocks) { b.body.setTransform({ x: b.x0, y: b.y0 }, b.a0 || 0); b.body.setLinearVelocity({ x: 0, y: 0 }); b.body.setAngularVelocity(0); b.body.setAwake(false); }
   for (const u of S.units) { u.body.setTransform({ x: u.hx, y: u.hy + u.bh / 2 }, 0); u.body.setLinearVelocity({ x: 0, y: 0 }); u.body.setAwake(false); }
   for (const P of S.plats) { P.body.setTransform({ x: P.x0, y: P.y0 }, P.a0); P.body.setLinearVelocity({ x: 0, y: 0 }); P.body.setAngularVelocity(0); P.body.setAwake(false); }
+  for (const R of S.rotors) { R.body.setTransform({ x: R.x, y: R.y }, 0); R.body.setLinearVelocity({ x: 0, y: 0 }); R.body.setAngularVelocity(0); R.body.setAwake(false); }
   for (const st of S.structs) if (!st.loose) { castleScan(st); for (let i = 0; i < st.n; i++) st.back[i] = st.backTo[i]; }
   supInit(S.st[0]); supInit(S.st[1]);
 }
