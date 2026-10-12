@@ -9,6 +9,7 @@ function aiInit(T, p, D) {
     sh: p.sh || 0,                                           // 對方開火時會開護罩的機率（只有自動玩家有；敵軍不會開罩）
     guard: p.guard === undefined ? 1 : p.guard,              // 會不會打氣球、光球、天燈
     lob: p.lob || 0,                                         // 偏好吊高砲的程度
+    flat: p.flat || 0,                                       // 測試用：只打仰角小於這個（弧度）的平射（模仿看著虛線直直瞄的真人）
     warm: p.warm || 1,                                       // 第一回合還在試射：落點誤差是平常的幾倍（第二篇敵軍火力大，開場不能一輪就打倒你的兵）
     sap: p.sap === undefined ? 1 : p.sap,                    // 這一輪會考慮「打牆腳、打柱子」的機率（不然就只瞄兵和火藥桶）
     st: 0, t: 0, fireAt: 0, cand: [], top: [], ci: 0, best: null, bs: 0, px: T.aim[0], py: T.aim[1], lead: null, useGate: true, mult: 1, warn: 1
@@ -279,6 +280,7 @@ function aiBegin(T) {
   const LW = lead.w || {}, lgk = LW.gk || 1, lsp = LW.spd || 1;
   for (const t of tg) for (let tau = t.lo || (lsp > 1 ? 0.3 : 0.7); tau <= (t.hi || 3.41); tau += 0.1) {
     aimFor(mx, my, t.x, t.y, tau, wind, _av, lgk, lsp);
+    if (A.flat && Math.atan2(_av[1], Math.abs(_av[0])) > A.flat) continue;
     if (aimOk(_av[0], _av[1], dir)) A.cand.push({ vx: _av[0], vy: _av[1], tau, t });
   }
   A.mx = mx; A.my = my;
