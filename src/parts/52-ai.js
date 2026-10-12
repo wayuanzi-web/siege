@@ -52,7 +52,7 @@ function aiPtScore(side, x, y, w, amp, direct) {
   for (const u of F.units) {
     if (!u.alive) continue;
     const d = u === direct ? 0 : Math.hypot(u.x - x, u.y + 1.5 - y); if (d >= r + 1) continue;
-    dmg += Math.min(u.hp, ud * (u === direct ? 1 : 0.7 * (1 - d / (r + 1)))) * (u.def.big ? 1 + BOSS_W * 2 : 1);
+    dmg += Math.min(u.hp, ud * (u === direct ? 1 : 0.7 * (1 - d / (r + 1)))) * (u.def.big ? 1 + BOSS_W * 2 : 1) * (u.flag ? 3 : 1);          // 扛帥旗的兵：打倒他就破城
   }
   const su = hpAll > 0 ? dmg / hpAll : 0;
   let sv = aiStructVal(side, x, y, w, amp) / (1 - fallTh());
@@ -233,7 +233,7 @@ function aiBegin(T) {
   A.lead = lead; if (!lead) return;
   const big = lead.def.big ? MUZ_BIG : 1, mx = lead.x + dir * 1.3 * big, my = lead.y + 2.3 * big;
   const tg = [];
-  for (const u of foeT.units) if (u.alive) tg.push({ x: u.x, y: u.y + 1.6 * (u.def.big ? MUZ_BIG : 1), w: 1.15 + (u.type === 'boss' ? BOSS_W : 0) + (u.hp < u.hpMax * 0.4 ? 0.25 : 0) });
+  for (const u of foeT.units) if (u.alive) tg.push({ x: u.x, y: u.y + 1.6 * (u.def.big ? MUZ_BIG : 1), w: 1.15 + (u.type === 'boss' ? BOSS_W : 0) + (u.hp < u.hpMax * 0.4 ? 0.25 : 0) + (u.flag ? 2.5 : 0) });
   // 對方黏在自己城上的炸藥：不拿砲打（全隊的砲會砸在自己城前），靠工兵拆、對方開火時開護罩悶熄（aiReact）
   if (A.guard > 0 && rnd() < A.guard) for (const o of S.objs) {
     if (o.t === 'lantern') tg.push({ x: o.x, y: o.y, w: 1.0, obj: o });

@@ -1286,7 +1286,7 @@ function simInit(idx, up, seed, diff, opts) {
   S.phase = 'intro'; S.turn = 0; S.round = 0; S.phaseT = 0; S.quietT = 0; S.vq.length = 0; S.vqi = 0;
   SH.n = 0; SH.cnt[0] = SH.cnt[1] = SH.cnt[2] = 0;
   S.structs = []; S.blocks = []; S.balls = []; S.units = []; S.gates = []; S.gsp = []; S.objs = []; S.marks = []; S.pend = []; S.bitUse.fill(0);
-  S.wind = 0; S.gust = null; S.rage = 1; S.sudden = false; S.nburn = 0; S.burnT = 0; S.chain = 0; S.chainT = -99; S.vol = 0; S.nfrag = 0; S.bid = 0; S.hz = 0; S.endBar[0] = S.endBar[1] = 0;
+  S.wind = 0; S.gust = null; S.rage = 1; S.sudden = false; S.nburn = 0; S.burnT = 0; S.chain = 0; S.chainT = -99; S.vol = 0; S.nfrag = 0; S.bid = 0; S.hz = 0; S.endBar[0] = S.endBar[1] = 0; S.flags = [null, null];
   S.gpts = lv.ground || null; S.voids = lv.voids || null;
   S.ropes = []; S.welds = []; S.pivots = []; S.pins = []; S.plats = []; S.pulleys = []; S.rotors = []; S.rollers = []; S.bell = null; S.doms = []; S.drops = []; S.water = lv.water ? Object.assign({ rho: 0.85, cur: 2.2 }, lv.water) : null;
   envInit();          // 第三篇的環境（潮汐……）
@@ -1441,6 +1441,16 @@ function burnStep(dt) {
   for (const b of S.blocks) if (!b.dead && b.burn > 0) nb++;
   S.nburn = nb;
 }
+/* 帥旗死守（使用者 10/12 選的結束方式）：城塌到只剩一樓、城防條歸零的時候不馬上算輸——還活著的兵裡血最多的那一個扛起帥旗。
+   打倒扛旗的兵才算破城；對方從那時候起再打 FLAG_VOL 輪他還站著，殘兵舉白旗投降（一樣算破城，只是沒斬到旗）。
+   最多多打兩輪，不會變成兩邊殘兵一直平射；守方這兩輪還能還手（把對面也打到只剩一樓，就變成兩邊各自死守） */
+const FLAG_VOL = 2;
+function flagStart(s) {
+  let best = null; for (const u of S.team[s].units) if (u.alive && (!best || u.hp > best.hp)) best = u;
+  if (!best) return;
+  best.flag = 1; S.flags[s] = { u: best, v0: S.team[1 - s].volleys, r: S.round, barW: teamBar(1 - s) };          // barW：對方那時候的城防（結算星星照這個算：死守那兩輪挨的打不扣星）
+  ev('flagfight', best.x, best.y, s, best.slot);
+}
 /* 勝負：守軍全倒（魔王城：魔王倒下）馬上就算；城破（城樓完整度掉到門檻以下）等場上停下來（settled：一輪打完、落石砸完）才算，
    垮的過程整個看完，帥旗才倒。兩邊同時輸，算敵軍輸 */
 function endCheck(settled) {
@@ -1454,18 +1464,20 @@ function endCheck(settled) {
       if (bu.hp <= 0) killUnit(bu, 0, 1); else { bossPhase(bu); bossSay(BOSS_LINES.castle); }
     }
   }
-  const how = [0, 0];          // 1 守軍全倒、2 城破、3 久攻不下（回合到了上限，城防條低的輸）
+  const how = [0, 0];          // 1 守軍全倒、2 城破（扛旗兵倒下）、3 久攻不下（回合到了上限，城防條低的輸）、4 帥旗死守撐不住，殘兵投降
   for (let s = 0; s < 2; s++) {
     const T = S.team[s];
     if (s === 1 && S.beast) { if (S.beast.hp <= 0) how[s] = 1; continue; }          // 第十八關：巨獸倒下才算贏（砲台上的兵死光了，巨獸照樣走）
     if (T.alive <= 0 || (s === 1 && S.boss && !(bossUnit() || {}).alive)) how[s] = 1;
-    else if (settled && !(s === 1 && S.boss) && structBar(s) <= 0 && S.team[1 - s].volleys >= 2) how[s] = 2;          // 一座城至少要挨兩輪才會破（第一輪就垮到門檻以下，還有一輪還手，下一次停下來才算）
+    else if (S.flags[s]) { const F = S.flags[s]; if (!F.u.alive) how[s] = 2; else if (settled && S.team[1 - s].volleys - F.v0 >= FLAG_VOL) how[s] = 4; }          // 帥旗死守：扛旗兵倒下就破城；對方再打 FLAG_VOL 輪還沒倒，殘兵投降
+    else if (settled && !(s === 1 && S.boss) && structBar(s) <= 0 && S.team[1 - s].volleys >= 2) flagStart(s);          // 城塌到只剩一樓（一座城至少要挨兩輪）：不馬上輸，血最多的兵扛起帥旗死守
   }
   if (!how[0] && !how[1] && settled && !S.boss && !S.beast && S.round > ROUND_CAP) how[structBar(1) < structBar(0) ? 1 : 0] = 3;
   if (!how[0] && !how[1]) return;
   const loser = how[1] ? 1 : 0, lose0 = !!how[0], lose1 = !!how[1];
   // 結算用的數字在這一刻就記下來（之後整座城炸開，數字會再變）
   S.endBar[0] = lose0 ? 0 : teamBar(0); S.endBar[1] = lose1 ? 0 : teamBar(1);
+  for (const s of [0, 1]) { const F = S.flags[1 - s]; if (!(s ? lose1 : lose0) && F && (how[1 - s] === 2 || how[1 - s] === 4)) S.endBar[s] = Math.max(S.endBar[s], F.barW); }
   if (S.turn === 0 && S.phase !== 'hazard' && S.chain > S.stat.chain) S.stat.chain = S.chain;
   S.state = loser === 1 ? 'won' : 'lost'; S.loser = loser; S.endT = 0; S.phase = 'over';
   const st = S.st[loser];

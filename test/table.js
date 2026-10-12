@@ -7,7 +7,7 @@ const G = require('./load')(); const { S, simInit, simStep, LEVELS, BOTS, teamBa
 const [li, bot, N, upL, diff] = [+process.argv[1], process.argv[2], +process.argv[3], +process.argv[4], +process.argv[5]];
 const up = { dmg: upL, aim: upL, hp: upL, shield: upL, ult: upL }; let w = 0, r = 0, l = 0, bar = 0, t = 0, st3 = 0, cf = 0, how = 0;
 for (let sd = 0; sd < N; sd++) { simInit(li, up, 9000 + sd * 7919 + li * 131, diff, { botA: BOTS[bot] }); how = 0; S.on = (e, x, y, c, d) => { if (e === 'end') how = d; }; while (S.state === 'play' && S.round < 40) simStep(1 / 60);
-  const lost = S.team[0].units.length - S.team[0].alive; if (S.state === 'won') { w++; bar += S.endBar[0]; if (S.endBar[0] >= 0.5 && !S.stat.lost) st3++; if (how === 2) cf++; } r += S.round; l += lost; t += S.time; }
+  const lost = S.team[0].units.length - S.team[0].alive; if (S.state === 'won') { w++; bar += S.endBar[0]; if (S.endBar[0] >= 0.5 && !S.stat.lost) st3++; if (how === 2 || how === 4) cf++; } r += S.round; l += lost; t += S.time; }
 console.log(JSON.stringify({ li, bot, w, r: r / N, l: l / N, bar: w ? bar / w : 0, t: t / N, st3, cf }));`;
 const BS = (process.env.BOTS || 'newbie,casual,expert').split(',');
 const jobs = []; for (let li = L0; li <= L1; li++) for (const bot of BS) jobs.push([li, bot]);

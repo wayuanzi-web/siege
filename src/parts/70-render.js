@@ -668,6 +668,12 @@ function flagPick(st) {
 function flagFling(st, b) { const p = b && b.body ? b.body.getPosition() : b ? { x: b.x, y: b.y } : { x: st.cx, y: st.y1 }; FX.flung.push({ flag: st, x: p.x, y: p.y + (b ? b.h / 2 : 0), vx: rndS() * 9, vy: 15 + Math.random() * 9, rot: 0, vr: (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 3), t: 0 }); }
 function flagBlock(st) {
   if (st._flagGone) return null;
+  const F = S.flags && S.flags[st.side];
+  if (F) {          // 帥旗死守：插在城上的那一面拔下來，交給扛旗的兵（畫在兵身上）；扛旗的兵倒下，旗子飛出去，不再升起來
+    if (!st._flagHand) { st._flagHand = 1; if (st._flagB && !st._flagOff) flagFling(st, st._flagB); }
+    if (!F.u.alive && !st._flagGone) { st._flagGone = 1; FX.flung.push({ flag: st, x: F.u.x, y: F.u.y + 3, vx: rndS() * 6, vy: 12 + Math.random() * 6, rot: 0, vr: 3, t: 0 }); }
+    return null;
+  }
   const fell = S.state !== 'play' && S.loser === st.side;
   let b = st._flagB;
   if (b === undefined) { b = st._flagB = flagPick(st); st._flagT = -9; }
@@ -1002,6 +1008,17 @@ function drawUnits(c, t) {
       const f = clamp(u.hp / u.hpMax, 0.06, 1), bw = s * 3.1 * big, bh = Math.max(2.5, s * 0.52), bx = x - bw / 2, by = top - s * 0.95;
       c.fillStyle = 'rgba(10,8,20,.75)'; c.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
       c.fillStyle = f > 0.5 ? '#6fe05a' : f > 0.25 ? '#ffc93c' : '#ff5a3c'; c.fillRect(bx, by, bw * f, bh);
+    }
+    // 帥旗死守：扛旗的兵背上插著帥旗，腳下一圈金光（打倒他就破城）
+    if (u.flag) {
+      const st = S.st[u.side]; if (st._flagT2 === undefined) st._flagT2 = RD.t;
+      const up = smooth(clamp((RD.t - st._flagT2) / 0.6, 0, 1)), pulse = 0.55 + 0.45 * Math.sin(t * 5);
+      c.setTransform(1, 0, 0, 1, sx, sy); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.35 + 0.3 * pulse;
+      const g = glowSprite(C_GOLD), r = s * 3.2; c.drawImage(g, x - r, y - s * 1.2 - r * 0.6, r * 2, r * 1.2);
+      c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
+      c.setTransform(1, 0, 0, 1, x - dir * s * 0.7 + sx, y - u.bh * s * 0.55 + sy); c.scale(up, up);
+      drawFlag(c, st, _noBlock, t);
+      c.setTransform(1, 0, 0, 1, sx, sy);
     }
   }
 }

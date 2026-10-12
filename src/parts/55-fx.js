@@ -407,6 +407,7 @@ function fxOn(t, a, b, c, d, e, f) {
       ring(a, b, 2, 16, 0.6, '#fff0b0', 0.7);         // 只留一圈小的，別把整座城垮下來的樣子蓋住
       break;
     }
+    case 'flagfight': ring(a, b + 2, 2, 9, 0.6, '#ffd84a', 0.8); burst(P_SPARK, a, b + 3, 14, 18, 0.6, 0.6, C_GOLD); pop(a, b + 7, '扛起帥旗', '#ffe14a'); sfx('phase'); break;
     case 'bossback': ring(a, b, 14, 1.5, 0.5, '#ff7ad0', 0.8); burst(P_SPARK, a, b, 18, 30, 0.7, 0.8, C_PINK); burst(P_SMOKE, a, b, 6, 8, 0.8, 2.4, C_PURPLE); pop(a, b + 7, '魔王飛回來了', '#ff9ad8', 3.4, 1.4); flash(0.3, '#ff5aa0'); sfx('dark'); break;
     case 'phase': flash(0.7, '#ff5aa0'); shake(1.6); sfx('phase'); vibrate(120); break;
     case 'crumble': shake(0.5); sfx('collapse'); burst(P_DUST, a, b, 14, 10, 1.2, 2.6, C_SAND); pop(a, b + 8, c === 1 ? '敵城搖搖欲墜' : '我方城樓搖搖欲墜', c === 1 ? '#ffe14a' : '#ff9a8a', 3, 1.3); break;

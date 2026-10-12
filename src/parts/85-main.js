@@ -126,7 +126,7 @@ function uiEvent(t, a, b, c, d, e) {
         if (G.tut === 1) { $('hint').hidden = false; }
         else if (G.tut === 2) { G.tut = 3; if (!G.said.gt) say('這次讓虛線穿過藍色的倍增符：一發變三發', 0, '', myAim); }
         else if (G.tut === 3) { G.tut = 4; if (foeHome(1)) say('打斷望樓的細柱子，上面整座會自己倒下來', 0, '', () => myAim() && foeHome(1)); }
-        else if (G.tut === 4) { G.tut = 5; if (!G.said.kill) say('上面的城防條是城樓還站著多少：打到歸零，敵城就塌了。守軍全倒也算贏'); }
+        else if (G.tut === 4) { G.tut = 5; if (!G.said.kill) say('上面的城防條是城樓還站著多少：打到歸零（只剩一樓），血最多的守軍會扛起帥旗死守，打倒他就破城。守軍全倒也算贏'); }
         // 這一關的訣竅：一回合最多講一句，而且要還用得上才講（該打的東西已經不在了就跳過）。第一次玩第一關的時候讓教學先講
         const hs = S.lv.hints;
         if (!G.tut && hs) for (let i = 0; i < hs.length; i++) { const h = hs[i]; if (G.hinted[i] || b < h.r || (h.ok && !h.ok())) continue; G.hinted[i] = 1; say(h.t, 0, 'hint' + i, h.ok ? () => S.state === 'play' && h.ok() : null); break; }
@@ -153,7 +153,8 @@ function uiEvent(t, a, b, c, d, e) {
     case 'bossback': once('bback', '魔王摔下去又飛回來了，不過摔一次扣不少血'); break;
     case 'rockstop': if (c === 0) once('rstop', '護罩把落石擋下來了'); break;
     case 'sudden': banner('決戰時刻', 'red'); later(1900, () => say('拖太久了，雙方的砲火越來越猛', 1)); break;
-    case 'end': sayClear(); banner(c === 1 ? (S.lv.boss ? '魔王伏誅' : S.lv.beast ? '巨獸倒下' : '敵城攻破') : '城樓失守', c === 1 ? 'gold' : 'red', d === 3 ? (c === 1 ? '久攻不下：敵城塌得比較多' : '久攻不下：我方城樓塌得比較多') : d === 2 ? (c === 1 ? '敵城塌了，帥旗倒下' : '我方城樓塌了') : d ? (c === 1 ? '守軍全滅' : '我軍全滅') : ''); $('hint').hidden = true; break;
+    case 'flagfight': if (c === 1) { banner('帥旗死守', 'gold', '敵城只剩一樓'); later(1700, () => say('敵城塌到只剩一樓！血最多的兵扛起了帥旗（頭上有金光）：打倒他就破城；再兩輪他還站著，殘兵就投降')); } else { banner('死守帥旗', 'red', '我方城樓只剩一樓'); later(1700, () => say('我方城樓塌了！血最多的兵扛起帥旗死守：撐住，趁這兩輪把敵城也打垮', 1)); } break;
+    case 'end': sayClear(); banner(c === 1 ? (S.lv.boss ? '魔王伏誅' : S.lv.beast ? '巨獸倒下' : '敵城攻破') : '城樓失守', c === 1 ? 'gold' : 'red', d === 3 ? (c === 1 ? '久攻不下：敵城塌得比較多' : '久攻不下：我方城樓塌得比較多') : d === 4 ? (c === 1 ? '敵軍殘兵舉白旗投降' : '我軍殘兵撐不住，投降了') : d === 2 ? (c === 1 ? '扛旗的兵倒下，帥旗落地' : '我方扛旗的兵倒下了') : d ? (c === 1 ? '守軍全滅' : '我軍全滅') : ''); $('hint').hidden = true; break;
     case 'gate': if (e === 0 && G.tut >= 1 && G.tut <= 3 && !G.said.gt) { G.said.gt = 1; say('就是這樣！穿過倍增符，砲彈變多了'); } break;
     case 'gspawn': {
       // d 幾倍。高倍數的符只出現一回合：出現的那一刻才講（太早講，玩家找不到它在哪）

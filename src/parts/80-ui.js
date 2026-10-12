@@ -264,10 +264,10 @@ function openOpt(paused) {
 }
 const LOSE_TIPS = [
   '瞄準的虛線會照真的彈道轉彎：碰到冰鏡、噴流、彈簧板、黑洞會跟著拐過去，照著它瞄就好。',
-  '別只打屋頂：打斷柱子和牆，上面整層會自己塌下來；每座城分好幾段，一段一段垮。上面的樓閣都塌了、只剩一樓，城防條就歸零：破城。',
+  '別只打屋頂：打斷柱子和牆，上面整層會自己塌下來；每座城分好幾段，一段一段垮。上面的樓閣都塌了、只剩一樓，城防條就歸零：這時候血最多的兵扛起帥旗死守，打倒他（或再打兩輪逼他們投降）就破城。',
   '輪到敵軍的時候按「護罩」，他們那一整輪都打不進來；護罩撐到你下一次瞄準為止。',
   '「連珠」集滿就按下去上膛，這一輪每個兵連打三次；先把彈道對準這一關的機關再放手。',
-  '你的城塌到城防條歸零、或兵全倒就輸了：紅色的短虛線是敵軍在瞄的方向，瞄到你的城樓、你的兵就開護罩。',
+  '你的城塌到城防條歸零，就輪到你的扛旗兵死守：撐兩輪、趁機把敵城也打垮。紅色的短虛線是敵軍在瞄的方向，瞄到扛旗兵就開護罩。',
   '樓板和木樑是一格一格碎的：打穿兵腳下那一格，他就摔到下一層；把樑的一頭打斷，整根會歪下去，上面的東西跟著滑下來。',
   '戰利品可以在「強化」升級火力、準星、城防、護罩和連珠。'
 ];
@@ -359,8 +359,10 @@ function hudAvoid() {
 function hudUpdate() {
   if ((HUD.n++ & 63) === 0) hudAvoid();
   const a = Math.round(teamBar(0) * 100), b = Math.round(foeBar() * 100);
-  if (a !== HUD.a) { if (HUD.a >= 0 && a < HUD.a) replayFlash($('hpA')); HUD.a = a; $('pctA').textContent = a + '%'; $('barA').style.transform = 'scaleX(' + (a / 100) + ')'; }
-  if (b !== HUD.b) { if (HUD.b >= 0 && b < HUD.b) replayFlash($('hpB')); HUD.b = b; $('pctB').textContent = b + '%'; $('barB').style.transform = 'scaleX(' + (b / 100) + ')'; }
+  // 帥旗死守：城防條歸零了，改寫「死守」和對方還剩幾輪（打倒扛旗的兵就破城，撐過這幾輪殘兵投降）
+  const fl = (s) => { const F = S.flags && S.flags[s]; return F && F.u.alive ? '死守 ' + Math.max(0, FLAG_VOL - (S.team[1 - s].volleys - F.v0)) : ''; }, la = fl(0), lb = fl(1);
+  if (a !== HUD.a || la !== HUD.la) { if (HUD.a >= 0 && a < HUD.a) replayFlash($('hpA')); HUD.a = a; HUD.la = la; $('pctA').textContent = la || a + '%'; $('barA').style.transform = 'scaleX(' + (a / 100) + ')'; }
+  if (b !== HUD.b || lb !== HUD.lb) { if (HUD.b >= 0 && b < HUD.b) replayFlash($('hpB')); HUD.b = b; HUD.lb = lb; $('pctB').textContent = lb || b + '%'; $('barB').style.transform = 'scaleX(' + (b / 100) + ')'; }
   // 輪到誰
   const play = S.state === 'play', mine = play && S.phase === 'aim' && S.turn === 0;
   // 敵軍瞄準的彈道會穿過倍增符：先講，讓玩家來得及開護罩
