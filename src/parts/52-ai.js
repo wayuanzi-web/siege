@@ -9,6 +9,7 @@ function aiInit(T, p, D) {
     sh: p.sh || 0,                                           // 對方開火時會開護罩的機率（只有自動玩家有；敵軍不會開罩）
     guard: p.guard === undefined ? 1 : p.guard,              // 會不會打氣球、光球、天燈
     lob: p.lob || 0,                                         // 偏好吊高砲的程度
+    flat: p.flat || 0,                                       // 測試用：只打仰角小於這個（弧度）的平射（模仿看著虛線直直瞄的真人）
     warm: p.warm || 1,                                       // 第一回合還在試射：落點誤差是平常的幾倍（第二篇敵軍火力大，開場不能一輪就打倒你的兵）
     sap: p.sap === undefined ? 1 : p.sap,                    // 這一輪會考慮「打牆腳、打柱子」的機率（不然就只瞄兵和火藥桶）
     st: 0, t: 0, fireAt: 0, cand: [], top: [], ci: 0, best: null, bs: 0, px: T.aim[0], py: T.aim[1], lead: null, useGate: true, mult: 1, warn: 1
@@ -56,6 +57,7 @@ function aiPtScore(side, x, y, w, amp, direct) {
   const su = hpAll > 0 ? dmg / hpAll : 0;
   let sv = aiStructVal(side, x, y, w, amp) / (1 - fallTh());
   if (S.boss && side === 0) sv *= 0.3;          // 魔王城：城不會破，打城只是順便（壓到魔王、打掉魔晶另外算）
+  if (S.beast && side === 0) sv += beastPtVal(x, y, w, amp);          // 機關巨獸：沒有城，打在牠身上扣多少血
   return (Math.max(su, sv) + 0.35 * Math.min(su, sv)) * AI_PK;
 }
 const BOSS_W = 0.9;      // 魔王關：自動玩家特別想打魔王（打倒他才算贏，其他的兵只是順便）
@@ -147,6 +149,9 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
       } else if (o.t === 'balloon' || o.t === 'orb' || o.t === 'tether' || o.t === 'lift') {
         if (o.side === side || o.hp <= 0) continue;
         const dx = nx - o.x, dy = ny - o.y; if (dx * dx + dy * dy < o.r * o.r) { R.obj = o; R.x = nx; R.y = ny; return end(4); }
+      } else if (o.t === 'coupler') {
+        if (o.side === side || o.cut) continue;
+        if (segDist(o.x, o.y, x, y, nx, ny) < o.r) { R.obj = o; R.x = nx; R.y = ny; return end(4); }
       } else if (o.t === 'charge') {
         if (o.side === side || o.hp <= 0 || o.go) continue;
         if (segDist(o.x, o.y, x, y, nx, ny) < o.r) { R.obj = o; R.x = nx; R.y = ny; return end(4); }
@@ -275,6 +280,7 @@ function aiBegin(T) {
   const LW = lead.w || {}, lgk = LW.gk || 1, lsp = LW.spd || 1;
   for (const t of tg) for (let tau = t.lo || (lsp > 1 ? 0.3 : 0.7); tau <= (t.hi || 3.41); tau += 0.1) {
     aimFor(mx, my, t.x, t.y, tau, wind, _av, lgk, lsp);
+    if (A.flat && Math.atan2(_av[1], Math.abs(_av[0])) > A.flat) continue;
     if (aimOk(_av[0], _av[1], dir)) A.cand.push({ vx: _av[0], vy: _av[1], tau, t });
   }
   A.mx = mx; A.my = my;
@@ -305,6 +311,7 @@ function aiScore(T, t, R) {
     else if (t.arm) hit = R.o === t.arm ? 1 : 0;
     else if (t.hull) hit = R.o === t.hull ? 1 : 0;
     else if (t.fuse) hit = Math.max(0, 1 - Math.hypot(R.x - t.x, R.y - t.y) / 3);
+    else if (t.near) hit = R.hit ? Math.max(0, 1 - Math.hypot(R.x - t.x, R.y - t.y) / t.near) : 0;          // 炸在它附近就算（裝甲列車的連結器）
     const gen = aiGen(T, R);
     sc = hit >= 0 ? Math.max(hit * t.w, gen) : gen;          // 一般的目標只是用來列出彈道：分數照實際打到的算，不乘權重
   }
@@ -393,9 +400,12 @@ function aiStep(T, dt) {
 // 自動玩家：對方開火時，有護城罩就看本事決定開不開
 function aiReact(T) {
   const A = T.ai; if (!A || A.sh <= 0 || T.shield.c < T.shield.need || T.shield.on) return;
+  if (S.beast && T.side === 1) return;          // 機關巨獸沒有城可以罩
   // 魔王城：看得到魔王預告的招式，連射、隕石雨的那一輪才開護罩（其他回合省著）
   let p = A.sh * 0.8;
   if (S.objs.some((o) => o.t === 'charge' && o.hp > 0 && o.side !== T.side && chargeOn(o) === T.side)) p = Math.min(1, A.sh * 1.6);          // 城上黏著對方的炸藥：開罩悶熄它
   if (S.boss && T.side === 0) p = S.boss.next === 'barrage' || S.boss.next === 'meteor' ? Math.min(1, A.sh * 1.6) : A.sh * 0.25;
+  // 機關巨獸：預告光束一定開；噴火、咬人、走到城下要踩城的那一回合看本事開；其他回合省著
+  if (S.beast && T.side === 0) { const B = S.beast; p = B.next === 'beam' ? 1 : B.next === 'flame' || B.next === 'grab' || B.atWall ? Math.min(1, A.sh * 1.5) : A.sh * 0.2; }
   if (rnd() < p) simSkill(T.side, 'shield');
 }

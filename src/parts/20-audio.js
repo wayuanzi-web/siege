@@ -123,6 +123,14 @@ function sfx(name, arg) {
       case 'lava': noise(2.0, 0.16, 'lowpass', 180, 420, 0.8); tone(40, 1.6, 'sine', 0.26, 30, 0, null, 0.3); for (let i = 0; i < 4; i++) tone(90 + r * 60, 0.09, 'sine', 0.05, 40, 0.3 + i * 0.27); break;          // 岩漿上漲：低沉的隆隆聲，咕嘟咕嘟冒泡
       case 'pour': noise(2.2, 0.18, 'bandpass', 900, 2600, 0.6); noise(1.8, 0.08, 'highpass', 4200, 7000, 0.8, 0.15); tone(70, 0.6, 'sine', 0.2, 44); break;          // 鐵水澆下來：嘶——
       case 'volcano': noise(1.4, 0.36, 'lowpass', 500, 2000, 0.7); tone(36, 1.4, 'sine', 0.42, 28, 0, null, 0.15); break;          // 火山噴發
+      case 'roar': if (gap('roar', 900)) return; tone(55, 1.4, 'sawtooth', 0.2, 36, 0, null, 0.15); tone(83, 1.2, 'sawtooth', 0.12, 58, 0.06, null, 0.15); noise(1.3, 0.18, 'bandpass', 420, 160, 1.2); noise(0.8, 0.08, 'highpass', 2400, 900, 0.9, 0.3); break;          // 機關巨獸吼一聲：低沉的鐵嗓子，接著洩一陣蒸汽
+      case 'servo': if (gap('servo', 180)) return; tone(62, 0.34, 'sine', 0.42, 30); noise(0.26, 0.22, 'lowpass', 700, 90, 1); tone(330, 0.18, 'square', 0.03, 150, 0.05); break;          // 巨獸的一步：咚——鏗
+      case 'flame': if (gap('flame', 240)) return; noise(0.5, 0.16, 'bandpass', 520, 1300, 0.7); noise(0.4, 0.06, 'highpass', 2600, 4000, 0.8, 0.05); break;          // 噴火：呼——
+      case 'beam': if (gap('beam', 900)) return; tone(110, 2.0, 'sawtooth', 0.1, 230, 0, null, 0.3); tone(880, 1.8, 'sine', 0.05, 1760, 0.1, null, 0.3); noise(1.8, 0.1, 'bandpass', 1600, 3200, 2); break;          // 光束：越來越尖的嗡嗡聲
+      case 'steam': noise(1.6, 0.4, 'highpass', 1800, 900, 0.7); noise(0.9, 0.3, 'lowpass', 900, 120, 0.8); tone(60, 0.7, 'sine', 0.4, 26); break;          // 鍋爐炸開：轟一聲，接著一大陣蒸汽嘶嘶
+      case 'clank': if (gap('clank', 300)) return; tone(420, 0.12, 'square', 0.06, 180); noise(0.18, 0.16, 'bandpass', 1400, 600, 2); tone(260, 0.3, 'triangle', 0.05, 90, 0.08); break;          // 連結器斷開：鏗——
+      case 'screech': noise(2.2, 0.08, 'bandpass', 3200, 2400, 6); tone(1900, 2, 'sawtooth', 0.02, 1500); break;          // 車廂煞車滑走
+      case 'whistle': [0, 1].forEach((i) => tone(i ? 740 : 588, 0.55, 'triangle', 0.06, 0, i * 0.05, null, 0.06)); break;          // 汽笛（換景、進隧道）
       // 回合
       case 'turn': tone(NOTE(79), 0.12, 'triangle', 0.08); tone(NOTE(86), 0.2, 'triangle', 0.07, 0, 0.09); break;
       case 'arm': [72, 76, 79, 84].forEach((n, i) => tone(NOTE(n), 0.12, 'square', 0.05, 0, i * 0.045)); noise(0.3, 0.06, 'highpass', 5000, 0, 1); break;

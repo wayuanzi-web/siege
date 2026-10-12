@@ -19,8 +19,8 @@
            orbHp 毀滅光球的耐久、orbGap 第二／第三階段各隔幾輪放一顆；meteors 第三階段每回合幾顆隕石；heal 每顆魔晶每回合回幾成血；
            rest 放完哪些招會累（下一回合是破綻：不放招、打他加倍；沒寫就是隕石雨）
    sudden  第幾回合起雙方的城每回合自己塌一點、之後砲火也開始加重（沒寫就是第 10 回合）
-   fall    城破的門檻：城的完整度掉到多少，城防條就歸零、這一邊輸（沒寫就是 FALL_TH 三成）
-   blockHp 城樓磚的耐久倍率（沒寫就是 CASTLE_HP）；smashK 雪崩（積雪、冰棚）砸下來的力道倍率
+   fall    城破的門檻：城的完整度掉到多少，城防條就歸零、這一邊輸（沒寫就是 FALL_TH 三成；藍圖的 gf 是一樓，一樓只佔完整度的 STUMP_K：塌到只剩一樓就破城）
+   blockHp 城樓磚的耐久倍率（沒寫就是 CASTLE_HP）；smashK 雪崩（積雪、冰棚）、礦坑的懸石砸下來的力道倍率
    extra   戰場中間另外放的結構 [{ castle 藍圖名, x 中心, y 底 }]：打不壞的岩石，擋住被轟到地上的兵平平地對射
    weak    自動玩家（敵軍、測試用的我方）想打的要害：weak(side) 回傳 side 這一邊要打的目標（對方城上的格子、對方那一頭的機關）
    tip     主畫面上的關卡說明（兩三句就好：這一關的機關是什麼、最該打哪裡；細節進了關卡輪到玩家的時候再講）
@@ -46,6 +46,10 @@ const ropeLeft = (tag, side) => S.ropes.some((r) => !r.cut && r.side === (side =
 const rotorUp = (side) => { const R = S.st[side].rotor; return !!(R && !R.fallen); };
 // 第十五關：鐵水鍋還吊著
 const potUp = (side) => S.ropes.some((r) => !r.cut && r.side === side && r.hang && r.hang.hang === 'pot' && !r.hang.hangFree);
+const couplerUp = (side) => !!(S.st[side] && S.st[side].car && !S.st[side].car.cut);          // 第十六關：連結器還在
+const boilerUp = (side) => S.st[side].blocks.some((b) => b.boiler && !b.dead);
+const propsUp = (side) => S.st[side].blocks.some((b) => b.drop && !b.dead && b.inPlace);          // 第十七關：懸石還在
+const gasUp = (side) => S.st[side].blocks.some((b) => b.gas && !b.dead);
 // 第九關：閘還在、吊籠還吊著
 const brakeUp = (side) => S.st[side].blocks.some((b) => b.brake && !b.dead && b.inPlace);
 const cageUp = (side) => { const PU = S.st[side].pulley; return !!(PU && !PU.cut); };
@@ -84,7 +88,7 @@ const shelfUp = (side) => S.st[side].blocks.some((b) => !b.dead && b.mat === M_S
 
 const LEVELS = [
   {
-    name: '望樓對峙', tag: '基本玩法・倍增符・火藥桶', theme: 0, castle: 'TOWER', fall: 0.3,
+    name: '望樓對峙', tag: '基本玩法・倍增符・火藥桶', theme: 0, castle: 'TOWER', fall: 0.3, blockHp: 2.6,
     tip: '雙方輪流開火，全隊打同一個落點。把敵城打塌（上面的城防條歸零）就贏。前面的木頭望樓腳下夾著一桶火藥；後面是石砌的主樓。穿過藍色倍增符，一發變多發',
     hints: [{ r: 1, t: '敵軍望樓腳下夾著一桶火藥：打中它，炸斷細腳，望樓連上面兩個兵一起倒下來', ok: () => foeKeg() },
       { r: 2, t: '砲彈穿過藍色倍增符會變多發：拖曳的時候看虛線有沒有穿過符', ok: () => foeHome(1) || foeHome(3) },
@@ -160,7 +164,7 @@ const LEVELS = [
     lantern: { at: 3, every: 3, spots: [[56, 26], [45, 47], [67, 47]] }
   },
   {
-    name: '雲海浮島', tag: '噴流・浮空晶石・會晃的浮島', theme: 4, castle: 'SKY', y0: 6,
+    name: '雲海浮島', tag: '噴流・浮空晶石・會晃的浮島', theme: 4, castle: 'SKY', y0: 6, blockHp: 2.5,
     tip: '兩座城都蓋在浮島上，兩顆氣球吊著、底下兩顆浮空晶石托著。打碎晶石，那一頭沉下去；再打破那一頭的氣球，整座島歪下去、城滑進雲海。中間的噴流每回合換方向',
     hints: [{ r: 1, t: '這一回合噴流往敵城吹：把砲彈打進白色氣流帶，會被捲住加速、直衝過去（威力 ×1.8）', ok: () => jetDir() > 0 },
       { r: 2, t: '浮島底下兩顆紫色浮空晶石：打碎一顆，那一頭沉下去、繩子吃滿重量，再打一下就斷', ok: () => liftsLeft(1) >= 2 },
@@ -168,7 +172,7 @@ const LEVELS = [
       { r: 4, t: '噴流往你這邊吹的回合，砲彈穿過去會被減速：吊高越過它，或從底下鑽過去', ok: () => jetDir() < 0 }],
     voids: [[-60, 172]],
     me: { crew: ['rocket', 'zap', 'bolt', 'bomb'] },
-    foe: { crew: ['bal', 'rocket', 'flak', 'zap'], hp: 1.0, dmg: 0.7, open: 0.55, ai: { err: 3.7, think: 1.1, gate: 0.75, hate: 0.25, skill: 0.5, sap: 0.5, warm: 1.8 } },
+    foe: { crew: ['bal', 'rocket', 'flak', 'zap'], hp: 1.1, dmg: 1.25, open: 0.55, ai: { err: 3.3, think: 1.1, gate: 0.75, hate: 0.25, skill: 0.5, sap: 0.5, warm: 1.8 } },
     // 噴流：每回合換方向（第一回合往敵城吹）、每兩回合換高度（中＝一樓、低＝浮空晶石、高＝氣球）
     objs: [{ t: 'jet', x0: 37, x1: 75, lv: [18, 8, 43.5], hh: 3.2, U: 92, kx: 5, ky: 7, kc: 10, gain: 1.8 }],
     ampAim: (side) => { const o = S.objs.find((q) => q.t === 'jet'), d = side === 0 ? 1 : -1; if (!o || o.U * d <= 0) return []; const xe = d > 0 ? o.x0 + 2 : o.x1 - 2; return [{ x: xe, y: o.y }, { x: xe + d * 5, y: o.y }, { x: xe + d * 10, y: o.y + 1 }]; },
@@ -176,7 +180,7 @@ const LEVELS = [
     lantern: { at: 3, every: 3, spots: [[56, 26], [50, 48], [62, 12]] }
   },
   {
-    name: '怒海艦城', sayTop: 1, tag: '打水漂・火藥庫・翻船', theme: 6, castle: 'SHIP', y0: -5.2, blockHp: 2.6,
+    name: '怒海艦城', sayTop: 1, tag: '打水漂・火藥庫・翻船', theme: 6, castle: 'SHIP', y0: -5.2, blockHp: 3.8,
     tip: '兩邊都是戰船：甲板上前後兩座樓，船身也算城。平平打出去，砲彈在海面上打水漂（一跳多三成），撞進敵船的吃水線：船艙進水，那一頭沉下去，樓就滑進海裡。中艙底下是火藥庫',
     hints: [{ r: 1, t: '仰角壓低、力道加大，平平打到海面：砲彈會彈起來（最多三跳，一跳 ×1.3），撞進敵船船身', ok: () => flooded(1) < 0.5 },
       { r: 2, t: '敵船中艙底下是火藥庫：把中艙的船身打到剩一半，整艙炸開', ok: () => magLeft(1) },
@@ -249,7 +253,7 @@ const LEVELS = [
     lantern: { at: 3, every: 3, spots: [[52, 50], [59, 28]] }
   },
   {
-    name: '琉璃宮', tag: '稜鏡・共鳴晶柱・吊燈', theme: 10, castle: 'GLASS', stress: 1,
+    name: '琉璃宮', tag: '稜鏡・共鳴晶柱・吊燈', theme: 10, castle: 'GLASS', stress: 1, blockHp: 2.8,
     tip: '兩座宮殿是石頭的骨架、琉璃的牆和屋頂，琉璃一撞就碎。共鳴晶柱藏在石台的地窖裡：重重打中一次，頂樓的琉璃震碎；再打一次，震到二樓；打碎它，整座宮殿的琉璃一起碎，剩下石頭骨架再打垮。穿過中間的稜鏡，一發分成三發',
     hints: [{ r: 1, t: '打進中間那顆稜鏡：一發分成三發往上、正中、往下散開，紅的著火、黃的引雷、藍的結霜', ok: () => foeLeft(M_GLASS) >= 10 },
       { r: 2, t: '敵宮石台前面那扇小琉璃窗後面就是共鳴晶柱：打中一次震碎一層琉璃，打到碎掉，整座宮殿的琉璃一起碎（石頭骨架要另外打）', ok: () => resoUp(1) },
@@ -263,8 +267,8 @@ const LEVELS = [
     lantern: { at: 3, every: 3, spots: [[51, 50], [60, 22]] }
   },
   {
-    name: '古寺撞鐘', tag: '大鐘共振・心柱・連層崩塌', theme: 11, castle: 'PAGODA', stress: 1, blockHp: 3.2, fall: 0.1,
-    tip: '戰場正中間吊著一口大鐘。打在鐘上會把它往對面推，力道也會累積成鐘鳴：滿了「噹」一聲，震波打在對面整座木塔上。塔的一樓有一根心柱擋震。五重塔整座榫接，要打到連一樓都垮了，城防條才見底（守軍全倒也算贏）',
+    name: '古寺撞鐘', tag: '大鐘共振・心柱・連層崩塌', theme: 11, castle: 'PAGODA', stress: 1, blockHp: 6,
+    tip: '戰場正中間吊著一口大鐘。打在鐘上會把它往對面推，力道也會累積成鐘鳴：滿了「噹」一聲，震波打在對面整座木塔上。塔的一樓有一根心柱擋震。五重塔整座榫接，上面四層都塌了（只剩一樓）就算破城（守軍全倒也算贏）',
     hints: [{ r: 1, t: '打中間那口大鐘：力道累積到滿就「噹」一聲，震波把敵塔每一塊木頭都震傷', ok: () => bellE(0) < 0.95 },
       { r: 2, t: '敵塔一樓正中間的紅色粗柱是心柱：它還在，鐘鳴只震裂柱子；打斷它，柱子整排震斷、兵也會被震暈', ok: () => heartUp(1) },
       { r: 3, t: '一輪打得夠重，大鐘會盪過去撞進敵塔；每一層只有兩根柱子，斷一根，另一根撐不住也跟著斷，上面一層層壓下來', ok: () => foeHome(1) || foeHome(2) },
@@ -274,7 +278,7 @@ const LEVELS = [
     bell: { x: 56, y: 50.5, len: 34, w: 6.8, h: 7.4, den: 2.6, e: 180 },
     extra: [{ castle: 'ROCK_MAPLE', x: 56, y: -0.3 }],
     me: { crew: ['fire', 'rocket', 'stone', 'bomb'] },
-    foe: { crew: ['bomb', 'fire', 'rocket', 'bolt'], hp: 0.95, dmg: 0.75, open: 0.5, ai: { err: 4.3, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 2.0 } },
+    foe: { crew: ['bomb', 'fire', 'rocket', 'bolt'], hp: 0.95, dmg: 1.0, open: 0.5, ai: { err: 4.3, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 2.0 } },
     weak: (side) => tgC(side, [[5, 10]], 1.15).concat(tgC(side, [[1, 10], [9, 10], [2, 8], [8, 8], [3, 6]], 0.95)),
     lantern: { at: 3, every: 3, spots: [[48, 45], [64, 45]] }
   },
@@ -290,7 +294,7 @@ const LEVELS = [
     voids: [[41.5, 70.5]],
     extra: [{ castle: 'ROCK_DEMON', x: 56, y: -12.4 }],
     me: { crew: ['rocket', 'zap', 'bomb', 'fire'] },
-    foe: { crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 0.8, dmg: 0.5, open: 0.55, ai: { err: 4.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 1.8 } },
+    foe: { crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 0.8, dmg: 0.36, open: 0.55, ai: { err: 4.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 1.8 } },
     weak: (side) => side === 1 ? tgC(side, [[10, 10], [9, 10], [3, 2], [7, 2]], 0.8) : tgC(side, [[10, 10], [9, 10]], 0.7),          // 敵軍也會打我方大殿的木柱（吊燈砸我方的兵）；我方的自動玩家專打魔晶
     boss: { p2: 0.72, p3: 0.4, segHp: 60, regen: 2, orbHp: 30, meteors: 3, heal: 0.015, rest: ['barrage', 'meteor'] },          // rest：放完暗黑連射、隕石雨會累，下一回合是破綻
     objs: [{ t: 'hole', x: 56, y: 33, G: 2300, R: 15, rs: 1.7, on: false }],
@@ -356,6 +360,54 @@ const LEVELS = [
     me: { crew: ['chain', 'zap', 'bomb', 'magnet', 'acid', 'eng'] },
     foe: { crew: ['bomb', 'zap', 'rocket', 'magnet', 'chain', 'acid'], hp: 1.15, dmg: 1.2, open: 0.55, ai: { err: 3.2, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.5 } },
     lantern: { at: 3, every: 3, spots: [[52, 41], [60, 31]] }
+  },
+  {
+    name: '鋼鐵列車', sayTop: 1, tag: '連結器・鍋爐・隧道', theme: 15, castle: 'TRAIN', stress: 1, blockHp: 1.5, rules: { ff: 1, crit: 1, elem: 1 },
+    tip: '兩列裝甲列車並排狂奔：外側那節車廂用連結器掛在火車頭後面，連結器打斷了，車廂連人被甩下車；火車頭的大鍋爐打爆了，蒸汽炸開整個砲室。路邊的東西每回合換一樣（水塔、號誌橋、小山），每四回合鑽一次隧道：頂上整片岩頂、中間一道隔牆，要從縫裡吊過去',
+    hints: [{ r: 1, t: '敵車外側那節車廂（兩個兵）靠一個連結器掛在火車頭後面：打斷它，整節車廂連人被甩下車（鏈彈、重砲、雷打得動；炸在它旁邊也算）', ok: () => couplerUp(1) },
+      { r: 2, t: '火車頭的大鍋爐（圓滾滾的那一截）：打爆了，蒸汽炸開，旁邊的砲室、砲塔一起遭殃', ok: () => boilerUp(1) },
+      { r: 3, t: '下一回合要鑽隧道：頂上整片岩頂，兩條軌道中間還有一道隔牆，平射會打在牆上，要從隔牆和岩頂之間的縫吊過去。隧道裡沒有風', ok: () => passKind(S.round + 1) === 'tunnel' },
+      { r: 4, t: '路邊的東西每回合換一樣：水塔、號誌橋擋得高，小山擋得低。看清楚這一回合中間擋著什麼再瞄' }],
+    ground: [[-40, 0], [152, 0]],
+    wind: { max: 6, at: 1 },
+    // 中場：每回合換一樣路邊的東西（第 1、5、9…回合是水塔，接著號誌橋、小山、隧道）
+    pass: { seq: ['tower', 'gantry', 'hill', 'tunnel'] },
+    me: { crew: ['bomb', 'chain', 'zap', 'drill', 'rocket', 'eng'] },
+    foe: { crew: ['bomb', 'rocket', 'chain', 'zap', 'cluster', 'magnet'], hp: 1.1, dmg: 1.1, open: 0.55, ai: { err: 3.3, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
+    weak: (side) => trainWeak(side),
+    lantern: { at: 3, every: 3, spots: [[52, 18], [60, 11]] }
+  },
+  {
+    name: '地底礦坑', sayTop: 1, tag: '岩頂・懸石・沼氣', theme: 16, castle: 'MINE', stress: 1, blockHp: 3.4, smashK: 1, rules: { ff: 1, crit: 1, elem: 1 },
+    tip: '礦坑深處：頂上整片岩頂，砲彈吊不高，只能壓低了打。敵城頂樓上面四根坑木頂著兩大塊懸石：坑木打斷了，懸石整塊砸穿頂樓。岩壁裡藏著一包沼氣，炸到、燒到就炸成一大團火。中間的礦脈打得碎，越打越低。城是石頭造的，酸蝕得最快',
+    hints: [{ r: 1, t: '頂上是岩頂：砲彈吊太高會撞在岩頂上炸掉。壓低仰角、力道加大，從礦脈上面擦過去', ok: () => true },
+      { r: 2, t: '敵城頂樓上面那四根坑木頂著兩大塊懸石：打斷一塊懸石底下的兩根，整塊砸穿頂樓，壓住底下的兵（火油燒得動坑木）', ok: () => propsUp(1) },
+      { r: 3, t: '敵城後面的岩壁裡有一包沼氣（發綠光的那一格）：炸到、燒到就炸成一大團火，衝進上層那一間', ok: () => gasUp(1) },
+      { r: 4, t: '中間的礦脈打得碎：越打越低，敵城的上層慢慢露出來（最底下一排岩心打不碎）。城的牆、樓板都是石頭：酸蝕得最快' }],
+    ground: [[-40, 0], [152, 0]],
+    ceil: 24.5,
+    extra: [{ castle: 'SEAM', x: 56, hp: 2.5 }],
+    me: { crew: ['fire', 'drill', 'bomb', 'acid', 'chain', 'eng'] },
+    foe: { crew: ['fire', 'bomb', 'rocket', 'drill', 'acid', 'stone'], hp: 1.15, dmg: 1.2, open: 0.55, ai: { err: 3.3, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
+    weak: (side) => mineWeak(side),
+    lantern: { at: 3, every: 3, spots: [[52, 20], [60, 15]] }
+  },
+  {
+    name: '機關巨獸', sayTop: 1, tag: '魔王・巨獸踩城・斷腿拆甲射核心', theme: 17, castle: 'BASTION', stress: 1, blockHp: 2.8, rules: { ff: 1, crit: 1, elem: 1 },
+    tip: '敵方沒有城：一頭機關巨獸每回合朝你的城走一段，走到城下就每回合踩城。打掉護膝甲、打斷膝關節，牠踉蹌一回合（不走，下一回合是破綻，傷害加倍）；打爛頭就不能噴火、咬人。血剩六成牠跪下來放出小機械兵，剩不到三成倒地爬行、胸口的核心露出來（打核心最痛），蓄力一回合就光束橫掃：開護罩擋。巨獸是鐵造的：雷、酸、磁暴打牠最痛',
+    hints: [{ r: 1, t: '巨獸每回合結束往前走一段：走到你的城下，每回合都會踩城。在那之前把牠打倒，或打斷牠的腿拖慢牠', ok: () => true },
+      { r: 2, t: '膝蓋前面那片護膝甲打掉，膝關節就露出來：打斷膝關節，那條腿斷了，巨獸踉蹌一回合（不走，下一回合打牠傷害加倍）', ok: () => S.beast && S.beast.legs.some((L) => !L.broken) },
+      { r: 3, t: '巨獸每回合一開始會預告招式：噴火燒得著你城上的木頭；咬人會把一個兵叼起來甩到牠背後（落地不死，站在那裡照樣打）。開著護罩都擋得住', ok: () => S.beast && !!S.beast.P.head && !S.beast.P.head.dead },
+      { r: 4, t: '鏈彈打中巨獸的腳會纏住牠：那一回合結束只走一半。黏性炸藥黏在牠身上，你下一輪開火時炸開' }],
+    ground: [[-40, 0], [152, 0]],
+    wind: { max: 4, at: 2 },
+    me: { crew: ['zap', 'acid', 'magnet', 'chain', 'sapper', 'eng'] },
+    foe: { crew: ['rocket', 'bomb', 'sniper'], mechs: 2, hp: 1.0, dmg: 0.9, open: 0.55, ai: { err: 3.6, think: 1.1, gate: 0, hate: 0.2, skill: 0.6, sap: 0.6, warm: 1.6 } },
+    // 機關巨獸：開場站在哪（軀幹中心 x）、血量；血剩幾成進第二、第三階段
+    beast: { x: 93, hp: 1300, p2: 0.6, p3: 0.28 },
+    weak: (side) => beastWeak(side),
+    lantern: { at: 3, every: 3, spots: [[60, 30], [68, 24]] },
+    sudden: 16
   }
 ];
 
@@ -363,7 +415,7 @@ const LEVELS = [
    practice：不給星星、不解鎖；rules：ff 誤傷、crit 弱點暴擊、elem 冰能滅火（屬性剋制的字每一關都會跳，這條是真的改戰局） */
 const PRACTICE_BASE = {
   name: '演武場', tag: '十八種兵器・誤傷・弱點暴擊', theme: 0, castle: 'DRILL', practice: 1, rules: { ff: 1, crit: 1, elem: 1 },
-  tip: '十八種兵任你挑，每邊最多六個；戰場也可以換成各關的城（魔王城除外）。第三篇的規則都在：自己的砲炸到自己人一樣會傷，打中接點、核心、兵的頭是暴擊 ×2',
+  tip: '十八種兵任你挑，每邊最多六個；戰場也可以換成各關的城（魔王城、機關巨獸除外）。第三篇的規則都在：自己的砲炸到自己人一樣會傷，打中接點、核心、兵的頭是暴擊 ×2',
   hints: [],
   ground: [[-40, 3], [0, 0], [47, 0], [51, 3.6], [56, 5.2], [61, 3.6], [65, 0], [112, 0], [152, 3]],
   me: { crew: ['chain', 'drill', 'cluster', 'sapper', 'magnet', 'eng'] },
@@ -371,7 +423,7 @@ const PRACTICE_BASE = {
   wind: { max: 5, at: 2 }, sudden: 12
 };
 // 演武場的戰場清單：0 演武城，其他照那一關（第幾關；城、地形、中間的機關、環境都一樣，兵換成挑的）。魔王城不能選（要有魔王）
-const PRACTICE_LIST = [0].concat(LEVELS.map((l, i) => i + 1).filter((m) => !LEVELS[m - 1].boss));
+const PRACTICE_LIST = [0].concat(LEVELS.map((l, i) => i + 1).filter((m) => !LEVELS[m - 1].boss && !LEVELS[m - 1].beast));
 const PRACTICE_MAPS = LEVELS.length + 1;          // 戰場編號的上限（存檔檢查用）
 function practiceSlots(map) { const lv = map > 0 ? LEVELS[map - 1] : PRACTICE_BASE, d = CASTLES[lv.castle || lv.me.castle]; let n = 0; for (const r of d.map) for (const ch of r) if (ch >= '1' && ch <= '9') n++; return n; }
 function practiceLevel(map, me, foe, ff) {

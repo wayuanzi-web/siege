@@ -99,7 +99,7 @@ function r1v(victim) {
   if (victim >= 2 || !S.lv.foe.open) return false;
   return victim === 1 ? S.round <= 1 : (S.round <= 1 && S.turn === 1) || (S.round === 2 && S.turn === 0);
 }
-function r1Mark() { S.doms = []; for (const b of S.blocks) if (b.dom && !b.dead) S.doms.push(b); }
+function r1Mark() { S.doms = []; S.drops = []; for (const b of S.blocks) { if (b.dom && !b.dead) S.doms.push(b); if (b.drop && !b.dead) S.drops.push(b); } }
 function ropeHurt(r, d, kind, side) {
   if (r.cut || d <= 0) return;
   d *= (r.kind === 'chain' ? CHAIN_DM : ROPE_DM)[kind] || 0; if (d <= 0) return;
@@ -465,6 +465,13 @@ function mechStep(dt) {
   if (S.lv.snow) for (let k = 0; k < 2; k++) for (const b of S.st[k].blocks) {
     if (b.dead || !(b.snow || b.noCalm)) continue;
     const v = b.body.getLinearVelocity(), sp = v.x * v.x + v.y * v.y, fast = act && sp > (b.snow ? 49 : 30) && !b.inPlace;
+    if (fast && !b.smash) b.smashBy = b.side === S.turn || S.phase === 'hazard' ? 2 : S.turn;
+    b.smash = fast ? 1 : 0;
+  }
+  // 礦坑的懸石（第十七關）：坑木斷了、整塊往下掉得快的時候，整塊的重量砸上去。砸在樓板上那一下就沒力了（spent），不會一路砸到地下室
+  if (S.drops.length) for (const b of S.drops) {
+    if (b.dead || !b.body) continue;
+    const v = b.body.getLinearVelocity(), fast = act && !b.inPlace && !b.spent && v.y < -6;
     if (fast && !b.smash) b.smashBy = b.side === S.turn || S.phase === 'hazard' ? 2 : S.turn;
     b.smash = fast ? 1 : 0;
   }

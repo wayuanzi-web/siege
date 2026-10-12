@@ -4,5 +4,6 @@ const BOTS = {
   expert: { err: 1.5, think: 0.5, gate: 1, hate: 0.4, skill: 1, sh: 1 },                       // 很會玩
   casual: { err: 5, think: 0.6, gate: 0.6, hate: 0.2, skill: 0.5, sh: 0.5 },                   // 普通
   newbie: { err: 10, think: 0.7, gate: 0.2, hate: 0, skill: 0.15, sh: 0.15, guard: 0.4 },      // 新手
-  demo: { err: 4, think: 1.4, gate: 0.8, hate: 0.2, skill: 0.6, sh: 0.6 }                      // 主畫面背景
+  demo: { err: 4, think: 1.4, gate: 0.8, hate: 0.2, skill: 0.6, sh: 0.6 },                     // 主畫面背景
+  flat: { err: 5, think: 0.6, gate: 0.6, hate: 0.2, skill: 0.5, sh: 0.5, flat: 0.35 }          // 測試用：普通的手，只打平射（仰角 20 度以下）
 };

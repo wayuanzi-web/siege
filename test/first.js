@@ -1,4 +1,4 @@
-// node test/first.js <關卡 1-15，或 p0–p15 演武場（戰場幾號，p12 魔王城除外）> [場數=150] [敵軍打幾輪=1]（演武場：FOE=cluster,drill,… 指定敵軍的兵，誤傷開著）
+// node test/first.js <關卡 1-18，或 p0–p17 演武場（戰場幾號，p12 魔王城除外）> [場數=150] [敵軍打幾輪=1]（演武場：FOE=cluster,drill,… 指定敵軍的兵，誤傷開著）
 // 開場公平性：我方完全不開火、不開護罩，敵軍（照關卡原本的 AI，含手抖）先打 K 輪，看我方倒幾個兵（跑到第 K+1 回合我方那一輪結束：開場護符護到這裡）
 const G = require('./load')('practiceLevel, PRACTICE_BASE'); const { S, simInit, simStep, simFire, LEVELS } = G;
 const arg = String(process.argv[2] || 1), prac = arg[0] === 'p', li = prac ? -1 : +arg - 1, N = +(process.argv[3] || 150), K = +(process.argv[4] || 1);
