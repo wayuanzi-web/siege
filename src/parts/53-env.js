@@ -418,7 +418,7 @@ function tideWeak(side) {
    兩列火車並排狂奔：背景一直往後捲（只是畫面），城樓本身不動。
    連結器（S.objs 的 'coupler'）：掛在外側那節車廂和火車頭之間，打斷了，外側那節車廂（連車上的兵）一路往後退出戰場（trainRoll）。
    鍋爐（藍圖的 v）：打爆了蒸汽炸開（WPN.boiler，blockKill 那裡排進 S.pend）。
-   中場：每回合換一樣路邊的東西（水塔、號誌橋、路塹的小山），每 4 回合鑽一次隧道（頂上一整片岩頂，只能平著打；中間沒東西擋、沒有風） */
+   中場：每回合換一樣路邊的東西（水塔、號誌橋、路塹的小山），每 4 回合鑽一次隧道（頂上一整片岩頂、兩條軌道中間一道隔牆：平射打在隔牆上，要從縫裡吊過去；沒有風） */
 const ROLL_ACC = 5, ROLL_MAX = 16;          // 甩下車的車廂往後退：每秒加速多少、最快多快
 function mkCars(st, d) {
   const cols = st.cols, m = st.mirror, c0 = m ? cols - d.a1 : d.a0, c1 = m ? cols - d.a0 : d.a1, gc = m ? cols - 1 - d.gap : d.gap;
@@ -472,7 +472,7 @@ const PASS_SHAPES = {
   tower: { boxes: [[-2.2, 0, 4.4, 9.6], [-3.4, 9.6, 6.8, 6.2]], top: 16.9 },          // 水塔：磚砌的塔身、上面一個大木桶
   gantry: { boxes: [[-5.6, 0, 0.9, 15.4], [4.7, 0, 0.9, 15.4], [-6.4, 13.6, 12.8, 1.9]], top: 15.5 },          // 號誌橋：兩根鐵柱、上面一道橫樑（平射從底下穿不過：柱子擋著）
   hill: { poly: [[-10, 0], [-6.5, 3.6], [-2.6, 7.4], [2.6, 7.4], [6.5, 3.6], [10, 0]], top: 7.4 },          // 路塹：鐵路切開的小山
-  tunnel: { boxes: [[-90, 22.6, 180, 12]], top: 22.6, roof: 22.6 }          // 隧道：頂上一整片岩頂（中間沒東西擋）
+  tunnel: { boxes: [[-90, 22.6, 180, 12], [-1.6, 0, 3.2, 10.5]], top: 22.6, roof: 22.6 }          // 隧道：頂上一整片岩頂；兩條軌道中間一道隔牆（平射打不過去，要從隔牆和岩頂中間的縫吊過去）
 };
 const PASS_SLIDE = 1.6, PASS_OFF = 74;          // 換景：舊的退出去、新的滑進來要多久、滑多遠
 function passKind(round) { const P = S.lv.pass; return P ? P.seq[(Math.max(1, round) - 1) % P.seq.length] : null; }
@@ -489,10 +489,12 @@ function passInit() {
 }
 // 新的路邊東西出現的地方：擋在那裡的碎塊清掉、站在那裡的兵推到旁邊的地上
 function passClear(kind) {
-  const D = PASS_SHAPES[kind]; if (!D || kind === 'tunnel') return;
-  const hw = D.boxes ? Math.max(...D.boxes.map(([x, y, w]) => Math.max(Math.abs(x), Math.abs(x + w)))) : Math.max(...D.poly.map(([x]) => Math.abs(x)));
-  for (const b of S.blocks) { if (b.dead || !b.body || !b.frag) continue; const p = b.body.getPosition(); if (Math.abs(p.x - MID) < hw + 0.5 && p.y < D.top + 1) blockKill(b, 2, K_CRUSH, true); }
-  for (const u of S.units) { if (!u.alive || !u.body || u.def.big) continue; if (Math.abs(u.x - MID) < hw + 0.6 && u.y < D.top + 0.5) { const nx = u.x < MID ? MID - hw - 1.2 : MID + hw + 1.2; u.body.setTransform({ x: nx, y: groundYRaw(nx) + u.bh / 2 + 0.05 }, 0); u.body.setLinearVelocity({ x: 0, y: 0 }); u.x = nx; } }
+  const D = PASS_SHAPES[kind]; if (!D) return;
+  const gb = D.boxes ? D.boxes.filter(([x, y]) => y <= 0.01) : null;          // 立在地上的那幾塊（隧道只有中間的隔牆）
+  if (gb && !gb.length) return;
+  const hw = gb ? Math.max(...gb.map(([x, y, w]) => Math.max(Math.abs(x), Math.abs(x + w)))) : Math.max(...D.poly.map(([x]) => Math.abs(x))), top = gb ? Math.max(...gb.map(([x, y, w, h]) => y + h)) : D.top;
+  for (const b of S.blocks) { if (b.dead || !b.body || !b.frag) continue; const p = b.body.getPosition(); if (Math.abs(p.x - MID) < hw + 0.5 && p.y < top + 1) blockKill(b, 2, K_CRUSH, true); }
+  for (const u of S.units) { if (!u.alive || !u.body || u.def.big) continue; if (Math.abs(u.x - MID) < hw + 0.6 && u.y < top + 0.5) { const nx = u.x < MID ? MID - hw - 1.2 : MID + hw + 1.2; u.body.setTransform({ x: nx, y: groundYRaw(nx) + u.bh / 2 + 0.05 }, 0); u.body.setLinearVelocity({ x: 0, y: 0 }); u.x = nx; } }
 }
 // 回合結束：下一回合是不是換一樣東西。回傳 true：要等它演完
 // 滑進滑出只是畫面：舊的實體馬上拿掉、新的滑到定位才放上去（不然會從兩列火車中間穿過去，把車廂撞爛）

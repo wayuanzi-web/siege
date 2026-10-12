@@ -181,6 +181,7 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
     // （wts：某一種材質打幾折；wch：藍圖上某一個字打幾折，例如礦坑的長樓板）
     b.wt = b.mat === M_KEG || b.prop || b.beam || b.snow || b.rod || b.core || b.brake || b.tank || b.crane || b.stack || b.drop || b.mprop ? 0 : low ? BASE_WT : blockArea(b) * (def.wts && def.wts[b.mat] !== undefined ? def.wts[b.mat] : 1) * (def.wch && def.wch[b.chr] !== undefined ? def.wch[b.chr] : 1); st.hp0 += b.wt;
   }
+  stumpWeights(st, def);
   // 戰船：船身（每一個船艙照耐久）也算進城樓完整度，佔 hullW 那麼多
   if (st.plat && st.plat.comps && def.ship && def.ship.hullW) { const hw = st.hp0 * def.ship.hullW / (1 - def.ship.hullW); for (const c of st.plat.comps) c.wt = hw / st.plat.comps.length; st.hp0 += hw; }
   st.hpNow = st.hp0; st.slots.sort((a, b) => a.slot - b.slot);
@@ -250,6 +251,25 @@ function castleScan(st) {
       if (k === 1) { const b = cellB[i]; if (b && !b.dead && b.snug) above = true; } else if (k === 3) above = true; else if (k === 0) above = false;
     }
   }
+}
+/* 城塌到只剩一樓＝城破（使用者：結構塌後水平對射很無聊）：
+   藍圖的 gf（由下往上數幾列，含城基）是「一樓」——上面的樓都塌了、只剩這一截的時候，兩邊只剩平平地對射殘牆，沒有結構可打了。
+   一樓的磚在完整度裡只佔 STUMP_K（照比例縮小）：上面的樓閣塌光，完整度就掉到城破門檻以下，一局在最後一段大坍塌結束。
+   gfc：改用藍圖上的字指定哪些磚算一樓（石林的石柱）。沒寫 gf、gfc 的（懸空寺、吊籠寨、列車）照舊 */
+const STUMP_K = 0.2;
+function stumpWeights(st, def) {
+  if (!def.gf && !def.gfc) return;
+  let gw = 0, uw = 0;
+  for (const b of st.blocks) {
+    if (!(b.wt > 0) || b.base) continue;
+    b.gf = def.gfc ? (def.gfc.indexOf(b.chr) >= 0 ? 1 : 0) : (b.cy + b.ch <= def.gf ? 1 : 0);
+    if (b.gf) gw += b.wt; else uw += b.wt;
+  }
+  if (!(gw > 0) || !(uw > 0)) return;
+  const k = Math.min(1, STUMP_K * uw / ((1 - STUMP_K) * gw));
+  if (k >= 1) return;
+  for (const b of st.blocks) if (b.gf && b.wt > 0) b.wt *= k;
+  st.hp0 -= gw * (1 - k);
 }
 // 一塊磚有幾格大（斜屋頂照梯形、圓的照圓面積）
 function blockArea(b) { return b.kind === 'ball' ? Math.PI * b.r * b.r / (CS * CS) : b.kind === 'roof' ? (b.w - (b.il + b.ir) / 2) * b.h / (CS * CS) : b.w * b.h / (CS * CS); }
@@ -1046,9 +1066,10 @@ function endTurn() {
   endCheck(true); if (S.state !== 'play') return;
   if (S.turn === 0) startTurn(1); else roundEnd();
 }
-/* 搖搖欲墜：城防條快見底（剩不到 12%）、或拖太久（到了 sudden 回合）的城，每回合結束自己再塌一點（隨便幾塊磚裂開）。魔王城不會，第一回合也不會。
+/* 搖搖欲墜：城防條快見底（剩不到 CRUMBLE_BAR）、或拖太久（到了 sudden 回合）的城，每回合結束自己再塌一點（隨便幾塊磚裂開）。魔王城不會，第一回合也不會。
    不會停在「城塌得只剩一個角、兩邊殘兵對射」的局面拖下去 */
 const CRUMBLE = 0.06;
+const CRUMBLE_BAR = 0.25;          // 城防條剩不到兩成五（上面的樓閣差不多都塌了，只剩殘牆）：每回合結束自己再塌一點，不會變成兩邊對著殘牆平射
 function crumble(st) {
   const L = st.blocks.filter((b) => !b.dead && b.inPlace && !b.lost && b.wt > 0 && !b.base);
   let need = st.hp0 * CRUMBLE, any = false;
@@ -1066,7 +1087,7 @@ function roundEnd() {
   let wait = false;
   mechRoundEnd();
   if (envRoundEnd()) wait = true;          // 第三篇：換潮、暴潮……
-  if (S.round >= 2) for (let s = 0; s < 2; s++) if (!(s === 1 && (S.boss || S.beast)) && (structBar(s) < 0.12 || S.round >= (S.lv.sudden || 10)) && crumble(S.st[s])) wait = true;          // 第一回合不會（不會第一回合就分出勝負）
+  if (S.round >= 2) for (let s = 0; s < 2; s++) if (!(s === 1 && (S.boss || S.beast)) && (structBar(s) < CRUMBLE_BAR || S.round >= (S.lv.sudden || 10)) && crumble(S.st[s])) wait = true;          // 第一回合不會（不會第一回合就分出勝負）
   if (S.nfrag > FRAG_KEEP) { for (const b of S.blocks) { if (S.nfrag <= FRAG_KEEP) break; if (b.frag && !b.dead) { blockKill(b, 2, K_CRUSH, true); wait = true; } } }
   S.hz = 0;
   if (S.marks.length) { const volc = S.marks[0].volc; for (const m of S.marks) dropRock(m.x, m.big, m.volc); S.marks.length = 0; wait = true; S.hz = 1; ev('rumble', volc ? 1 : 0); }
@@ -1433,7 +1454,7 @@ function endCheck(settled) {
     const T = S.team[s];
     if (s === 1 && S.beast) { if (S.beast.hp <= 0) how[s] = 1; continue; }          // 第十八關：巨獸倒下才算贏（砲台上的兵死光了，巨獸照樣走）
     if (T.alive <= 0 || (s === 1 && S.boss && !(bossUnit() || {}).alive)) how[s] = 1;
-    else if (settled && !(s === 1 && S.boss) && structBar(s) <= 0) how[s] = 2;
+    else if (settled && !(s === 1 && S.boss) && structBar(s) <= 0 && S.team[1 - s].volleys >= 2) how[s] = 2;          // 一座城至少要挨兩輪才會破（第一輪就垮到門檻以下，還有一輪還手，下一次停下來才算）
   }
   if (!how[0] && !how[1] && settled && !S.boss && !S.beast && S.round > ROUND_CAP) how[structBar(1) < structBar(0) ? 1 : 0] = 3;
   if (!how[0] && !how[1]) return;

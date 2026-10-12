@@ -1,7 +1,7 @@
 /* ===== 36-scene-rail: 第十六關「鋼鐵列車」— 夕陽下的大草原，兩列裝甲列車在路堤上並排狂奔：
    遠山慢慢往後退、近一點的丘陵退得快、路邊的電線桿一根根掠過去，枕木一路往後捲（城樓本身不動，動的是佈景）。
    中場那樣路邊的東西（水塔、號誌橋、路塹的小山）照 S.pass 畫：換景的時候舊的往後退出去、新的從前面滑進來；
-   鑽隧道的時候，隧道口從前面掃過整個畫面，裡面是磚砌的隧道壁、一盞盞往後掠的燈，頂上一整片岩頂 ===== */
+   鑽隧道的時候，隧道口從前面掃過整個畫面，裡面是磚砌的隧道壁、一盞盞往後掠的燈，頂上一整片岩頂、兩條軌道中間一道隔牆 ===== */
 THEMES[15] = (function () {
   const HZ = 5.5;                       // 遠方的地平線（戰場座標）
   const SPD = 30;                       // 佈景往後捲的速度（近處，戰場單位／秒）
@@ -128,6 +128,17 @@ THEMES[15] = (function () {
           for (let x = V.x0 - lo - LS; x < V.x1 + LS; x += LS) { if (x < xa - 2 || x > xb + 2) continue; c.fillStyle = rg(c, X(x), Y(13), 0, s * 5, [0, 'rgba(255,200,120,.5)', 1, 'rgba(255,170,80,0)']); c.fillRect(X(x) - s * 5, Y(13) - s * 5, s * 10, s * 10); c.fillStyle = '#ffd890'; c.beginPath(); c.arc(X(x), Y(13), s * 0.42, 0, TAU); c.fill(); }
           c.restore();
         }
+      }
+      // 隧道正中間（兩條軌道之間）的隔牆：磚砌的厚牆、頂上一道石帽，擋住平射（跟著換景滑進來）
+      if (P && (P.kind === 'tunnel' || P.outKind === 'tunnel')) {
+        const D = PASS_SHAPES.tunnel.boxes[1], wx = MID + (P.kind === 'tunnel' ? P.off : P.outOff);
+        const [bx, by, bw, bh] = D, x0 = wx + bx;
+        c.fillStyle = lg(c, X(x0), 0, X(x0 + bw), 0, [0, '#3a2e26', 0.45, '#6a5646', 1, '#2e241e']); c.fillRect(X(x0), Y(by + bh), bw * s, bh * s);
+        c.strokeStyle = 'rgba(10,6,4,.45)'; c.lineWidth = Math.max(1, s * 0.06);
+        for (let y = 0.7; y < bh; y += 0.7) { c.beginPath(); c.moveTo(X(x0), Y(by + y)); c.lineTo(X(x0 + bw), Y(by + y)); c.stroke(); for (let x = ((y / 0.7) & 1) * 0.8; x < bw; x += 1.6) { c.beginPath(); c.moveTo(X(x0 + x), Y(by + y)); c.lineTo(X(x0 + x), Y(by + y - 0.7)); c.stroke(); } }
+        c.fillStyle = '#7a6a58'; c.fillRect(X(x0 - 0.35), Y(by + bh + 0.55), (bw + 0.7) * s, 0.55 * s);
+        c.fillStyle = 'rgba(255,190,110,.12)'; c.fillRect(X(x0), Y(by + bh), bw * 0.3 * s, bh * s);
+        c.strokeStyle = INK; c.lineWidth = Math.max(1, s * 0.12); c.strokeRect(X(x0), Y(by + bh), bw * s, bh * s); c.strokeRect(X(x0 - 0.35), Y(by + bh + 0.55), (bw + 0.7) * s, 0.55 * s);
       }
       // 路邊揚起的塵土（隧道外）
       if (!T || !T.inRight || T.xp > V.x0) for (const d of dust) { d.x -= SPD * d.v * dt; if (d.x < V.x0 - 3) { d.x = V.x1 + 3; d.y = 0.3 + Math.random() * 6; } c.fillStyle = 'rgba(200,170,120,.18)'; ell(c, X(d.x), Y(d.y), s * d.r * 2.2, s * d.r); c.fill(); }

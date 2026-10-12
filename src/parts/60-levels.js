@@ -19,7 +19,7 @@
            orbHp 毀滅光球的耐久、orbGap 第二／第三階段各隔幾輪放一顆；meteors 第三階段每回合幾顆隕石；heal 每顆魔晶每回合回幾成血；
            rest 放完哪些招會累（下一回合是破綻：不放招、打他加倍；沒寫就是隕石雨）
    sudden  第幾回合起雙方的城每回合自己塌一點、之後砲火也開始加重（沒寫就是第 10 回合）
-   fall    城破的門檻：城的完整度掉到多少，城防條就歸零、這一邊輸（沒寫就是 FALL_TH 三成）
+   fall    城破的門檻：城的完整度掉到多少，城防條就歸零、這一邊輸（沒寫就是 FALL_TH 三成；藍圖的 gf 是一樓，一樓只佔完整度的 STUMP_K：塌到只剩一樓就破城）
    blockHp 城樓磚的耐久倍率（沒寫就是 CASTLE_HP）；smashK 雪崩（積雪、冰棚）、礦坑的懸石砸下來的力道倍率
    extra   戰場中間另外放的結構 [{ castle 藍圖名, x 中心, y 底 }]：打不壞的岩石，擋住被轟到地上的兵平平地對射
    weak    自動玩家（敵軍、測試用的我方）想打的要害：weak(side) 回傳 side 這一邊要打的目標（對方城上的格子、對方那一頭的機關）
@@ -88,7 +88,7 @@ const shelfUp = (side) => S.st[side].blocks.some((b) => !b.dead && b.mat === M_S
 
 const LEVELS = [
   {
-    name: '望樓對峙', tag: '基本玩法・倍增符・火藥桶', theme: 0, castle: 'TOWER', fall: 0.3,
+    name: '望樓對峙', tag: '基本玩法・倍增符・火藥桶', theme: 0, castle: 'TOWER', fall: 0.3, blockHp: 2.6,
     tip: '雙方輪流開火，全隊打同一個落點。把敵城打塌（上面的城防條歸零）就贏。前面的木頭望樓腳下夾著一桶火藥；後面是石砌的主樓。穿過藍色倍增符，一發變多發',
     hints: [{ r: 1, t: '敵軍望樓腳下夾著一桶火藥：打中它，炸斷細腳，望樓連上面兩個兵一起倒下來', ok: () => foeKeg() },
       { r: 2, t: '砲彈穿過藍色倍增符會變多發：拖曳的時候看虛線有沒有穿過符', ok: () => foeHome(1) || foeHome(3) },
@@ -164,7 +164,7 @@ const LEVELS = [
     lantern: { at: 3, every: 3, spots: [[56, 26], [45, 47], [67, 47]] }
   },
   {
-    name: '雲海浮島', tag: '噴流・浮空晶石・會晃的浮島', theme: 4, castle: 'SKY', y0: 6,
+    name: '雲海浮島', tag: '噴流・浮空晶石・會晃的浮島', theme: 4, castle: 'SKY', y0: 6, blockHp: 2.5,
     tip: '兩座城都蓋在浮島上，兩顆氣球吊著、底下兩顆浮空晶石托著。打碎晶石，那一頭沉下去；再打破那一頭的氣球，整座島歪下去、城滑進雲海。中間的噴流每回合換方向',
     hints: [{ r: 1, t: '這一回合噴流往敵城吹：把砲彈打進白色氣流帶，會被捲住加速、直衝過去（威力 ×1.8）', ok: () => jetDir() > 0 },
       { r: 2, t: '浮島底下兩顆紫色浮空晶石：打碎一顆，那一頭沉下去、繩子吃滿重量，再打一下就斷', ok: () => liftsLeft(1) >= 2 },
@@ -172,7 +172,7 @@ const LEVELS = [
       { r: 4, t: '噴流往你這邊吹的回合，砲彈穿過去會被減速：吊高越過它，或從底下鑽過去', ok: () => jetDir() < 0 }],
     voids: [[-60, 172]],
     me: { crew: ['rocket', 'zap', 'bolt', 'bomb'] },
-    foe: { crew: ['bal', 'rocket', 'flak', 'zap'], hp: 1.0, dmg: 0.7, open: 0.55, ai: { err: 3.7, think: 1.1, gate: 0.75, hate: 0.25, skill: 0.5, sap: 0.5, warm: 1.8 } },
+    foe: { crew: ['bal', 'rocket', 'flak', 'zap'], hp: 1.1, dmg: 1.25, open: 0.55, ai: { err: 3.3, think: 1.1, gate: 0.75, hate: 0.25, skill: 0.5, sap: 0.5, warm: 1.8 } },
     // 噴流：每回合換方向（第一回合往敵城吹）、每兩回合換高度（中＝一樓、低＝浮空晶石、高＝氣球）
     objs: [{ t: 'jet', x0: 37, x1: 75, lv: [18, 8, 43.5], hh: 3.2, U: 92, kx: 5, ky: 7, kc: 10, gain: 1.8 }],
     ampAim: (side) => { const o = S.objs.find((q) => q.t === 'jet'), d = side === 0 ? 1 : -1; if (!o || o.U * d <= 0) return []; const xe = d > 0 ? o.x0 + 2 : o.x1 - 2; return [{ x: xe, y: o.y }, { x: xe + d * 5, y: o.y }, { x: xe + d * 10, y: o.y + 1 }]; },
@@ -267,8 +267,8 @@ const LEVELS = [
     lantern: { at: 3, every: 3, spots: [[51, 50], [60, 22]] }
   },
   {
-    name: '古寺撞鐘', tag: '大鐘共振・心柱・連層崩塌', theme: 11, castle: 'PAGODA', stress: 1, blockHp: 3.2, fall: 0.1,
-    tip: '戰場正中間吊著一口大鐘。打在鐘上會把它往對面推，力道也會累積成鐘鳴：滿了「噹」一聲，震波打在對面整座木塔上。塔的一樓有一根心柱擋震。五重塔整座榫接，要打到連一樓都垮了，城防條才見底（守軍全倒也算贏）',
+    name: '古寺撞鐘', tag: '大鐘共振・心柱・連層崩塌', theme: 11, castle: 'PAGODA', stress: 1, blockHp: 6,
+    tip: '戰場正中間吊著一口大鐘。打在鐘上會把它往對面推，力道也會累積成鐘鳴：滿了「噹」一聲，震波打在對面整座木塔上。塔的一樓有一根心柱擋震。五重塔整座榫接，上面四層都塌了（只剩一樓）就算破城（守軍全倒也算贏）',
     hints: [{ r: 1, t: '打中間那口大鐘：力道累積到滿就「噹」一聲，震波把敵塔每一塊木頭都震傷', ok: () => bellE(0) < 0.95 },
       { r: 2, t: '敵塔一樓正中間的紅色粗柱是心柱：它還在，鐘鳴只震裂柱子；打斷它，柱子整排震斷、兵也會被震暈', ok: () => heartUp(1) },
       { r: 3, t: '一輪打得夠重，大鐘會盪過去撞進敵塔；每一層只有兩根柱子，斷一根，另一根撐不住也跟著斷，上面一層層壓下來', ok: () => foeHome(1) || foeHome(2) },
@@ -278,7 +278,7 @@ const LEVELS = [
     bell: { x: 56, y: 50.5, len: 34, w: 6.8, h: 7.4, den: 2.6, e: 180 },
     extra: [{ castle: 'ROCK_MAPLE', x: 56, y: -0.3 }],
     me: { crew: ['fire', 'rocket', 'stone', 'bomb'] },
-    foe: { crew: ['bomb', 'fire', 'rocket', 'bolt'], hp: 0.95, dmg: 0.75, open: 0.5, ai: { err: 4.3, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 2.0 } },
+    foe: { crew: ['bomb', 'fire', 'rocket', 'bolt'], hp: 0.95, dmg: 1.0, open: 0.5, ai: { err: 4.3, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 2.0 } },
     weak: (side) => tgC(side, [[5, 10]], 1.15).concat(tgC(side, [[1, 10], [9, 10], [2, 8], [8, 8], [3, 6]], 0.95)),
     lantern: { at: 3, every: 3, spots: [[48, 45], [64, 45]] }
   },
@@ -294,7 +294,7 @@ const LEVELS = [
     voids: [[41.5, 70.5]],
     extra: [{ castle: 'ROCK_DEMON', x: 56, y: -12.4 }],
     me: { crew: ['rocket', 'zap', 'bomb', 'fire'] },
-    foe: { crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 0.8, dmg: 0.5, open: 0.55, ai: { err: 4.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 1.8 } },
+    foe: { crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 0.8, dmg: 0.36, open: 0.55, ai: { err: 4.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 1.8 } },
     weak: (side) => side === 1 ? tgC(side, [[10, 10], [9, 10], [3, 2], [7, 2]], 0.8) : tgC(side, [[10, 10], [9, 10]], 0.7),          // 敵軍也會打我方大殿的木柱（吊燈砸我方的兵）；我方的自動玩家專打魔晶
     boss: { p2: 0.72, p3: 0.4, segHp: 60, regen: 2, orbHp: 30, meteors: 3, heal: 0.015, rest: ['barrage', 'meteor'] },          // rest：放完暗黑連射、隕石雨會累，下一回合是破綻
     objs: [{ t: 'hole', x: 56, y: 33, G: 2300, R: 15, rs: 1.7, on: false }],
@@ -363,10 +363,10 @@ const LEVELS = [
   },
   {
     name: '鋼鐵列車', sayTop: 1, tag: '連結器・鍋爐・隧道', theme: 15, castle: 'TRAIN', stress: 1, blockHp: 1.5, rules: { ff: 1, crit: 1, elem: 1 },
-    tip: '兩列裝甲列車並排狂奔：外側那節車廂用連結器掛在火車頭後面，連結器打斷了，車廂連人被甩下車；火車頭的大鍋爐打爆了，蒸汽炸開整個砲室。路邊的東西每回合換一樣（水塔、號誌橋、小山），每四回合鑽一次隧道：頂上整片岩頂，只能平著打',
+    tip: '兩列裝甲列車並排狂奔：外側那節車廂用連結器掛在火車頭後面，連結器打斷了，車廂連人被甩下車；火車頭的大鍋爐打爆了，蒸汽炸開整個砲室。路邊的東西每回合換一樣（水塔、號誌橋、小山），每四回合鑽一次隧道：頂上整片岩頂、中間一道隔牆，要從縫裡吊過去',
     hints: [{ r: 1, t: '敵車外側那節車廂（兩個兵）靠一個連結器掛在火車頭後面：打斷它，整節車廂連人被甩下車（鏈彈、重砲、雷打得動；炸在它旁邊也算）', ok: () => couplerUp(1) },
       { r: 2, t: '火車頭的大鍋爐（圓滾滾的那一截）：打爆了，蒸汽炸開，旁邊的砲室、砲塔一起遭殃', ok: () => boilerUp(1) },
-      { r: 3, t: '下一回合要鑽隧道：頂上整片岩頂，砲彈吊不高，中間也沒東西擋，只能平著打。隧道裡沒有風', ok: () => passKind(S.round + 1) === 'tunnel' },
+      { r: 3, t: '下一回合要鑽隧道：頂上整片岩頂、兩條軌道中間一道隔牆，平射打在隔牆上：要從隔牆和岩頂中間的縫吊過去。隧道裡沒有風', ok: () => passKind(S.round + 1) === 'tunnel' },
       { r: 4, t: '路邊的東西每回合換一樣：水塔、號誌橋擋得高，小山擋得低。看清楚這一回合中間擋著什麼再瞄' }],
     ground: [[-40, 0], [152, 0]],
     wind: { max: 6, at: 1 },
@@ -404,7 +404,7 @@ const LEVELS = [
     me: { crew: ['zap', 'acid', 'magnet', 'chain', 'sapper', 'eng'] },
     foe: { crew: ['rocket', 'bomb', 'sniper'], mechs: 2, hp: 1.0, dmg: 0.9, open: 0.55, ai: { err: 3.6, think: 1.1, gate: 0, hate: 0.2, skill: 0.6, sap: 0.6, warm: 1.6 } },
     // 機關巨獸：開場站在哪（軀幹中心 x）、血量；血剩幾成進第二、第三階段
-    beast: { x: 93, hp: 1450, p2: 0.6, p3: 0.28 },
+    beast: { x: 93, hp: 1300, p2: 0.6, p3: 0.28 },
     weak: (side) => beastWeak(side),
     lantern: { at: 3, every: 3, spots: [[60, 30], [68, 24]] },
     sudden: 16
