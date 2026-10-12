@@ -66,7 +66,7 @@ function drawBeastHull(c, B, t, s) {
   bzFlash(c, p, shell);
   c.restore();
   // 煙囪冒煙、打壞了冒火花
-  if (!FX.low && ((RD.frame + 3) & 7) === 0 && !B.dead) { const q = p.body.getWorldPoint({ x: hw - 3.9, y: hh + 3.1 }); part(P_SMOKE, q.x, q.y, 1 + Math.random(), 3 + Math.random() * 2, 1.8, 1.4 + Math.random() * 0.8, C_DARK); }
+  if (!FX.low && ((RD.frame + 3) & 7) === 0 && !B.dead) { const q = p.body.getWorldPoint({ x: hw - 0.6, y: hh + 3.1 }); part(P_SMOKE, q.x, q.y, 1 + Math.random(), 3 + Math.random() * 2, 1.8, 1.4 + Math.random() * 0.8, C_DARK); }
   if (!FX.low && dmg > 0.5 && (RD.frame & 15) === 0) { const q = p.body.getWorldPoint({ x: (Math.random() - 0.5) * hw * 1.6, y: (Math.random() - 0.2) * hh }); part(P_SPARK, q.x, q.y, (Math.random() - 0.5) * 6, 3 + Math.random() * 4, 0.4, 0.2, C_GOLD); }
 }
 function drawBeastTurret(c, B, t, s) {

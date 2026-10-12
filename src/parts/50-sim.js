@@ -181,9 +181,9 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
     // （wts：某一種材質打幾折；wch：藍圖上某一個字打幾折，例如礦坑的長樓板）
     b.wt = b.mat === M_KEG || b.prop || b.beam || b.snow || b.rod || b.core || b.brake || b.tank || b.crane || b.stack || b.drop || b.mprop ? 0 : low ? BASE_WT : blockArea(b) * (def.wts && def.wts[b.mat] !== undefined ? def.wts[b.mat] : 1) * (def.wch && def.wch[b.chr] !== undefined ? def.wch[b.chr] : 1); st.hp0 += b.wt;
   }
-  stumpWeights(st, def);
   // 戰船：船身（每一個船艙照耐久）也算進城樓完整度，佔 hullW 那麼多
   if (st.plat && st.plat.comps && def.ship && def.ship.hullW) { const hw = st.hp0 * def.ship.hullW / (1 - def.ship.hullW); for (const c of st.plat.comps) c.wt = hw / st.plat.comps.length; st.hp0 += hw; }
+  stumpWeights(st, def);          // 船身也算「一樓」：樓都垮了只剩船身，一樣算破城
   st.hpNow = st.hp0; st.slots.sort((a, b) => a.slot - b.slot);
   // 城基實際佔的範圍（最底下一列有磚的地方）：露台之類伸出去的部分底下沒有地基
   { let c0 = cols, c1 = -1; for (let cx = 0; cx < cols; cx++) if (st.cellK[cx] && st.cellK[cx] !== 3) { if (cx < c0) c0 = cx; if (cx > c1) c1 = cx; } st.fx0 = c1 < 0 ? x0 : x0 + c0 * CS; st.fx1 = c1 < 0 ? st.x1 : x0 + (c1 + 1) * CS; }
@@ -265,10 +265,13 @@ function stumpWeights(st, def) {
     b.gf = def.gfc ? (def.gfc.indexOf(b.chr) >= 0 ? 1 : 0) : (b.cy + b.ch <= def.gf ? 1 : 0);
     if (b.gf) gw += b.wt; else uw += b.wt;
   }
+  const comps = st.plat && st.plat.comps && def.ship ? st.plat.comps : [];
+  for (const c of comps) gw += c.wt || 0;
   if (!(gw > 0) || !(uw > 0)) return;
   const k = Math.min(1, STUMP_K * uw / ((1 - STUMP_K) * gw));
   if (k >= 1) return;
   for (const b of st.blocks) if (b.gf && b.wt > 0) b.wt *= k;
+  for (const c of comps) if (c.wt) c.wt *= k;
   st.hp0 -= gw * (1 - k);
 }
 // 一塊磚有幾格大（斜屋頂照梯形、圓的照圓面積）
@@ -281,9 +284,10 @@ function structBar(side) { const f = fallTh(); return clamp((structFrac(side) - 
 /* 城防（0..1），畫面上方那一條：就是城樓還站著多少（城破的門檻是 0）；守軍全倒也是 0。
    魔王城例外：敵方那一條看魔王的血量 */
 function teamBar(side) {
-  const T = S.team[side]; if (T.alive <= 0) return 0;
+  const T = S.team[side];
+  if (side === 1 && S.beast) return clamp(S.beast.hp / S.beast.hm, 0, 1);          // 第十八關：機關巨獸的血（砲台上的兵死光了，巨獸還在）
+  if (T.alive <= 0) return 0;
   if (side === 1 && S.boss) { const bu = bossUnit(); return bu && bu.alive ? clamp(bu.hp / bu.hpMax, 0, 1) : 0; }
-  if (side === 1 && S.beast) return clamp(S.beast.hp / S.beast.hm, 0, 1);          // 第十八關：機關巨獸的血
   return structBar(side);
 }
 
@@ -792,7 +796,8 @@ function grantBonus(side, kind, x, y) {
     let u = null; for (const k of T.units) if (!k.alive) { u = k; break; }
     if (u) {
       // 回到原本的位置；那裡的樓板已經不在（或被磚佔住）就站到那個位置現在最高的東西上面，不會摔傷
-      { const H = u.fr ? frWorld(u.fr, u.hx0, u.hy0) : platWorld(st, u.hx0, u.hy0); u.hx = H.x; u.hy = H.y; }           // 浮島、船上的城、吊籠：原本站的位置現在在哪
+      { const H = u.fr ? frWorld(u.fr, u.hx0, u.hy0) : platWorld(st, u.hx0, u.hy0); u.hx = H.x; u.hy = H.y; }
+      if (S.beast && side === 1 && !u.fr) { u.hx = clamp(S.beast.x - 17, MID - 6, VIEW_W - 4); u.hy = groundY(u.hx); }          // 巨獸的砲台塌了：援兵站在巨獸前面的地上（不在牠身體底下）           // 浮島、船上的城、吊籠：原本站的位置現在在哪
       u.alive = true; u.hp = u.hpMax * 0.7; u.frozen = 0; u.stun = 0; u.dazed = 0; u.outT = 0; u.dieT = 0; u.wet = 0; u.wetT = 0; u.x = u.hx; u.y = u.hy + 0.2;
       // 腳下有沒有東西：從原位的腰部往下看一小段；身體那一格有沒有被磚佔住
       // （只站在還在原位的磚、岩壁、地面上：漂在河裡的碎木頭不算）
@@ -1441,7 +1446,7 @@ function burnStep(dt) {
 function endCheck(settled) {
   if (S.state !== 'play') return;
   /* 魔王城：魔王的城塌了（完整度掉到門檻以下）不算贏，但魔王從寶座上摔下來：扣一大截血，下一回合是破綻（打他傷害加倍）。只會發生一次 */
-  if (settled && S.boss && !S.boss.castleFell && structBar(1) <= 0) {
+  if (settled && S.boss && !S.boss.castleFell && structBar(1) <= 0 && S.team[0].volleys >= 2) {
     const bu = bossUnit(); S.boss.castleFell = 1;
     if (bu && bu.alive) {
       // 固定扣兩成（不吃破綻加倍、開場護符、換階段的減傷）；摔到沒血就倒了

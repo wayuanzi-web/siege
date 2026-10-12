@@ -141,7 +141,7 @@ function uiEvent(t, a, b, c, d, e) {
     case 'wind': once('wind', '起風了！每回合的風都不一樣，虛線已經把風算進去'); break;
     case 'gust': once('gust', '陣風：砲彈飛到一半，風會突然反過來吹（上面寫著飛幾秒後、往哪邊吹多大）。虛線上的小漩渦就是風轉向的地方，虛線已經算進去了'); break;
     case 'decouple': if (c === 1) once('decouple', '敵車外側那節車廂被甩下車了：車上的兵跟著退出戰場'); else once('decoupleMe', '我方外側那節車廂被甩下車了！', 1); break;
-    case 'pass': if (c === 1) once('tunnel', '鑽進隧道了：頂上整片岩頂、中間一道隔牆，平射打不過去：從隔牆和岩頂中間的縫吊過去。隧道裡沒有風'); break;
+    case 'pass': if (c === 1) once('tunnel', '鑽進隧道了：頂上整片岩頂，中間還有一道隔牆，平射會打在牆上，要從隔牆和岩頂之間的縫吊過去。隧道裡沒有風'); break;
     case 'vortex': once('vortex', '中場的小山上捲起一道龍捲風：穿過它的砲彈會被往上捲、往前的速度被拖慢。虛線也算進去了，也可以繞開它'); break;
     case 'ultarm': if (c === 1) { const T = S.team[0]; say(T.shield.c >= T.shield.need && !T.shield.on ? '敵軍連珠砲上膛了，這一輪打三次：快開護罩！' : '敵軍連珠砲上膛了，這一輪打三次！', 1); } break;
     case 'phase': if (S.beast) { if (a === 2) { banner('巨獸跪地', 'boss', '第二階段'); later(1900, () => say('巨獸跪下來了：肚子打開放出兩隻小機械兵，背上的砲台會輪流齊射', 1)); } else { banner('巨獸倒地', 'boss', '最終階段'); later(1900, () => say('巨獸倒地爬行，胸甲掉了：打牠胸口發光的核心最痛！核心蓄力一回合就光束橫掃，記得開護罩', 1)); } break; }

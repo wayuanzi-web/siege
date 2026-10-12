@@ -26,7 +26,8 @@ const BEAST_PART = {
   hull: { hm: 0, bk: 0.7 }, head: { hm: 320, bk: 0.85, brk: 0.05 }, turret: { hm: 260, bk: 0.5, brk: 0.04 }, chest: { hm: 280, bk: 0.45, brk: 0.04 }, core: { hm: 0, bk: 2.2 },
   thigh: { hm: 0, bk: 0.65 }, knee: { hm: 120, bk: 1.1, brk: 0.07 }, cap: { hm: 90, bk: 0.45, brk: 0.02 }, shin: { hm: 0, bk: 0.65 }, foot: { hm: 0, bk: 0.4 }
 };
-const BEAST_REACH = 14;          // 咬人：脖子最多伸多長（公尺）
+const BEAST_REACH = 14;
+const BEAST_GRP = -7;            // 砲台和被甩出去的兵同一個負的群組：甩過砲台不會撞上欄杆          // 咬人：脖子最多伸多長（公尺）
 const BEAST_SOFT = 0.35;          // 跨過換階段門檻的那一輪，超過的傷害打幾折（跟魔王一樣：不會一輪就跳過一個階段）
 const smooth01 = (u) => { u = u < 0 ? 0 : u > 1 ? 1 : u; return u * u * (3 - 2 * u); };
 
@@ -42,8 +43,8 @@ function mkBeast(def, hpMul) {
   const mk = (id, type, shape, leg) => {
     const D = BEAST_PART[type], p = { isRock: true, isBeast: true, side: 1, st, id, type, leg, hp: D.hm * hpMul, hm: D.hm * hpMul, bk: D.bk, brk: D.brk || 0, dead: false, flash: 0, acid: 0, acidBy: 0, body: null, hw: shape.hw || 0, hh: shape.hh || 0, r: shape.r || 0 };
     const body = PH.world.createBody({ type: 'kinematic', position: { x, y: B.y } });
-    body.createFixture({ shape: shape.r ? new PL.Circle(shape.r) : new PL.Box(shape.hw, shape.hh), friction: 0.9, restitution: 0, isSensor: type !== 'turret', filterCategoryBits: CAT_TERR, userData: p });
-    if (type === 'turret') for (const sx of [-1, 1]) body.createFixture({ shape: new PL.Box(0.14, 0.9, { x: sx * (shape.hw - 0.14), y: shape.hh + 0.9 }, 0), friction: 0.9, restitution: 0, filterCategoryBits: CAT_TERR, userData: p });          // 砲台兩頭的欄杆：兵不會走出去
+    body.createFixture({ shape: shape.r ? new PL.Circle(shape.r) : new PL.Box(shape.hw, shape.hh), friction: 0.9, restitution: 0, isSensor: type !== 'turret', filterCategoryBits: CAT_TERR, filterGroupIndex: type === 'turret' ? BEAST_GRP : 0, userData: p });
+    if (type === 'turret') for (const sx of [-1, 1]) body.createFixture({ shape: new PL.Box(0.14, 0.9, { x: sx * (shape.hw - 0.14), y: shape.hh + 0.9 }, 0), friction: 0.9, restitution: 0, filterCategoryBits: CAT_TERR, filterGroupIndex: BEAST_GRP, userData: p });          // 砲台兩頭的欄杆：兵不會走出去
     p.body = body; B.parts.push(p); B.P[id] = p; return p;
   };
   mk('hull', 'hull', { hw: BEAST.hullHW, hh: BEAST.hullHH });
@@ -86,7 +87,7 @@ function beastPose(B) {
     else if (d < dmin) d = dmin;
     const th = Math.atan2(dy, dx), al = Math.acos(clamp((L1 * L1 + d * d - L2 * L2) / (2 * L1 * d), -1, 1));
     const k1x = hx + Math.cos(th + al) * L1, k1y = hy + Math.sin(th + al) * L1, k2x = hx + Math.cos(th - al) * L1, k2y = hy + Math.sin(th - al) * L1;
-    const kx = k1x < k2x ? k1x : k2x, ky = k1x < k2x ? k1y : k2y;          // 膝蓋朝前（朝我方的城）
+    const pick1 = B.down ? k1y > k2y : k1x < k2x, kx = pick1 ? k1x : k2x, ky = Math.max(0.4, pick1 ? k1y : k2y);          // 膝蓋朝前（朝我方的城）；倒地爬的時候膝蓋朝上（不會插進地裡）
     set('thigh' + sfx, (hx + kx) / 2, (hy + ky) / 2, Math.atan2(ky - hy, kx - hx));
     const sa = Math.atan2(ay - ky, ax - kx); set('shin' + sfx, (kx + ax) / 2, (ky + ay) / 2, sa);
     set('knee' + sfx, kx, ky, 0);
@@ -372,12 +373,12 @@ function beastGrabAnim(B, A, u, dt) {
     else {
       // 往背後甩出去：落在巨獸後面的空地上（落地不死，站在那裡繼續打）
       const tx = clamp(B.x + 13 + rnd() * 4, 58, 102), vy = 9 + rnd() * 2, tf = (vy + Math.sqrt(vy * vy + 2 * GRAV * Math.max(1, p.y))) / GRAV;
-      G.grabbed = null; G.body.setType('dynamic'); unitGhost(G, false); G.body.setLinearVelocity({ x: (tx - p.x) / tf, y: vy }); G.body.setAwake(true); G.thrown = 1; G.air = true; ev('beastthrow', m.x, m.y, G.side, G.slot); A.u = null;
+      G.grabbed = null; G.body.setType('dynamic'); unitGhost(G, false, BEAST_GRP); G.body.setLinearVelocity({ x: (tx - p.x) / tf, y: vy }); G.body.setAwake(true); G.thrown = 1; G.air = true; ev('beastthrow', m.x, m.y, G.side, G.slot); A.u = null;
     }
   }
 }
 // 被叼著的兵：穿過磚（不然被甩過城牆的時候會把整排磚撞飛）
-function unitGhost(u, on) { if (!u.body) return; for (let f = u.body.getFixtureList(); f; f = f.getNext()) f.setFilterData({ categoryBits: CAT_UNIT, maskBits: on ? 0 : CAT_TERR | CAT_BLOCK, groupIndex: 0 }); }
+function unitGhost(u, on, grp) { if (!u.body) return; for (let f = u.body.getFixtureList(); f; f = f.getNext()) f.setFilterData({ categoryBits: CAT_UNIT, maskBits: on ? 0 : CAT_TERR | CAT_BLOCK, groupIndex: grp || 0 }); }
 // 世界座標 → 軀幹座標
 function beastLocal(B, x, y) { const c = Math.cos(B.a), s = Math.sin(B.a), dx = x - B.x, dy = y - B.y; return { x: dx * c + dy * s, y: -dx * s + dy * c }; }
 // 第二階段：肚子打開，放出兩隻小機械兵（跳到巨獸前面的地上）
@@ -424,7 +425,7 @@ function beastVolley(q, t0) {
   if (B.next === 'volley' || B.next === 'charge') { q.push({ t: 0.05, beast: 'roar' }); return; }
   q.push({ t: Math.max(0.1, t0 * 0.5), beast: B.next });
 }
-function beastAct(kind) { const B = S.beast; if (!B || B.dead) return; beastQueue(kind); if (kind === 'flame' || kind === 'grab' || kind === 'beam') ev('beastact', B.pose.head.x, B.pose.head.y, kind); }
+function beastAct(kind) { const B = S.beast; if (!B || B.dead) return; if ((kind === 'flame' || kind === 'grab') && (!B.P.head || B.P.head.dead)) kind = 'quake'; beastQueue(kind); if (kind === 'flame' || kind === 'grab' || kind === 'beam') ev('beastact', B.pose.head.x, B.pose.head.y, kind); }          // 預告之後頭被打爛了：噴火、咬人改成震地
 // 回合結束：斷腿踉蹌（不走）；走到城下就踩城；不然往前走一段
 function beastRoundEnd() {
   const B = S.beast; if (!B || B.dead) return false;
