@@ -173,6 +173,7 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
       if (AMP.skip) { load(); SA.nx = nx; SA.ny = ny; const ivx = vx, ivy = vy; if (waterSkip(wt)) { evt(SA.hx, SA.hy, ivx, ivy); x = SA.x; y = SA.y; vx = SA.vx; vy = SA.vy; mass = SA.mass; kk = SA.k; if (path) path.push(x, y); continue; } }
       R.x = x + (nx - x) * wt; R.y = S.water.y; return end(1);
     }
+    if (S.sand) { const st2 = sandCross(x, y, nx, ny); if (st2 >= 0 && (!h || st2 < RAY.f)) { R.x = x + (nx - x) * st2; R.y = S.sand.y; return end(1); } }          // 流沙（第二十二關）：沙面擋住，打不到陷在沙裡的東西
     if (h) {
       // 狙擊彈穿過一層木牆：接著往後算
       if (h === 2 && W.pierce && pierced < W.pierce && RAY.o && (RAY.o.mat === M_WOOD || RAY.o.mat === M_BAMBOO || RAY.o.mat === M_ROOF || RAY.o.mat === M_GLASS || RAY.o.mat === M_CLAY)) { const sp = Math.hypot(vx, vy) || 1; pierced++; x = RAY.x + vx / sp * 0.25; y = RAY.y + vy / sp * 0.25; vx *= 0.85; vy *= 0.85; inOwn = false; if (path) path.push(x, y); continue; }
@@ -190,7 +191,7 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
    帶頭的兵照瞄準的角度和力道打；他那一發「第一件事」的位置（先碰到的機關，沒有就是落點）是全隊的目標點。
    其他兵各自從自己的砲口算一個打得到那一點、到的時候方向也差不多的初速（穿過同一道符、打在冰鏡同一個地方、落在山坡同一個點），
    算不出來（仰角、力道超出範圍）就照帶頭的角度打 */
-function ableUnit(u) { return u.alive && !!u.w && u.frozen <= 0 && u.stun <= 0; }
+function ableUnit(u) { return u.alive && !!u.w && u.frozen <= 0 && u.stun <= 0 && !u.sunk; }          // sunk：陷在流沙裡（第二十二關）
 function volleyLead(T) {
   const L = T.ai && T.ai.lead; if (L && ableUnit(L)) return L;
   for (const u of T.units) if (ableUnit(u)) return u;
@@ -227,7 +228,7 @@ function aiBegin(T) {
   // 連珠集滿了：一輪到自己就先上膛（對方看得到，來得及開護罩），多想一下再打
   if (A.skill > 0 && T.ult.c >= T.ult.need && !T.ult.armed && rnd() < A.skill) { simSkill(side, 'ult'); A.t += 0.7; A.fireAt += 0.7; A.useGate = true; }
   let lead = null, bv = -1;
-  for (const u of T.units) { if (!u.alive || !u.w || u.frozen > 0 || u.stun > 0) continue; const v = wPower(u.w) + rnd() * 6; if (v > bv) { bv = v; lead = u; } }
+  for (const u of T.units) { if (!u.alive || !u.w || u.frozen > 0 || u.stun > 0 || u.sunk) continue; const v = wPower(u.w) + rnd() * 6; if (v > bv) { bv = v; lead = u; } }
   if (!lead) for (const u of T.units) if (u.alive) { lead = u; break; }
   // 對面垂著引信頭：有時候這一輪改由火油兵帶頭，專瞄引信頭（其他兵照同一個落點跟著打）
   const F = fst.fuse; let fuseMode = false;

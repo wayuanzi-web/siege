@@ -90,9 +90,19 @@ const WL = [
      warp 門珠：落地炸一小下，在落點上空開一道出口（自己城前開入口）；之後打進入口的砲彈從出口往下砸 */
   { id: 'hook', n: 1, gap: 0, dmg: 8, r: 0, J: 140, ud: 12, kind: K_PIERCE, hook: { F: 5200, t: 0.9, uv: 15 }, ai: { dmg: 44, r: 1.9, ud: 16 } },
   { id: 'weight', n: 1, gap: 0, dmg: 46, r: 0, J: 0, ud: 18, kind: K_HEAVY, phys: 1, box: { w: 1.9, h: 1.45 }, den: 5, press: 14 },
-  { id: 'warp', n: 1, gap: 0, dmg: 12, r: 2.4, J: 180, ud: 12, kind: K_BLAST, warp: { up: 13, r: 3.8 }, ai: { dmg: 16, r: 2.4, ud: 12 } }
+  { id: 'warp', n: 1, gap: 0, dmg: 12, r: 2.4, J: 180, ud: 12, kind: K_BLAST, warp: { up: 13, r: 3.8 }, ai: { dmg: 16, r: 2.4, ud: 12 } },
+  /* ---- 第四篇第二批（54-wild） ----
+     seed 藤種：打進磚裡（不炸），每回合結束長一次、勒一次（g：三次各傷多少，鄰近的磚吃 spread 倍），第三次把那一塊整個勒碎；hp：被炸、被砍幾下就斷
+     axe 迴旋斧：打中一樣東西砍一下（木頭、竹子、屋瓦吃 wood 倍，順便砍斷綁在那塊磚上的藤），然後飛回飛斧手手上；回程再碰到敵方的東西再砍一下（back 倍）
+     mole 鑽地彈：落在地上就鑽進地底，往敵城的城腳挖過去（每秒 v、最遠 len）；落在敵城上就從那裡直直往下鑽到城腳。自己下一輪開火時在城腳底下炸開（moleboom），流沙上還把地基挖鬆
+     stake 鼓樁：打進磚裡或地上；之後自己每一輪開火，震地鼓手擂一次鼓，每根鼓樁震一圈（R 多遠、d 磚、ud 兵），流沙上讓那座城陷得更快 */
+  { id: 'seed', n: 1, gap: 0, dmg: 6, r: 0, J: 60, ud: 8, kind: K_PIERCE, seed: { g: [12, 20, 30], spread: 0.5, hp: 30 }, ai: { dmg: 46, r: 2.6, ud: 8 } },
+  { id: 'axe', n: 1, gap: 0, dmg: 19, r: 0, J: 260, ud: 22, kind: K_PIERCE, boom: { wood: 2.3, back: 0.7, tau: 1.25 }, ai: { dmg: 36, r: 1.6, ud: 22 } },
+  { id: 'mole', n: 1, gap: 0, dmg: 6, r: 1.4, J: 90, ud: 6, kind: K_BLAST, mole: { v: 9, len: 38, sink: 1.0 }, ai: { dmg: 48, r: 3.6, ud: 18 } },
+  { id: 'moleboom', dmg: 46, r: 4.6, J: 900, ud: 28, kind: K_HEAVY },
+  { id: 'stake', n: 1, gap: 0, dmg: 8, r: 0, J: 80, ud: 10, kind: K_HEAVY, stake: { hp: 45, R: 6.4, d: 13, ud: 7, sink: 0.5, max: 2 }, ai: { dmg: 40, r: 5, ud: 10 } }
 ];
-const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; if (w.chain || w.drill || w.stick || w.pierce || w.hook || w.warp) w.special = 1; });          // special：打到東西時有自己的打法（51-arms 的 armsHit、54-craft 的 craftHit）
+const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; if (w.chain || w.drill || w.stick || w.pierce || w.hook || w.warp || w.seed || w.boom || w.mole || w.stake) w.special = 1; });          // special：打到東西時有自己的打法（51-arms 的 armsHit、54-craft 的 craftHit）
 
 /* 兵種。w 用哪種砲彈；flak 防空（每一輪射下幾發飛過來的砲彈）；bal 放轟炸氣球 */
 const UNIT = {
@@ -121,10 +131,14 @@ const UNIT = {
   hook: { name: '鉤索手', w: 'hook', hp: 100, craft: 1, blurb: '射出鉤爪鉤住一塊磚（或一個兵），你下一輪開火時收繩，把它連上面壓著的東西一起扯過來；繩子被打斷就白鉤了' },
   weight: { name: '秤砣兵', w: 'weight', hp: 110, craft: 1, blurb: '丟出一顆千斤鐵砣：不會爆，砸穿木樓板以後一直留在城裡壓著，疊兩三顆樓板就撐不住；天秤上壓得對面往下沉' },
   warp: { name: '門術師', w: 'warp', hp: 85, craft: 1, blurb: '門珠落在哪裡，就在那上空開一道出口、自己城前開一道入口：之後全隊打進入口，砲彈從出口往下砸（打進去的角度越陡，砸得越直）' },
-  mirror: { name: '鏡盾兵', w: null, hp: 115, craft: 1, mir: 1, blurb: '不開火：舉起一面銅鏡擋在頭頂，對方下一輪打過來的砲彈照角度反彈回去；鏡子挨幾下重的就碎' }
+  mirror: { name: '鏡盾兵', w: null, hp: 115, craft: 1, mir: 1, blurb: '不開火：舉起一面銅鏡擋在頭頂，對方下一輪打過來的砲彈照角度反彈回去；鏡子挨幾下重的就碎' },
+  vine: { name: '種藤師', w: 'seed', hp: 90, craft: 1, blurb: '把藤種打進敵城的磚裡：每回合結束長一次、勒一次，第三次把那一塊連旁邊的勒碎；種藤師倒了，他種的藤就枯了' },
+  axe: { name: '飛斧手', w: 'axe', hp: 100, craft: 1, blurb: '丟出迴旋斧：砍中一樣東西再飛回來，回程碰到敵方的東西再砍一下；砍木頭最痛，順便砍斷綁著那塊磚的藤蔓' },
+  mole: { name: '地道兵', w: 'mole', hp: 100, craft: 1, blurb: '鑽地彈落地就鑽進地底，往敵城的城腳挖過去；你下一輪開火時從城腳底下炸開。對方炸得到還在半路的地道，地道兵倒了地道就塌' },
+  drum: { name: '震地鼓手', w: 'stake', hp: 105, craft: 1, blurb: '先把鼓樁打進敵城或城前的地上；之後你每一輪開火，他擂一次鼓，每根鼓樁震一圈：底層的磚、兵都受傷，流沙上的城陷得更快' }
 };
 // 演武場選兵用的順序：第一到三篇的十八種（魔王不算），再接第四篇的新兵
-const UNIT_LIST = ['rocket', 'bolt', 'bomb', 'fire', 'ice', 'zap', 'flak', 'bal', 'stone', 'chain', 'drill', 'cluster', 'sapper', 'magnet', 'wind', 'acid', 'sniper', 'eng', 'hook', 'weight', 'warp', 'mirror'];
+const UNIT_LIST = ['rocket', 'bolt', 'bomb', 'fire', 'ice', 'zap', 'flak', 'bal', 'stone', 'chain', 'drill', 'cluster', 'sapper', 'magnet', 'wind', 'acid', 'sniper', 'eng', 'hook', 'weight', 'warp', 'mirror', 'vine', 'axe', 'mole', 'drum'];
 const UNIT_OLD = 18;          // 前三篇的兵有幾種（演武場的軍牌上，後面的標「新」）
 Object.keys(UNIT).forEach((k) => { UNIT[k].id = k; });
 
@@ -508,6 +522,35 @@ const CASTLES = {
     '_____ ___',
     'S...S S.S',
     '#########'] },
+  /* 第二十一關：古木藤城。城是蓋在一棵千年古樹上的樹屋：外側兩欄是樹幹（A，打不壞），往戰場伸出上下兩層木平台。
+     上層一間樹屋（1、2 號兵）；中層一間樹屋（3、4 號）、最前面一座小瞭望台（5 號，底下沒有柱子：整段中層平台的前端只靠古藤吊著）；最底下樹根之間一間根屋（6 號）。
+     整座城的磚都用古藤綁在一起、綁在樹幹上（54-wild 的 mkVines）：古藤斷了下一回合結束會長回來 */
+  GROVE: { skin: 'grove', gf: 2, nofound: 1, map: [
+    'AA ^^^^^    ',
+    'AA w1.2w    ',
+    'AAwwwwwwwwww',
+    'AA w...w ^^^',
+    'AA w3.4w w5w',
+    'AAwwwwwwwwww',
+    'AA  w  w    ',
+    'AA  w..w    ',
+    'AA  w6.w    ',
+    'AA##########'] },
+  // 第二十一關：戰場中間的老樹（樹幹打不壞；頂上一根橫伸的粗枝）
+  BIGTREE: { skin: 'grove', map: ['AAAA', ' AA ', ' AA ', ' AA ', ' AA '] },
+  /* 第二十二關：流沙古城。砂岩的古城泡在流沙坑裡（54-wild 的流沙：整座城跟著坑底一起往下陷）。
+     最上面一間（1、2 號），兩側各一座小塔樓（3、4 號），最底下一層兩間（5、6 號，城一陷就先被沙埋住、不能開火） */
+  DUNE: { skin: 'dune', gf: 1, nofound: 1, map: [
+    '   ^^^^   ',
+    '   |12|   ',
+    '^^^____^^^',
+    '|3|S..S|4|',
+    '___S..S___',
+    'S..S..S..S',
+    'S5.S..S.6S',
+    '##########'] },
+  // 第二十二關：戰場中間一塊半埋在沙裡的巨岩（打不壞）
+  COLOSSUS: { skin: 'dune', map: [' AAA ', 'AAAAA', 'AAAAA'] },
   // 第十七關：中間的礦脈（一塊一塊的岩石疊成小山，打得碎：越打越低，上層慢慢露出來）
   SEAM: { skin: 'mine', map: ['  SS  ', ' SSSS ', 'AAAAAA'] },          // 最底下一列是打不碎的岩心：礦脈打得再低，兩邊的一樓也平射不到對方
   // 第七關的石碑（一塊一個，三種高度）：兩排，各往一座城那邊一塊比一塊高

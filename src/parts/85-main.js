@@ -185,6 +185,11 @@ function uiEvent(t, a, b, c, d, e) {
     case 'hookin': if (c === 1) once('hk1', '敵軍的鉤爪鉤住了我方的城：他們下一輪開火時會收繩扯過去。打倒那個鉤索手，繩子就鬆了', 1); break;
     case 'sawtilt': if (c !== 0) once('saw', c > 0 ? '巨樑往我方這頭沉了：我方這頭比較重，樑上的大石球會滾過來撞城。叫秤砣兵把鐵砣丟到敵城上，敵城那頭變重，就扳得回來（打掉敵城的磚反而讓它變輕）' : '巨樑往敵方那頭沉了：敵城那頭比較重，樑上的大石球滾過去撞他們的城'); break;
     case 'warpopen': if (c === 1) once('wp1', '敵軍的門術師在你頭上開了一道門：他們打進城前的入口，砲彈就從這裡往下砸。打倒門術師，門就關了', 1); else once('wp0', '門開了！之後全隊打進你城前那道入口，砲彈從敵城上空的出口往下砸（打進去越陡，砸得越直）'); break;
+    case 'seedin': if (c === 1) once('sd1', '敵軍的種藤師把藤種打進你的城了：每回合結束長一次，第三次把那一塊勒碎。炸它、砍它，或打倒種藤師', 1); break;
+    case 'vinegrow': once('vg', '斷掉的古藤下一回合結束又長回來了：砍斷以後要同一輪就把那一段打下來（燒斷的古藤不會再長）'); break;
+    case 'molein': if (c === 1) once('ml1', '敵軍的地道兵在往你的城腳挖（地上一道隆起的土）：還沒挖到城底下以前，炸在它上面就塌了', 1); break;
+    case 'stakein': if (c === 1) once('st1', '敵軍的鼓樁打進來了：他們每一輪擂鼓，鼓樁就震一圈，流沙也越震越鬆。鼓樁打得掉', 1); break;
+    case 'unitsunk': if (c === 0) once('us0', '我方的兵陷進流沙裡了：陷在沙裡的兵不能開火（流沙最多埋到最底下那層）', 1); break;
     case 'mirrorhit': if (c === 1) once('mr1', '敵軍的銅鏡把你的砲彈彈回來了：往沒有鏡子的地方打，或先把鏡子打碎（挨幾下重的就碎）'); break;
   }
 }
@@ -224,7 +229,7 @@ function fireNow() {
   const T = S.team[0];
   // 記下這一輪帶頭那一發會怎麼飛（下一輪瞄準時畫出來當參考）
   for (const u of T.units) {
-    if (!u.alive || !u.w || u.frozen > 0 || u.stun > 0) continue;
+    if (!u.alive || !u.w || u.frozen > 0 || u.stun > 0 || u.sunk) continue;
     const mx = u.x + 1.3, my = u.y + 2.3, vx = T.aim[0], vy = T.aim[1], P = [], R = simTrace(0, mx, my, vx, vy, S.wind, S.time, undefined, u.w.i, P), tr = RD.trail || (RD.trail = { x: new Float32Array(90), y: new Float32Array(90), n: 0 });
     const box = S.st[0]; tr.n = 0;
     for (let tt = 0.1; tt < R.t && tr.n < 89; tt += 0.075) { const q = pathAt(P, mx, my, tt), x = q[0], y = q[1]; if (x > box.x0 - 1 && x < box.x1 + 1.2 && y < box.y1 + 2.5) continue; tr.x[tr.n] = x; tr.y[tr.n] = y; tr.n++; }

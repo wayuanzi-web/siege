@@ -422,7 +422,7 @@ const LEVELS = [
     // 力矩 ÷ 總重 ÷ arm × gain 就是該歪的角度（最多 max 弧度，一回合最多轉 step）；balls：樑上的大石球 [我方那一半的 x, 半徑]（敵方那一半鏡射）
     saw: { x: 56, y: 0, len: 109, th: 2.6, spire: [[8, 4], [6, 4], [4.2, 4], [2.4, 3.6]], peak: [1.8, 16, -70], gain: 1.6, arm: 30, max: 0.08, step: 0.035, balls: [[47, 1.5], [50.3, 1.3]], ballDen: 4 },
     me: { crew: ['hook', 'weight', 'hook', 'weight', 'hook', 'weight'] },
-    foe: { crew: ['weight', 'hook', 'weight', 'hook', 'weight', 'hook'], hp: 1.0, dmg: 0.9, open: 0.55, ai: { err: 3.6, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
+    foe: { crew: ['weight', 'hook', 'weight', 'hook', 'weight', 'hook'], hp: 1.0, dmg: 0.9, open: 0.55, ai: { err: 4.0, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
     weak: (side) => tgC(side, [[1, 8], [1, 9], [0, 6], [2, 6]], 0.9).concat(tgC(side, [[9, 8], [11, 8], [9, 6], [11, 6]], 0.95)),
     lantern: { at: 3, every: 3, spots: [[50, 30], [62, 22]] }
   },
@@ -442,14 +442,43 @@ const LEVELS = [
     me: { crew: ['warp', 'weight', 'mirror', 'hook', 'weight', 'weight'] },
     foe: { crew: ['warp', 'hook', 'weight', 'mirror', 'weight', 'weight'], hp: 1.1, dmg: 1.1, open: 0.55, ai: { err: 2.4, think: 1.1, gate: 1, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
     lantern: { at: 3, every: 3, spots: [[30, 48], [82, 48]] }
+  },
+  {
+    name: '古木藤城', sayTop: 1, tag: '古藤綁城・種藤師・迴旋斧', theme: 20, castle: 'GROVE', blockHp: 1.0, vines: 1, rules: { ff: 1, crit: 1, elem: 1 },
+    tip: '兩座城是蓋在千年古樹上的樹屋，整座城的磚用古藤綁在一起、綁在樹幹上：磚不會一塊一塊掉；古藤斷了、那兩塊磚還貼在原位的話，下一回合結束會自己長回來（燒斷的不會）。飛斧手的迴旋斧砍中哪一塊，綁在那塊上的古藤全斷，斧頭再飛回他手上；種藤師的藤種打進敵城的磚裡，每回合長一次、勒一次，第三次把那一塊連旁邊的勒碎',
+    hints: [{ r: 1, t: '整座城用古藤綁在一起，磚不會一塊一塊掉：先用迴旋斧砍斷古藤（鐵砣砸、鉤索扯也會扯斷），沒了古藤吊著的那一段就會掉下來。斷了的古藤，下一回合結束會自己長回來', ok: () => true },
+      { r: 2, t: '種藤師的藤種打進敵城的磚裡：每回合結束長一次、勒一次，第三次把那一塊連旁邊的勒碎。敵軍種在你城上的藤，砍得掉、炸得斷，種藤師倒了也會枯', ok: () => true },
+      { r: 2, t: '迴旋斧砍中東西就飛回飛斧手手上，回程碰到敵城再砍一下；砍木頭最痛', ok: () => S.team[0].units.some((u) => u.alive && u.type === 'axe') },
+      { r: 3, t: '敵城最前面的瞭望台架在中層平台的最外端：把平台和它的柱子之間的古藤砍斷，再打柱子，整座往下掉', ok: () => foeHome(5) }],
+    ground: [[-40, 0], [152, 0]],
+    extra: [{ castle: 'BIGTREE', x: 56, y: 0 }],
+    me: { crew: ['vine', 'axe', 'vine', 'axe', 'hook', 'weight'] },
+    foe: { crew: ['axe', 'vine', 'axe', 'vine', 'weight', 'hook'], hp: 1.0, dmg: 1.1, open: 0.55, ai: { err: 2.5, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
+    lantern: { at: 3, every: 3, spots: [[56, 30], [56, 40]] }
+  },
+  {
+    name: '流沙古城', sayTop: 1, tag: '流沙・地道・震地鼓', theme: 21, castle: 'DUNE', stress: 1, blockHp: 1.2, rules: { ff: 1, crit: 1, elem: 1 },
+    tip: '兩座古城泡在流沙坑裡，每回合結束往下陷一點：陷進沙裡的磚不算城防，陷在沙裡的兵不能開火（最底下那層最先被埋）。地道兵的鑽地彈落地鑽進地底，往敵城城腳挖，你下一輪開火時從城腳底下炸開；震地鼓手先把鼓樁打進敵城，之後每一輪擂鼓震一圈。炸開的地道、震過的鼓都會把沙挖鬆，那座城陷得更快',
+    hints: [{ r: 1, t: '兩座城泡在流沙坑裡，每回合結束往下陷一點：陷進沙裡的磚不算城防，陷在沙裡的兵不能開火。最底下那層的兵最先被埋', ok: () => true },
+      { r: 2, t: '地道兵的鑽地彈落在地上就鑽進地底，往敵城城腳挖；你下一輪開火時從城腳底下炸開，還把那座城底下的沙挖鬆，讓它陷得更快', ok: () => S.team[0].units.some((u) => u.alive && u.type === 'mole') },
+      { r: 2, t: '震地鼓手先把鼓樁打進敵城或城前的沙上，之後你每一輪開火他就擂一次鼓：每根鼓樁震一圈，底層的磚、兵受傷，流沙越震越鬆', ok: () => S.team[0].units.some((u) => u.alive && u.type === 'drum') },
+      { r: 2, t: '敵軍的地道正往你的城腳挖（地上一道隆起的土）：還沒挖到城底下以前，炸在它上面就塌了', ok: () => S.objs.some((o) => o.t === 'mole' && o.side === 1 && o.st === 'dig') }],
+    ground: pitGround('DUNE', 16),
+    // 流沙：base 每回合本來就陷多少，step 一回合最多陷多少，max 最深陷到多深
+    sand: { base: 0.35, step: 1.8, max: 6.8 },
+    extra: [{ castle: 'COLOSSUS', x: 56, y: -3.4 }],
+    me: { crew: ['weight', 'hook', 'mole', 'drum', 'mole', 'drum'] },
+    foe: { crew: ['hook', 'weight', 'drum', 'mole', 'drum', 'mole'], hp: 1.0, dmg: 1.0, open: 0.55, ai: { err: 3.2, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
+    wind: { max: 4 },
+    lantern: { at: 3, every: 3, spots: [[48, 28], [64, 28]] }
   }
 ];
 
 /* ===== 演武場：所有的兵任選、戰場任選（演武城，或魔王城、機關巨獸以外各關的城、地形和環境），試打第三、四篇的兵器和規則 =====
    practice：不給星星、不解鎖；rules：ff 誤傷、crit 弱點暴擊、elem 冰能滅火（屬性剋制的字每一關都會跳，這條是真的改戰局） */
 const PRACTICE_BASE = {
-  name: '演武場', tag: '二十二種兵器・誤傷・弱點暴擊', theme: 0, castle: 'DRILL', practice: 1, rules: { ff: 1, crit: 1, elem: 1 },
-  tip: '二十二種兵任你挑，每邊最多六個；戰場也可以換成各關的城（魔王城、機關巨獸除外）。第三篇的規則都在：自己的砲炸到自己人一樣會傷，打中接點、核心、兵的頭是暴擊 ×2',
+  name: '演武場', tag: '二十六種兵器・誤傷・弱點暴擊', theme: 0, castle: 'DRILL', practice: 1, rules: { ff: 1, crit: 1, elem: 1 },
+  tip: '二十六種兵任你挑，每邊最多六個；戰場也可以換成各關的城（魔王城、機關巨獸除外）。第三篇的規則都在：自己的砲炸到自己人一樣會傷，打中接點、核心、兵的頭是暴擊 ×2',
   hints: [],
   ground: [[-40, 3], [0, 0], [47, 0], [51, 3.6], [56, 5.2], [61, 3.6], [65, 0], [112, 0], [152, 3]],
   me: { crew: ['chain', 'drill', 'cluster', 'sapper', 'magnet', 'eng'] },

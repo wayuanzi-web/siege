@@ -215,7 +215,7 @@ function castleScan(st) {
   // 蓋在浮島、船上的城：跟著底下那一塊一起晃、一起歪的不算離開原位（用那一塊的座標來量）
   const P = st.plat; let pc = 1, ps = 0, ppx = 0, ppy = 0, pa = 0;
   if (P && P.body) { const pp = P.body.getPosition(); pa = P.body.getAngle() - P.a0; pc = Math.cos(pa); ps = Math.sin(pa); ppx = pp.x; ppy = pp.y; }
-  const wy = S.water ? S.water.y : -1e9;
+  const wy = S.water ? S.water.y : S.sand ? S.sand.y : -1e9;          // 流沙（第二十二關）：陷進沙裡的跟沉進水裡的一樣不算
   for (const b of st.blocks) {
     if (b.dead || b.frag) continue;
     const p = b.body.getPosition(); let px = p.x, py = p.y;
@@ -360,7 +360,7 @@ function unitFire(u, T, w, ax, ay) {
     const a = (n > 1 ? (k - (n - 1) / 2) * 0.085 : 0) + gauss() * 0.01, c = Math.cos(a), s = Math.sin(a), sp = 1 + gauss() * 0.008;
     const vx = (ax * c - ay * s * dir) * sp * (w.spd || 1), vy = (ay * c + ax * s * dir) * sp * (w.spd || 1);          // 狙擊彈：打出去比瞄準的快（spd）
     const j = spawnShot(u.side, w.i, mx, my, vx, vy, 1, F_IN, 0, 1);
-    if (w.hook && j >= 0) S.shotU.set(SH.id[j], u);          // 鉤爪：記得是誰射的（鉤住了繩子牽在他手上）
+    if ((w.hook || w.seed || w.boom || w.mole || w.stake) && j >= 0) S.shotU.set(SH.id[j], u);          // 鉤爪：記得是誰射的（鉤住了繩子牽在他手上）
   }
   T.fired += n; if (u.side === 0) S.stat.fired += n;
   u.recoil = 1;
@@ -672,6 +672,15 @@ function shotsStep(dt) {
     // 磚、兵、地面
     const hit = rayShot(x, y, nx, ny, side, own);
     const wt = S.water ? waterCross(x, y, nx, ny) : -1;
+    if (S.sand) {          // 流沙（第二十二關）：落在沙面上就在沙面炸開（陷在沙裡的磚、兵打不到）
+      const st2 = sandCross(x, y, nx, ny);
+      if (st2 >= 0 && !(hit && RAY.f < st2)) {
+        const hx = x + (nx - x) * st2, hy = S.sand.y;
+        if (W.special) { const r = armsHit(i, W, 1, null, hx, hy, vx, vy); if (r === 1) { killShot(i); i--; continue; } if (r === 2) continue; }
+        physExplode(hx, hy, WL[SH.w[i]], side, SH.mass[i], flag, null, vx, vy); ev('sandhit', hx, hy, side);
+        killShot(i); i--; continue;
+      }
+    }
     if (hit && !(wt >= 0 && wt < RAY.f)) {
       // 第三篇的兵器：黏住、鑽進去、掃斷柱子、穿過木牆……（見 51-arms）
       if (W.special) { const r = armsHit(i, W, hit, RAY.o, RAY.x, RAY.y, vx, vy); if (r === 1) { killShot(i); i--; continue; } if (r === 2) continue; }
@@ -884,6 +893,9 @@ function objsStep(dt) {
       case 'hook': gone = hookStep(o, dt); break;          // 第四篇：鉤索、傳送門、銅鏡
       case 'warp': gone = warpStep(o, dt); break;
       case 'bmirror': gone = mirrorStep(o, dt); break;
+      case 'sprout': gone = sproutStep(o, dt); break;          // 第四篇第二批：藤、地道、鼓樁
+      case 'mole': gone = o.dead || moleStep(o, dt); break;
+      case 'stake': gone = stakeStep(o, dt); break;
       case 'lantern': {
         o.age += dt; o.y = o.by0 + Math.sin(o.age * 1.4) * 0.8;
         if (o.hp <= 0) { if (o.by >= 0 && S.state === 'play') grantBonus(o.by, o.kind, o.x, o.y); gone = true; }
@@ -989,13 +1001,14 @@ function simFire(side) {
   const lead = volleyLead(T), E0 = lead ? volleyEvent(side, lead, ax, ay) : null, E = E0 ? { ok: E0.ok, x: E0.x, y: E0.y, vx: E0.vx, vy: E0.vy } : null, cv = [0, 0];
   let t0 = 0.05, any = false;
   chargesGo(side);          // 上一輪黏在對方城上的炸藥：這一輪開火時引爆
-  hooksGo(side); mirrorsDown(side);          // 第四篇：上一輪鉤住的收繩；上一輪舉的銅鏡放下（鏡盾兵這一輪再舉）
+  hooksGo(side); mirrorsDown(side); molesGo(side); drumsGo(side);          // 第四篇：上一輪鉤住的收繩；上一輪舉的銅鏡放下（鏡盾兵這一輪再舉）
   for (const u of T.units) {
     u.held = false;
     if (!u.alive || T.mute) continue;                       // mute：測試用，這一邊只瞄不打
     // 被凍住、被電暈：這一輪不能動（包括魔王放光球、氣球兵放氣球）
     if (u.frozen > 0 || u.stun > 0) { u.held = true; u.immune = true; ev('skip', u.x, u.y + 4, side, u.frozen > 0 ? 0 : 1); u.frozen = Math.max(0, u.frozen - 1); u.stun = Math.max(0, u.stun - 1); if (u.stun <= 0) u.tangled = 0; continue; }
     u.immune = false;
+    if (u.sunk) { u.held = true; ev('skip', u.x, u.y + 4, side, 2); continue; }          // 陷在流沙裡（第二十二關）：不能開火
     if (u.w) {
       const w = u.w, n = w.n || 1, g = w.gap || 0;
       const rp = reps * (bar && (u.type === 'boss' || S.beast) ? 2 : 1);          // 魔王的暗黑連射、巨獸的砲台齊射：多打一輪
@@ -1032,7 +1045,7 @@ function simFire(side) {
 function worldQuiet() {
   // 有兵正被壓著扣血（一兩秒內不是被壓扁就是東西滑開）：等出結果，不要輪到下一邊瞄準了他才倒下
   for (const u of S.units) if (u.alive && !u.def.big && u.loadT > 0 && u.load > CRUSH_LOAD) return false;
-  for (const u of S.units) if (u.alive && (u.edge || (u.sepNow && u.sepT <= 2)) && u.body.isAwake()) return false;      // 還在往邊上滑、還在被推開的也等
+  for (const u of S.units) if (u.alive && ((u.edge && u.edgeT < 1.2) || (u.sepNow && u.sepT <= 2)) && u.body.isAwake()) return false;      // 還在往邊上滑、還在被推開的也等（推了一陣子推不動、已經不推了的不等）
   for (const u of S.units) if (u.alive && u.outT > 0) return false;          // 被轟出城外、正在倒數出局的：等他出局了再換人（不然換人那一格才跳「出局」）
   for (const u of S.units) if (u.alive && u.wet > 0.2) return false;         // 掉進河裡的兵：等他被沖走（或爬上來）再換人
   // 還在滑、還在掉的兵：等他停下來（天秤翻了、樓板歪了，人一路滑出去）；最多等的時間也跟著延長

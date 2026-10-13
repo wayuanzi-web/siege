@@ -208,7 +208,8 @@ function tangle(u, side) {
 /* ---------- 新兵器打到東西：各自的打法 ----------
    回傳 0 照原本的炸開；1 處理完了（砲彈沒了）；2 處理完了、砲彈接著飛（位置、速度已經寫回 SH） */
 function armsHit(i, w, hit, o, hx, hy, vx, vy) {
-  if (w.hook || w.warp) return craftHit(i, w, hit, o, hx, hy, vx, vy);          // 第四篇：鉤爪、門珠（54-craft）
+  if (w.hook || w.warp) return craftHit(i, w, hit, o, hx, hy, vx, vy);
+  if (w.seed || w.boom || w.mole || w.stake) return wildHit(i, w, hit, o, hx, hy, vx, vy);          // 第四篇第二批（54-wild）          // 第四篇：鉤爪、門珠（54-craft）
   const side = SH.side[i], mass = SH.mass[i], T = side < 2 ? S.team[side] : null, mul = (T ? T.dmg : 1) * S.rage * mass, sp = Math.hypot(vx, vy) || 1;
   if (w.stick) {
     if (hit === 3 && o && o.alive) { physExplode(hx, hy, w, side, mass * 0.5, SH.flag[i], o, vx, vy); return 1; }          // 黏到人身上：當場炸開（威力一半）

@@ -292,7 +292,9 @@ const LOSE_TIPS_LV = [
   ['頂上是岩頂，吊太高會撞上去：仰角壓低、力道加大，從中間的礦脈上面擦過去。礦脈打得碎，越打越低，敵城上層就露出來了（最底下一排岩心打不碎）。', '敵城頂樓那四根坑木頂著兩塊懸石：打斷靠岩壁那一塊底下的兩根，懸石砸穿頂樓、壓住上層的兵；前面那一塊會把前牆撞開。火油燒得動坑木。', '城是石頭造的，酸蝕得最快；岩壁裡那包發綠光的沼氣一炸，一團火衝進上層那一間。'],
   ['巨獸每回合結束往前走一段，走到城下就每回合踩城：先打護膝甲、再打膝關節，斷一條腿牠就踉蹌一回合（不走，下一回合打牠傷害加倍）。', '巨獸是鐵造的：雷、酸、磁暴打牠最痛；鏈彈打中腳會纏住牠，那一回合只走一半。', '預告噴火、咬人、光束的那一回合開護罩：都擋得住。牠倒地之後胸口的核心露出來，打核心最痛。'],
   ['整座峰頂是一根架在孤峰上的巨樑：每回合結束哪一頭比較重，就往那一頭歪下去一點。把千斤鐵砣丟到敵城那一頭，敵城那一頭越來越重，城跟著斜。', '鉤索手的鉤爪鉤住敵城的磚，下一輪開火前一收繩，整塊扯下來；炸到繩子中段會斷，鉤在高樓的外牆上最好扯。', '樑上的大石球會跟著傾斜滾：滾得快的時候撞到誰都很痛，把它滾向敵城那一頭。'],
-  ['石壁通到天上，只能走古門：門上寫著這一回合通到哪裡（敵城前樓、主樓，或是你自己頭上）。通回自己頭上的那一回合別打進門。', '門術師的門珠落在敵城那一半，就在那上空開一道一直都在的門：通回自己頭上的回合改打這道門。', '敵軍的鏡盾兵會把砸在銅鏡上的砲彈彈回來：鏡子挨幾下重的才碎。千斤鐵砣太重，銅鏡彈不開：鏡子底下就丟鐵砣。']
+  ['石壁通到天上，只能走古門：門上寫著這一回合通到哪裡（敵城前樓、主樓，或是你自己頭上）。通回自己頭上的那一回合別打進門。', '門術師的門珠落在敵城那一半，就在那上空開一道一直都在的門：通回自己頭上的回合改打這道門。', '敵軍的鏡盾兵會把砸在銅鏡上的砲彈彈回來：鏡子挨幾下重的才碎。千斤鐵砣太重，銅鏡彈不開：鏡子底下就丟鐵砣。'],
+  ['古藤綁著的磚不會一塊一塊掉：先用迴旋斧砍斷一段古藤（砍中哪一塊，綁在那塊上的全斷），同一輪再把那一段打下來；隔一回合古藤就長回來了。', '火燒斷的古藤不會再長：帶火的砲彈、燒起來的木頭都燒得斷。', '敵軍種在你城上的藤，第三次長的時候會把那一塊勒碎：炸它、砍它，或先打倒敵軍的種藤師。'],
+  ['流沙每回合都會把城往下拉：最底下那層的兵最先被埋、不能開火，能打的時候趕快打。', '地道兵的鑽地彈不用打準：落在地上就自己往敵城城腳挖，下一輪從底下炸開，還讓敵城陷得更快。', '敵軍的地道（地上一道隆起的土）還沒挖到你城底下之前，炸在它上面就塌了；鼓樁也打得掉。']
 ];
 function showResult(won, st) {
   const prac = !!(S.lv && S.lv.practice);
@@ -383,7 +385,7 @@ function hudUpdate() {
   }
   const fk = mine ? 1 : 0; if (fk !== HUD.fire) { HUD.fire = fk; $('btnFire').classList.toggle('ready', !!mine); $('btnFire').classList.toggle('btn-gold', !!mine); }
   const sawK = S.saw ? Math.round(sawAngle() * 180 / Math.PI) : 0;          // 天秤歪的角度變了也要重寫（回合結束的時候在轉）
-  if (S.round !== HUD.round || sawK !== HUD.sawK) { HUD.round = S.round; HUD.sawK = sawK; $('roundTxt').textContent = S.round > 0 ? (S.lv.tide || S.lv.pass || S.saw || S.lv.arches ? '第' + S.round + '回合' : '第 ' + S.round + ' 回合') + (S.lv.tide ? '・' + TIDE_NAME[tideNow()] : S.pass && S.pass.kind === 'tunnel' ? '・隧道' : S.saw ? '・' + sawTxt() : S.lv.arches ? '・古門通往' + ARCH_NAME[archNext(S.round)] : '') : ''; }
+  if (S.round !== HUD.round || sawK !== HUD.sawK) { HUD.round = S.round; HUD.sawK = sawK; $('roundTxt').textContent = S.round > 0 ? (S.lv.tide || S.lv.pass || S.saw || S.lv.arches || S.sand ? '第' + S.round + '回合' : '第 ' + S.round + ' 回合') + (S.lv.tide ? '・' + TIDE_NAME[tideNow()] : S.pass && S.pass.kind === 'tunnel' ? '・隧道' : S.saw ? '・' + sawTxt() : S.lv.arches ? '・古門通往' + ARCH_NAME[archNext(S.round)] : S.sand ? '・陷沙 我' + sandDepth(0).toFixed(1) + '／敵' + sandDepth(1).toFixed(1) + '公尺' : '') : ''; }
   if ((HUD.n & 3) !== 0) return;
   for (let sd = 0; sd < 2; sd++) for (const k of HUD.crew[sd]) { const st = !k.u.alive ? 'dead' : k.u.frozen > 0 ? 'frozen' : k.u.stun > 0 ? 'stun' : ''; if (st !== k.st) { k.st = st; k.el.className = 'cu' + (st ? ' ' + st : ''); } }
   const T = S.team[0], bu = $('btnUlt'), bs = $('btnShield');

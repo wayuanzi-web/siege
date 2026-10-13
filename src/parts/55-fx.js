@@ -106,7 +106,7 @@ function fxOn(t, a, b, c, d, e, f) {
       const w = WL[d], dir = c === 0 ? 1 : -1;
       part(P_FLASH, a + dir * 0.6, b, 0, 0, 0.09, w.id === 'bomb' ? 3.6 : w.id === 'bolt' ? 1.2 : 2.2, w.id === 'ice' ? C_ICE : w.id === 'zap' ? C_YELLOW : w.id === 'dark' ? C_PINK : C_WHITEHOT);
       if (w.id === 'bomb') { burst(P_SMOKE, a + dir, b, 4, 9, 0.6, 1.8, C_GRAY); shake(0.12); }
-      sfx(w.id === 'bolt' ? 'bolt' : w.id === 'bomb' || w.id === 'cluster' ? 'cannon' : w.id === 'fire' || w.id === 'chain' || w.id === 'sticky' || w.id === 'acid' ? 'whoosh' : w.id === 'ice' ? 'frost' : w.id === 'zap' || w.id === 'magnet' ? 'charge' : w.id === 'dark' ? 'dark' : w.id === 'drill' ? 'drill' : w.id === 'snipe' ? 'snipe' : w.id === 'wind' ? 'gust' : w.id === 'hook' ? 'zip' : w.id === 'weight' ? 'heave' : w.id === 'warp' ? 'warp' : 'rocket', c);
+      sfx(w.id === 'bolt' ? 'bolt' : w.id === 'bomb' || w.id === 'cluster' ? 'cannon' : w.id === 'fire' || w.id === 'chain' || w.id === 'sticky' || w.id === 'acid' ? 'whoosh' : w.id === 'ice' ? 'frost' : w.id === 'zap' || w.id === 'magnet' ? 'charge' : w.id === 'dark' ? 'dark' : w.id === 'drill' ? 'drill' : w.id === 'snipe' ? 'snipe' : w.id === 'wind' ? 'gust' : w.id === 'hook' ? 'zip' : w.id === 'weight' ? 'heave' : w.id === 'warp' ? 'warp' : w.id === 'seed' ? 'seed' : w.id === 'axe' ? 'axe' : w.id === 'mole' ? 'drill' : w.id === 'stake' ? 'heave' : 'rocket', c);
       break;
     }
     case 'boom': {
@@ -208,7 +208,7 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'ultarm': ring(a, b, 26, 4, 0.4, '#ffe9a0', 0.7); sfx('arm'); break;
     case 'ultoff': sfx('click'); break;
     case 'shieldoff': break;
-    case 'skip': pop(a, b, d ? '被電暈' : '凍住了', d ? '#ffe14a' : '#bfeeff', 2.6, 1.0); break;
+    case 'skip': pop(a, b, d === 2 ? '陷在沙裡' : d ? '被電暈' : '凍住了', d === 2 ? '#f0d49a' : d ? '#ffe14a' : '#bfeeff', 2.6, 1.0); break;
     case 'freeze': burst(P_SHARD, a, b, 6, 14, 0.6, 0.5, C_ICE, 6); sfx('frost'); break;
     case 'chain': {
       // a 這一輪垮了幾塊；b 誰打的
@@ -496,6 +496,32 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'sawtilt': sfx('groan'); shake(0.4); if (S.state === 'play') pop(MID, 30, c === 0 ? '天秤回正' : (c > 0 ? '天秤往我方沉' : '天秤往敵方沉') + '（' + Math.abs(d) + '°）', c > 0 ? '#ffb0a0' : c < 0 ? '#bfe0ff' : '#ffffff', 3.0, 1.6); break;
     case 'sawroll': if (thr('sawroll', 1500)) { sfx('rumble'); if (S.state === 'play') pop(a, b + 3, '石球滾過去了！', '#e8e0d0', 2.6, 1.0); } break;
     case 'archshift': if (S.state === 'play' && thr('arch', 800)) sfx('warp'); break;
+    // 第四篇第二批：藤、迴旋斧、地道、鼓樁、流沙
+    case 'seedin': burst(P_DEBRIS, a, b, 4, 8, 0.4, 0.3, C_GREEN, 3); sfx('stick'); if (thr('seedin', 400) && S.state === 'play') pop(a, b + 2.4, c === 0 ? '種下去了' : '被種了藤', c === 0 ? '#c8f0a0' : '#ffb0a0', 2.4, 0.9); break;
+    case 'seedfail': burst(P_DUST, a, b, 3, 6, 0.4, 0.8, C_TAN, 2); break;
+    case 'sproutgrow': burst(P_DEBRIS, a, b, 4 + c * 0, 10, 0.5, 0.35, C_GREEN, 4); sfx('grow'); if (S.state === 'play' && thr('sgrow', 500)) pop(a, b + 2.6, '藤長了一截（' + d + '／3）', '#c8f0a0', 2.4, 1.0); break;
+    case 'strangle': burst(P_DEBRIS, a, b, 12, 16, 0.7, 0.45, C_GREEN, 6); burst(P_DUST, a, b, 6, 10, 0.7, 1.4, C_TAN, 3); sfx('crumble'); shake(0.25); if (S.state === 'play') pop(a, b + 3, '勒碎了！', '#a8f080', 3.0, 1.2); break;
+    case 'sproutdie': burst(P_DEBRIS, a, b, 5, 6, 0.6, 0.3, C_TAN, 2); if (S.state === 'play' && thr('sdie', 600)) pop(a, b + 2.2, '藤枯了', '#d8c8a0', 2.2, 0.9); break;
+    case 'sproutcut': burst(P_DEBRIS, a, b, 6, 12, 0.5, 0.35, C_GREEN, 4); if (S.state === 'play' && thr('scut', 600)) pop(a, b + 2.2, '藤斷了', '#d8f0c0', 2.2, 0.9); break;
+    case 'vinecut': burst(P_DEBRIS, a, b, 3, 10, 0.45, 0.3, C_GREEN, 3); if (thr('vinecut', 120)) sfx('snap'); if (S.state === 'play' && thr('vinecutp', 900)) pop(a, b + 2.2, '古藤斷了', '#d8f0c0', 2.4, 0.9); break;
+    case 'vineburn': burst(P_EMBER, a, b, 5, 8, 0.6, 0.5, C_ORANGE, 3); if (S.state === 'play' && thr('vineburnp', 900)) pop(a, b + 2.2, '藤燒斷了', '#ffc890', 2.4, 0.9); break;
+    case 'vinegrow': burst(P_SPARK, a, b, 3, 6, 0.5, 0.4, C_GREEN); if (thr('vinegrow', 200)) sfx('grow'); if (S.state === 'play' && thr('vinegrowp', 1200)) pop(a, b + 2.4, '古藤又長回來了', '#c8f0a0', 2.6, 1.2); break;
+    case 'axechop': burst(P_DEBRIS, a, b, 5, 14, 0.45, 0.4, d ? C_TAN : C_GRAY, 4); sfx('chop'); break;
+    case 'axeback': break;
+    case 'axecatch': if (thr('axecatch', 300)) sfx('clang'); break;
+    case 'axestick': burst(P_DUST, a, b, 3, 6, 0.4, 0.8, C_TAN, 2); if (thr('axestick', 200)) sfx('chop'); break;
+    case 'molein': burst(P_DUST, a, b, 8, 10, 0.6, 1.3, C_SAND, 3); sfx('dig'); break;
+    case 'molearrive': if (S.state === 'play' && c === 0 && thr('molearr', 900)) pop(a, b + 4, '挖到城腳了', '#f0d49a', 2.4, 1.0); break;
+    case 'moleboom': burst(P_DUST, a, b, 18, 18, 1.0, 2.2, C_SAND, 4); burst(P_DEBRIS, a, b, 10, 20, 0.8, 0.5, C_TAN, 6); shake(0.5); if (S.state === 'play') pop(a, b + 4, '城腳底下炸開了！', '#ffd090', 2.8, 1.2); break;
+    case 'molecave': burst(P_DUST, a, b + 1.4, 8, 8, 0.8, 1.4, C_SAND, 3); if (S.state === 'play' && thr('mcave', 600)) pop(a, b + 3, '地道塌了', '#e8d8b8', 2.4, 1.0); break;
+    case 'molefar': case 'molefail': burst(P_DUST, a, b, 4, 6, 0.5, 1.0, C_SAND, 2); if (S.state === 'play' && c === 0 && thr('mfar', 900)) pop(a, b + 2.4, t === 'molefar' ? '太遠了，挖不到' : '地底下過不去', '#e8d8b8', 2.4, 1.0); break;
+    case 'stakein': burst(P_DEBRIS, a, b, 4, 10, 0.4, 0.35, C_TAN, 3); sfx('thud'); break;
+    case 'stakegone': burst(P_DEBRIS, a, b, 5, 12, 0.5, 0.35, C_TAN, 3); break;
+    case 'drum': ring(a, b, 0.4, 2.4, 0.3, '#ffe0a8', 0.6); sfx('drum'); break;
+    case 'drumquake': ring(a, b, 0.6, c, 0.55, '#f0d49a', 0.7); ring(a, b, 0.6, c * 0.6, 0.4, '#fff0c8', 0.5); burst(P_DUST, a, b, 10, 12, 0.8, 1.6, C_SAND, 3); shake(0.3); if (thr('quake', 120)) sfx('drum'); break;
+    case 'sandsink': sfx('sand'); if (S.state === 'play') pop(a, 12, (c === 0 ? '我方' : '敵城') + '往流沙裡陷了 ' + d.toFixed(1) + ' 公尺', c === 0 ? '#ffd8a8' : '#bfe0ff', 2.6, 1.4); break;
+    case 'sandhit': burst(P_DUST, a, b, 6, 10, 0.6, 1.4, C_SAND, 3); break;
+    case 'unitsunk': if (S.state === 'play') pop(a, b + 3, c === 0 ? '我方的兵陷進沙裡了' : '敵兵陷進沙裡了', c === 0 ? '#ffb0a0' : '#ffe9a8', 2.6, 1.2); break;
   }
   if (typeof uiEvent === 'function') uiEvent(t, a, b, c, d, e, f);
 }

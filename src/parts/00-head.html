@@ -191,9 +191,9 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 #pick .plaque .sub { margin-top: calc(var(--u) * -1); }
 #pick .tipline { min-height: 3em; }
 #pick .btn { min-height: max(calc(var(--u) * 9.5), 38px); }
-.pickgrid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: calc(var(--u) * 1); }
-.pickgrid button { display: grid; justify-items: center; gap: calc(var(--u) * .3); padding: calc(var(--u) * .6) 0; background: rgba(255, 255, 255, .06); --cut: calc(var(--u) * 1.2); font-size: calc(var(--u) * 2.7); font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
-.pickgrid button canvas { width: calc(var(--u) * 7.6); height: calc(var(--u) * 7.6); border-radius: 50%; background: #241d3c; }
+.pickgrid { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: calc(var(--u) * .8); }
+.pickgrid button { display: grid; justify-items: center; gap: calc(var(--u) * .3); padding: calc(var(--u) * .6) 0; background: rgba(255, 255, 255, .06); --cut: calc(var(--u) * 1.2); font-size: calc(var(--u) * 2.5); font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
+.pickgrid button canvas { width: calc(var(--u) * 7); height: calc(var(--u) * 7); border-radius: 50%; background: #241d3c; }
 .pickgrid button[aria-pressed="true"] { background: rgba(255, 201, 60, .28); box-shadow: inset 0 0 0 2px var(--gold); }
 .pickgrid button.new span::after { content: "新"; margin-left: 2px; padding: 0 3px; border-radius: 3px; background: #e0442e; color: #fff; font-size: .8em; }
 .crew.many .cu { width: calc(var(--u) * 6.2); height: calc(var(--u) * 6.2); }

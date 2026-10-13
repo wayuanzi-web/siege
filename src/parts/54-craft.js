@@ -13,6 +13,7 @@
 /* ---------- 開局 ---------- */
 // 物理世界剛建好、城還沒蓋（巨樑、石壁要先在，城蓋在巨樑上）
 function craftWorld() {
+  wildWorld();
   S.saw = null; S.shotU = new Map(); S.shotVia = new Map(); S.wallX = null;
   const lv = S.lv;
   if (lv.saw) sawWorld(lv.saw);
@@ -25,6 +26,7 @@ function craftWorld() {
 function craftSetup() {
   const lv = S.lv;
   if (S.saw) sawAttach();
+  wildSetup();
   if (lv.arches) {
     const A = lv.arches;
     for (const side of [0, 1]) S.objs.push({ t: 'warp', kind: 'gate', side, ix: side ? VIEW_W - A.x : A.x, iy: A.y, r: A.r, ox: 0, oy: 0, on: true, dest: '', flash: 0, age: 0 });
@@ -101,7 +103,7 @@ function hookStep(o, dt) {
     if (v.x * dx / d + v.y * dy / d > 14) return false;          // 已經被扯得飛起來了：不再加速（不會把一塊磚甩過半個戰場）
     const F = Math.min(H.F, b.mass * GRAV * 2.5 + 1500) * (T ? Math.sqrt(T.dmg) : 1);
     body.setAwake(true); body.applyForce({ x: dx / d * F, y: dy / d * F + b.mass * GRAV * 0.25 }, { x: o.x, y: o.y }, true);
-    if (!o.yank) { o.yank = 1; ev('hookyank', o.x, o.y, o.side); S.chainT = S.time; }
+    if (!o.yank) { o.yank = 1; ev('hookyank', o.x, o.y, o.side); S.chainT = S.time; if (S.lv.vines) vinesChop(b, o.side); }          // 古藤（第二十一關）：扯的那一塊身上的藤一起扯斷
   } else if (o.hostU && !o.yank) {
     // 鉤到兵：一把扯出城（落地不死）
     o.yank = 1; const v = o.hostU;
@@ -304,6 +306,7 @@ function craftStep(dt) {
   if (S.saw) sawStep(dt);
   if (S.rubble && S.objs.length) warpBodies();
   weightsSlide();
+  wildStep(dt);
 }
 // 停在兵頭上的鐵砣：往旁邊滑下去（兵的頭頂是尖的、滑的；鐵砣比較寬，有時候會剛好卡住，推一把）
 function weightsSlide() {
@@ -312,14 +315,15 @@ function weightsSlide() {
     if (b.dead || !b.weight || !b.onUnit) continue;
     const u = b.onUnit; b.onUnit = null; if (!u.alive || !b.body) continue;
     const p = b.body.getPosition(), v = b.body.getLinearVelocity(), d = p.x >= u.x ? 1 : -1;
-    if (v.x * d < 3) { b.body.setAwake(true); b.body.setLinearVelocity({ x: d * 3.2, y: Math.max(v.y, 1.2) }); }
+    if (v.x * d < 3) { b.body.setAwake(true); b.body.setLinearVelocity({ x: d * 3.2, y: Math.max(v.y, 1.2) }); b.slideN = (b.slideN || 0) + 1; if (b.slideN > 45) blockKill(b, 2, K_CRUSH, true); }          // 卡死在頭上推不開（卡在牆和兵中間）：鐵砣碎掉，不然一直在那裡抖
   }
 }
 function craftRoundEnd() {
   let wait = false;
   if (weightsPress()) wait = true;
   if (sawRoundEnd()) wait = true;
+  if (wildRoundEnd()) wait = true;
   return wait;
 }
 function craftRound() { if (S.lv.arches) archRound(); }
-function craftBusy() { return sawBusy(); }
+function craftBusy() { return sawBusy() || wildBusy(); }

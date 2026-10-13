@@ -69,6 +69,7 @@ const ROCK_PAL = {
   demon: { c: ['#7a5a88', '#553a64', '#352442', '#170d20'], veg: 0, jnt: 0.65, ldg: 0.5 },
   tide: { c: ['#8f9b94', '#68746e', '#465150', '#29312f'], veg: 0, jnt: 0.55, ldg: 0.6 },
   forge: { c: ['#6a5d58', '#463b38', '#2b2321', '#120d0c'], veg: 0, jnt: 1.25, ldg: 0.3, heat: 1 },          // 第十五關：玄武岩（一根根直的柱狀節理），底下被岩漿映紅
+  dune: { c: ['#ecc88a', '#cfa462', '#a07840', '#6a4a22'], veg: 0, jnt: 0.35, ldg: 0.6, band: ['#e8c486', '#d4aa6a', '#c49858', '#e0b878'], foot: 0.4 },          // 第二十二關：半埋在沙裡的巨石像
   def: { c: ['#a39a8c', '#81786b', '#5c554b', '#3e3932'], veg: 'grass', g: ['#a2e070', '#7fae5a', '#4a7a3a'], jnt: 0.85, ldg: 1 }
 };
 // 岩石（藍圖裡的 A；浮島的 R 由 drawPlats 傳 cells 進來）：整片連成一塊畫，不是一格一格的磚。
@@ -76,6 +77,7 @@ const ROCK_PAL = {
 // 裡面的明暗、岩縫、岩棚、嵌著的石頭跨格子連成一片；光從左上來：頂上、朝左的面亮，底下、朝右的面暗；頂上露天的地方長草（冰崖是積雪，峽谷不長）。
 // 浮島：底下那幾階補成往下收的岩錐，垂幾根鐘乳石、樹根，草皮底下一層土，島邊垂著藤
 function drawRock(c, st, cells) {
+  if (st.skinB === 'grove' && !cells) { drawTrunk(c, st); return; }          // 第二十一關：樹幹（75-wild-draw）
   const isle = !!cells, s = V.s, pr = ROCK_PAL[st.skinB] || ROCK_PAL.def, pal = pr.c, G = pr.g, R = mkRand(st.x0 * 13 + 7);
   cells = cells || st.rock;
   const has = new Set(); let gx0 = 1e9, gx1 = -1e9, gy0 = 1e9, gy1 = -1e9;
@@ -1295,7 +1297,7 @@ function drawShots(c) {
   const sx = FX.shx, sy = FX.shy;
   for (let i = 0; i < n; i++) {
     // 分裂過的砲彈比較小顆（威力也比較小），合併的比較大顆
-    const sp = shotSprite(SH.w[i], SH.side[i]), wid = WL[SH.w[i]].id, a = SH.flag[i] & F_ROLL ? -SH.x[i] * 1.7 : wid === 'chain' ? SH.age[i] * 17 : Math.atan2(-SH.vy[i], SH.vx[i]), ms = SH.mass[i], m = ms > 1 ? Math.min(2, Math.sqrt(ms)) : Math.max(0.6, Math.pow(ms, 0.2)), cs = Math.cos(a) * m, sn = Math.sin(a) * m;
+    const sp = shotSprite(SH.w[i], SH.side[i]), wid = WL[SH.w[i]].id, a = SH.flag[i] & F_ROLL ? -SH.x[i] * 1.7 : wid === 'chain' ? SH.age[i] * 17 : wid === 'axe' ? -SH.age[i] * 19 * Math.sign(SH.vx[i] || 1) : Math.atan2(-SH.vy[i], SH.vx[i]), ms = SH.mass[i], m = ms > 1 ? Math.min(2, Math.sqrt(ms)) : Math.max(0.6, Math.pow(ms, 0.2)), cs = Math.cos(a) * m, sn = Math.sin(a) * m;
     c.setTransform(cs, sn, -sn, cs, X(SH.x[i]) + sx, Y(SH.y[i]) + sy);
     c.drawImage(sp.cv, -sp.w / 2, -sp.h / 2);
   }
@@ -1491,6 +1493,7 @@ function renderFrame(dt, rdt) {
   if (FX.shx || FX.shy) { c.fillStyle = '#0d1019'; c.fillRect(0, 0, V.W, V.H); }
   c.setTransform(1, 0, 0, 1, FX.shx, FX.shy);
   sceneBack(c, t, dt);
+  drawWildBack(c, t);          // 第二十一關：古樹的樹冠（在樹幹後面）
   drawRocks(c);
   if (S.plats.length) drawPlats(c, t);
   drawCraftBack(c, t);          // 第四篇：天秤的巨樑、古門的石框
@@ -1501,11 +1504,13 @@ function renderFrame(dt, rdt) {
   if (S.beast) drawBeast(c, t);          // 第十八關：機關巨獸
   drawFuses(c, t);
   drawRopes(c, t);
+  drawWildMid(c, t);          // 第四篇第二批：古藤、藤種、鼓樁
   if (S.rotors.length) drawRotors(c, t);
   drawGates(c, t);
   drawUnits(c, t);
   drawArms(c, t);
   drawCraftFront(c, t);          // 第四篇：傳送門、鉤索、銅鏡
+  drawWildFront(c, t);          // 第四篇第二批：地道、流沙（蓋住陷進去的城腳）
   for (const P of S.plats) if ((P.kind === 'cage' || P.kind === 'gondola') && !P.dead) drawPart(c, P, t, true);
   if (S.ropes.length) { drawBlocks(c, t, rdt, 1); c.setTransform(1, 0, 0, 1, FX.shx, FX.shy); }
   drawWater(c, t);
