@@ -23,7 +23,10 @@ const SKINS = {
   mine: { stone: ['#a49a8a', '#7c7262', '#574e42', '#3a332a'], wood: ['#a07446', '#7a522c', '#4c3018'], roof: ['#8a6a48', '#644a30', '#3e2c1a'], iron: ['#9a9890', '#6e6c66', '#46443f'], panel: ['#241c16', '#1a1410'], ink: '#140e0a', trim: '#ffc870', flag: '#dc3a2e', flagDk: '#8f1418' },
   bastion: { stone: ['#d6dae2', '#aab1bf', '#7b8395', '#575e70'], wood: ['#b8844c', '#8f6132', '#5c3b1b'], roof: ['#8aa0c0', '#5d7596', '#3a4c66'], iron: ['#b0b8c6', '#7e8798', '#4c5464'], panel: ['#2c3242', '#212634'], ink: '#161a26', trim: '#ffc93c', flag: '#2f7bff', flagDk: '#1b46b8' },
   beast: { stone: ['#7d8798', '#4c5462', '#2e333d', '#1c1f26'], wood: ['#8a6a48', '#644a30', '#3e2c1a'], roof: ['#7d8798', '#4c5462', '#2e333d'], iron: ['#8a93a3', '#5a6270', '#363b45'], panel: ['#1c1f26', '#14161c'], ink: '#0e1014', trim: '#c58c3c', flag: '#dc3a2e', flagDk: '#8f1418' },
-  train: { stone: ['#9a948a', '#757068', '#504b45', '#33302c'], wood: ['#9a6a3e', '#744a26', '#4a2c14'], roof: ['#8a9478', '#5e6a50', '#3c4632'], iron: ['#8e9a78', '#626e52', '#3c4632'], panel: ['#26281e', '#1c1e16'], ink: '#14160f', trim: '#e8c060', flag: '#dc3a2e', flagDk: '#8f1418' }
+  train: { stone: ['#9a948a', '#757068', '#504b45', '#33302c'], wood: ['#9a6a3e', '#744a26', '#4a2c14'], roof: ['#8a9478', '#5e6a50', '#3c4632'], iron: ['#8e9a78', '#626e52', '#3c4632'], panel: ['#26281e', '#1c1e16'], ink: '#14160f', trim: '#e8c060', flag: '#dc3a2e', flagDk: '#8f1418' },
+  // 第四篇
+  scale: { stone: ['#dde2e8', '#b2bac6', '#828c9c', '#5c6576'], wood: ['#c99c64', '#a07440', '#674a24'], roof: ['#8aa0c0', '#5d7596', '#3a4c66'], iron: ['#8d96a2', '#606874', '#3a414b'], panel: ['#2a3140', '#202634'], ink: '#131822', trim: '#ffd27a', flag: '#dc3a2e', flagDk: '#8f1418' },
+  gorge: { stone: ['#ecd6ae', '#cdae7e', '#9a7c52', '#6e5536'], wood: ['#a97c4c', '#80582f', '#4f3318'], roof: ['#d9a35c', '#b07a34', '#76501c'], iron: ['#c4a46c', '#957844', '#5e4826'], panel: ['#3a2a1c', '#2b1f14'], ink: '#1e140c', trim: '#ffe08a', flag: '#dc3a2e', flagDk: '#8f1418' }
 };
 // 每一關雙方的城樓一模一樣，只有屋瓦和旗子分顏色：我方藍、敵方紅（藍圖的外觀名稱後面接 @0、@1）
 const ROOF_TEAM = [['#78b2ff', '#2f6fe0', '#1a429c'], ['#ff8a6c', '#d43c2a', '#86180f']], FLAG_TEAM = [['#2f7bff', '#1b46b8'], ['#dc3a2e', '#8f1418']];
@@ -38,7 +41,7 @@ const PAL_ROCK = ['#8e8794', '#665f70', '#403a49', '#2a2532'];
 /* ---------- 磚塊：每一塊一張貼圖（依外觀、材質、形狀、大小、破損程度），第一次用到時才畫 ---------- */
 const BSPR = {};
 function blockSprite(b, ds) {
-  const key = b.skin + ':' + b.mat + ':' + b.kind + ':' + Math.round(b.w * 10) + ':' + Math.round(b.h * 10) + ':' + Math.round(b.il * 10) + ':' + Math.round(b.ir * 10) + ':' + b.deco + ':' + ds + ':' + (b.vr & 1) + (b.hot ? 'h' : '') + (b.prop ? 'p' : '') + (b.seg ? 's' : '') + (b.dom ? 'd' : '') + (b.beam ? 'b' : '') + (b.reso ? 'r' : '') + (b.mag ? 'm' : '') + (b.core ? 'c' : '') + (b.heart ? 'H' : '') + (b.brake ? 'k' : '') + (b.tank ? 'T' : '') + (b.crane ? 'C' : '') + (b.spilt ? 'S' : '') + (b.bogie ? 'g' : '') + (b.boiler ? 'v' : '') + (b.stack ? 'k' : '') + (b.gas ? 'z' : '') + (b.drop ? 'q' : '');
+  const key = b.skin + ':' + b.mat + ':' + b.kind + ':' + Math.round(b.w * 10) + ':' + Math.round(b.h * 10) + ':' + Math.round(b.il * 10) + ':' + Math.round(b.ir * 10) + ':' + b.deco + ':' + ds + ':' + (b.vr & 1) + (b.hot ? 'h' : '') + (b.prop ? 'p' : '') + (b.seg ? 's' : '') + (b.dom ? 'd' : '') + (b.beam ? 'b' : '') + (b.reso ? 'r' : '') + (b.mag ? 'm' : '') + (b.core ? 'c' : '') + (b.heart ? 'H' : '') + (b.brake ? 'k' : '') + (b.tank ? 'T' : '') + (b.crane ? 'C' : '') + (b.spilt ? 'S' : '') + (b.bogie ? 'g' : '') + (b.boiler ? 'v' : '') + (b.stack ? 'k' : '') + (b.gas ? 'z' : '') + (b.drop ? 'q' : '') + (b.weight ? 'W' : '');
   let s = BSPR[key]; if (s) return s;
   const sc = V.s, w = b.w * sc, h = b.h * sc, roof = b.kind === 'roof';
   const padX = Math.ceil((roof ? 0.62 : 0.14) * CS * sc), padY = Math.ceil((roof ? 0.5 : 0.14) * CS * sc);
@@ -73,6 +76,7 @@ function paintBlock(c, b, ds, w, h, sc) {
   const jag = b.drop ? (() => { const r = mkRand(77 + Math.round(b.w * 3)), a = [w * 0.03, h, w * 0.01, h * 0.34]; for (let k = 1; k < 9; k++) a.push(w * k / 9, h * (0.03 + r() * 0.22)); a.push(w * 0.99, h * 0.3, w * 0.97, h); return a; })() : null;
   const path = () => {
     if (jag) { poly(c, jag); return; }
+    if (b.weight) { c.beginPath(); c.moveTo(w * 0.16, h * 0.08); c.lineTo(w * 0.84, h * 0.08); c.lineTo(w, h); c.lineTo(0, h); c.closePath(); return; }          // 千斤鐵砣：上窄下寬
     if (roof) { c.beginPath(); c.moveTo(0, h); c.lineTo(w, h); c.lineTo(w - ir, 0); c.lineTo(il, 0); c.closePath(); }
     else if (ball) { c.beginPath(); c.arc(w / 2, h / 2, w / 2, 0, TAU); }
     else if (b.mat === M_CLAY) {
@@ -346,6 +350,18 @@ function paintBlock(c, b, ds, w, h, sc) {
 
 // 吊鐘、水晶吊燈、配重石籃、共鳴晶柱：自己畫（回傳 true 表示畫過了）
 function paintSpecial(c, b, w, h, u, P, R) {
+  if (b.weight) {
+    // 千斤鐵砣（第四篇）：黑鐵、上窄下寬，腰上一道銅箍刻著「千斤」，頂上一個提環
+    c.fillStyle = lg(c, 0, 0, w, 0, [0, '#2a2e36', 0.3, '#5a606c', 0.55, '#3a3f48', 1, '#1a1c22']); c.fillRect(0, 0, w, h);
+    c.fillStyle = lg(c, 0, h * 0.42, 0, h * 0.66, [0, '#f0c860', 0.5, '#c08a2a', 1, '#7a5212']); c.fillRect(0, h * 0.44, w, h * 0.2);
+    c.fillStyle = '#3a2408'; c.font = '900 ' + (h * 0.17).toFixed(1) + 'px "Noto Serif TC", serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('千斤', w / 2, h * 0.545);
+    c.strokeStyle = 'rgba(255,255,255,.22)'; c.lineWidth = Math.max(1, u * 0.05); c.beginPath(); c.moveTo(w * 0.24, h * 0.16); c.lineTo(w * 0.12, h * 0.9); c.stroke();
+    c.strokeStyle = '#0c0d10'; c.lineWidth = Math.max(1.5, u * 0.08); c.beginPath(); c.moveTo(w * 0.16, h * 0.08); c.lineTo(w * 0.84, h * 0.08); c.lineTo(w, h); c.lineTo(0, h); c.closePath(); c.stroke();
+    c.restore(); c.save();          // 提環畫在磚的外框外面（不被裁掉）
+    c.strokeStyle = '#1a1c22'; c.lineWidth = Math.max(2, u * 0.1); c.beginPath(); c.arc(w / 2, h * 0.02, h * 0.16, Math.PI, 0); c.stroke();
+    c.strokeStyle = '#8a909c'; c.lineWidth = Math.max(1, u * 0.04); c.beginPath(); c.arc(w / 2, h * 0.02, h * 0.16, Math.PI * 1.1, Math.PI * 1.6); c.stroke();
+    return true;
+  }
   if (b.drop) {
     // 懸石（第十七關）：暗灰褐的岩塊，一層層的岩紋、幾道深裂縫、夾著幾點礦；底下一圈陰影（看起來很沉）
     c.fillStyle = lg(c, 0, 0, 0, h, [0, '#7a7068', 0.35, '#5a524c', 0.8, '#3c3632', 1, '#26221f']); c.fillRect(0, 0, w, h);
@@ -496,6 +512,47 @@ function uHat(c, kind, side, P) {
   }
 }
 function uArm(c, P, x, y) { ell(c, x, y, 4.3, 4.8); fs(c, P.limb, P.ink, 1.8); }
+/* 第四篇：工匠營（銅盔、護目鏡、皮圍裙、皮靴）。跟前三篇的兵一眼分得出來；隊色照舊（我方藍、敵軍紅） */
+function kLegs(c, P) {
+  uLegs(c, P);
+  c.fillStyle = '#3a2410'; rrect(c, 23.5, 52.5, 8.2, 5.5, 2); c.fill(); rrect(c, 32.3, 52.5, 8.2, 5.5, 2); c.fill();
+  c.fillStyle = '#8a5a2a'; c.fillRect(24.2, 52.6, 6.8, 1.2); c.fillRect(33, 52.6, 6.8, 1.2);
+}
+function kGear(c, x, y, r) {
+  c.beginPath(); for (let k = 0; k < 8; k++) { const a = k * TAU / 8; c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); c.lineTo(x + Math.cos(a + 0.39) * r * 0.74, y + Math.sin(a + 0.39) * r * 0.74); } c.closePath();
+  fs(c, '#e8b84a', '#5a3a08', 0.9); c.fillStyle = '#5a3a08'; c.beginPath(); c.arc(x, y, r * 0.32, 0, TAU); c.fill();
+}
+function kBody(c, P, robe) {
+  if (robe) {
+    // 長袍：袍邊、前襟兩道銅色滾邊
+    poly(c, [22, 30, 42, 30, 46, 57, 18, 57]); fs(c, lg(c, 0, 28, 0, 58, [0, P.body[0], 1, P.body[1]]), P.ink, 2);
+    c.fillStyle = '#d8a440'; c.fillRect(18.6, 53.6, 26.8, 2.2); c.fillRect(29.6, 31, 1.6, 23); c.fillRect(33, 31, 1.6, 23);
+    kGear(c, 32, 36, 2.8);
+    return;
+  }
+  rrect(c, 21, 28, 22, 22, 8.5); fs(c, lg(c, 0, 28, 0, 50, [0, P.body[0], 1, P.body[1]]), P.ink, 2);
+  // 皮圍裙、肩帶
+  c.beginPath(); c.moveTo(24, 33); c.lineTo(40, 33); c.lineTo(41.5, 50); c.lineTo(22.5, 50); c.closePath(); fs(c, lg(c, 0, 33, 0, 50, [0, '#b8804a', 1, '#7a4e26']), '#3a2410', 1.5);
+  c.strokeStyle = '#3a2410'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(25, 33.5); c.lineTo(23.2, 29); c.moveTo(39, 33.5); c.lineTo(40.8, 29); c.stroke();
+  rrect(c, 34.6, 42.4, 5.2, 4.6, 1.2); fs(c, '#6a4424', '#2a1608', 1);
+  kGear(c, 28.5, 40, 2.7);
+}
+function kHead(c, side, P) {
+  const x = 32, y = 19, r = 10.5;
+  // 臉
+  ell(c, x, y + 0.8, r * 0.92, r * 0.88); fs(c, rg(c, x - 3, y - 1, 1, 13, [0, side ? '#ffc2a8' : '#ffdcbc', 1, side ? '#d8805e' : '#dca07a']), P.ink, 2);
+  // 銅盔：上半球、一道隊色帶、一排鉚釘
+  c.beginPath(); c.moveTo(x - r * 1.04, y + 0.6); c.quadraticCurveTo(x - r * 1.02, y - r * 1.18, x, y - r * 1.14); c.quadraticCurveTo(x + r * 1.02, y - r * 1.18, x + r * 1.04, y + 0.6); c.closePath();
+  fs(c, lg(c, 0, y - r * 1.1, 0, y + 1, [0, '#fff0b4', 0.4, side ? '#d77a3c' : '#d9a548', 1, side ? '#7a2c12' : '#7c5216']), '#3a2408', 1.8);
+  c.fillStyle = P.body[1]; c.fillRect(x - r * 0.98, y - 3.6, r * 1.96, 2.6);
+  c.fillStyle = '#5a3a10'; for (const dx of [-6.5, -2.2, 2.2, 6.5]) { c.beginPath(); c.arc(x + dx, y - 6.6 - (6.5 - Math.abs(dx)) * 0.32, 0.85, 0, TAU); c.fill(); }
+  if (side === 1) { for (const sd of [-1, 1]) { poly(c, [x + sd * 4.5, y - r * 0.98, x + sd * 9, y - r * 1.75, x + sd * 1.8, y - r * 1.12]); fs(c, '#d8d0bc', '#3a2408', 1.2); } }
+  else { ell(c, x, y - r * 1.16, 2.4, 1.7); fs(c, '#e8b84a', '#5a3a08', 0.9); }
+  // 護目鏡：皮帶、兩片圓鏡（敵軍的鏡片發紅光）
+  c.fillStyle = '#3a2a1c'; c.fillRect(x - 10.6, y + 0.4, 21.2, 2.4);
+  for (const dx of [2.2, 8.3]) { ell(c, x + dx, y + 1.6, 3.1, 3.1); fs(c, rg(c, x + dx - 1, y + 0.6, 0.3, 3.4, [0, '#ffffff', 0.35, side ? '#ff8a6a' : '#a8e6ff', 1, side ? '#8a1a10' : '#2a6aa0']), '#2a1a0c', 1.5); }
+  c.strokeStyle = P.ink; c.lineWidth = 1.3; c.beginPath(); if (side) { c.moveTo(x + 1.5, y + 7.4); c.lineTo(x + 7.5, y + 6.8); } else { c.moveTo(x + 2, y + 6.8); c.quadraticCurveTo(x + 5, y + 8.6, x + 8, y + 6.6); } c.stroke();
+}
 // 每個兵種手上的傢伙
 const UNIT_ART = {
   rocket(c, side, P) {
@@ -716,6 +773,56 @@ const UNIT_ART = {
     c.strokeStyle = '#14161c'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(27, 9); c.lineTo(25, 2); c.stroke(); c.fillStyle = '#ff4a2a'; ell(c, 25, 2, 1.8, 1.8); c.fill();
     rrect(c, 22, 21, 32, 6, 2); fs(c, '#4a4e58', '#16181e', 1.3); c.fillStyle = side ? '#ee3b30' : '#3d86ff'; c.fillRect(48, 20, 3, 8);
   },
+  // ---- 第四篇：工匠營 ----
+  hook(c, side, P) {
+    // 鉤索手：銅管發射器斜指著前上方，管口一具三爪鐵鉤；腰後一捆繩
+    uShadow(c); kLegs(c, P);
+    c.strokeStyle = '#8a6a3a'; c.lineWidth = 2; for (let k = 0; k < 3; k++) { c.beginPath(); c.ellipse(19.5, 42.5 + k * 0.7, 4.6 - k * 0.5, 3.3 - k * 0.4, 0.35, 0, TAU); c.stroke(); }
+    kBody(c, P); uArm(c, P, 21, 38); kHead(c, side, P);
+    c.save(); c.translate(38, 32); c.rotate(-0.72);
+    rrect(c, -9, -3.4, 22, 6.8, 2.4); fs(c, lg(c, 0, -3.4, 0, 3.4, [0, '#f2d68a', 0.5, '#c4922e', 1, '#7a5212']), '#3a2408', 1.6);
+    c.fillStyle = '#3a2408'; c.fillRect(-2, -3.4, 1.8, 6.8); c.fillRect(6, -3.4, 1.8, 6.8);
+    c.strokeStyle = '#22262e'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(13, 0); c.lineTo(19.5, 0); c.moveTo(17.5, 0); c.quadraticCurveTo(22, -4.6, 19.6, -7.6); c.moveTo(17.5, 0); c.quadraticCurveTo(22, 4.6, 19.6, 7.6); c.moveTo(19.5, 0); c.quadraticCurveTo(23.6, 0.4, 23, -2.6); c.stroke();
+    c.strokeStyle = '#a8b0be'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(18, -0.8); c.quadraticCurveTo(21.2, -4.6, 19.4, -6.8); c.stroke();
+    c.restore();
+    c.strokeStyle = '#a8864e'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(32, 37.5); c.quadraticCurveTo(26, 47, 21, 44.5); c.stroke();
+    uArm(c, P, 41, 34);
+  },
+  weight(c, side, P) {
+    // 秤砣兵：右肩扛著一顆千斤鐵砣（銅箍、提環）
+    uShadow(c); kLegs(c, P); kBody(c, P); uArm(c, P, 21, 38); kHead(c, side, P);
+    uArm(c, P, 43, 25);
+    c.save(); c.translate(50.5, 10.5); c.rotate(0.14);
+    poly(c, [-6, -6.5, 6, -6.5, 9, 7, -9, 7]); fs(c, lg(c, -9, 0, 9, 0, [0, '#22262c', 0.35, '#5c626e', 0.6, '#3a3f48', 1, '#16181e']), '#08090c', 1.8);
+    c.fillStyle = lg(c, 0, -1.4, 0, 2.6, [0, '#f2cc66', 1, '#8a5a14']); c.fillRect(-7.7, -1.5, 15.4, 3.6);
+    c.strokeStyle = '#16181e'; c.lineWidth = 2.1; c.beginPath(); c.arc(0, -6.8, 3, Math.PI, 0); c.stroke();
+    c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(-4.8, -5.4, 1.4, 10);
+    c.restore();
+    uArm(c, P, 49.5, 20);
+  },
+  warp(c, side, P) {
+    // 門術師：長袍，一根杖，杖頭一個銅環，裡面一團旋轉的光（門）
+    uShadow(c); kBody(c, P, 1);
+    c.strokeStyle = '#5a3a1a'; c.lineWidth = 2.6; c.beginPath(); c.moveTo(48.5, 57); c.lineTo(48.5, 18); c.stroke();
+    c.save(); c.translate(48.5, 10.5);
+    c.fillStyle = rg(c, 0, 0, 0.5, 8, [0, '#ffffff', 0.35, side ? '#ffa0d0' : '#c8b0ff', 1, side ? 'rgba(170,30,90,0)' : 'rgba(90,50,190,0)']); c.beginPath(); c.arc(0, 0, 8, 0, TAU); c.fill();
+    c.strokeStyle = '#e8b84a'; c.lineWidth = 2.3; c.beginPath(); c.ellipse(0, 0, 5.2, 6.6, 0, 0, TAU); c.stroke();
+    c.strokeStyle = side ? '#ff4a96' : '#7a4aff'; c.lineWidth = 1.2; for (let k = 0; k < 3; k++) { c.beginPath(); c.arc(0, 0, 3.6 - k * 0.95, k * 2, k * 2 + 3.6); c.stroke(); }
+    c.restore();
+    uArm(c, P, 45.5, 36);
+    kHead(c, side, P);
+  },
+  mirror(c, side, P) {
+    // 鏡盾兵：雙手舉著一面大圓銅鏡擋在身前
+    uShadow(c); kLegs(c, P); kBody(c, P); uArm(c, P, 21, 38); kHead(c, side, P);
+    c.save(); c.translate(47.5, 29); c.rotate(-0.38);
+    ell(c, 0, 0, 7.4, 10.8); fs(c, lg(c, -7, -10, 7, 10, [0, '#fff4c8', 0.3, '#e8c060', 0.7, '#a8762a', 1, '#6a4410']), '#3a2408', 2);
+    ell(c, 0, 0, 5.5, 8.6); fs(c, lg(c, -5, -8, 5, 8, [0, '#ffffff', 0.25, '#f6e4ae', 0.6, '#d8b060', 1, '#b08236']), null);
+    c.fillStyle = 'rgba(255,255,255,.8)'; ell(c, -2, -3.6, 1.4, 3.3, -0.4); c.fill();
+    c.fillStyle = '#5a3a08'; for (let k = 0; k < 6; k++) { const a = k * TAU / 6 + 0.3; c.beginPath(); c.arc(Math.cos(a) * 6.5, Math.sin(a) * 9.6, 0.7, 0, TAU); c.fill(); }
+    c.restore();
+    uArm(c, P, 41.5, 34);
+  },
   eng(c, side, P) {
     // 工兵：黃色安全帽，高舉一把大鐵鎚，腰上掛著扳手
     uShadow(c); uLegs(c, P); uBody(c, P); uArm(c, P, 21, 38);
@@ -831,6 +938,16 @@ const SHOT_ART = {
     rrect(c, 12, 5.6, 12, 4.8, 1.6); fs(c, lg(c, 0, 5.6, 0, 10.4, [0, '#ffe08a', 1, '#b8801c']), '#4a3006', 1);
     poly(c, [23, 5.6, 31, 8, 23, 10.4]); fs(c, '#d8a040', '#4a3006', 1);
   }
+};
+// ---- 第四篇 ----
+SHOT_ART.hook = (c) => {          // 鉤爪：三爪鐵鉤，拖著一截繩子
+  c.strokeStyle = '#b8945a'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(0, 9); c.quadraticCurveTo(6, 6, 12, 8); c.stroke();
+  c.strokeStyle = '#22262e'; c.lineWidth = 2.2; c.beginPath(); c.moveTo(11, 8); c.lineTo(22, 8); c.moveTo(19, 8); c.quadraticCurveTo(25, 3, 22, 0.5); c.moveTo(19, 8); c.quadraticCurveTo(25, 13, 22, 15.5); c.moveTo(22, 8); c.quadraticCurveTo(29, 8.4, 28.5, 5); c.stroke();
+  c.strokeStyle = '#c0c8d4'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(19.6, 7.2); c.quadraticCurveTo(23.6, 3.6, 21.8, 1.4); c.stroke();
+};
+SHOT_ART.warp = (c, side) => {          // 門珠：一顆紫光珠，外面一圈銅環
+  c.fillStyle = rg(c, 16, 8, 0.5, 8, [0, '#ffffff', 0.4, side ? '#ff9ad0' : '#c8a8ff', 1, side ? 'rgba(200,40,110,0)' : 'rgba(100,60,220,0)']); c.beginPath(); c.arc(16, 8, 8, 0, TAU); c.fill();
+  c.strokeStyle = '#e8b84a'; c.lineWidth = 1.4; c.beginPath(); c.ellipse(16, 8, 4.6, 6, 0.4, 0, TAU); c.stroke();
 };
 SHOT_ART.keg = SHOT_ART.bomb; SHOT_ART.doom = SHOT_ART.dark;
 const SSPR = {};     // 'id:side' → { cv, w, h }

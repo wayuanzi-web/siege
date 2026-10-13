@@ -1415,6 +1415,7 @@ function pathAt(P, mx, my, tt) {
   const n = P.length >> 1, f = tt * 30 - 1;
   if (f < 0 || n < 1) { const u = clamp(tt * 30, 0, 1); _pa[0] = lerp(mx, n ? P[0] : mx, u); _pa[1] = lerp(my, n ? P[1] : my, u); return _pa; }
   const i = Math.min(n - 1, Math.floor(f)), j = Math.min(n - 1, i + 1), u = clamp(f - i, 0, 1);
+  if (Math.abs(P[j * 2] - P[i * 2]) + Math.abs(P[j * 2 + 1] - P[i * 2 + 1]) > 8) { const k = u < 0.5 ? i : j; _pa[0] = P[k * 2]; _pa[1] = P[k * 2 + 1]; return _pa; }          // 穿過傳送門：路線在這裡跳開（不畫中間那一段）
   _pa[0] = lerp(P[i * 2], P[j * 2], u); _pa[1] = lerp(P[i * 2 + 1], P[j * 2 + 1], u); return _pa;
 }
 function pathDots(c, P, mx, my, t0, t1, tMax, r0, r1, box, inside) {
@@ -1492,6 +1493,7 @@ function renderFrame(dt, rdt) {
   sceneBack(c, t, dt);
   drawRocks(c);
   if (S.plats.length) drawPlats(c, t);
+  drawCraftBack(c, t);          // 第四篇：天秤的巨樑、古門的石框
   drawObjs(c, t);
   drawAmp(c, t);
   for (const st of S.structs) drawBackdrop(c, st, rdt);
@@ -1503,6 +1505,7 @@ function renderFrame(dt, rdt) {
   drawGates(c, t);
   drawUnits(c, t);
   drawArms(c, t);
+  drawCraftFront(c, t);          // 第四篇：傳送門、鉤索、銅鏡
   for (const P of S.plats) if ((P.kind === 'cage' || P.kind === 'gondola') && !P.dead) drawPart(c, P, t, true);
   if (S.ropes.length) { drawBlocks(c, t, rdt, 1); c.setTransform(1, 0, 0, 1, FX.shx, FX.shy); }
   drawWater(c, t);

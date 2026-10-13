@@ -69,6 +69,7 @@ function physNew() {
     { const oa = A.getUserData() || c.getFixtureA().getUserData(), ob = B.getUserData() || c.getFixtureB().getUserData();          // 吊籠、配重桶的身體沒有掛資料：看零件上的
       if (oa && oa.bIn && ob && ((ob.side === oa.bSide && (ob.isUnit || ob.st === S.st[oa.bSide])) || (ob.dom && (ob.x0 < MID) === (oa.bSide === 0)))) { c.setEnabled(false); return; }
       if (ob && ob.bIn && oa && ((oa.side === ob.bSide && (oa.isUnit || oa.st === S.st[ob.bSide])) || (oa.dom && (oa.x0 < MID) === (ob.bSide === 0)))) { c.setEnabled(false); return; }
+      if (oa && ob && oa.weight && ob.weight && oa.bSide === ob.bSide && !oa.bHit && !ob.bHit) { c.setEnabled(false); return; }          // 同一輪丟出去的千斤鐵砣（第四篇）：在天上不互撞（落地的那顆，後面的砸得上去、疊得起來）
       // 工兵架在城前的木牆：自己的大石頭飛得過去（跟自己的砲彈一樣）
       if (oa && ob && ((oa.bFly && ob.wall && ob.side === oa.bSide) || (ob.bFly && oa.wall && oa.side === ob.bSide))) { c.setEnabled(false); return; } }
     const dvx = va.x - vb.x, dvy = va.y - vb.y, wa = A.getAngularVelocity(), wb = B.getAngularVelocity();
@@ -97,8 +98,8 @@ function physNew() {
       const ni = imp.normalImpulses; let J = 0; for (let k = 0; k < ni.length; k++) J += ni[k] || 0;
       if (J > 0) { const wm = c.getWorldManifold(PH.wm); if (wm) { PH.wm = wm; const ny = wm.normal.y;        // 法線由 A 指向 B
         // 壓下來的是屋瓦：不算重量，記下是哪一片（unitsStep 看它是不是已經掉下來了，是的話讓它碎掉）
-        if (ua && ua.isUnit && ua.alive && ub && ub.isBlock && ny > 0.35) { if (ub.mat === M_ROOF && !ub.frag) ua.roofOn = ub; else ua.loadJ += J * ny; }
-        if (ub && ub.isUnit && ub.alive && ua && ua.isBlock && ny < -0.35) { if (ua.mat === M_ROOF && !ua.frag) ub.roofOn = ua; else ub.loadJ -= J * ny; } } }
+        if (ua && ua.isUnit && ua.alive && ub && ub.isBlock && ny > 0.35) { if (ub.mat === M_ROOF && !ub.frag) ua.roofOn = ub; else if (ub.weight) ub.onUnit = ua; else ua.loadJ += J * ny; }          // 千斤鐵砣壓在頭上：不算壓扁（54-craft 把它推開）
+        if (ub && ub.isUnit && ub.alive && ua && ua.isBlock && ny < -0.35) { if (ua.mat === M_ROOF && !ua.frag) ub.roofOn = ua; else if (ua.weight) ua.onUnit = ub; else ub.loadJ -= J * ny; } } }
     }
     if (c._vs !== PH.stepId || !c._vn) return;
     c._vs = -1;
@@ -448,7 +449,8 @@ function physStep(dt) {
         // 吊鐘、吊燈掉下來砸到東西：整個重量砸上去，屋頂、樓板一砸就穿
         // （只砸得穿屋頂、柱子這種一塊一塊的，樓板、長樑不算；一口鐘最多砸穿兩樣東西，不會一路鑽到底）
         { const oth = k ? r.a : r.b; if (oth && oth.isBlock && oth.hang && (oth.hangFree || oth.body.getLinearVelocity().y < -4) && !oth.dead && oth !== o && r.vn > 4 && o.st !== S.rubble && !o.hang && !o.seg && (oth.crashN || 0) < 2) { oth.crashN = (oth.crashN || 0) + 1; const by = oth.hitBy !== undefined ? oth.hitBy : o.side === credit ? 2 : credit; blockHurt(o, oth.mass * r.vn * 0.55, K_CRUSH, by, r.x, r.y); if (o.dead) continue; } }
-        if (o.boulder) { if (!o.bHit && o.bFly && !o.bIn) { o.bHit = 1; const oth = k ? r.a : r.b; ev('thunk', r.x, r.y, r.J); if (oth && oth.bigBell) bellPush(o.bSide, o.bW.dmg * o.bMul * 1.5); if (oth && oth.isBlock && !oth.dead && oth !== o) blockHurt(oth, o.bW.dmg * o.bMul, K_HEAVY, o.bSide, r.x, r.y); else if (oth && oth.isBeast) beastHurt(oth, o.bW.dmg * o.bMul, K_HEAVY, o.bSide, r.x, r.y); else if (oth && oth.isUnit && oth.alive && oth.side !== o.bSide) hurtUnit(oth, o.bW.ud * o.bMul, o.bSide, K_CRUSH); } continue; }
+        // 投石兵的大石頭、千斤鐵砣：第一下撞到的那一塊吃 dmg（千斤鐵砣砸得越快越痛：從門的出口高高地砸下來）
+        if (o.boulder) { if (!o.bHit && o.bFly && !o.bIn) { o.bHit = 1; const oth = k ? r.a : r.b; ev('thunk', r.x, r.y, r.J); if (oth && oth.bigBell) bellPush(o.bSide, o.bW.dmg * o.bMul * 1.5); if (oth && oth.isBlock && !oth.dead && oth !== o) blockHurt(oth, o.bW.dmg * o.bMul * (o.weight ? clamp(r.vn / 30, 0.6, 1.7) : 1), K_HEAVY, o.bSide, r.x, r.y); else if (oth && oth.isBeast) beastHurt(oth, o.bW.dmg * o.bMul, K_HEAVY, o.bSide, r.x, r.y); else if (oth && oth.isUnit && oth.alive && oth.side !== o.bSide) hurtUnit(oth, o.bW.ud * o.bMul, o.bSide, K_CRUSH); } continue; }
         const d = (dv - (MAT[o.mat].imp || IMP_V0)) * IMP_K * MAT[o.mat].frag * (o.impK || 1);
         if (d > 0) blockHurt(o, Math.min(d, (o.seg ? o.segM : o.hm) * 0.9 + 6), K_CRUSH, o.side === credit ? 2 : credit, r.x, r.y);
       } else if (o.alive) {
@@ -467,6 +469,7 @@ function physStep(dt) {
         } else {
           // 摔下來、被砸到：很痛，但一下最多扣四成血（城塌了、被轟下城，人還在，站起來接著打）
           if (o.thrown) { o.thrown = 0; continue; }          // 被機關巨獸甩出去的：咬那一下已經扣過了，落地不再扣
+          { const oth = k ? r.a : r.b; if (oth && oth.weight) continue; }          // 千斤鐵砣砸到：砸中那一下（ud）已經扣過了，不再照撞擊算一次
           const d = (dv - UIMP_V0) * UIMP_K;
           if (d > 0) hurtUnit(o, Math.min(d, o.hpMax * UNIT_FALL_MAX), o.side === credit ? 2 : credit, K_CRUSH);
         }
@@ -503,7 +506,7 @@ function _rcb(fixture, point, normal, fraction) {
   const o = fixture.getUserData();
   if (o) {
     if (o.isRock) { if (RAY.own && o.side === RAY.side) return -1; }                                // 還沒出城：自己城裡的岩壁也不擋（懸空寺上殿的兵往上打，不會打在頭頂的岩簷上）
-    else if (o.isBlock) { if (RAY.own && (o.side === RAY.side || o.frag || o.st.loose || (o.dom && (o.x0 < MID) === (RAY.side === 0)))) return -1; if (o.stake && o.stake.to === RAY.side) return -1; if (o.wall && o.side === RAY.side) return -1; }          // 工兵架的木牆：自己的砲穿得過去      // 還沒出城：自己的磚、掉進城裡的碎塊和落石、緊貼在城前面那塊石碑都不擋；會砸向自己的那根木樁也不擋自己的砲
+    else if (o.isBlock) { if (o.weight && o.bSide === RAY.side && !o.bHit) return -1; if (RAY.own && (o.side === RAY.side || o.frag || o.st.loose || (o.dom && (o.x0 < MID) === (RAY.side === 0)))) return -1; if (o.stake && o.stake.to === RAY.side) return -1; if (o.wall && o.side === RAY.side) return -1; }          // 工兵架的木牆：自己的砲穿得過去      // 還沒出城：自己的磚、掉進城裡的碎塊和落石、緊貼在城前面那塊石碑都不擋；會砸向自己的那根木樁也不擋自己的砲
     else { if (!RAY.units || o.side === RAY.side || !o.alive) return -1; }
   }
   RAY.hit = o && !o.isRock ? (o.isBlock ? 2 : 3) : 1; RAY.o = o; RAY.x = point.x; RAY.y = point.y; RAY.f = fraction;
@@ -643,6 +646,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
   if (w.tw) spawnTwister(x, y, side, mass);
   if (w.acid) acidSplash(x, y, r, side, mass, hit);
   if (S.ropes.length) ropesBlast(x, y, r, dmg, kind, side, fire);
+  if (S.objs.length) hooksBlast(x, y, r, side);          // 第四篇：鉤索的繩子被炸斷
   if (fire || keg) fuseBlast(x, y, r, fire, keg, side);          // 引信、地窖的火藥庫：火油兵的火、穿過地火著了火的砲彈都點得著
   // 飛在天上的東西（氣球、光球、吊著浮島的氣球、浮島底下的浮空晶石）
   for (const o of S.objs) {

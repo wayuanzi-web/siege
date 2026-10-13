@@ -349,7 +349,8 @@ function killUnit(u, side, how) {
 function unitFire(u, T, w, ax, ay) {
   const dir = T.dir, big = u.def.big ? MUZ_BIG : 1, mx = u.x + dir * 1.3 * big, my = u.y + 2.3 * big;
   if (w.phys) {
-    spawnBoulder(u, T, w, ax * (1 + gauss() * 0.008), ay * (1 + gauss() * 0.008));
+    if (w.box) spawnWeight(u, T, w, ax * (1 + gauss() * 0.008), ay * (1 + gauss() * 0.008));          // 第四篇：千斤鐵砣
+    else spawnBoulder(u, T, w, ax * (1 + gauss() * 0.008), ay * (1 + gauss() * 0.008));
     T.fired += 1; if (u.side === 0) S.stat.fired += 1;
     u.recoil = 1; ev('fire', mx, my, u.side, w.i, u.slot);
     return;
@@ -358,7 +359,8 @@ function unitFire(u, T, w, ax, ay) {
   for (let k = 0; k < n; k++) {
     const a = (n > 1 ? (k - (n - 1) / 2) * 0.085 : 0) + gauss() * 0.01, c = Math.cos(a), s = Math.sin(a), sp = 1 + gauss() * 0.008;
     const vx = (ax * c - ay * s * dir) * sp * (w.spd || 1), vy = (ay * c + ax * s * dir) * sp * (w.spd || 1);          // 狙擊彈：打出去比瞄準的快（spd）
-    spawnShot(u.side, w.i, mx, my, vx, vy, 1, F_IN, 0, 1);
+    const j = spawnShot(u.side, w.i, mx, my, vx, vy, 1, F_IN, 0, 1);
+    if (w.hook && j >= 0) S.shotU.set(SH.id[j], u);          // 鉤爪：記得是誰射的（鉤住了繩子牽在他手上）
   }
   T.fired += n; if (u.side === 0) S.stat.fired += n;
   u.recoil = 1;
@@ -550,7 +552,7 @@ function shotsStep(dt) {
       const o = objs[oi];
       switch (o.t) {
         // 冰鏡（亮面反彈、結霜；背面擋下）、彈簧板（彈回來、加速）、稜鏡（分三發）、雷雲（帶電）
-        case 'mirror': case 'spring': case 'prism': case 'cloud': {
+        case 'mirror': case 'spring': case 'prism': case 'cloud': case 'bmirror': {
           saLoad(i); SA.x = x; SA.y = y; SA.vx = vx; SA.vy = vy; SA.nx = nx; SA.ny = ny;
           const r = ampObj(o);
           if (!r) break;
@@ -558,7 +560,18 @@ function shotsStep(dt) {
           if (r === 3) { SH.vx[i] = vx; SH.vy[i] = vy; prismSplit(i, o); break; }
           if (r === 4) { SH.flag[i] = SA.flag; o.flash = 1; ev('charge', nx, ny, side); break; }
           x = SA.x; y = SA.y; vx = SA.vx; vy = SA.vy; nx = SA.nx; ny = SA.ny; SH.flag[i] = SA.flag; SH.mass[i] = SA.mass; SH.k[i] = SA.k; o.flash = 1;
+          if (o.t === 'bmirror') { mirrorBounce(i, o); ev('mirrorhit', SA.hx, SA.hy, o.side); break; }          // 鏡盾兵的銅鏡：彈回去的算鏡子主人的
           ev(o.t === 'spring' ? 'spring' : 'ping', SA.hx, SA.hy, side, SA.k, r === 5 ? 1 : 0);
+          break;
+        }
+        case 'warp': {
+          // 傳送門（第四篇）：自己這一邊的砲彈穿進入口，從出口出來，一律往下（橫向照舊）
+          if (o.side !== side || !o.on || !(o.oy > 0) || (SH.flag[i] & F_PORT) || !warpEnter(o, x, y, nx, ny)) break;
+          ev('warpin', o.ix, o.iy, side, 0);
+          if (WL[SH.w[i]].hook) S.shotVia.set(SH.id[i], { ix: o.ix, iy: o.iy, ox: o.ox, oy: o.oy });          // 穿過門的鉤爪：繩子也穿過門
+          x = nx = o.ox; y = ny = o.oy; vy = warpVy(o, vy); vx = warpVx(o, vx);
+          SH.flag[i] = (SH.flag[i] | F_PORT) & ~F_IN; o.flash = 1;
+          ev('warpout', o.ox, o.oy, side, 0);
           break;
         }
         case 'portal': {
@@ -832,7 +845,7 @@ function grantBonus(side, kind, x, y) {
   ev('bonus', x, y, side, kind);
 }
 // 飛行物還在動嗎（這一輪還不能結束）
-function flyersBusy() { for (const o of S.objs) if (((o.t === 'balloon' || o.t === 'orb') && (o.st === 'out' || o.st === 'run' || o.st === 'back')) || o.t === 'twister' || o.t === 'deluge' || o.t === 'pour' || (o.t === 'charge' && o.go)) return true; return false; }
+function flyersBusy() { for (const o of S.objs) if (((o.t === 'balloon' || o.t === 'orb') && (o.st === 'out' || o.st === 'run' || o.st === 'back')) || o.t === 'twister' || o.t === 'deluge' || o.t === 'pour' || (o.t === 'charge' && o.go) || (o.t === 'hook' && o.go && o.hp > 0)) return true; return false; }
 function objsStep(dt) {
   const objs = S.objs;
   for (let i = objs.length - 1; i >= 0; i--) {
@@ -868,6 +881,9 @@ function objsStep(dt) {
       case 'deluge': gone = delugeStep(o, dt); break;
       case 'pour': gone = pourStep(o, dt); break;
       case 'twister': gone = twisterStep(o, dt); break;
+      case 'hook': gone = hookStep(o, dt); break;          // 第四篇：鉤索、傳送門、銅鏡
+      case 'warp': gone = warpStep(o, dt); break;
+      case 'bmirror': gone = mirrorStep(o, dt); break;
       case 'lantern': {
         o.age += dt; o.y = o.by0 + Math.sin(o.age * 1.4) * 0.8;
         if (o.hp <= 0) { if (o.by >= 0 && S.state === 'play') grantBonus(o.by, o.kind, o.x, o.y); gone = true; }
@@ -973,6 +989,7 @@ function simFire(side) {
   const lead = volleyLead(T), E0 = lead ? volleyEvent(side, lead, ax, ay) : null, E = E0 ? { ok: E0.ok, x: E0.x, y: E0.y, vx: E0.vx, vy: E0.vy } : null, cv = [0, 0];
   let t0 = 0.05, any = false;
   chargesGo(side);          // 上一輪黏在對方城上的炸藥：這一輪開火時引爆
+  hooksGo(side); mirrorsDown(side);          // 第四篇：上一輪鉤住的收繩；上一輪舉的銅鏡放下（鏡盾兵這一輪再舉）
   for (const u of T.units) {
     u.held = false;
     if (!u.alive || T.mute) continue;                       // mute：測試用，這一邊只瞄不打
@@ -988,6 +1005,7 @@ function simFire(side) {
       t0 += 0.2; any = true;
     } else if (u.def.bal) q.push({ t: t0, u, w: null, act: 'bal' });
     else if (u.def.fix) q.push({ t: t0 + 0.2, u, w: null, act: 'fix' });          // 工兵：修城、拆炸藥、架木牆
+    else if (u.def.mir) q.push({ t: t0 + 0.1, u, w: null, act: 'mirror' });          // 鏡盾兵：舉銅鏡
   }
   if (S.boss && side === 1 && !T.mute) bossVolley(q, t0);
   if (S.beast && side === 1 && !T.mute) beastVolley(q, t0);
@@ -1092,6 +1110,7 @@ function roundEnd() {
   let wait = false;
   mechRoundEnd();
   if (envRoundEnd()) wait = true;          // 第三篇：換潮、暴潮……
+  if (craftRoundEnd()) wait = true;          // 第四篇：鐵砣壓樓板、天秤傾斜
   if (S.round >= 2) for (let s = 0; s < 2; s++) if (!(s === 1 && (S.boss || S.beast)) && (structBar(s) < CRUMBLE_BAR || S.round >= (S.lv.sudden || 10)) && crumble(S.st[s])) wait = true;          // 第一回合不會（不會第一回合就分出勝負）
   if (S.nfrag > FRAG_KEEP) { for (const b of S.blocks) { if (S.nfrag <= FRAG_KEEP) break; if (b.frag && !b.dead) { blockKill(b, 2, K_CRUSH, true); wait = true; } } }
   S.hz = 0;
@@ -1105,6 +1124,7 @@ function roundStart() {
   if (lv.gust || S.gust) gustRound();          // 第十四關：陣風
   if (S.pass) passRound();          // 第十六關：隧道裡沒有風
   if (lv.tornado) tornadoRound();             // 第十四關：龍捲風
+  craftRound();                               // 第二十關：古門換通到哪裡
   for (let s = 0; s < 2; s++) { const T = S.team[s]; T.shield.c = Math.min(T.shield.need, T.shield.c + T.shield.gain + (S.boss ? 6 * coresLeft(s) : 0)); }          // 魔王城：自己城腳的魔晶每一顆讓護罩多充一點
   for (const b of S.blocks) if (b.brit > 0) b.brit--;
   if (S.boss) bossRound();
@@ -1292,6 +1312,7 @@ function simInit(idx, up, seed, diff, opts) {
   envInit();          // 第三篇的環境（潮汐……）
   S.stat = { fired: 0, peak: 0, swarm: 1, cells: 0, kills: 0, gates: 0, lost: 0, chain: 0, amp: 1, hit: 0 };
   physNew();
+  craftWorld();          // 第四篇：天秤的巨樑、天塹的石壁（城要蓋在巨樑上）
   const A = S.team[0] = mkTeam(0), B = S.team[1] = mkTeam(1);
   A.dmg = 1 + 0.08 * (up.dmg || 0); A.hpMul = 1 + 0.09 * (up.hp || 0);
   A.shield.gain = 25 + 4 * (up.shield || 0); A.shield.c = 50 + 10 * (up.shield || 0);
@@ -1313,6 +1334,7 @@ function simInit(idx, up, seed, diff, opts) {
   sB.slots.forEach((sl, k) => { const t = lv.foe.crew[k]; if (t) mkUnit(1, t, sB, sl, B.hpMul); });
   if (S.beast) beastUnits();          // 砲台上的兵
   A.alive = A.units.length; B.alive = B.units.length;
+  craftSetup();          // 第四篇：城蓋在巨樑上、樑上的大石球、古門
   for (const o of S.pivots) pivotBalance(o);          // 天秤：兵都站上去了，秤一下、把配重調到剛好平衡
   pinBalance();                                       // 懸臂樑：量插銷要撐多重
   for (const P of S.plats) platCalib(P);              // 浮島、船：兵都上去了，算氣球要吊多重、船要多少浮力
@@ -1348,6 +1370,7 @@ function simInit(idx, up, seed, diff, opts) {
   for (const u of S.units) { u.body.setTransform({ x: u.hx, y: u.hy + u.bh / 2 }, 0); u.body.setLinearVelocity({ x: 0, y: 0 }); u.body.setAwake(false); }
   for (const P of S.plats) { P.body.setTransform({ x: P.x0, y: P.y0 }, P.a0); P.body.setLinearVelocity({ x: 0, y: 0 }); P.body.setAngularVelocity(0); P.body.setAwake(false); }
   for (const R of S.rotors) { R.body.setTransform({ x: R.x, y: R.y }, 0); R.body.setLinearVelocity({ x: 0, y: 0 }); R.body.setAngularVelocity(0); R.body.setAwake(false); }
+  if (S.saw) S.saw.body.setAwake(false);          // 第十九關：巨樑不轉的時候睡著（醒著的會把站在上面的整片城都叫醒）
   for (const st of S.structs) if (!st.loose) { castleScan(st); for (let i = 0; i < st.n; i++) st.back[i] = st.backTo[i]; }
   supInit(S.st[0]); supInit(S.st[1]);
 }
@@ -1368,13 +1391,14 @@ function simStep(dt) {
           else if (e.act === 'bal') { let has = false; for (const o of S.objs) if (o.t === 'balloon' && o.side === e.u.side) has = true; if (!has && !e.u.held && !(e.u.balR >= S.round - 1)) { spawnBalloon(e.u); e.u.recoil = 1; e.u.balR = S.round; } }          // 隔一回合才放下一顆（不會每一輪都逼對面拿全部的砲去打氣球）
           else if (e.act === 'orb') spawnOrb(e.u);
           else if (e.act === 'fix') engFix(e.u);
+          else if (e.act === 'mirror') mirrorRaise(e.u);
           else if (e.act === 'summon') { const T1 = S.team[1]; if (coresLeft(1) > 0 && T1.units.some((u) => !u.alive && !u.def.big)) { grantBonus(1, 'troop', e.u.x, e.u.y + 6); ev('summon', e.u.x, e.u.y + 4); } }
         }
         if (S.vqi >= q.length && S.phaseT > 0.35) { S.phase = 'resolve'; S.phaseT = 0; S.quietT = 0; }
         break;
       }
       case 'resolve': case 'hazard': {
-        const busy = SH.n > 0 || S.pend.length > 0 || flyersBusy() || envBusy() || ((S.nburn > 0 || ropesBurning() || (S.rotors.length > 0 && rotorBurning())) && S.phaseT < 6);          // 酸液不等它蝕完（下一輪砲擊接著蝕）          // 點著的引信不等它燒完：每一輪（雙方的砲擊、落石）都往下燒一段
+        const busy = SH.n > 0 || S.pend.length > 0 || flyersBusy() || envBusy() || craftBusy() || ((S.nburn > 0 || ropesBurning() || (S.rotors.length > 0 && rotorBurning())) && S.phaseT < 6);          // 酸液不等它蝕完（下一輪砲擊接著蝕）          // 點著的引信不等它燒完：每一輪（雙方的砲擊、落石）都往下燒一段
         if (!busy && worldQuiet()) { if (headClear()) S.quietT = 0; else S.quietT += dt; } else S.quietT = 0;
         // 最多等 9 秒；還在一塊接一塊垮的時候多等一下（等最後一塊垮完再過 1.5 秒），最久 14 秒
         if (S.quietT >= 0.5 || S.phaseT > (S.time - S.chainT < 1.5 ? 14 : 9)) { if (S.phase === 'hazard') { endCheck(true); if (S.state === 'play') roundStart(); } else endTurn(); }
@@ -1395,6 +1419,7 @@ function simStep(dt) {
   objsStep(dt);
   ampStep(dt);
   envStep(dt);
+  craftStep(dt);
   physStep(dt);
   mechStep(dt);
   if (S.phase === 'hazard') rocksVsShields();

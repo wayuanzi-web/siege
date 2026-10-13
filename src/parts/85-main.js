@@ -116,10 +116,10 @@ function uiEvent(t, a, b, c, d, e) {
         const T = S.team[0], myAim = () => S.turn === 0 && S.phase === 'aim';
         // 沒有一個兵開得了火（全被凍住、電暈）：護罩可以解凍；沒有護罩就自動跳過這一輪，不用玩家對著空氣拖一下。
         // 這句最要緊，馬上講（別的話先放掉），這一輪也不講別的訣竅
-        if (!T.units.some((u) => u.alive && (u.w || u.def.fix || u.def.bal) && u.frozen <= 0 && u.stun <= 0)) {          // 工兵、氣球兵沒有砲也算動得了
+        if (!T.units.some((u) => u.alive && (u.w || u.def.fix || u.def.bal || u.def.mir) && u.frozen <= 0 && u.stun <= 0)) {          // 工兵、氣球兵沒有砲也算動得了
           sayFlush();
           if (T.shield.c >= T.shield.need && !T.shield.on) say('兵都動不了：開護罩可以馬上解凍；不開就按「發射」跳過這一輪', 1);
-          else { say('兵都動不了，這一輪只能跳過', 1); later(1900, () => { if (canFire() && !S.team[0].units.some((u) => u.alive && (u.w || u.def.fix || u.def.bal) && u.frozen <= 0 && u.stun <= 0)) fireNow(); }); }
+          else { say('兵都動不了，這一輪只能跳過', 1); later(1900, () => { if (canFire() && !S.team[0].units.some((u) => u.alive && (u.w || u.def.fix || u.def.bal || u.def.mir) && u.frozen <= 0 && u.stun <= 0)) fireNow(); }); }
           break;
         }
         // 第一次玩：一回合教一件事
@@ -181,6 +181,11 @@ function uiEvent(t, a, b, c, d, e) {
     case 'fuse': if (c === 0) once('fz0', '我方的引信著火了！火會一路燒到每一層的火藥桶', 1); else once('fz1', '敵塔的引信點著了：火順著引信一層一層往下炸'); break;
     case 'roll': if (c === 0) once('rl0', '滾石往我方衝過來了！', 1); else once('rl1', '滾石衝下去了！'); break;
     case 'reroll': once('rr', '山坡上又架好一顆新的滾石：木樁打斷了就往那一邊滾'); break;
+    // 第四篇
+    case 'hookin': if (c === 1) once('hk1', '敵軍的鉤爪鉤住了我方的城：他們下一輪開火時會收繩扯過去。打倒那個鉤索手，繩子就鬆了', 1); break;
+    case 'sawtilt': if (c !== 0) once('saw', c > 0 ? '巨樑往我方這頭沉了：我方這頭比較重，樑上的大石球會滾過來撞城。叫秤砣兵把鐵砣丟到敵城上，敵城那頭變重，就扳得回來（打掉敵城的磚反而讓它變輕）' : '巨樑往敵方那頭沉了：敵城那頭比較重，樑上的大石球滾過去撞他們的城'); break;
+    case 'warpopen': if (c === 1) once('wp1', '敵軍的門術師在你頭上開了一道門：他們打進城前的入口，砲彈就從這裡往下砸。打倒門術師，門就關了', 1); else once('wp0', '門開了！之後全隊打進你城前那道入口，砲彈從敵城上空的出口往下砸（打進去越陡，砸得越直）'); break;
+    case 'mirrorhit': if (c === 1) once('mr1', '敵軍的銅鏡把你的砲彈彈回來了：往沒有鏡子的地方打，或先把鏡子打碎（挨幾下重的就碎）'); break;
   }
 }
 

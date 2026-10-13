@@ -83,9 +83,9 @@ function gatePosAt(g, t, out) {
    R.hit: 0 沒中、1 地面（含水面）、2 磚、3 兵、4 氣球／光球／天燈／浮空晶石、5 被擋（對方的符、冰鏡背面、結界、護城罩、黑洞）、6 繩索／鐵鍊（R.rope）；R.port 進了傳送門。
    R.mult：穿過幾倍的符（分成幾發）；R.amp：威力變成幾倍（滾地、打水漂、噴流、彈簧板）；R.fire、R.zap、R.frost：著火、帶電、結霜。
    path：給一個陣列就把每一步的位置記下來（瞄準線照著真的彈道畫：碰到冰鏡、噴流、黑洞會轉彎） */
-const _tr = { hit: 0, x: 0, y: 0, t: 0, mult: 1, gm: 0, o: null, obj: null, lan: null, gate: null, port: false, rope: null, amp: 1, fire: false, zap: false, frost: false, roll: false, ev: false, ex: 0, ey: 0, evx: 0, evy: 0, et: 0 };
+const _tr = { hit: 0, x: 0, y: 0, t: 0, mult: 1, gm: 0, o: null, obj: null, lan: null, gate: null, port: false, warp: false, rope: null, amp: 1, fire: false, zap: false, frost: false, roll: false, ev: false, ex: 0, ey: 0, evx: 0, evy: 0, et: 0 };
 function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
-  const R = _tr; R.hit = 0; R.mult = 1; R.gm = 0; R.o = null; R.obj = null; R.lan = null; R.gate = null; R.port = false; R.rope = null; R.amp = 1; R.fire = false; R.zap = false; R.frost = false; R.roll = false; R.ev = false; R.split = false;
+  const R = _tr; R.hit = 0; R.mult = 1; R.gm = 0; R.o = null; R.obj = null; R.lan = null; R.gate = null; R.port = false; R.warp = false; R.rope = null; R.amp = 1; R.fire = false; R.zap = false; R.frost = false; R.roll = false; R.ev = false; R.split = false;
   const dt = 1 / 30, own = S.st[side], foeT = S.team[1 - side], fst = S.st[1 - side], forces = AMP.jets.length || AMP.holes.length || AMP.vorts.length, gust = S.gust;
   if (wi === undefined) wi = 0;
   const W = WL[wi], gk = W.gk || 1;
@@ -127,7 +127,7 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
       else { R.gate = g; R.x = nx; R.y = ny; return end(5); }
     }
     for (const o of S.objs) {
-      if (o.t === 'mirror' || o.t === 'spring' || o.t === 'prism' || o.t === 'cloud') {
+      if (o.t === 'mirror' || o.t === 'spring' || o.t === 'prism' || o.t === 'cloud' || o.t === 'bmirror') {
         load(); SA.nx = nx; SA.ny = ny;
         const ivx = vx, ivy = vy, r = ampObj(o);
         if (!r) continue;
@@ -136,6 +136,11 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
         if (r === 4) { evt(nx, ny, ivx, ivy); flag = SA.flag; continue; }
         evt(SA.hx, SA.hy, ivx, ivy);
         x = SA.x; y = SA.y; vx = SA.vx; vy = SA.vy; nx = SA.nx; ny = SA.ny; flag = SA.flag; mass = SA.mass; kk = SA.k;
+      } else if (o.t === 'warp') {
+        // 傳送門（第四篇）：穿進入口，從出口往下出來（跟戰局一樣）
+        if (o.side !== side || !o.on || !(o.oy > 0) || (flag & F_PORT) || !warpEnter(o, x, y, nx, ny)) continue;
+        evt(nx, ny, vx, vy); R.warp = true;
+        x = nx = o.ox; y = ny = o.oy; vy = warpVy(o, vy); vx = warpVx(o, vx); flag = (flag | F_PORT) & ~F_IN; inOwn = false;
       } else if (o.t === 'portal') {
         if (o.owner !== side) continue;
         // 傳送門會上下飄：用砲彈飛到那裡時門的位置
@@ -218,7 +223,7 @@ function volleyAim(side, u, ax, ay, E, out) {
 // 輪到自己：列出這一輪想試的打法
 function aiBegin(T) {
   const A = T.ai, side = T.side, dir = T.dir, foeT = S.team[1 - side], fst = S.st[1 - side], wind = S.wind;
-  A.warn = 1; A.st = 1; A.t = A.think * (0.8 + rnd() * 0.4); A.fireAt = S.time + A.t + 0.25; A.cand.length = 0; A.ci = 0; A.best = null; A.bs = 0.004; A.top = []; A.useGate = rnd() < A.gate;
+  A.warn = 1; A.st = 1; A.t = A.think * (0.8 + rnd() * 0.4); A.fireAt = S.time + A.t + 0.25; A.cand.length = 0; A.ci = 0; A.best = null; A.bs = 0.004; A.top = []; A.useGate = rnd() < A.gate; if (S.lv.wall) A.useGate = true;          // 天塹（第二十關）：不走門就打不到對面
   // 連珠集滿了：一輪到自己就先上膛（對方看得到，來得及開護罩），多想一下再打
   if (A.skill > 0 && T.ult.c >= T.ult.need && !T.ult.armed && rnd() < A.skill) { simSkill(side, 'ult'); A.t += 0.7; A.fireAt += 0.7; A.useGate = true; }
   let lead = null, bv = -1;
@@ -245,8 +250,9 @@ function aiBegin(T) {
     for (const b of fst.blocks) { if (b.dead) continue; if (b.mat === M_KEG) { if (!b.fuseKeg) tg.push({ x: b.body.getPosition().x, y: b.body.getPosition().y, w: 1.35 }); } else if (b.inPlace && !b.prop && !b.base && !b.beam) cand.push(b); }          // 接著引信的火藥桶打不爆，不瞄
     if (rnd() < A.sap) for (let k = 0; k < 5 && cand.length; k++) {
       const b = cand[ri(cand.length)]; let w = 0.5;
-      for (const u of foeT.units) if (u.alive && Math.abs(u.x - b.x0) < CS * 2.2 && u.y - b.y0 > -CS * 0.5 && u.y - b.y0 < CS * 2.6) { w = 0.8; break; }
-      tg.push({ x: b.x0, y: b.y0, w });
+      const bx = S.saw ? b.body.getPosition().x : b.x0, by = S.saw ? b.body.getPosition().y : b.y0;          // 天秤（第十九關）：城跟著巨樑歪了，照現在的位置瞄
+      for (const u of foeT.units) if (u.alive && Math.abs(u.x - bx) < CS * 2.2 && u.y - by > -CS * 0.5 && u.y - by < CS * 2.6) { w = 0.8; break; }
+      tg.push({ x: bx, y: by, w });
     }
     // 城樓的承重處：撐著最多東西的那幾塊（柱腳、樓板、牆腳）。打掉了上面整段垮
     const sup = cand.filter((b) => b.wt > 0 && (b.sup || 0) > 0.5).sort((a, b) => (b.sup + b.wt) - (a.sup + a.wt));

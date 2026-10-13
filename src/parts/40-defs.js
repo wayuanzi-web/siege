@@ -83,9 +83,16 @@ const WL = [
   // 第十六關：火車頭的鍋爐炸開（一團滾燙的蒸汽：推得很遠，兵被燙傷）
   { id: 'boiler', dmg: 30, r: 6.2, J: 1050, ud: 24, kind: K_HEAVY },
   // 第十七關：岩壁裡的沼氣被點著（一大團火）：一團火衝進上層那一間（room：同一層左右多遠的人都被燒到）
-  { id: 'gas', dmg: 30, r: 6.8, J: 800, ud: 36, room: 11, kind: K_FIRE }
+  { id: 'gas', dmg: 30, r: 6.8, J: 800, ud: 36, room: 11, kind: K_FIRE },
+  /* ---- 第四篇的新兵器（54-craft） ----
+     hook 鉤爪：打到磚（或兵）不炸，鉤住；自己下一輪開火時收繩，把它往自己這邊扯（F 拉力上限、t 拉多久）
+     weight 千斤鐵砣：一顆真的鐵塊（phys），不會爆；第一下砸到的那一塊吃 dmg，之後一直留在原地壓著（press：每回合結束壓壞底下那一塊多少）
+     warp 門珠：落地炸一小下，在落點上空開一道出口（自己城前開入口）；之後打進入口的砲彈從出口往下砸 */
+  { id: 'hook', n: 1, gap: 0, dmg: 8, r: 0, J: 140, ud: 12, kind: K_PIERCE, hook: { F: 5200, t: 0.9, uv: 15 }, ai: { dmg: 44, r: 1.9, ud: 16 } },
+  { id: 'weight', n: 1, gap: 0, dmg: 46, r: 0, J: 0, ud: 18, kind: K_HEAVY, phys: 1, box: { w: 1.9, h: 1.45 }, den: 5, press: 14 },
+  { id: 'warp', n: 1, gap: 0, dmg: 12, r: 2.4, J: 180, ud: 12, kind: K_BLAST, warp: { up: 13, r: 3.8 }, ai: { dmg: 16, r: 2.4, ud: 12 } }
 ];
-const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; if (w.chain || w.drill || w.stick || w.pierce) w.special = 1; });          // special：打到東西時有自己的打法（51-arms 的 armsHit）
+const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; if (w.chain || w.drill || w.stick || w.pierce || w.hook || w.warp) w.special = 1; });          // special：打到東西時有自己的打法（51-arms 的 armsHit、54-craft 的 craftHit）
 
 /* 兵種。w 用哪種砲彈；flak 防空（每一輪射下幾發飛過來的砲彈）；bal 放轟炸氣球 */
 const UNIT = {
@@ -109,10 +116,16 @@ const UNIT = {
   acid: { name: '酸液兵', w: 'acid', hp: 90, blurb: '酸液沾到的磚一直被蝕，石牆、鐵甲最怕（酸剋石）' },
   sniper: { name: '狙擊手', w: 'snipe', hp: 80, blurb: '又平又快的一發，穿得過一層木牆，專打兵（打中頭是暴擊）' },
   mech: { name: '機械兵', w: 'rocket', hp: 80, mech: 1, blurb: '機關巨獸肚子裡放出來的小機械兵（第十八關）' },          // 不在選兵清單裡
-  eng: { name: '工兵', w: null, hp: 105, fix: 2, blurb: '不攻擊：每一輪修好自己城上兩塊打裂的磚、拆掉黏在城上的炸藥；城都好好的，就在城前架一道木牆' }
+  eng: { name: '工兵', w: null, hp: 105, fix: 2, blurb: '不攻擊：每一輪修好自己城上兩塊打裂的磚、拆掉黏在城上的炸藥；城都好好的，就在城前架一道木牆' },
+  // ---- 第四篇的新兵種（工匠營：銅盔、護目鏡、皮圍裙；craft 畫法） ----
+  hook: { name: '鉤索手', w: 'hook', hp: 100, craft: 1, blurb: '射出鉤爪鉤住一塊磚（或一個兵），你下一輪開火時收繩，把它連上面壓著的東西一起扯過來；繩子被打斷就白鉤了' },
+  weight: { name: '秤砣兵', w: 'weight', hp: 110, craft: 1, blurb: '丟出一顆千斤鐵砣：不會爆，砸穿木樓板以後一直留在城裡壓著，疊兩三顆樓板就撐不住；天秤上壓得對面往下沉' },
+  warp: { name: '門術師', w: 'warp', hp: 85, craft: 1, blurb: '門珠落在哪裡，就在那上空開一道出口、自己城前開一道入口：之後全隊打進入口，砲彈從出口往下砸（打進去的角度越陡，砸得越直）' },
+  mirror: { name: '鏡盾兵', w: null, hp: 115, craft: 1, mir: 1, blurb: '不開火：舉起一面銅鏡擋在頭頂，對方下一輪打過來的砲彈照角度反彈回去；鏡子挨幾下重的就碎' }
 };
-// 十八種兵（魔王不算）：演武場、第三篇選兵用的順序
-const UNIT_LIST = ['rocket', 'bolt', 'bomb', 'fire', 'ice', 'zap', 'flak', 'bal', 'stone', 'chain', 'drill', 'cluster', 'sapper', 'magnet', 'wind', 'acid', 'sniper', 'eng'];
+// 演武場選兵用的順序：第一到三篇的十八種（魔王不算），再接第四篇的新兵
+const UNIT_LIST = ['rocket', 'bolt', 'bomb', 'fire', 'ice', 'zap', 'flak', 'bal', 'stone', 'chain', 'drill', 'cluster', 'sapper', 'magnet', 'wind', 'acid', 'sniper', 'eng', 'hook', 'weight', 'warp', 'mirror'];
+const UNIT_OLD = 18;          // 前三篇的兵有幾種（演武場的軍牌上，後面的標「新」）
 Object.keys(UNIT).forEach((k) => { UNIT[k].id = k; });
 
 
@@ -468,6 +481,33 @@ const CASTLES = {
     '  _____S4S ',
     '  S5.6SSSS ',
     '###########'] },
+  /* 第十九關：天秤孤峰。兩座城蓋在同一根巨樑的兩頭（巨樑架在中間的尖峰上，回合結束照兩邊的重量傾斜），分三段：
+     最後面是配重塔：中間兩層鐵塊（J，很重）壓著，底下一根鐵柱；塔一塌，鐵塊掉下深谷，這一頭一下子變輕翹起來。
+     中間是石砌的主廳；最前面是架在兩根高石柱上的望樓（上面兩層是木頭的；樑上的大石球滾過來先撞它的腳）。巨樑會動，所以不畫城基 */
+  SCALE: { skin: 'scale', gf: 2, nofound: 1, map: [
+    '^^^      ^^^',
+    '|1|      |5|',
+    '___ ^^^^ ===',
+    'JJJ S..S |.|',
+    'JJJ S.3S |6|',
+    '___ ____ ___',
+    'S2S |..| H H',
+    '___ |.4| H H',
+    'SJS ==== H H',
+    'SJS S..S S S',
+    '############'] },
+  /* 第二十關：鏡門天塹。中間一道通天的石壁，砲彈只能從古門、門術師的門穿過去，從對面的頭頂往下砸：
+     所以城頂是一層一層的厚頂。後面的主樓：屋瓦、石板（第一層）、上層兩個兵、鐵樑（第二層）、下層兩個兵、石板、一樓；
+     前面的箭樓：屋瓦、石板、兩層各一個兵 */
+  GORGE: { skin: 'gorge', gf: 2, map: [
+    '^^^^^ ^^^',
+    '===== ===',
+    'S1.2S |5|',
+    '===== ___',
+    'S3.4S S6S',
+    '_____ ___',
+    'S...S S.S',
+    '#########'] },
   // 第十七關：中間的礦脈（一塊一塊的岩石疊成小山，打得碎：越打越低，上層慢慢露出來）
   SEAM: { skin: 'mine', map: ['  SS  ', ' SSSS ', 'AAAAAA'] },          // 最底下一列是打不碎的岩心：礦脈打得再低，兩邊的一樓也平射不到對方
   // 第七關的石碑（一塊一個，三種高度）：兩排，各往一座城那邊一塊比一塊高

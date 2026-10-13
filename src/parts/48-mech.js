@@ -413,7 +413,7 @@ function stressStep(dt, act) {
 /* ---------- 投石兵的大石頭 ---------- */
 function spawnBoulder(u, T, w, ax, ay) {
   const dir = T.dir, mx = u.x + dir * 1.5, my = u.y + 2.7;
-  let live = 0, old = null; for (const b of S.rubble.blocks) if (!b.dead && b.boulder) { live++; if (!old) old = b; }
+  let live = 0, old = null; for (const b of S.rubble.blocks) if (!b.dead && b.boulder && !b.weight) { live++; if (!old) old = b; }
   if (live >= 6 && old) blockKill(old, 2, K_CRUSH, true);
   const b = mkBlock(S.rubble, { mat: M_ROCK, kind: 'ball', x: mx, y: my, r: w.rad, awake: true, den: w.den });
   b.inPlace = false; b.boulder = 1; b.bSide = u.side; b.bFly = 1; b.bIn = 1; b.bHit = 0; b.bMul = T.dmg * S.rage; b.bW = w; b.hp = b.hm = 400;
@@ -433,7 +433,7 @@ function boulderStep(dt) {
     if (AMP.vorts.length) { SA.x = p.x; SA.y = p.y; SA.vx = v.x; SA.vy = v.y; for (const o of AMP.vorts) vortexForce(o, dt); if (SA.vx !== v.x || SA.vy !== v.y) body.setLinearVelocity({ x: SA.vx, y: SA.vy }); }          // 龍捲風（第十四關）：跟砲彈一樣被往上捲（瞄準線也是這樣算）
     const o = 1 - b.bSide;
     if (S.team[o].shield.on && inBubble(S.st[o], p.x, p.y)) { ev('shieldhit', p.x, p.y, o); ev('rockstop', p.x, p.y, o); blockKill(b, 2, K_CRUSH, true); continue; }
-    if (b.bHit || (v.x * v.x + v.y * v.y < 30 && !b.bIn)) { b.bFly = 0; body.setBullet(false); body.setAngularDamping(1.2); }
+    if (b.bHit || (!b.weight && v.x * v.x + v.y * v.y < 30 && !b.bIn)) { b.bFly = 0; body.setBullet(false); body.setAngularDamping(1.2); }          // 千斤鐵砣：吊高丟、飛到最高點也還在飛（砸到東西才算落地）
   }
 }
 
@@ -520,7 +520,7 @@ function mechRoundEnd() {
     if (!inC) blockKill(b, 2, K_CRUSH, true);
   }
   for (const b of S.rubble.blocks) {
-    if (b.dead || !b.boulder) continue;
+    if (b.dead || !b.boulder || b.weight) continue;          // 千斤鐵砣：一直留著（天秤上壓著那一頭）
     const p = b.body.getPosition(); let inC = false;
     for (let s = 0; s < 2; s++) { const st = S.st[s]; if (p.x > st.x0 - 1 && p.x < st.x1 + 1) inC = true; }
     if (!inC) blockKill(b, 2, K_CRUSH, true);

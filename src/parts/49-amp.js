@@ -139,6 +139,15 @@ function ampObj(o) {
       return 1;
     }
     case 'prism': return (SA.flag & F_SPLIT) || SA.side > 1 || !circIn(o) ? 0 : 3;
+    case 'bmirror': {
+      // 鏡盾兵的銅鏡（第四篇）：只彈對方的砲彈（自己的穿過去）；從底下打到鏡背的擋下來
+      if (SA.side === o.side || SA.side > 1 || o.hp <= 0) return 0;
+      if (Math.abs(SA.nx - o.x) > o.len + 4 && Math.abs(SA.x - o.x) > o.len + 4) return 0;
+      const r = segBounce(o, 0); if (!r) return 0;
+      if (r === 2) return 2;
+      SA.flag = (SA.flag | F_WILD | F_PORT) & ~F_IN;
+      return 6;
+    }
     case 'cloud': {
       if ((SA.flag & F_ZAPC) || SA.side > 1 || !cloudIn(o)) return 0;
       SA.flag |= F_ZAPC; return 4;
@@ -203,6 +212,7 @@ function ampAims(side) {
     else if (o.t === 'spring' && (o.side === undefined || o.side === side)) out.push({ x: o.x, y: o.y, amp: 1 });
     else if (o.t === 'prism') { out.push({ x: o.x, y: o.y, amp: 1 }); out.push({ x: o.x - dir * o.r * 0.5, y: o.y + o.r * 0.5, amp: 1 }); }
     else if (o.t === 'cloud') out.push({ x: o.x, y: o.y, amp: 1 });
+    else if (o.t === 'warp' && o.side === side && o.on && o.oy > 0 && o.dest !== 'self') { out.push({ x: o.ix, y: o.iy, amp: 1 }); out.push({ x: o.ix - dir * o.r * 0.4, y: o.iy + o.r * 0.45, amp: 1 }); out.push({ x: o.ix + dir * o.r * 0.2, y: o.iy - o.r * 0.5, amp: 1 }); }          // 傳送門的入口（第四篇）
     else if (o.t === 'jet' && o.U * dir > 0) { const xe = dir > 0 ? o.x0 + 3 : o.x1 - 3; out.push({ x: xe, y: o.y, amp: 1 }); out.push({ x: xe + dir * 6, y: o.y, amp: 1 }); }
   }
   return out;

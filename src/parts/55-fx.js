@@ -106,7 +106,7 @@ function fxOn(t, a, b, c, d, e, f) {
       const w = WL[d], dir = c === 0 ? 1 : -1;
       part(P_FLASH, a + dir * 0.6, b, 0, 0, 0.09, w.id === 'bomb' ? 3.6 : w.id === 'bolt' ? 1.2 : 2.2, w.id === 'ice' ? C_ICE : w.id === 'zap' ? C_YELLOW : w.id === 'dark' ? C_PINK : C_WHITEHOT);
       if (w.id === 'bomb') { burst(P_SMOKE, a + dir, b, 4, 9, 0.6, 1.8, C_GRAY); shake(0.12); }
-      sfx(w.id === 'bolt' ? 'bolt' : w.id === 'bomb' || w.id === 'cluster' ? 'cannon' : w.id === 'fire' || w.id === 'chain' || w.id === 'sticky' || w.id === 'acid' ? 'whoosh' : w.id === 'ice' ? 'frost' : w.id === 'zap' || w.id === 'magnet' ? 'charge' : w.id === 'dark' ? 'dark' : w.id === 'drill' ? 'drill' : w.id === 'snipe' ? 'snipe' : w.id === 'wind' ? 'gust' : 'rocket', c);
+      sfx(w.id === 'bolt' ? 'bolt' : w.id === 'bomb' || w.id === 'cluster' ? 'cannon' : w.id === 'fire' || w.id === 'chain' || w.id === 'sticky' || w.id === 'acid' ? 'whoosh' : w.id === 'ice' ? 'frost' : w.id === 'zap' || w.id === 'magnet' ? 'charge' : w.id === 'dark' ? 'dark' : w.id === 'drill' ? 'drill' : w.id === 'snipe' ? 'snipe' : w.id === 'wind' ? 'gust' : w.id === 'hook' ? 'zip' : w.id === 'weight' ? 'heave' : w.id === 'warp' ? 'warp' : 'rocket', c);
       break;
     }
     case 'boom': {
@@ -480,6 +480,22 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'fix': burst(P_SPARK, a, b, 6, 10, 0.5, 0.45, C_GREEN, 4); if (thr('fix' + d, 500)) { pop(a, b + 2.4, '修好了', '#b8ff9a', 2.4, 0.9); sfx('fix'); } break;
     case 'wall': burst(P_DUST, a, b - 2, 6, 8, 0.6, 2, C_SAND, 3); pop(a, b + 3.2, '架起木牆', '#ffe0a8', 2.6, 1.0); sfx('fix'); break;
     case 'wind': sfx('gust'); break;
+    // 第四篇：鉤索、鐵砣、傳送門、銅鏡、天秤
+    case 'hookin': burst(P_SPARK, a, b, 6, 14, 0.3, 0.45, C_WHITEHOT); if (thr('hookin', 200)) { sfx('clang'); if (S.state === 'play') pop(a, b + 2.6, c === 0 ? '鉤住了！' : '被鉤住了', c === 0 ? '#ffe9a8' : '#ffb0a0', 2.6, 1.0); } break;
+    case 'hookreel': ring(a, b, 0.5, 3.2, 0.3, '#ffe9a8', 0.4); sfx('reel'); break;
+    case 'hookyank': burst(P_DUST, a, b, 8, 12, 0.6, 1.6, C_SAND, 3); burst(P_DEBRIS, a, b, 4, 12, 0.5, 0.4, C_TAN, 4); if (thr('yank', 250)) { pop(a, b + 3, d ? '扯出城了！' : '扯！', '#ffe0a8', 3.0, 1.0); sfx('chainsnap'); shake(0.3); } break;
+    case 'hookcut': if (!d) { burst(P_DEBRIS, a, b, 4, 10, 0.4, 0.35, C_TAN, 3); if (thr('hookcut', 300)) { sfx('snap'); if (S.state === 'play') pop(a, b + 2.4, '繩子斷了', '#e0d0c0', 2.4, 0.9); } } break;
+    case 'warpopen': ring(a, b, 0.5, 5, 0.45, c === 0 ? '#c8b0ff' : '#ffa0c8', 0.6); ring(d, e, 0.5, 4, 0.45, c === 0 ? '#c8b0ff' : '#ffa0c8', 0.6); burst(P_SPARK, a, b, 12, 16, 0.5, 0.5, c === 0 ? C_PURPLE : C_PINK); sfx('warp'); if (S.state === 'play') pop(a, b + 3, c === 0 ? '門開了' : '敵軍的門開在頭上', c === 0 ? '#e0d0ff' : '#ffb0c8', 2.8, 1.2); break;
+    case 'warpin': case 'warpout': burst(P_SPARK, a, b, 3, 12, 0.3, 0.45, c === 0 ? C_PURPLE : c === 1 ? C_PINK : C_GOLD); if (t === 'warpout' && thr('warp', 160)) sfx('warp'); break;
+    case 'warpclose': ring(a, b, 4, 0.5, 0.4, '#e0d0ff', 0.5); if (S.state === 'play') pop(a, b + 2, '門關了', '#e0d0ff', 2.4, 1.0); break;
+    case 'warpfail': if (c === 0 && thr('warpfail', 2000) && S.state === 'play') pop(a, b + 2.6, '門珠要落在對面才開得了門', '#e0d0ff', 2.2, 1.3); break;
+    case 'mirrorup': ring(a, b, 0.5, 3.6, 0.3, '#ffe08a', 0.4); if (thr('mirrorup', 300)) sfx('mirror'); break;
+    case 'mirrorhit': part(P_FLASH, a, b, 0, 0, 0.12, 2.4, C_GOLD); burst(P_SPARK, a, b, 5, 16, 0.3, 0.45, C_GOLD); if (thr('mirrorhit', 160)) sfx('mirror'); if (thr('mirrorpop', 900) && S.state === 'play') pop(a, b + 2.4, '彈回去了！', '#ffe9a8', 2.6, 0.9); break;
+    case 'mirrorbreak': burst(P_SHARD, a, b, 14, 22, 0.8, 0.55, C_GOLD, 6); sfx('shatter'); if (S.state === 'play') pop(a, b + 2.4, '銅鏡碎了', '#ffe0a8', 2.6, 1.1); break;
+    case 'weightpress': burst(P_DUST, a, b, 3 + Math.min(4, c), 6, 0.6, 1.4, C_SAND, 2); if (thr('press', 600)) { sfx('creak'); if (S.state === 'play' && c >= 2) pop(a, b + 2.6, '壓得嘎吱響', '#e8d8c0', 2.4, 1.0); } break;
+    case 'sawtilt': sfx('groan'); shake(0.4); if (S.state === 'play') pop(MID, 30, c === 0 ? '天秤回正' : (c > 0 ? '天秤往我方沉' : '天秤往敵方沉') + '（' + Math.abs(d) + '°）', c > 0 ? '#ffb0a0' : c < 0 ? '#bfe0ff' : '#ffffff', 3.0, 1.6); break;
+    case 'sawroll': if (thr('sawroll', 1500)) { sfx('rumble'); if (S.state === 'play') pop(a, b + 3, '石球滾過去了！', '#e8e0d0', 2.6, 1.0); } break;
+    case 'archshift': if (S.state === 'play' && thr('arch', 800)) sfx('warp'); break;
   }
   if (typeof uiEvent === 'function') uiEvent(t, a, b, c, d, e, f);
 }

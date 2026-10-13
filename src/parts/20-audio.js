@@ -51,6 +51,12 @@ function sfx(name, arg) {
       case 'mag': if (gap('mag', 200)) return; tone(110, 0.5, 'sawtooth', 0.06, 220, 0, null, 0.05); tone(165, 0.5, 'square', 0.03, 330, 0, null, 0.05); break;
       case 'crit': [88, 95].forEach((n, i) => tone(NOTE(n), 0.16, 'triangle', 0.09, 0, i * 0.05)); break;
       case 'fix': if (gap('fix', 160)) return; for (let i = 0; i < 2; i++) { tone(900 + r * 200, 0.06, 'square', 0.04, 600, i * 0.11); noise(0.04, 0.06, 'bandpass', 2400, 0, 2, i * 0.11); } break;
+      // 第四篇
+      case 'zip': if (gap('zip', 110)) return; noise(0.2, 0.12, 'bandpass', 1600, 4200, 1.4); tone(520, 0.12, 'square', 0.03, 1300); break;
+      case 'heave': if (gap('heave', 140)) return; tone(96, 0.3, 'sine', 0.32, 48); noise(0.24, 0.14, 'lowpass', 520, 120, 1); break;
+      case 'warp': if (gap('warp', 90)) return; tone(300, 0.36, 'sine', 0.06, 1200, 0, null, 0.04); tone(450, 0.3, 'triangle', 0.035, 1800, 0.04); break;
+      case 'mirror': if (gap('mirror', 70)) return; tone(2600 + r * 500, 0.24, 'sine', 0.05, 1900); tone(3900, 0.16, 'sine', 0.025); break;
+      case 'reel': if (gap('reel', 300)) return; noise(0.6, 0.1, 'bandpass', 900, 2600, 2); tone(200, 0.5, 'sawtooth', 0.035, 330, 0, null, 0.05); break;
       case 'stick': if (gap('stick', 120)) return; noise(0.12, 0.12, 'lowpass', 700, 200, 1.5); tone(220, 0.08, 'sine', 0.06, 140); break;
       // 命中
       case 'tick': if (gap('tick', 45)) return; noise(0.03, 0.06, 'bandpass', 2200 + r * 1600, 0, 2); break;
@@ -163,6 +169,9 @@ const MUS = [
   { sc: [64, 66, 68, 71, 73], bpm: 92, lead: [4, 3, -1, 2, -1, 3, -1, -1, 1, 2, -1, 0, -1, 1, -1, -1, 4, 3, -1, 2, -1, 4, -1, -1, 3, -1, 2, -1, 1, -1, -1, -1], drum: 2, wave: 'sine' },         // 琉璃宮：月夜
   { sc: [57, 58, 62, 64, 65], bpm: 100, lead: [2, -1, 3, 4, -1, 3, 2, -1, 0, -1, 1, -1, 2, -1, -1, -1, 4, -1, 3, 2, -1, 1, 2, -1, 3, -1, 2, 1, 0, -1, -1, -1], drum: 0, wave: 'triangle' }      // 五重塔：秋寺
 ];
+// 第四篇
+MUS[18] = { sc: [62, 64, 67, 69, 74], bpm: 96, lead: [0, -1, 2, -1, 4, -1, -1, 3, -1, 2, -1, -1, 1, -1, 0, -1, 2, -1, 4, -1, 3, -1, -1, 4, -1, 2, -1, 1, 0, -1, -1, -1], drum: 2, wave: 'triangle' };       // 天秤孤峰：高山、風
+MUS[19] = { sc: [55, 56, 59, 60, 63], bpm: 102, lead: [0, -1, 1, -1, 2, 1, 0, -1, 3, -1, 2, -1, 4, 3, 2, -1, 0, -1, 1, 2, -1, 3, -1, -1, 4, -1, 3, 2, 1, -1, 0, -1], drum: 1, wave: 'sawtooth' };         // 鏡門天塹：黃昏峽谷、古紋
 const MUS_HOME = { sc: [57, 60, 62, 64, 67], bpm: 84, lead: [0, -1, -1, 2, -1, -1, 3, -1, 2, -1, -1, 4, -1, 3, -1, -1, 2, -1, -1, 0, -1, 1, -1, -1, 2, -1, 3, -1, -1, 2, -1, -1], drum: 2, wave: 'triangle' };   // 主畫面
 function musStart(theme) { musStop(); if (!AU.ctx) return; AU.mus = { th: theme === 'home' ? MUS_HOME : MUS[theme] || MUS[0], step: 0, next: AU.ctx.currentTime + 0.1, heat: 0 }; }
 function musStop() { AU.mus = null; }
