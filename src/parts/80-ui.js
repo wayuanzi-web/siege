@@ -156,6 +156,7 @@ function homeRender() {
     onTap(b, () => { sfx('click'); if (UI.prac) return; UI.prac = true; homeRender(); homeDemo(); const nb = $('lvls').lastElementChild; if (nb) nb.focus({ preventScroll: true }); });
     box.appendChild(b);
   }
+  box.classList.toggle('dense', box.children.length > 6);          // 第四篇六關都做好了，加上演武場一共七排：每一排矮一點才塞得下
   if (UI.prac) { pracRender(); return; }
   const lv = LEVELS[UI.sel], locked = UI.sel >= SV.open;
   $('liName').textContent = lv.name; $('liTag').textContent = lv.tag;
@@ -294,11 +295,13 @@ const LOSE_TIPS_LV = [
   ['整座峰頂是一根架在孤峰上的巨樑：每回合結束哪一頭比較重，就往那一頭歪下去一點。把千斤鐵砣丟到敵城那一頭，敵城那一頭越來越重，城跟著斜。', '鉤索手的鉤爪鉤住敵城的磚，下一輪開火前一收繩，整塊扯下來；炸到繩子中段會斷，鉤在高樓的外牆上最好扯。', '樑上的大石球會跟著傾斜滾：滾得快的時候撞到誰都很痛，把它滾向敵城那一頭。'],
   ['石壁通到天上，只能走古門：門上寫著這一回合通到哪裡（敵城前樓、主樓，或是你自己頭上）。通回自己頭上的那一回合別打進門。', '門術師的門珠落在敵城那一半，就在那上空開一道一直都在的門：通回自己頭上的回合改打這道門。', '敵軍的鏡盾兵會把砸在銅鏡上的砲彈彈回來：鏡子挨幾下重的才碎。千斤鐵砣太重，銅鏡彈不開：鏡子底下就丟鐵砣。'],
   ['古藤綁著的磚不會一塊一塊掉：先用迴旋斧砍斷一段古藤（砍中哪一塊，綁在那塊上的全斷），同一輪再把那一段打下來；隔一回合古藤就長回來了。', '火燒斷的古藤不會再長：帶火的砲彈、燒起來的木頭都燒得斷。', '敵軍種在你城上的藤，第三次長的時候會把那一塊勒碎：炸它、砍它，或先打倒敵軍的種藤師。'],
-  ['流沙每回合都會把城往下拉：最底下那層的兵最先被埋、不能開火，能打的時候趕快打。', '地道兵的鑽地彈不用打準：落在地上就自己往敵城城腳挖，下一輪從底下炸開，還讓敵城陷得更快。', '敵軍的地道（地上一道隆起的土）還沒挖到你城底下之前，炸在它上面就塌了；鼓樁也打得掉。']
+  ['流沙每回合都會把城往下拉：最底下那層的兵最先被埋、不能開火，能打的時候趕快打。', '地道兵的鑽地彈不用打準：落在地上就自己往敵城城腳挖，下一輪從底下炸開，還讓敵城陷得更快。', '敵軍的地道（地上一道隆起的土）還沒挖到你城底下之前，炸在它上面就塌了；鼓樁也打得掉。'],
+  ['黑夜裡看不見的地方瞄不準：先讓照明弓手把敵寨照亮（照明箭亮到下一回合結束），再照著亮的地方打。', '你寨子裡的燈籠會照亮你自己（敵軍看得到你）；敵寨的燈還亮著的時候，趁看得到趕快打，燈滅了就只能靠照明箭。', '滑翔奇兵的滑翔翼會自己轉向最亮的地方：先射一支照明箭，滑翔翼就跟著撲過去。'],
+  ['天空要塞底下四顆浮空晶石：同一邊碎兩顆，要塞就歪得很兇，上面的東西一路滑下去；全碎了整座掉進雲海。', '主砲充能的那一回合開護罩；打倒最上面的要塞艦長，主砲就停了。', '時砂術士讓你這一輪的砲擊下一輪再打一次：瞄準晶石的那一輪最值得。反重力把磚浮起來就不算城防，下一輪再砸下去。']
 ];
 function showResult(won, st) {
   const prac = !!(S.lv && S.lv.practice);
-  $('resTitle').textContent = won ? (!prac && LEVELS[st.idx] && LEVELS[st.idx].boss ? '魔王伏誅' : !prac && LEVELS[st.idx] && LEVELS[st.idx].beast ? '巨獸倒下' : '敵城攻破') : '城樓失守';
+  $('resTitle').textContent = won ? (!prac && LEVELS[st.idx] && LEVELS[st.idx].boss ? '魔王伏誅' : !prac && LEVELS[st.idx] && LEVELS[st.idx].beast ? '巨獸倒下' : !prac && LEVELS[st.idx] && LEVELS[st.idx].aerie ? '天空要塞墜落' : '敵城攻破') : '城樓失守';
   $('resTitle').className = won ? '' : 'lose';
   $('resSub').textContent = prac ? S.lv.name + '（試打，不算星星）' : '第' + numZh(st.idx + 1) + '關 ' + LEVELS[st.idx].name;
   const stars = $('resStars'); stars.hidden = !won || prac;
@@ -344,7 +347,7 @@ function hudBuild() {
   // 魔王城：城防條上標出換階段的位置
   const hb = $('hpB'); hb.querySelectorAll('.tick').forEach((e) => e.remove());
   const bossDef = S.lv.boss || S.lv.beast; if (bossDef) for (const p of [bossDef.p2, bossDef.p3]) { const t = document.createElement('span'); t.className = 'tick'; t.style.right = (p * 100) + '%'; hb.appendChild(t); }          // 魔王、機關巨獸：城防條上標出換階段的位置
-  $('foeLbl').textContent = S.lv.boss ? '魔王' : S.lv.beast ? '機關巨獸' : '敵城';
+  $('foeLbl').textContent = S.lv.boss ? '魔王' : S.lv.beast ? '機關巨獸' : S.lv.aerie ? '天空要塞' : '敵城';
   $('windBox').hidden = !S.lv.wind; $('gustTxt').hidden = true; $('hud').classList.remove('gusty');
   HUD.a = HUD.b = -1; HUD.ult = HUD.sh = -1; HUD.wind = 99; HUD.deg = HUD.pow = -1; HUD.mile = 0; HUD.turn = ''; HUD.round = -1; HUD.fire = -1; HUD.boost = null;
   $('turnChip').hidden = true;                                       // 上一局留下來的「輪到你」不能帶進新的一局
@@ -384,8 +387,8 @@ function hudUpdate() {
     }
   }
   const fk = mine ? 1 : 0; if (fk !== HUD.fire) { HUD.fire = fk; $('btnFire').classList.toggle('ready', !!mine); $('btnFire').classList.toggle('btn-gold', !!mine); }
-  const sawK = S.saw ? Math.round(sawAngle() * 180 / Math.PI) : 0;          // 天秤歪的角度變了也要重寫（回合結束的時候在轉）
-  if (S.round !== HUD.round || sawK !== HUD.sawK) { HUD.round = S.round; HUD.sawK = sawK; $('roundTxt').textContent = S.round > 0 ? (S.lv.tide || S.lv.pass || S.saw || S.lv.arches || S.sand ? '第' + S.round + '回合' : '第 ' + S.round + ' 回合') + (S.lv.tide ? '・' + TIDE_NAME[tideNow()] : S.pass && S.pass.kind === 'tunnel' ? '・隧道' : S.saw ? '・' + sawTxt() : S.lv.arches ? '・古門通往' + ARCH_NAME[archNext(S.round)] : S.sand ? '・陷沙 我' + sandDepth(0).toFixed(1) + '／敵' + sandDepth(1).toFixed(1) + '公尺' : '') : ''; }
+  const sawK = S.saw ? Math.round(sawAngle() * 180 / Math.PI) : S.aerie ? aerieLifts() * 2 + (S.aerie.charge ? 1 : 0) : S.sand ? Math.round((sandDepth(0) + sandDepth(1) * 100) * 10) : 0;          // 天秤歪的角度、要塞的晶石和主砲、流沙陷的深度變了也要重寫
+  if (S.round !== HUD.round || sawK !== HUD.sawK) { HUD.round = S.round; HUD.sawK = sawK; $('roundTxt').textContent = S.round > 0 ? (S.lv.tide || S.lv.pass || S.saw || S.lv.arches || S.sand || S.aerie || S.lv.night ? '第' + S.round + '回合' : '第 ' + S.round + ' 回合') + (S.lv.tide ? '・' + TIDE_NAME[tideNow()] : S.pass && S.pass.kind === 'tunnel' ? '・隧道' : S.saw ? '・' + sawTxt() : S.lv.arches ? '・古門通往' + ARCH_NAME[archNext(S.round)] : S.sand ? '・陷沙 我' + sandDepth(0).toFixed(1) + '／敵' + sandDepth(1).toFixed(1) + '公尺' : S.aerie ? '・浮空晶石 ' + aerieLifts() + '／4' + (S.aerie.charge ? '・主砲充能' : '') : S.lv.night ? '・無月' : '') : ''; }
   if ((HUD.n & 3) !== 0) return;
   for (let sd = 0; sd < 2; sd++) for (const k of HUD.crew[sd]) { const st = !k.u.alive ? 'dead' : k.u.frozen > 0 ? 'frozen' : k.u.stun > 0 ? 'stun' : ''; if (st !== k.st) { k.st = st; k.el.className = 'cu' + (st ? ' ' + st : ''); } }
   const T = S.team[0], bu = $('btnUlt'), bs = $('btnShield');

@@ -1406,6 +1406,7 @@ function aimDots(c, mx, my, vx, vy, t0, t1, tMax, r0, r1, box, inside) {
   for (let tt = t0; tt <= t1; tt += 0.065) {
     const x = mx + vx * tt + 0.5 * w * tt * (tt + STEP), y = my + vy * tt - 0.5 * GRAV * tt * (tt + STEP);
     if (box && (x > box.x0 - 1 && x < box.x1 + 1.2 && y < box.y1 + 2.5) !== !!inside) continue;
+    if (S.lv.night && !nightSeen(0, x, y)) continue;          // 黑夜：看不見的地方虛線畫不出來
     const px = X(x), py = Y(y), r = Math.max(1.3, s * lerp(r0, r1, tt / tMax));
     c.moveTo(px + r, py); c.arc(px, py, r, 0, TAU); n++;
   }
@@ -1425,6 +1426,7 @@ function pathDots(c, P, mx, my, t0, t1, tMax, r0, r1, box, inside) {
   for (let tt = t0; tt <= t1; tt += 0.065) {
     const q = pathAt(P, mx, my, tt), x = q[0], y = q[1];
     if (box && (x > box.x0 - 1 && x < box.x1 + 1.2 && y < box.y1 + 2.5) !== !!inside) continue;
+    if (S.lv.night && !nightSeen(0, x, y)) continue;          // 黑夜：看不見的地方虛線畫不出來
     const px = X(x), py = Y(y), r = Math.max(1.3, s * lerp(r0, r1, tt / tMax));
     c.moveTo(px + r, py); c.arc(px, py, r, 0, TAU); n++;
   }
@@ -1505,6 +1507,7 @@ function renderFrame(dt, rdt) {
   drawFuses(c, t);
   drawRopes(c, t);
   drawWildMid(c, t);          // 第四篇第二批：古藤、藤種、鼓樁
+  drawDuskMid(c, t);          // 第四篇第三批：燈籠、照明箭、反重力、主砲充能
   if (S.rotors.length) drawRotors(c, t);
   drawGates(c, t);
   drawUnits(c, t);
@@ -1519,6 +1522,7 @@ function renderFrame(dt, rdt) {
   drawBellGauge(c, t);
   drawShots(c);
   drawShotFx(c);
+  drawNight(c, t);          // 第二十三關：黑夜（爆炸、火花畫在黑夜上面：一炸就看得到）
   fxDraw(c);
   drawShields(c, t, rdt);
   drawBossUI(c, t);

@@ -154,7 +154,7 @@ function uiEvent(t, a, b, c, d, e) {
     case 'rockstop': if (c === 0) once('rstop', '護罩把落石擋下來了'); break;
     case 'sudden': banner('決戰時刻', 'red'); later(1900, () => say('拖太久了，雙方的砲火越來越猛', 1)); break;
     case 'flagfight': if (c === 1) { banner('帥旗死守', 'gold', '敵城只剩一樓'); later(1700, () => say('敵城塌到只剩一樓！血最多的兵扛起了帥旗（頭上有金光）：打倒他就破城；再兩輪他還站著，殘兵就投降')); } else { banner('死守帥旗', 'red', '我方城樓只剩一樓'); later(1700, () => say('我方城樓塌了！血最多的兵扛起帥旗死守：撐住，趁這兩輪把敵城也打垮', 1)); } break;
-    case 'end': sayClear(); banner(c === 1 ? (S.lv.boss ? '魔王伏誅' : S.lv.beast ? '巨獸倒下' : '敵城攻破') : '城樓失守', c === 1 ? 'gold' : 'red', d === 3 ? (c === 1 ? '久攻不下：敵城塌得比較多' : '久攻不下：我方城樓塌得比較多') : d === 4 ? (c === 1 ? '敵軍殘兵舉白旗投降' : '我軍殘兵撐不住，投降了') : d === 2 ? (c === 1 ? '扛旗的兵倒下，帥旗落地' : '我方扛旗的兵倒下了') : d ? (c === 1 ? '守軍全滅' : '我軍全滅') : ''); $('hint').hidden = true; break;
+    case 'end': sayClear(); banner(c === 1 ? (S.lv.boss ? '魔王伏誅' : S.lv.beast ? '巨獸倒下' : S.lv.aerie ? '天空要塞墜落' : '敵城攻破') : '城樓失守', c === 1 ? 'gold' : 'red', d === 3 ? (c === 1 ? '久攻不下：敵城塌得比較多' : '久攻不下：我方城樓塌得比較多') : d === 4 ? (c === 1 ? '敵軍殘兵舉白旗投降' : '我軍殘兵撐不住，投降了') : d === 2 ? (c === 1 ? '扛旗的兵倒下，帥旗落地' : '我方扛旗的兵倒下了') : d ? (c === 1 ? '守軍全滅' : '我軍全滅') : ''); $('hint').hidden = true; break;
     case 'gate': if (e === 0 && G.tut >= 1 && G.tut <= 3 && !G.said.gt) { G.said.gt = 1; say('就是這樣！穿過倍增符，砲彈變多了'); } break;
     case 'gspawn': {
       // d 幾倍。高倍數的符只出現一回合：出現的那一刻才講（太早講，玩家找不到它在哪）
@@ -189,6 +189,10 @@ function uiEvent(t, a, b, c, d, e) {
     case 'vinegrow': once('vg', '斷掉的古藤下一回合結束又長回來了：砍斷以後要同一輪就把那一段打下來（燒斷的古藤不會再長）'); break;
     case 'molein': if (c === 1) once('ml1', '敵軍的地道兵在往你的城腳挖（地上一道隆起的土）：還沒挖到城底下以前，炸在它上面就塌了', 1); break;
     case 'stakein': if (c === 1) once('st1', '敵軍的鼓樁打進來了：他們每一輪擂鼓，鼓樁就震一圈，流沙也越震越鬆。鼓樁打得掉', 1); break;
+    case 'flarein': if (c === 1) once('fl1', '敵軍的照明箭照亮了你的城：看得到的地方他們就瞄得準。照明箭亮到下一回合結束就熄了', 1); break;
+    case 'torchout': if (c === 1) once('to1', '敵寨的燈滅了：那一帶現在一片黑，要用照明箭照亮才看得到'); break;
+    case 'cannoncharge': once('cc', '天空要塞的主砲在充能：這一輪敵軍砲擊時會轟過來，開護罩擋住。打倒最上面的要塞艦長，主砲就停了', 1); break;
+    case 'liftbreak': if (S.lv.aerie && c === 1) once('lb1', '一顆浮空晶石碎了：那一角往下沉。四顆全碎，整座要塞就掉進雲海'); break;
     case 'unitsunk': if (c === 0) once('us0', '我方的兵陷進流沙裡了：陷在沙裡的兵不能開火（流沙最多埋到最底下那層）', 1); break;
     case 'mirrorhit': if (c === 1) once('mr1', '敵軍的銅鏡把你的砲彈彈回來了：往沒有鏡子的地方打，或先把鏡子打碎（挨幾下重的就碎）'); break;
   }

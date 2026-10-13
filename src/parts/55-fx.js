@@ -106,7 +106,7 @@ function fxOn(t, a, b, c, d, e, f) {
       const w = WL[d], dir = c === 0 ? 1 : -1;
       part(P_FLASH, a + dir * 0.6, b, 0, 0, 0.09, w.id === 'bomb' ? 3.6 : w.id === 'bolt' ? 1.2 : 2.2, w.id === 'ice' ? C_ICE : w.id === 'zap' ? C_YELLOW : w.id === 'dark' ? C_PINK : C_WHITEHOT);
       if (w.id === 'bomb') { burst(P_SMOKE, a + dir, b, 4, 9, 0.6, 1.8, C_GRAY); shake(0.12); }
-      sfx(w.id === 'bolt' ? 'bolt' : w.id === 'bomb' || w.id === 'cluster' ? 'cannon' : w.id === 'fire' || w.id === 'chain' || w.id === 'sticky' || w.id === 'acid' ? 'whoosh' : w.id === 'ice' ? 'frost' : w.id === 'zap' || w.id === 'magnet' ? 'charge' : w.id === 'dark' ? 'dark' : w.id === 'drill' ? 'drill' : w.id === 'snipe' ? 'snipe' : w.id === 'wind' ? 'gust' : w.id === 'hook' ? 'zip' : w.id === 'weight' ? 'heave' : w.id === 'warp' ? 'warp' : w.id === 'seed' ? 'seed' : w.id === 'axe' ? 'axe' : w.id === 'mole' ? 'drill' : w.id === 'stake' ? 'heave' : 'rocket', c);
+      sfx(w.id === 'bolt' ? 'bolt' : w.id === 'bomb' || w.id === 'cluster' ? 'cannon' : w.id === 'fire' || w.id === 'chain' || w.id === 'sticky' || w.id === 'acid' ? 'whoosh' : w.id === 'ice' ? 'frost' : w.id === 'zap' || w.id === 'magnet' ? 'charge' : w.id === 'dark' ? 'dark' : w.id === 'drill' ? 'drill' : w.id === 'snipe' ? 'snipe' : w.id === 'wind' ? 'gust' : w.id === 'hook' ? 'zip' : w.id === 'weight' ? 'heave' : w.id === 'warp' ? 'warp' : w.id === 'seed' ? 'seed' : w.id === 'axe' ? 'axe' : w.id === 'mole' ? 'drill' : w.id === 'stake' ? 'heave' : w.id === 'flare' ? 'bolt' : w.id === 'glider' ? 'whoosh' : w.id === 'grav' ? 'warp' : w.id === 'hourglass' ? 'whoosh' : 'rocket', c);
       break;
     }
     case 'boom': {
@@ -521,6 +521,18 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'drumquake': ring(a, b, 0.6, c, 0.55, '#f0d49a', 0.7); ring(a, b, 0.6, c * 0.6, 0.4, '#fff0c8', 0.5); burst(P_DUST, a, b, 10, 12, 0.8, 1.6, C_SAND, 3); shake(0.3); if (thr('quake', 120)) sfx('drum'); break;
     case 'sandsink': sfx('sand'); if (S.state === 'play') pop(a, 12, (c === 0 ? '我方' : '敵城') + '往流沙裡陷了 ' + d.toFixed(1) + ' 公尺', c === 0 ? '#ffd8a8' : '#bfe0ff', 2.6, 1.4); break;
     case 'sandhit': burst(P_DUST, a, b, 6, 10, 0.6, 1.4, C_SAND, 3); break;
+    // 第四篇第三批：燈籠、照明箭、反重力、回聲、天空要塞
+    case 'torchout': burst(P_EMBER, a, b, 6, 8, 0.6, 0.4, C_ORANGE, 3); if (thr('torchout', 300)) sfx('fizz'); if (S.state === 'play' && thr('torchoutp', 800)) pop(a, b + 2, c === 1 ? '敵寨的燈滅了' : '我方的燈滅了', c === 1 ? '#ffe9a8' : '#ffb0a0', 2.4, 1.0); break;
+    case 'flarein': part(P_FLASH, a, b, 0, 0, 0.2, 4, C_WHITEHOT); burst(P_SPARK, a, b, 10, 14, 0.5, 0.4, C_GOLD); if (thr('flarein', 200)) sfx('lit'); if (S.state === 'play' && d && thr('flareinp', 900)) pop(a, b + 2.6, '照到人了', '#fff0a8', 2.4, 1.0); break;
+    case 'flareout': burst(P_SMOKE, a, b, 3, 2, 0.8, 1.2, C_GRAY, 2); break;
+    case 'gravon': ring(a, b, 0.5, 5, 0.5, '#c8b0ff', 0.6); sfx('warp'); if (S.state === 'play' && thr('gravon', 900)) pop(a, b + 3, '反重力！', '#d8c8ff', 2.6, 1.0); break;
+    case 'gravslam': ring(a, b, 5, 0.5, 0.35, '#ffb0d0', 0.7); sfx('heave'); shake(0.5); if (S.state === 'play' && d > 0) pop(a, b + 4, '砸下去！', '#ffd0e0', 2.8, 1.0); break;
+    case 'gravoff': ring(a, b, 4, 0.5, 0.4, '#c8b0ff', 0.4); break;
+    case 'echoarm': if (S.state === 'play') { sfx('chime'); pop(a, b, '時砂回聲：上一輪的砲擊再來一次', c === 0 ? '#ffe9a8' : '#ffb0a0', 2.4, 1.4); } break;
+    case 'echo': burst(P_SPARK, a, b, 4, 8, 0.5, 0.3, C_GOLD); break;
+    case 'aeriealt': if (S.state === 'play') { sfx('rumble'); pop(a, b + 3, d > 0 ? '天空要塞升高了' : '天空要塞降下來了', '#d8e0ff', 2.4, 1.2); } break;
+    case 'cannoncharge': if (S.state === 'play') { sfx('charge'); pop(a, b + 6, '主砲充能中！這一輪會轟過來', '#a8d8ff', 2.8, 1.6); } break;
+    case 'cannonfire': part(P_FLASH, a, b, 0, 0, 0.18, 5, C_SKY); burst(P_SMOKE, a, b, 8, 8, 0.8, 2, C_GRAY, 3); sfx('cannon'); shake(0.6); break;
     case 'unitsunk': if (S.state === 'play') pop(a, b + 3, c === 0 ? '我方的兵陷進沙裡了' : '敵兵陷進沙裡了', c === 0 ? '#ffb0a0' : '#ffe9a8', 2.6, 1.2); break;
   }
   if (typeof uiEvent === 'function') uiEvent(t, a, b, c, d, e, f);

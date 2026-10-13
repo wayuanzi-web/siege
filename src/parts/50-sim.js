@@ -360,7 +360,8 @@ function unitFire(u, T, w, ax, ay) {
     const a = (n > 1 ? (k - (n - 1) / 2) * 0.085 : 0) + gauss() * 0.01, c = Math.cos(a), s = Math.sin(a), sp = 1 + gauss() * 0.008;
     const vx = (ax * c - ay * s * dir) * sp * (w.spd || 1), vy = (ay * c + ax * s * dir) * sp * (w.spd || 1);          // 狙擊彈：打出去比瞄準的快（spd）
     const j = spawnShot(u.side, w.i, mx, my, vx, vy, 1, F_IN, 0, 1);
-    if ((w.hook || w.seed || w.boom || w.mole || w.stake) && j >= 0) S.shotU.set(SH.id[j], u);          // 鉤爪：記得是誰射的（鉤住了繩子牽在他手上）
+    if ((w.hook || w.seed || w.boom || w.mole || w.stake || w.grav) && j >= 0) S.shotU.set(SH.id[j], u);
+    if (S.echoOn && j >= 0) echoRec(u, w, mx, my, vx, vy);          // 時砂術士（第四篇）：記下這一發，下一輪再打一次          // 鉤爪：記得是誰射的（鉤住了繩子牽在他手上）
   }
   T.fired += n; if (u.side === 0) S.stat.fired += n;
   u.recoil = 1;
@@ -502,7 +503,8 @@ function shotsStep(dt) {
     }
     let x = SH.x[i], y = SH.y[i], vx = SH.vx[i], vy = SH.vy[i];
     const side = SH.side[i], W = WL[SH.w[i]];
-    vy -= GRAV * dt * (W.gk || 1); vx += (S.gust ? windAt(SH.age[i]) : wind) * dt;          // gk：狙擊彈幾乎不往下掉；陣風（第十四關）：飛到一半風向反過來
+    vy -= GRAV * dt * (W.gk || 1); vx += (S.gust ? windAt(SH.age[i]) : wind) * dt;
+    if (W.glide) { const g = gliderSteer(side, x, y, vx, vy, dt); vx = g.vx; vy = g.vy; }          // 滑翔翼：過了最高點轉向最亮的地方          // gk：狙擊彈幾乎不往下掉；陣風（第十四關）：飛到一半風向反過來
     // 子母彈：過了最高點、也飛出自己的城了，分成小炸彈
     if (W.split && vy <= 0 && !clusterOverOwn(side, x)) { clusterSplit(i, x, y, vx, vy); killShot(i); i--; continue; }
     // 噴流、黑洞：改速度
@@ -896,6 +898,10 @@ function objsStep(dt) {
       case 'sprout': gone = sproutStep(o, dt); break;          // 第四篇第二批：藤、地道、鼓樁
       case 'mole': gone = o.dead || moleStep(o, dt); break;
       case 'stake': gone = stakeStep(o, dt); break;
+      case 'torch': gone = torchStep(o, dt); break;          // 第四篇第三批：燈籠、照明箭、反重力、回聲
+      case 'flare': gone = flareStep(o, dt); break;
+      case 'grav': gone = gravStep(o, dt); break;
+      case 'echo': gone = echoStep(o, dt); break;
       case 'lantern': {
         o.age += dt; o.y = o.by0 + Math.sin(o.age * 1.4) * 0.8;
         if (o.hp <= 0) { if (o.by >= 0 && S.state === 'play') grantBonus(o.by, o.kind, o.x, o.y); gone = true; }
@@ -1001,7 +1007,7 @@ function simFire(side) {
   const lead = volleyLead(T), E0 = lead ? volleyEvent(side, lead, ax, ay) : null, E = E0 ? { ok: E0.ok, x: E0.x, y: E0.y, vx: E0.vx, vy: E0.vy } : null, cv = [0, 0];
   let t0 = 0.05, any = false;
   chargesGo(side);          // 上一輪黏在對方城上的炸藥：這一輪開火時引爆
-  hooksGo(side); mirrorsDown(side); molesGo(side); drumsGo(side);          // 第四篇：上一輪鉤住的收繩；上一輪舉的銅鏡放下（鏡盾兵這一輪再舉）
+  hooksGo(side); mirrorsDown(side); molesGo(side); drumsGo(side); echoGo(side); gravsGo(side);          // 第四篇：上一輪鉤住的收繩；上一輪舉的銅鏡放下（鏡盾兵這一輪再舉）
   for (const u of T.units) {
     u.held = false;
     if (!u.alive || T.mute) continue;                       // mute：測試用，這一邊只瞄不打
@@ -1022,6 +1028,7 @@ function simFire(side) {
   }
   if (S.boss && side === 1 && !T.mute) bossVolley(q, t0);
   if (S.beast && side === 1 && !T.mute) beastVolley(q, t0);
+  if (S.aerie && S.aerie.charge && side === 1 && !T.mute) { const cu = aerieCaptain(); if (cu && !cu.held) q.push({ t: t0 + 0.6, u: cu, w: null, act: 'cannon' }); }          // 天空要塞的主砲
   // 上一輪停在半路的氣球、光球，這一輪飛過去
   for (const o of S.objs) {
     if (o.side !== side || o.st !== 'hover') continue;
@@ -1335,7 +1342,7 @@ function simInit(idx, up, seed, diff, opts) {
   const dA = CASTLES[lv.castle || lv.me.castle], dB = CASTLES[lv.castle || lv.foe.castle], y0 = lv.y0 || 0;
   const sA = S.st[0] = mkCastle(0, dA, CASTLE_L, y0, A.hpMul, false);
   S.beast = null;
-  const sB = S.st[1] = lv.beast ? mkBeast(lv.beast, B.hpMul) : mkCastle(1, dB, CASTLE_R - castleCols(dB) * CS, y0, B.hpMul, true);          // 第十八關：敵方沒有城，是機關巨獸
+  const sB = S.st[1] = lv.beast ? mkBeast(lv.beast, B.hpMul) : mkCastle(1, dB, CASTLE_R - castleCols(dB) * CS, lv.foe.y0 !== undefined ? lv.foe.y0 : y0, B.hpMul, true);          // foe.y0：敵城蓋在別的高度（第二十四關：天空要塞浮在半空）          // 第十八關：敵方沒有城，是機關巨獸
   S.structs.push(sA, sB);
   if (lv.extra) for (const e of lv.extra) { const d = CASTLES[e.castle]; S.structs.push(mkCastle(2, d, e.x - castleCols(d) * CS / 2, e.y || 0, e.hp || 1, false)); }
   S.rolls = null; S.pass = null; if (lv.pass) passInit();          // 第十六關：中場路邊的東西
@@ -1405,6 +1412,7 @@ function simStep(dt) {
           else if (e.act === 'orb') spawnOrb(e.u);
           else if (e.act === 'fix') engFix(e.u);
           else if (e.act === 'mirror') mirrorRaise(e.u);
+          else if (e.act === 'cannon') aerieFire(e.u);
           else if (e.act === 'summon') { const T1 = S.team[1]; if (coresLeft(1) > 0 && T1.units.some((u) => !u.alive && !u.def.big)) { grantBonus(1, 'troop', e.u.x, e.u.y + 6); ev('summon', e.u.x, e.u.y + 4); } }
         }
         if (S.vqi >= q.length && S.phaseT > 0.35) { S.phase = 'resolve'; S.phaseT = 0; S.quietT = 0; }

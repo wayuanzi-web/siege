@@ -27,6 +27,7 @@ function craftSetup() {
   const lv = S.lv;
   if (S.saw) sawAttach();
   wildSetup();
+  duskSetup();
   if (lv.arches) {
     const A = lv.arches;
     for (const side of [0, 1]) S.objs.push({ t: 'warp', kind: 'gate', side, ix: side ? VIEW_W - A.x : A.x, iy: A.y, r: A.r, ox: 0, oy: 0, on: true, dest: '', flash: 0, age: 0 });
@@ -307,6 +308,7 @@ function craftStep(dt) {
   if (S.rubble && S.objs.length) warpBodies();
   weightsSlide();
   wildStep(dt);
+  duskStep(dt);
 }
 // 停在兵頭上的鐵砣：往旁邊滑下去（兵的頭頂是尖的、滑的；鐵砣比較寬，有時候會剛好卡住，推一把）
 function weightsSlide() {
@@ -325,5 +327,5 @@ function craftRoundEnd() {
   if (wildRoundEnd()) wait = true;
   return wait;
 }
-function craftRound() { if (S.lv.arches) archRound(); }
-function craftBusy() { return sawBusy() || wildBusy(); }
+function craftRound() { if (S.lv.arches) archRound(); duskRound(); }
+function craftBusy() { return sawBusy() || wildBusy() || duskBusy(); }

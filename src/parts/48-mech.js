@@ -583,6 +583,7 @@ function mkPlat(st, cells, ch, def) {
     // 中艙的火藥庫：中艙被打到剩一半，整艙炸開（甲板上的東西連人炸飛、中艙灌滿水）
     if (def.ship && def.ship.mag) { const c = P.comps[(P.comps.length - 1) >> 1]; c.mag = 1; }
   }
+  if (def && def.anchor) P.anchor = 1;          // 天空要塞（第二十四關）：自己穩住位置
   st.plat = P; S.plats.push(P);
   return P;
 }
@@ -669,6 +670,7 @@ function platForces() {
     if (P.kind === 'island') {
       // 浮空晶石的力：量的是晶石那一點沉了多少，但施力點放在高處（城的半腰）—— 從底下往上頂的力會把島頂翻，吊在高處才穩
       if (P.lifts) for (const L of P.lifts) if (L.hp > 0 && L.F > 0) { const q = body.getWorldPoint(L.lp), vy = body.getLinearVelocityFromWorldPoint(q).y, F = L.F * (1 + clamp((L.y0 - q.y) / LIFT_SINK, -0.6, 1.6)) - vy * L.F * 0.06; body.applyForce({ x: 0, y: Math.max(0, F) }, body.getWorldPoint(L.hp0 || (L.hp0 = { x: L.lp.x, y: P.yb - P.y0 + 8 })), false); }
+      if (P.anchor) { const p = body.getPosition(), v = body.getLinearVelocity(), m = body.getMass(); body.applyForce({ x: -(p.x - P.x0) * m * 0.9 - v.x * m * 1.4, y: -v.y * m * 1.2 }, body.getWorldCenter(), false); body.applyTorque(-(body.getAngle() - P.a0) * m * 6 * (P.lifts ? P.lifts.filter((L) => L.hp > 0).length / P.lifts.length : 0) - body.getAngularVelocity() * m * 3, false); }          // 天空要塞：被炸了慢慢飄回原位；晶石還在的時候也會自己扶正（碎得越多扶得越弱）
       for (const o of P.teth) {
         if (o.hp <= 0 || o.j) continue;
         const wp = body.getWorldPoint(o.lp), dx = o.ax - wp.x, dy = o.ay - wp.y, d = Math.hypot(dx, dy) || 1;

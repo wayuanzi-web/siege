@@ -100,9 +100,20 @@ const WL = [
   { id: 'axe', n: 1, gap: 0, dmg: 19, r: 0, J: 260, ud: 22, kind: K_PIERCE, boom: { wood: 2.3, back: 0.7, tau: 1.25 }, ai: { dmg: 36, r: 1.6, ud: 22 } },
   { id: 'mole', n: 1, gap: 0, dmg: 6, r: 1.4, J: 90, ud: 6, kind: K_BLAST, mole: { v: 9, len: 38, sink: 1.0 }, ai: { dmg: 48, r: 3.6, ud: 18 } },
   { id: 'moleboom', dmg: 46, r: 4.6, J: 900, ud: 28, kind: K_HEAVY },
-  { id: 'stake', n: 1, gap: 0, dmg: 8, r: 0, J: 80, ud: 10, kind: K_HEAVY, stake: { hp: 45, R: 6.4, d: 13, ud: 7, sink: 0.5, max: 2 }, ai: { dmg: 40, r: 5, ud: 10 } }
+  { id: 'stake', n: 1, gap: 0, dmg: 8, r: 0, J: 80, ud: 10, kind: K_HEAVY, stake: { hp: 45, R: 6.4, d: 13, ud: 7, sink: 0.5, max: 2 }, ai: { dmg: 40, r: 5, ud: 10 } },
+  /* ---- 第四篇第三批（54-dusk） ----
+     flare 照明箭：插在打到的東西上，照亮方圓 R（這一回合和下一回合）；黑夜裡看得到的地方才瞄得準
+     glider 滑翔翼：又平又遠（gk 重力只剩三成多），過了最高點會自己轉向前方最亮的地方（敵城的燈、照明箭、著火的木頭）俯衝下去
+     grav 反重力彈：落點撐開一團反重力（半徑 R）：裡面的磚慢慢浮起來（離開原位就不算城防）；自己下一輪開火時反重力一收，全部重重砸下去
+     hourglass 時砂：普通的一炸；時砂術士還活著的話，這一輪全隊打出去的砲彈都記下來，下一輪原樣再打一次（回聲，威力 echo 倍）
+     mainshell：第二十四關天空要塞的主砲（不是兵射的） */
+  { id: 'flare', n: 1, gap: 0, dmg: 6, r: 0, J: 60, ud: 10, kind: K_PIERCE, flare: { R: 11, hp: 14 }, ai: { dmg: 34, r: 3, ud: 10 } },
+  { id: 'glider', n: 1, gap: 0, dmg: 26, r: 3.4, J: 420, ud: 18, kind: K_BLAST, gk: 0.34, glide: { turn: 1.5, see: 32 } },
+  { id: 'grav', n: 1, gap: 0, dmg: 8, r: 1.8, J: 90, ud: 8, kind: K_BLAST, grav: { R: 4.2, lift: -0.12, top: 1.3, slam: 24 }, ai: { dmg: 40, r: 4.2, ud: 10 } },
+  { id: 'hourglass', n: 1, gap: 0, dmg: 14, r: 2.6, J: 200, ud: 12, kind: K_BLAST, echo: { mass: 0.55 } },
+  { id: 'mainshell', dmg: 46, r: 6.6, J: 1300, ud: 32, kind: K_HEAVY }
 ];
-const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; if (w.chain || w.drill || w.stick || w.pierce || w.hook || w.warp || w.seed || w.boom || w.mole || w.stake) w.special = 1; });          // special：打到東西時有自己的打法（51-arms 的 armsHit、54-craft 的 craftHit）
+const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; if (w.chain || w.drill || w.stick || w.pierce || w.hook || w.warp || w.seed || w.boom || w.mole || w.stake || w.flare || w.grav) w.special = 1; });          // special：打到東西時有自己的打法（51-arms 的 armsHit、54-craft 的 craftHit）
 
 /* 兵種。w 用哪種砲彈；flak 防空（每一輪射下幾發飛過來的砲彈）；bal 放轟炸氣球 */
 const UNIT = {
@@ -135,10 +146,15 @@ const UNIT = {
   vine: { name: '種藤師', w: 'seed', hp: 90, craft: 1, blurb: '把藤種打進敵城的磚裡：每回合結束長一次、勒一次，第三次把那一塊連旁邊的勒碎；種藤師倒了，他種的藤就枯了' },
   axe: { name: '飛斧手', w: 'axe', hp: 100, craft: 1, blurb: '丟出迴旋斧：砍中一樣東西再飛回來，回程碰到敵方的東西再砍一下；砍木頭最痛，順便砍斷綁著那塊磚的藤蔓' },
   mole: { name: '地道兵', w: 'mole', hp: 100, craft: 1, blurb: '鑽地彈落地就鑽進地底，往敵城的城腳挖過去；你下一輪開火時從城腳底下炸開。對方炸得到還在半路的地道，地道兵倒了地道就塌' },
+  flare: { name: '照明弓手', w: 'flare', hp: 90, craft: 1, blurb: '射出照明箭：插在哪裡就把方圓十公尺照亮兩回合。黑夜裡看不見的地方瞄不準，先照亮再打；照在敵兵身上的跟著他走' },
+  glider: { name: '滑翔奇兵', w: 'glider', hp: 95, craft: 1, blurb: '丟出滑翔翼炸彈：飛得又平又遠，過了最高點會自己轉向前方最亮的地方俯衝下去（敵城的燈、照明箭、著火的木頭）' },
+  antigrav: { name: '反重力師', w: 'grav', hp: 85, craft: 1, blurb: '落點撐開一團反重力：裡面的磚慢慢浮起來、離開原位；你下一輪開火時反重力一收，全部重重砸下去' },
+  time: { name: '時砂術士', w: 'hourglass', hp: 85, craft: 1, blurb: '他還活著的話，這一輪全隊打出去的砲彈，下一輪原樣再打一次（回聲威力少一半）；兩個時砂術士回聲更強' },
+  captain: { name: '要塞艦長', w: 'rocket', hp: 180, craft: 1, cmd: 1, blurb: '天空要塞的艦長：他還在，要塞的主砲每兩回合轟一次（第二十四關）' },          // 不在選兵清單裡
   drum: { name: '震地鼓手', w: 'stake', hp: 105, craft: 1, blurb: '先把鼓樁打進敵城或城前的地上；之後你每一輪開火，他擂一次鼓，每根鼓樁震一圈：底層的磚、兵都受傷，流沙上的城陷得更快' }
 };
 // 演武場選兵用的順序：第一到三篇的十八種（魔王不算），再接第四篇的新兵
-const UNIT_LIST = ['rocket', 'bolt', 'bomb', 'fire', 'ice', 'zap', 'flak', 'bal', 'stone', 'chain', 'drill', 'cluster', 'sapper', 'magnet', 'wind', 'acid', 'sniper', 'eng', 'hook', 'weight', 'warp', 'mirror', 'vine', 'axe', 'mole', 'drum'];
+const UNIT_LIST = ['rocket', 'bolt', 'bomb', 'fire', 'ice', 'zap', 'flak', 'bal', 'stone', 'chain', 'drill', 'cluster', 'sapper', 'magnet', 'wind', 'acid', 'sniper', 'eng', 'hook', 'weight', 'warp', 'mirror', 'vine', 'axe', 'mole', 'drum', 'flare', 'glider', 'antigrav', 'time'];
 const UNIT_OLD = 18;          // 前三篇的兵有幾種（演武場的軍牌上，後面的標「新」）
 Object.keys(UNIT).forEach((k) => { UNIT[k].id = k; });
 
@@ -551,6 +567,33 @@ const CASTLES = {
     '##########'] },
   // 第二十二關：戰場中間一塊半埋在沙裡的巨岩（打不壞）
   COLOSSUS: { skin: 'dune', map: [' AAA ', 'AAAAA', 'AAAAA'] },
+  /* 第二十三關：無月夜襲。木柵石基的營寨：最上面一間（1、2 號），兩側各一座箭樓（3、4 號），底下兩間（5、6 號）。
+     torches：掛在牆上的燈籠 [欄, 由上往下列, 格子裡的 fx, fy]（54-dusk：照亮四周，打得滅；滅了那一帶就是一片黑） */
+  NIGHTFORT: { skin: 'night', gf: 1, map: [
+    '   ^^^^^   ',
+    '   |1.2|   ',
+    '^^^=====^^^',
+    '|3|S...S|4|',
+    '===S...S===',
+    'w..S...S..w',
+    'w5.S...S.6w',
+    '###########'],
+    torches: [[5, 1, 0.5, 0.75], [1, 3, 0.5, 0.8], [9, 3, 0.5, 0.8], [2, 5, 0.5, 0.8], [8, 5, 0.5, 0.8]] },
+  /* 第二十四關：天空要塞。一座浮在雲海上的要塞：底下一大塊浮岩（R），四顆浮空晶石托著（沒有氣球：晶石全碎了就整座掉下去）；
+     anchor：要塞自己穩住位置（被炸了會慢慢飄回原位）。最上面是艦橋（1 號：要塞艦長），兩側砲廊（2、3 號），底下兵艙（4、5、6 號）；樓板是兩層鐵甲 */
+  AERIE: { skin: 'aerie', gf: 3, nofound: 1, nobase: 1, anchor: 1, map: [
+    '    ^^^    ',
+    '    S1S    ',
+    '  FFFFFFF  ',
+    '  S2...3S  ',
+    ' FFFFFFFFF ',
+    ' S4..6..5S ',
+    'RRRRRRRRRRR',
+    ' RRRRRRRRR ',
+    '  RRRRRRR  '],
+    lifts: [{ at: [2, 7, 0.5, -0.42], hp: 220, frac: 0.25 }, { at: [8, 7, 0.5, -0.42], hp: 220, frac: 0.25 }, { at: [4, 8, 0.5, -0.42], hp: 220, frac: 0.25 }, { at: [6, 8, 0.5, -0.42], hp: 220, frac: 0.25 }] },
+  // 第二十三關：戰場中間一塊黑黝黝的大岩石（打不壞）
+  NIGHTROCK: { skin: 'night', map: ['  AA  ', ' AAAA ', 'AAAAAA'] },
   // 第十七關：中間的礦脈（一塊一塊的岩石疊成小山，打得碎：越打越低，上層慢慢露出來）
   SEAM: { skin: 'mine', map: ['  SS  ', ' SSSS ', 'AAAAAA'] },          // 最底下一列是打不碎的岩心：礦脈打得再低，兩邊的一樓也平射不到對方
   // 第七關的石碑（一塊一個，三種高度）：兩排，各往一座城那邊一塊比一塊高

@@ -154,6 +154,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 .chap[aria-selected="true"] { background: var(--gold); color: var(--gold); }
 .chap[aria-selected="true"]::before { background: linear-gradient(180deg, #4a3c1a, #2a2010); }
 .chap.locked { color: #6a618f; }
+.dense .lv { min-height: max(calc(var(--u) * 10.4), 34px); padding-top: calc(var(--u) * .7); padding-bottom: calc(var(--u) * .7); }
 .lv { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: calc(var(--u) * 2.2); align-items: center; text-align: left; padding: calc(var(--u) * 1.2) calc(var(--u) * 2.6); background: var(--line); --cut: calc(var(--u) * 1.9); transition: transform .12s ease; min-height: max(calc(var(--u) * 12.6), 40px); }
 .lv::before { content: ""; position: absolute; inset: 2px; background: linear-gradient(180deg, rgba(43, 36, 70, .96), rgba(29, 24, 48, .96)); clip-path: inherit; }
 .lv > * { position: relative; }
@@ -191,7 +192,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 #pick .plaque .sub { margin-top: calc(var(--u) * -1); }
 #pick .tipline { min-height: 3em; }
 #pick .btn { min-height: max(calc(var(--u) * 9.5), 38px); }
-.pickgrid { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: calc(var(--u) * .8); }
+.pickgrid { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: calc(var(--u) * .7); }
 .pickgrid button { display: grid; justify-items: center; gap: calc(var(--u) * .3); padding: calc(var(--u) * .6) 0; background: rgba(255, 255, 255, .06); --cut: calc(var(--u) * 1.2); font-size: calc(var(--u) * 2.5); font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
 .pickgrid button canvas { width: calc(var(--u) * 7); height: calc(var(--u) * 7); border-radius: 50%; background: #241d3c; }
 .pickgrid button[aria-pressed="true"] { background: rgba(255, 201, 60, .28); box-shadow: inset 0 0 0 2px var(--gold); }

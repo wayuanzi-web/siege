@@ -239,7 +239,8 @@ function aiBegin(T) {
   A.lead = lead; if (!lead) return;
   const big = lead.def.big ? MUZ_BIG : 1, mx = lead.x + dir * 1.3 * big, my = lead.y + 2.3 * big;
   const tg = [];
-  for (const u of foeT.units) if (u.alive) tg.push({ x: u.x, y: u.y + 1.6 * (u.def.big ? MUZ_BIG : 1), w: 1.15 + (u.type === 'boss' ? BOSS_W : 0) + (u.hp < u.hpMax * 0.4 ? 0.25 : 0) + (u.flag ? 2.5 : 0) });
+  const night = !!S.lv.night;          // 第二十三關：看不見的兵、磚不瞄（看得見才瞄）
+  for (const u of foeT.units) if (u.alive && (!night || litAt(u.x, u.y + 1.6))) tg.push({ x: u.x, y: u.y + 1.6 * (u.def.big ? MUZ_BIG : 1), w: 1.15 + (u.type === 'boss' ? BOSS_W : 0) + (u.hp < u.hpMax * 0.4 ? 0.25 : 0) + (u.flag ? 2.5 : 0) });
   // 對方黏在自己城上的炸藥：不拿砲打（全隊的砲會砸在自己城前），靠工兵拆、對方開火時開護罩悶熄（aiReact）
   if (A.guard > 0 && rnd() < A.guard) for (const o of S.objs) {
     if (o.t === 'lantern') tg.push({ x: o.x, y: o.y, w: 1.0, obj: o });
@@ -248,7 +249,7 @@ function aiBegin(T) {
   {
     // 城身：火藥桶，再隨便挑幾塊還在原位的磚。兵腳下、身邊那一層的牆和柱子最值得打（打掉了人會跟著掉下去）；城基太厚，不打
     const cand = [];
-    for (const b of fst.blocks) { if (b.dead) continue; if (b.mat === M_KEG) { if (!b.fuseKeg) tg.push({ x: b.body.getPosition().x, y: b.body.getPosition().y, w: 1.35 }); } else if (b.inPlace && !b.prop && !b.base && !b.beam) cand.push(b); }          // 接著引信的火藥桶打不爆，不瞄
+    for (const b of fst.blocks) { if (b.dead) continue; if (b.mat === M_KEG) { if (!b.fuseKeg) tg.push({ x: b.body.getPosition().x, y: b.body.getPosition().y, w: 1.35 }); } else if (b.inPlace && !b.prop && !b.base && !b.beam && (!night || litAt(b.body.getPosition().x, b.body.getPosition().y))) cand.push(b); }          // 接著引信的火藥桶打不爆，不瞄
     if (rnd() < A.sap) for (let k = 0; k < 5 && cand.length; k++) {
       const b = cand[ri(cand.length)]; let w = 0.5;
       const bx = S.saw ? b.body.getPosition().x : b.x0, by = S.saw ? b.body.getPosition().y : b.y0;          // 天秤（第十九關）：城跟著巨樑歪了，照現在的位置瞄
@@ -384,7 +385,7 @@ function aiChoose(T) {
     b = { vx: a[0], vy: a[1], tau: 2.0, t: { x: fst.cx, y: fst.y0 + fst.h * 0.5 } }; A.mult = 1;
   }
   // 手抖：落點偏掉一些
-  const k = S.round <= 1 ? A.warm : 1, ex = gauss() * A.err * k, ey = gauss() * A.err * 0.7 * k, sp = (A.lead && A.lead.w && A.lead.w.spd) || 1;
+  const k = (S.round <= 1 ? A.warm : 1) * (S.lv.night && b.t && !litAt(b.t.x, b.t.y) ? 2.2 : 1), ex = gauss() * A.err * k, ey = gauss() * A.err * 0.7 * k, sp = (A.lead && A.lead.w && A.lead.w.spd) || 1;          // 黑夜：瞄看不見的地方，手抖加倍
   let a = clampAim(b.vx + ex / (b.tau * sp), b.vy + ey / (b.tau * sp), dir);
   // 真的要打出去的這個角度（手抖之後），每個開得了火的兵各試射一發：最多會穿過幾倍的符。畫面上拿來預警「敵軍瞄準了倍增符」
   let v = aiVolley(T, a[0], a[1]);

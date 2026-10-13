@@ -471,6 +471,33 @@ const LEVELS = [
     foe: { crew: ['hook', 'weight', 'drum', 'mole', 'drum', 'mole'], hp: 1.0, dmg: 1.0, open: 0.55, ai: { err: 3.2, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
     wind: { max: 4 },
     lantern: { at: 3, every: 3, spots: [[48, 28], [64, 28]] }
+  },
+  {
+    name: '無月夜襲', sayTop: 1, tag: '黑夜・照明箭・滑翔翼', theme: 22, castle: 'NIGHTFORT', stress: 1, blockHp: 1.4, night: { dark: 0.9 }, rules: { ff: 1, crit: 1, elem: 1 },
+    tip: '沒有月亮的晚上，只有燈籠、照明箭、著火的東西四周看得到：看不見的地方，你的瞄準虛線畫不出來，敵軍也瞄不準。照明弓手先把敵寨照亮再打；滑翔奇兵的滑翔翼過了最高點，會轉向前方最亮的地方俯衝。燈籠照亮的是掛著它的寨子',
+    hints: [{ r: 1, t: '黑夜裡看不見的地方，瞄準虛線畫不出來：先讓照明弓手把敵寨照亮（照明箭亮到下一回合結束），再照著亮的地方打', ok: () => true },
+      { r: 2, t: '滑翔奇兵的滑翔翼過了最高點，會自己轉向前方最亮的地方俯衝：敵寨的燈籠、你射的照明箭、著火的木頭', ok: () => S.team[0].units.some((u) => u.alive && u.type === 'glider') },
+      { r: 2, t: '燈籠照亮的是掛著它的寨子：敵寨的燈還亮著，你就看得到那一帶；被打滅了，那一帶要靠照明箭才看得見', ok: () => S.objs.some((o) => o.t === 'torch' && o.side === 1 && o.hp > 0) },
+      { r: 3, t: '你寨子裡的燈籠一樣照亮你自己：被敵軍的照明箭插到的兵，走到哪裡亮到哪裡', ok: () => true }],
+    ground: [[-40, 0], [152, 0]],
+    extra: [{ castle: 'NIGHTROCK', x: 56, y: 0 }],
+    me: { crew: ['flare', 'glider', 'flare', 'glider', 'axe', 'hook'] },
+    foe: { crew: ['glider', 'flare', 'glider', 'flare', 'hook', 'axe'], hp: 1.0, dmg: 1.0, open: 0.55, ai: { err: 3.0, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
+    lantern: { at: 3, every: 3, spots: [[56, 26], [44, 36], [68, 36]] }
+  },
+  {
+    name: '天空要塞', sayTop: 1, tag: '首領・浮空要塞・反重力・時砂', theme: 23, stress: 1, blockHp: 3.0, aerie: { alt: [3, -2, 3, -3, 2, -3], cannon: { first: 2, every: 2 } }, rules: { ff: 1, crit: 1, elem: 1 },
+    tip: '敵軍是一座浮在雲海上的天空要塞，四顆浮空晶石托著：碎一顆那一角就沉，全碎了整座掉進雲海。要塞每回合升降；艦長還在，每兩回合主砲轟你一次（開護罩擋）。反重力師讓磚浮起來、下一輪再砸下去；時砂術士讓這一輪的砲擊下一輪再打一次',
+    hints: [{ r: 1, t: '天空要塞底下四顆紫色浮空晶石托著：碎一顆那一角就沉下去，碎得越多歪得越兇，全碎了整座掉進雲海', ok: () => aerieLifts() > 0 },
+      { r: 2, t: '要塞的主砲在充能：這一輪敵軍砲擊時會轟過來，開護罩擋住（打倒最上面的要塞艦長，主砲就停了）', ok: () => S.aerie && S.aerie.charge && S.turn === 0 },
+      { r: 2, t: '反重力師的反重力彈落在哪裡，那一團的磚就慢慢浮起來（離開原位就不算城防）；你下一輪開火時反重力一收，全部重重砸下去', ok: () => S.team[0].units.some((u) => u.alive && u.type === 'antigrav') },
+      { r: 3, t: '時砂術士還活著，你這一輪的整輪砲擊，下一輪會原樣再打一次（回聲）：打得準的那一輪最值得', ok: () => S.team[0].units.some((u) => u.alive && u.type === 'time') }],
+    ground: [[-40, 0], [152, 0]], voids: [[47, 200]],
+    me: { castle: 'BASTION', crew: ['antigrav', 'time', 'glider', 'antigrav', 'time', 'flare'] },
+    foe: { castle: 'AERIE', y0: 12, crew: ['captain', 'glider', 'axe', 'weight', 'hook', 'glider'], hp: 1.35, dmg: 1.35, open: 0.55, ai: { err: 2.3, think: 1.1, gate: 0, hate: 0.2, skill: 0.6, sap: 0.6, warm: 1.6 } },
+    weak: (side) => { const out = []; for (const o of S.objs) if (o.t === 'lift' && o.side !== side && o.hp > 0) out.push({ x: o.x, y: o.y, w: 1.3, obj: o }); return out; },
+    lantern: { at: 3, every: 3, spots: [[44, 40], [50, 26]] },
+    sudden: 14
   }
 ];
 
@@ -486,7 +513,7 @@ const PRACTICE_BASE = {
   wind: { max: 5, at: 2 }, sudden: 12
 };
 // 演武場的戰場清單：0 演武城，其他照那一關（第幾關；城、地形、中間的機關、環境都一樣，兵換成挑的）。魔王城不能選（要有魔王）
-const PRACTICE_LIST = [0].concat(LEVELS.map((l, i) => i + 1).filter((m) => !LEVELS[m - 1].boss && !LEVELS[m - 1].beast));
+const PRACTICE_LIST = [0].concat(LEVELS.map((l, i) => i + 1).filter((m) => !LEVELS[m - 1].boss && !LEVELS[m - 1].beast && !LEVELS[m - 1].aerie));
 const PRACTICE_MAPS = LEVELS.length + 1;          // 戰場編號的上限（存檔檢查用）
 function practiceSlots(map) { const lv = map > 0 ? LEVELS[map - 1] : PRACTICE_BASE, d = CASTLES[lv.castle || lv.me.castle]; let n = 0; for (const r of d.map) for (const ch of r) if (ch >= '1' && ch <= '9') n++; return n; }
 function practiceLevel(map, me, foe, ff) {
