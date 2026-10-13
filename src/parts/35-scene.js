@@ -72,5 +72,5 @@ function sceneBuild(force) {
   SCENE.cv = cv;
   if (th.init) th.init();
 }
-function sceneBack(c, t, dt) { c.drawImage(SCENE.cv, 0, 0); const th = SCENE.theme; if (th && th.back) { c.save(); th.back(c, t, dt); c.restore(); } }
+function sceneBack(c, t, dt) { sceneBlit(c, t); const th = SCENE.theme; if (th && th.back) { c.save(); th.back(c, t, dt); c.restore(); } }
 function sceneFront(c, t, dt) { const th = SCENE.theme; if (th && th.front) { c.save(); th.front(c, t, dt); c.restore(); } }

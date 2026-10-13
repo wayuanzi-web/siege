@@ -40,10 +40,11 @@ function drawGrav(c, o, t) {
 /* ---------- 黑夜（第二十三關）：整片蓋一層黑，有光的地方挖一個洞 ---------- */
 function drawNight(c, t) {
   if (!S.lv.night) return;
-  const s = V.s, W = V.W, H = V.H, k = S.lv.night.dark || 0.9;
+  // 黑夜那一層用一半的解析度畫再放大貼上（光的邊本來就是柔的，看不出差別，省一大截）
+  const s = V.s, Q = 2, W = Math.ceil(V.W / Q), H = Math.ceil(V.H / Q), k = S.lv.night.dark || 0.9;
   let cv = RD.nightCv; if (!cv || cv.width !== W || cv.height !== H) { cv = RD.nightCv = mkCanvas(W, H); }
   const n = cv.getContext('2d');
-  n.globalCompositeOperation = 'source-over'; n.clearRect(0, 0, W, H); n.fillStyle = 'rgba(4,6,18,' + k + ')'; n.fillRect(0, 0, W, H);
+  n.setTransform(1, 0, 0, 1, 0, 0); n.globalCompositeOperation = 'source-over'; n.clearRect(0, 0, W, H); n.fillStyle = 'rgba(4,6,18,' + k + ')'; n.fillRect(0, 0, W, H); n.setTransform(1 / Q, 0, 0, 1 / Q, 0, 0);
   n.globalCompositeOperation = 'destination-out';
   const hole = (x, y, R, a) => { const px = X(x), py = Y(y), r = R * s; const g = n.createRadialGradient(px, py, r * 0.15, px, py, r); g.addColorStop(0, 'rgba(0,0,0,' + a + ')'); g.addColorStop(0.6, 'rgba(0,0,0,' + (a * 0.75) + ')'); g.addColorStop(1, 'rgba(0,0,0,0)'); n.fillStyle = g; n.beginPath(); n.arc(px, py, r, 0, TAU); n.fill(); };
   // 自己的城（摸黑也認得出來）
@@ -54,5 +55,6 @@ function drawNight(c, t) {
   }
   if (S.nburn > 0) for (const b of S.blocks) if (!b.dead && b.burn > 0 && b.body) { const p = b.body.getPosition(); hole(p.x, p.y, FIRE_R * (0.9 + 0.1 * Math.sin(t * 11 + p.x)), 0.85); }
   for (let i = 0; i < SH.n; i++) hole(SH.x[i], SH.y[i], 1.6, 0.7);          // 砲彈自己帶一點光（看得到在飛）
-  c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(cv, 0, 0); c.setTransform(1, 0, 0, 1, FX.shx, FX.shy);
+  for (const l of RD.lt || []) if (l[5]) hole(l[0], l[1], l[2] * 1.15, Math.min(1, l[4] * 1.8));          // 爆炸、砲口的光：那一瞬間照亮附近（第五批）
+  c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(cv, 0, 0, W, H, 0, 0, W * Q, H * Q); c.setTransform(1, 0, 0, 1, FX.shx, FX.shy);
 }

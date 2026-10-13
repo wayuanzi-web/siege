@@ -267,6 +267,9 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 .toggle[aria-pressed="true"] i { background: var(--gold); }
 .toggle[aria-pressed="true"] i::after { transform: translateX(calc(var(--u) * 4.6)); }
 .seg { display: grid; grid-template-columns: auto 1fr; gap: calc(var(--u) * 2.4); align-items: center; padding: calc(var(--u) * 1.6) calc(var(--u) * 2.4); background: rgba(255, 255, 255, .06); font-weight: 700; font-size: calc(var(--u) * 3.5); letter-spacing: .1em; }
+.segs { display: flex; gap: calc(var(--u) * 2); }          /* 畫質、難度並排（暫停時只有畫質，佔滿一整行） */
+.segs > .seg { flex: 1 1 0; min-width: 0; padding: calc(var(--u) * 1.4) calc(var(--u) * 1.6); gap: calc(var(--u) * 1.6); }
+.segs > .seg[hidden] { display: none; }
 .seg div { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(var(--u) * 1); }
 .seg button { min-height: max(calc(var(--u) * 10.4), 40px); padding: 2px; font-weight: 700; font-size: calc(var(--u) * 3.4); letter-spacing: .08em; color: var(--mute); background: #40376a; }
 .seg button[aria-pressed="true"] { color: var(--gold-ink); background: linear-gradient(180deg, #ffe07a, #ffb81f); }
@@ -384,9 +387,14 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
           <button class="toggle" id="tMus" aria-pressed="true"><span>配樂</span><i></i></button>
           <button class="toggle" id="tVib" aria-pressed="true"><span>震動</span><i></i></button>
         </div>
+        <div class="segs">
+        <div class="seg" id="gfxSeg"><span>畫質</span><div>
+          <button data-q="0" aria-pressed="false">低</button><button data-q="1" aria-pressed="false">中</button><button data-q="2" aria-pressed="true">高</button>
+        </div></div>
         <div class="seg" id="diffSeg"><span>難度</span><div>
           <button data-d="0" aria-pressed="false">輕鬆</button><button data-d="1" aria-pressed="true">標準</button><button data-d="2" aria-pressed="false">硬仗</button>
         </div></div>
+        </div>
         <p class="keys" id="keyHelp" hidden>鍵盤：方向鍵調角度和力道（按住 Shift 微調）<br>空白鍵發射・Z 護罩・X 連珠・P 暫停</p>
         <div class="stack" id="homeOpts">
           <div class="textrow">

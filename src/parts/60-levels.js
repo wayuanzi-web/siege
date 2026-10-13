@@ -294,7 +294,7 @@ const LEVELS = [
     voids: [[41.5, 70.5]],
     extra: [{ castle: 'ROCK_DEMON', x: 56, y: -12.4 }],
     me: { crew: ['rocket', 'zap', 'bomb', 'fire'] },
-    foe: { crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 0.8, dmg: 0.36, open: 0.55, ai: { err: 4.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 1.8 } },
+    foe: { crew: ['boss', 'rocket', 'bomb', 'fire'], hp: 0.8, dmg: 0.32, open: 0.55, ai: { err: 4.8, think: 1.1, gate: 0.7, hate: 0.25, skill: 0.5, sap: 0.6, warm: 1.8 } },
     weak: (side) => side === 1 ? tgC(side, [[10, 10], [9, 10], [3, 2], [7, 2]], 0.8) : tgC(side, [[10, 10], [9, 10]], 0.7),          // 敵軍也會打我方大殿的木柱（吊燈砸我方的兵）；我方的自動玩家專打魔晶
     boss: { p2: 0.72, p3: 0.4, segHp: 60, regen: 2, orbHp: 30, meteors: 3, heal: 0.015, rest: ['barrage', 'meteor'] },          // rest：放完暗黑連射、隕石雨會累，下一回合是破綻
     objs: [{ t: 'hole', x: 56, y: 33, G: 2300, R: 15, rs: 1.7, on: false }],
@@ -422,7 +422,7 @@ const LEVELS = [
     // 力矩 ÷ 總重 ÷ arm × gain 就是該歪的角度（最多 max 弧度，一回合最多轉 step）；balls：樑上的大石球 [我方那一半的 x, 半徑]（敵方那一半鏡射）
     saw: { x: 56, y: 0, len: 109, th: 2.6, spire: [[8, 4], [6, 4], [4.2, 4], [2.4, 3.6]], peak: [1.8, 16, -70], gain: 1.6, arm: 30, max: 0.08, step: 0.035, balls: [[47, 1.5], [50.3, 1.3]], ballDen: 4 },
     me: { crew: ['hook', 'weight', 'hook', 'weight', 'hook', 'weight'] },
-    foe: { crew: ['weight', 'hook', 'weight', 'hook', 'weight', 'hook'], hp: 1.0, dmg: 0.9, open: 0.55, ai: { err: 4.0, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
+    foe: { crew: ['weight', 'hook', 'weight', 'hook', 'weight', 'hook'], hp: 1.0, dmg: 0.8, open: 0.55, ai: { err: 4.0, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
     weak: (side) => tgC(side, [[1, 8], [1, 9], [0, 6], [2, 6]], 0.9).concat(tgC(side, [[9, 8], [11, 8], [9, 6], [11, 6]], 0.95)),
     lantern: { at: 3, every: 3, spots: [[50, 30], [62, 22]] }
   },
@@ -486,7 +486,7 @@ const LEVELS = [
     lantern: { at: 3, every: 3, spots: [[56, 26], [44, 36], [68, 36]] }
   },
   {
-    name: '天空要塞', sayTop: 1, tag: '首領・浮空要塞・反重力・時砂', theme: 23, stress: 1, blockHp: 3.0, aerie: { alt: [3, -2, 3, -3, 2, -3], cannon: { first: 2, every: 2 } }, rules: { ff: 1, crit: 1, elem: 1 },
+    name: '天空要塞', sayTop: 1, tag: '首領・浮空要塞・反重力・時砂', theme: 23, stress: 1, blockHp: 3.6, aerie: { alt: [3, -2, 3, -3, 2, -3], cannon: { first: 2, every: 2 } }, rules: { ff: 1, crit: 1, elem: 1 },
     tip: '敵軍是一座浮在雲海上的天空要塞，四顆浮空晶石托著：碎一顆那一角就沉，全碎了整座掉進雲海。要塞每回合升降；艦長還在，每兩回合主砲轟你一次（開護罩擋）。反重力師讓磚浮起來、下一輪再砸下去；時砂術士讓這一輪的砲擊下一輪再打一次',
     hints: [{ r: 1, t: '天空要塞底下四顆紫色浮空晶石托著：碎一顆那一角就沉下去，碎得越多歪得越兇，全碎了整座掉進雲海', ok: () => aerieLifts() > 0 },
       { r: 2, t: '要塞的主砲在充能：這一輪敵軍砲擊時會轟過來，開護罩擋住（打倒最上面的要塞艦長，主砲就停了）', ok: () => S.aerie && S.aerie.charge && S.turn === 0 },
@@ -494,7 +494,7 @@ const LEVELS = [
       { r: 3, t: '時砂術士還活著，你這一輪的整輪砲擊，下一輪會原樣再打一次（回聲）：打得準的那一輪最值得', ok: () => S.team[0].units.some((u) => u.alive && u.type === 'time') }],
     ground: [[-40, 0], [152, 0]], voids: [[47, 200]],
     me: { castle: 'BASTION', crew: ['antigrav', 'time', 'glider', 'antigrav', 'time', 'flare'] },
-    foe: { castle: 'AERIE', y0: 12, crew: ['captain', 'glider', 'axe', 'weight', 'hook', 'glider'], hp: 1.35, dmg: 1.35, open: 0.55, ai: { err: 2.3, think: 1.1, gate: 0, hate: 0.2, skill: 0.6, sap: 0.6, warm: 1.6 } },
+    foe: { castle: 'AERIE', y0: 12, crew: ['captain', 'glider', 'axe', 'weight', 'hook', 'glider'], hp: 1.35, dmg: 1.2, open: 0.55, ai: { err: 2.3, think: 1.1, gate: 0, hate: 0.2, skill: 0.6, sap: 0.6, warm: 1.6 } },
     weak: (side) => { const out = []; for (const o of S.objs) if (o.t === 'lift' && o.side !== side && o.hp > 0) out.push({ x: o.x, y: o.y, w: 1.3, obj: o }); return out; },
     lantern: { at: 3, every: 3, spots: [[44, 40], [50, 26]] },
     sudden: 14

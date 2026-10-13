@@ -1,7 +1,7 @@
 /* ===== 80-ui: 存檔、主畫面、強化、設定、結算、戰鬥中的資訊列 ===== */
 const $ = (id) => document.getElementById(id);
 const SAVE_KEY = 'qianpao-pocheng-1';
-const SV = { coins: 0, stars: LEVELS.map(() => 0), open: 1, up: { dmg: 0, aim: 0, hp: 0, shield: 0, ult: 0 }, sfx: true, mus: true, vib: true, seen: false, seenUlt: false, seenSh: false, diff: 1, flip: false,
+const SV = { coins: 0, stars: LEVELS.map(() => 0), open: 1, up: { dmg: 0, aim: 0, hp: 0, shield: 0, ult: 0 }, sfx: true, mus: true, vib: true, seen: false, seenUlt: false, seenSh: false, diff: 1, flip: false, gfx: 2,
   prac: { map: 0, me: PRACTICE_BASE.me.crew.slice(), foe: PRACTICE_BASE.foe.crew.slice(), ff: 1 } };          // prac：演武場上次挑的戰場、兵、誤傷開關
 function loadSave() {
   try {
@@ -18,6 +18,7 @@ function loadSave() {
       if (s.up && typeof s.up === 'object') { for (const k in SV.up) SV.up[k] = int(s.up[k], 0, 5); if (s.up.aim === undefined && s.up.rate) SV.up.aim = int(s.up.rate, 0, 5); }      // 舊版的「裝填」改成「準星」
       SV.sfx = s.sfx !== false; SV.mus = s.mus !== false; SV.vib = s.vib !== false; SV.seen = !!s.seen; SV.seenUlt = !!s.seenUlt; SV.seenSh = !!s.seenSh; SV.flip = !!s.flip;
       SV.diff = s.diff === 0 || s.diff === 2 ? s.diff : 1;
+      SV.gfx = s.gfx === 0 || s.gfx === 1 ? s.gfx : 2;          // 畫質：0 低、1 中、2 高
       if (s.prac && typeof s.prac === 'object') {
         const ok = (a) => Array.isArray(a) && a.length === 6 && a.every((t) => UNIT_LIST.indexOf(t) >= 0);
         SV.prac.map = int(s.prac.map, 0, PRACTICE_MAPS - 1); if (!PRACTICE_LIST.includes(SV.prac.map)) SV.prac.map = 0; SV.prac.ff = s.prac.ff ? 1 : 0;
@@ -257,6 +258,7 @@ function toggleSync() {
   $('tSfx').setAttribute('aria-pressed', String(SV.sfx)); $('tMus').setAttribute('aria-pressed', String(SV.mus)); $('tVib').setAttribute('aria-pressed', String(SV.vib));
   AU.sfxOn = SV.sfx; AU.musOn = SV.mus; AU.vibOn = SV.vib; auSet();
   document.querySelectorAll('#diffSeg button').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.d === SV.diff)));
+  document.querySelectorAll('#gfxSeg button').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.q === G.gq)));
 }
 function openOpt(paused) {
   $('optTitle').textContent = paused ? '暫停' : '設定';

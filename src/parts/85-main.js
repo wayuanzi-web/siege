@@ -1,6 +1,6 @@
 /* ===== 85-main: 啟動、版面（直拿時轉向）、主迴圈、操作、關卡流程 ===== */
 const G = {
-  mode: 'home', demo: true, acc: 0, last: 0, endT: 0, drag: null, keys: {}, dprCap: 2, rot: 0, sw: 1, sh: 1, ox: 0, oy: 0,
+  mode: 'home', demo: true, gq: 2, acc: 0, last: 0, endT: 0, drag: null, keys: {}, dprCap: 2, rot: 0, sw: 1, sh: 1, ox: 0, oy: 0,
   ft: 16, slowFrames: 0, started: false, run: 0, demoIdx: 0, demoWait: 0, tut: 0, said: {}, freeze: false, fired: 0
 };
 
@@ -62,7 +62,7 @@ function startLevel(idx) {
   G.demo = false; G.mode = 'play'; G.endT = 0; G.acc = 0; G.fired = 0; G.drag = null; G.said = {}; G.hinted = {}; G.tapAt = -1e9; G.tut = idx === 0 && !SV.seen ? 1 : 0;
   const run = ++G.run;
   simInit(idx, SV.up, (Math.random() * 1e9) | 0, SV.diff); fxReset(); sceneBuild(false); S.on = fxOn;
-  RD.showAim = true; RD.aimOn = false; RD.trail = null; RD.sh[0] = RD.sh[1] = 0;
+  RD.showAim = true; RD.aimOn = false; RD.trail = null; RD.sh[0] = RD.sh[1] = 0; camIntro(lv);
   RD.aimT = [1.2, 0.95, 0.75][SV.diff] + 0.11 * (SV.up.aim || 0);
   $('home').hidden = true; $('result').hidden = true; $('opt').hidden = true; $('shop').hidden = true; $('hud').hidden = false;
   $('hudName').textContent = lv.name;
@@ -205,7 +205,8 @@ function frame(now) {
   if (!(rdt > 0)) rdt = STEP; if (rdt > 0.1) rdt = 0.1;
   // 太慢就降特效、再不行降解析度
   G.ft += (rdt * 1000 - G.ft) * 0.05;
-  if (G.ft > 38 && G.started) { if (++G.slowFrames > 150) { G.slowFrames = 0; if (!FX.low) FX.low = true; else if (G.dprCap > 1) { G.dprCap = Math.max(1, G.dprCap - 0.5); layout(); } } } else G.slowFrames = 0;
+  // 跑不動就自動降一級畫質（只降這一次遊玩，設定裡選的不改；降到「低」還是慢就沒得再降了）
+  if (G.ft > 38 && G.started) { if (++G.slowFrames > 150) { G.slowFrames = 0; if (G.gq > 0) { gfxApply(G.gq - 1); toggleSync(); if (G.mode === 'play' && S.state === 'play') pop(MID, 34, '畫面有點跑不動：畫質自動調成「' + ['低', '中', '高'][G.gq] + '」', '#cfe6ff', 2.6, 2.2); } } } else G.slowFrames = 0;
   AU.quiet = G.demo;
   const run = (G.mode === 'play' || (G.demo && G.mode !== 'pause')) && !G.freeze;
   let sdt = 0;
@@ -372,6 +373,7 @@ function bindInput() {
   click('tVib', () => { SV.vib = !SV.vib; toggleSync(); save(); vibrate(30); sfx('click'); });
   click('btnFlip', () => { SV.flip = !SV.flip; save(); sfx('click'); layout(); });
   document.querySelectorAll('#diffSeg button').forEach((b) => onTap(b, () => { SV.diff = +b.dataset.d; toggleSync(); save(); sfx('click'); }));
+  document.querySelectorAll('#gfxSeg button').forEach((b) => onTap(b, () => { SV.gfx = +b.dataset.q; gfxApply(SV.gfx); toggleSync(); save(); sfx('click'); }));
   click('btnUnlock', () => { SV.open = LEVELS.length; save(); sfx('buy'); homeRender(); $('opt').hidden = true; });
   click('btnWipe', () => {
     if (!UI.wipeArm) { UI.wipeArm = 1; $('btnWipe').textContent = '再按一次，確定清除'; sfx('deny'); return; }
@@ -395,7 +397,7 @@ function bindInput() {
 }
 
 function boot() {
-  loadSave(); toggleSync();
+  loadSave(); gfxApply(SV.gfx, true); toggleSync();
   // 系統設了「減少動態效果」：不晃畫面、閃光壓到很淡
   const rm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)');
   if (rm) { const f = () => { FX.calm = rm.matches; }; f(); if (rm.addEventListener) rm.addEventListener('change', f); else if (rm.addListener) rm.addListener(f); }
@@ -409,7 +411,7 @@ function boot() {
   // 字型晚一點才載到的話重新排一次
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { layout(); }).catch(() => { });
 }
-window.__qp = { S, SH, FX, G, V, SV, AU, RD, UI, PH, LEVELS, BOTS, practiceLevel, pracLevel, simInit, simStep, simAim, simFire, simSkill, aiInit, teamBar, startLevel, goHome, layout, renderFrame, fxStep, hudUpdate, sfx, musStart, physExplode, blockKill, killUnit, WPN, blockDist, homeRender, demoStart, ropeCut, tetherPop, fuseIgnite, castleB, bellPush, rollerSpawn, simTrace, aimFor, ampAims, liftBreak, AMP, groundYRaw, beastAct, beastQueue, beastBreak, beastHurt, beastPose, beastPlace,
+window.__qp = { S, SH, FX, G, V, SV, AU, RD, UI, PH, gfxApply, PF, LEVELS, BOTS, practiceLevel, pracLevel, simInit, simStep, simAim, simFire, simSkill, aiInit, teamBar, startLevel, goHome, layout, renderFrame, fxStep, hudUpdate, sfx, musStart, physExplode, blockKill, killUnit, WPN, blockDist, homeRender, demoStart, ropeCut, tetherPop, fuseIgnite, castleB, bellPush, rollerSpawn, simTrace, aimFor, ampAims, liftBreak, AMP, groundYRaw, beastAct, beastQueue, beastBreak, beastHurt, beastPose, beastPlace,
   // 測試用：凍結即時迴圈後，手動把戰局往前推 sec 秒
   advance(sec) { const n = Math.round(sec / STEP); let acc = 0; for (let i = 0; i < n; i++) { simStep(STEP); fxStep(STEP, STEP); acc += STEP; if (G.mode === 'play' && S.state !== 'play') G.endT += STEP; if (acc >= 0.05 && i < n - 1) { renderFrame(acc, acc); acc = 0; } } if (G.mode === 'play') hudUpdate(); renderFrame(acc || STEP, acc || STEP); }
 };

@@ -19,7 +19,7 @@ THEMES[16] = (function () {
         c.fillStyle = 'rgba(60,40,24,.55)'; c.fillRect(X(x), Y(h), s * 0.7, s * h); c.fillRect(X(x + w), Y(h), s * 0.7, s * h); c.fillRect(X(x - 0.4), Y(h + 0.8), s * (w + 1.5), s * 0.9);
         c.strokeStyle = 'rgba(40,26,14,.5)'; c.lineWidth = Math.max(1, s * 0.25); c.beginPath(); c.moveTo(X(x + 0.7), Y(h - 2)); c.lineTo(X(x + 2.4), Y(h)); c.moveTo(X(x + w), Y(h - 2)); c.lineTo(X(x + w - 1.7), Y(h)); c.stroke();
       }
-      lamps = []; for (let x = V.x0 + 10; x < V.x1 - 4; x += 18 + R() * 6) if (Math.abs(x - MID) > 5) lamps.push({ x, y: 13 + R() * 3, ph: R() * TAU });
+      lamps = []; this.lamps = lamps; for (let x = V.x0 + 10; x < V.x1 - 4; x += 18 + R() * 6) if (Math.abs(x - MID) > 5) lamps.push({ x, y: 13 + R() * 3, ph: R() * TAU });
 
       /* 岩頂：一整片厚厚的岩層（打不壞），一路到畫面頂端 */
       const sx0 = MID - SHAFT_W / 2, sx1 = MID + SHAFT_W / 2;

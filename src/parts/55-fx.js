@@ -1,15 +1,15 @@
 /* ===== 55-fx: 特效。聽模擬丟出來的事件，變成火花、煙、碎磚、震動、聲音 ===== */
 const NP = 1100;
 const FX = {
-  n: 0, low: false, calm: false, fl0: -1e9, fl1: -1e9, shake: 0, shx: 0, shy: 0, flash: 0, flashCol: '#fff', slow: 1, slowT: 0, slowK: 0.3, slowCd: 0, chainRef: 0, chainT: 0, stop: 0, heat: 0,
+  n: 0, low: false, hi: true, q: 2, calm: false, fl0: -1e9, fl1: -1e9, shake: 0, shx: 0, shy: 0, flash: 0, flashCol: '#fff', slow: 1, slowT: 0, slowK: 0.3, slowCd: 0, chainRef: 0, chainT: 0, stop: 0, heat: 0,
   x: new Float32Array(NP), y: new Float32Array(NP), vx: new Float32Array(NP), vy: new Float32Array(NP),
   life: new Float32Array(NP), max: new Float32Array(NP), size: new Float32Array(NP), rot: new Float32Array(NP), vr: new Float32Array(NP),
   type: new Uint8Array(NP), col: new Uint8Array(NP),
-  rings: [], bolts: [], pops: [], flung: [], tracers: [], gpop: {}, boomN: 0, glare: 0,
+  rings: [], bolts: [], pops: [], flung: [], tracers: [], gpop: {}, boomN: 0, glare: 0, lights: [], falls: [], cx: 0, cy: 0, cn: 0,
   nums: []          // 傷害數字（跟提示的字分開放：一輪幾十個數字也不會把重要的字擠掉）
 };
 // 粒子種類
-const P_SPARK = 0, P_SMOKE = 1, P_DEBRIS = 2, P_FLASH = 3, P_EMBER = 4, P_SHARD = 5, P_DUST = 6, P_CONF = 7;
+const P_SPARK = 0, P_SMOKE = 1, P_DEBRIS = 2, P_FLASH = 3, P_EMBER = 4, P_SHARD = 5, P_DUST = 6, P_CONF = 7, P_FIRE = 8, P_BUBBLE = 9, P_LAVA = 10;          // 8 火球、9 酸泡、10 熔岩飛沫（第五批）
 // 顏色表（粒子只記編號）
 const PCOL = ['#fff6c8', '#ffc34a', '#ff7a2a', '#e8421c', '#8fd0ff', '#3d86ff', '#ff8a6a', '#ffffff', '#6a6470', '#3a3540', '#c9a56a', '#d9c9a8', '#a6e6ff', '#c58aff', '#7ada58', '#ff5aa0', '#ffe14a', '#2a2530'];
 const C_WHITEHOT = 0, C_GOLD = 1, C_ORANGE = 2, C_RED = 3, C_SKY = 4, C_BLUE = 5, C_SALMON = 6, C_WHITE = 7, C_GRAY = 8, C_DARK = 9, C_TAN = 10, C_SAND = 11, C_ICE = 12, C_PURPLE = 13, C_GREEN = 14, C_PINK = 15, C_YELLOW = 16, C_SOOT = 17;
@@ -23,11 +23,11 @@ function debrisCol(skin, m) {
 }
 // 同一種提示短時間內只出一次（一輪幾十發同時彈、同時加速，不要整片都是字、都是聲音）
 function thr(k, ms) { const now = performance.now(), m = FX.thr || (FX.thr = {}); if (now - (m[k] || 0) < ms) return false; m[k] = now; return true; }
-function fxReset() { FX.nums.length = 0; if (FX.bubbles) FX.bubbles.length = 0; FX.n = 0; FX.glare = 0; FX.rings.length = 0; FX.bolts.length = 0; FX.pops.length = 0; FX.flung.length = 0; FX.tracers.length = 0; FX.shake = 0; FX.flash = 0; FX.slow = 1; FX.slowT = 0; FX.slowCd = 0; FX.chainRef = 0; FX.chainT = 0; FX.stop = 0; FX.gpop = {}; FX.heat = 0; }
+function fxReset() { FX.nums.length = 0; if (FX.bubbles) FX.bubbles.length = 0; FX.n = 0; FX.glare = 0; FX.rings.length = 0; FX.bolts.length = 0; FX.pops.length = 0; FX.flung.length = 0; FX.tracers.length = 0; FX.shake = 0; FX.flash = 0; FX.slow = 1; FX.slowT = 0; FX.slowCd = 0; FX.chainRef = 0; FX.chainT = 0; FX.stop = 0; FX.gpop = {}; FX.heat = 0; FX.lights.length = 0; FX.falls.length = 0; FX.cn = 0; decalReset(); RD.cam.z = RD.cam.tz = 1; RD.cam.hold = 0; }
 // 慢動作：精彩的瞬間（連環爆、大坍塌）放慢一下才看得清楚。k 放慢到幾成速度、dur 持續幾秒（真實時間）；不會連續觸發
 function slowmo(k, dur, force) { if (FX.slowCd > 0 && !force) return; FX.slowT = dur; FX.slowK = k; FX.slow = k; FX.slowCd = dur + 2.5; }
 function part(type, x, y, vx, vy, life, size, col) {
-  if (FX.n >= NP) { if (type === P_SMOKE || type === P_DUST || type === P_EMBER) return; FX.n = NP - 1; }
+  if (FX.n >= NP) { if (type === P_SMOKE || type === P_DUST || type === P_EMBER || type === P_FIRE || type === P_BUBBLE || type === P_LAVA) return; FX.n = NP - 1; }
   if (FX.low && (type === P_SMOKE || type === P_EMBER) && Math.random() < 0.5) return;
   const i = FX.n++;
   FX.x[i] = x; FX.y[i] = y; FX.vx[i] = vx; FX.vy[i] = vy; FX.life[i] = life; FX.max[i] = life; FX.size[i] = size; FX.type[i] = type; FX.col[i] = col;
@@ -72,7 +72,7 @@ function fxStep(dt, rdt) {
   if (FX.slowT > 0) { FX.slowT -= rdt; FX.slow = FX.slowT <= 0 ? 1 : FX.slowT < 0.35 ? lerp(1, FX.slowK, FX.slowT / 0.35) : FX.slowK; }
   if (FX.slowCd > 0) FX.slowCd -= rdt;
   // 短時間內垮了很多塊：放慢
-  FX.chainT -= dt; if (FX.chainT <= 0) { if (S.chain - FX.chainRef >= 5 && S.state === 'play') slowmo(0.45, 1.1); FX.chainRef = S.chain; FX.chainT = 0.35; } else if (S.chain < FX.chainRef) FX.chainRef = S.chain;
+  FX.chainT -= dt; if (FX.chainT <= 0) { const dn = S.chain - FX.chainRef; if (dn >= 5 && S.state === 'play') { slowmo(0.45, 1.1); if (FX.cn) camFocus(FX.cx / FX.cn, FX.cy / FX.cn, 1 + Math.min(0.22, (dn - 3) * 0.03), 1.1); } FX.chainRef = S.chain; FX.chainT = 0.35; FX.cx = FX.cy = FX.cn = 0; } else if (S.chain < FX.chainRef) FX.chainRef = S.chain;
   FX.heat = Math.max(0, FX.heat - rdt * 0.5);
   const g = GRAV;
   for (let i = 0; i < FX.n; i++) {
@@ -88,6 +88,9 @@ function fxStep(dt, rdt) {
     else if (t === P_SMOKE) { FX.vx[i] *= 1 - 2.2 * dt; FX.vy[i] = FX.vy[i] * (1 - 2.2 * dt) + 5 * dt; FX.vx[i] += S.wind * 0.5 * dt; }
     else if (t === P_EMBER) { FX.vy[i] += 16 * dt; FX.vx[i] += (rndS() * 20 + S.wind * 0.6) * dt; }
     else if (t === P_DUST) { FX.vx[i] *= 1 - 3 * dt; FX.vy[i] *= 1 - 3 * dt; FX.vx[i] += S.wind * 0.4 * dt; }
+    else if (t === P_FIRE) { FX.vx[i] *= 1 - 4.5 * dt; FX.vy[i] = FX.vy[i] * (1 - 4.5 * dt) + 7 * dt; }
+    else if (t === P_BUBBLE) { FX.vy[i] += 2 * dt; FX.vx[i] = Math.sin(FX.rot[i] + FX.life[i] * 9) * 1.2; }
+    else if (t === P_LAVA) { FX.vy[i] -= g * 0.9 * dt; if (FX.vy[i] < 0 && S.water && FX.y[i] < S.water.y) { FX.life[i] = 0.001; if ((RD.frame & 1) === 0) part(P_SMOKE, FX.x[i], S.water.y + 0.3, 0, 2, 0.6, 0.6, C_DARK); } }
     FX.x[i] += FX.vx[i] * dt; FX.y[i] += FX.vy[i] * dt;
   }
   for (let i = FX.rings.length - 1; i >= 0; i--) { const r = FX.rings[i]; r.t += dt; if (r.t >= r.max) FX.rings.splice(i, 1); }
@@ -96,6 +99,8 @@ function fxStep(dt, rdt) {
   for (let i = FX.nums.length - 1; i >= 0; i--) { const p = FX.nums[i]; p.t += rdt; if (p.t >= p.max) FX.nums.splice(i, 1); }
   for (let i = FX.tracers.length - 1; i >= 0; i--) { const p = FX.tracers[i]; p.t += dt; if (p.t >= 0.14) FX.tracers.splice(i, 1); }
   for (let i = FX.flung.length - 1; i >= 0; i--) { const f = FX.flung[i]; f.t += dt; f.vy -= g * 0.8 * dt; f.x += f.vx * dt; f.y += f.vy * dt; f.rot += f.vr * dt; if (f.t > 2.2 || f.y < -20) FX.flung.splice(i, 1); }
+  for (let i = FX.lights.length - 1; i >= 0; i--) { const o = FX.lights[i]; o.t += dt; if (o.t >= o.max) FX.lights.splice(i, 1); }
+  fallsStep(dt);
   FX.boomN = 0; FX.glare *= Math.pow(0.03, rdt);
 }
 
@@ -106,6 +111,8 @@ function fxOn(t, a, b, c, d, e, f) {
       const w = WL[d], dir = c === 0 ? 1 : -1;
       part(P_FLASH, a + dir * 0.6, b, 0, 0, 0.09, w.id === 'bomb' ? 3.6 : w.id === 'bolt' ? 1.2 : 2.2, w.id === 'ice' ? C_ICE : w.id === 'zap' ? C_YELLOW : w.id === 'dark' ? C_PINK : C_WHITEHOT);
       if (w.id === 'bomb') { burst(P_SMOKE, a + dir, b, 4, 9, 0.6, 1.8, C_GRAY); shake(0.12); }
+      lightAdd(a + dir * 0.6, b, w.id === 'bomb' ? 6 : 3.5, w.id === 'ice' ? C_ICE : w.id === 'zap' ? C_YELLOW : w.id === 'dark' ? C_PINK : C_GOLD, 0.5, 0.12);
+      if (!FX.low && w.kind !== K_PIERCE) part(P_SMOKE, a + dir * 0.9, b, dir * 4, 1.5, 0.5, 0.8, C_GRAY);          // 砲口一小團煙
       sfx(w.id === 'bolt' ? 'bolt' : w.id === 'bomb' || w.id === 'cluster' ? 'cannon' : w.id === 'fire' || w.id === 'chain' || w.id === 'sticky' || w.id === 'acid' ? 'whoosh' : w.id === 'ice' ? 'frost' : w.id === 'zap' || w.id === 'magnet' ? 'charge' : w.id === 'dark' ? 'dark' : w.id === 'drill' ? 'drill' : w.id === 'snipe' ? 'snipe' : w.id === 'wind' ? 'gust' : w.id === 'hook' ? 'zip' : w.id === 'weight' ? 'heave' : w.id === 'warp' ? 'warp' : w.id === 'seed' ? 'seed' : w.id === 'axe' ? 'axe' : w.id === 'mole' ? 'drill' : w.id === 'stake' ? 'heave' : w.id === 'flare' ? 'bolt' : w.id === 'glider' ? 'whoosh' : w.id === 'grav' ? 'warp' : w.id === 'hourglass' ? 'whoosh' : 'rocket', c);
       break;
     }
@@ -118,6 +125,7 @@ function fxOn(t, a, b, c, d, e, f) {
       // 不然整片白掉三分之一秒，城樓怎麼斷、怎麼垮正好都被蓋住
       { const gl = FX.glare, fi = FX.n; FX.glare += r; part(P_FLASH, a, b, 0, 0, 0.12 + r * 0.009, r * 1.2, k === K_ICE ? C_ICE : k === K_DARK ? C_PINK : C_WHITEHOT); if (FX.n > fi && gl > 3) FX.max[fi] = FX.life[fi] * (1 + (gl - 3) / 5); }
       if (k === K_PIERCE) { burst(P_SPARK, a, b, 2, 18, 0.2, 0.5, C_WHITEHOT); sfx('tick'); break; }
+      boomLayers(a, b, r, k, lit);
       ring(a, b, r * 0.3, r * 1.25, 0.26, k === K_ICE ? '#bfeeff' : k === K_DARK ? '#ff7ad0' : '#fff0b0', 0.42);
       burst(P_SPARK, a, b, FX.low ? 3 : 4 + Math.min(8, r * 1.2) | 0, 16 + r * 5, 0.38, 0.6, col);
       burst(P_SMOKE, a, b, FX.low ? 1 : 2 + Math.min(4, r * 0.5) | 0, 5 + r, 0.7 + r * 0.05, 1.3 + r * 0.32, k === K_ICE ? C_WHITE : C_GRAY, 3);
@@ -125,11 +133,12 @@ function fxOn(t, a, b, c, d, e, f) {
       if (k === K_ACID) { burst(P_SHARD, a, b, 7, 18, 0.7, 0.5, C_GREEN, 6); burst(P_SMOKE, a, b, 3, 5, 0.9, 1.8, C_GREEN, 2); }
       if (lit || k === K_FIRE) burst(P_EMBER, a, b, 4, 8, 0.7, 0.7, C_ORANGE, 4);
       if (r >= 4.6) { shake(0.25 + r * 0.05); sfx(r >= 7 ? 'boom3' : 'boom2'); vibrate(20); } else { shake(0.06); sfx(k === K_ICE ? 'ice' : k === K_FIRE ? 'fireboom' : 'boom'); }
-      if (w.id === 'keg' && S.state === 'play') slowmo(0.4, 1.3);
+      if (w.id === 'keg' && S.state === 'play') { slowmo(0.4, 1.3); camFocus(a, b, 1.14, 1.0); }
       break;
     }
     case 'cell': {
       // a,b 位置；c 磚材；d 哪一邊；e 傷害種類（99 = 整座垮掉）；f 那塊磚
+      if (e !== 99) { FX.cx += a; FX.cy += b; FX.cn++; }
       const fin = e === 99, col = debrisCol(f.skin || 'blue', c), cs = Math.cos(f.a), sn = Math.sin(f.a), area = f.w * f.h / (CS * CS);
       const n = Math.round(clamp(area * 3.5, 3, 12) * (FX.low ? 0.5 : 1) * (f.fragged ? 0.45 : 1));       // 已經裂成幾大塊的，小碎屑少一點
       for (let k = 0; k < n; k++) {
@@ -177,7 +186,7 @@ function fxOn(t, a, b, c, d, e, f) {
     }
     case 'udie': {
       // a,b 位置；c 哪一邊；d 兵種；e 死法
-      FX.flung.push({ side: c, type: d, x: a, y: b - 1.8, vx: (c === 0 ? -1 : 1) * (8 + Math.random() * 14), vy: 26 + Math.random() * 14, rot: 0, vr: (c === 0 ? 1 : -1) * (5 + Math.random() * 6), t: 0 });
+      if ((e === 0 || e === 1 || e === 3) && fallAdd(c, d, a, b - 1.8, e)) { /* 原地倒下（77-polish） */ } else FX.flung.push({ side: c, type: d, x: a, y: b - 1.8, vx: (c === 0 ? -1 : 1) * (8 + Math.random() * 14), vy: 26 + Math.random() * 14, rot: 0, vr: (c === 0 ? 1 : -1) * (5 + Math.random() * 6), t: 0 });
       burst(P_SPARK, a, b, 8, 22, 0.5, 0.6, c === 0 ? C_SKY : C_SALMON); ring(a, b, 0.5, 5, 0.3, '#ffffff', 0.4);
       // 剛才那一聲「哇！」不用留著跟這一句疊在一起；整座城垮掉時順便倒下的不再一個一個報
       for (let i = FX.pops.length - 1; i >= 0; i--) { const q = FX.pops[i]; if (q.yelp && Math.abs(q.x - a) < 9 && Math.abs(q.y - b) < 12) FX.pops.splice(i, 1); }
@@ -196,7 +205,7 @@ function fxOn(t, a, b, c, d, e, f) {
       for (let k = 0; k <= n; k++) { pts.push(k === 0 || k === n ? a : a + rndS() * 5, lerp(c, b, k / n)); }
       FX.bolts.push({ pts, t: 0, max: 0.2, col: '#fff7c0' });
       part(P_FLASH, a, b, 0, 0, 0.16, 6, C_YELLOW); burst(P_SPARK, a, b, 10, 30, 0.4, 0.6, C_YELLOW); ring(a, b, 1, 6, 0.25, '#fff7c0', 0.4);
-      flash(0.22, '#fff8d8'); shake(0.3); sfx('thunder');
+      flash(0.22, '#fff8d8'); shake(0.3); sfx('thunder'); lightAdd(a, b, 12, C_YELLOW, 0.9, 0.3);
       break;
     }
     case 'spark': burst(P_SPARK, a, b, 3, 16, 0.25, 0.4, C_YELLOW); break;
@@ -403,7 +412,7 @@ function fxOn(t, a, b, c, d, e, f) {
     }
     case 'brake': burst(P_DEBRIS, a, b, 8, 16, 0.6, 0.5, C_TAN, 4); if (S.state === 'play') pop(a, b - 3, c === 1 ? '閘斷了！吊籠在往下沉' : '我方的閘斷了！', c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.5); sfx('chainsnap'); sfx('groan'); shake(0.3); break;
     case 'end': {
-      slowmo(0.3, 1.8, true); shake(2.0); flash(0.3, '#fff6d8'); sfx('collapse'); vibrate(200);
+      slowmo(0.3, 1.8, true); shake(2.0); flash(0.3, '#fff6d8'); sfx('collapse'); vibrate(200); camFocus(a, b, 1.16, 2.6);
       ring(a, b, 2, 16, 0.6, '#fff0b0', 0.7);         // 只留一圈小的，別把整座城垮下來的樣子蓋住
       break;
     }
