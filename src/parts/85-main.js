@@ -36,7 +36,7 @@ function layout() {
   const hud = Math.round(8 * u * W / sw);                          // 上方資訊列佔掉的高度：戰場排在它下面
   if (W !== V.W || H !== V.H || padL !== G.padL || padR !== G.padR || hud !== V.hud) {
     G.padL = padL; G.padR = padR;
-    cv.width = W; cv.height = H; setView(W, H, W / sw, padL * W / sw, padR * W / sw, hud); artReset(); RD.flame = null;
+    cv.width = W; cv.height = H; setView(W, H, W / sw, padL * W / sw, padR * W / sw, hud); artReset(); RD.flame = null; decalReset();          // 焦痕畫在畫布座標上：換了比例就清掉
     if (S.lv) sceneBuild(true);
   }
 }

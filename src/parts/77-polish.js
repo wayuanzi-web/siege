@@ -16,16 +16,26 @@ function gfxApply(q, boot) {
    FX.lights：會熄的光（爆炸、砲口、雷），跟著特效的時間走（慢動作時也慢）。
    每一幀再把會一直亮的（著火的磚、照明箭、燈籠、飛行中的火彈）收進 RD.lt，一起畫成一層加亮 */
 function lightAdd(x, y, r, ci, a, life) { if (FX.lights.length < 28) FX.lights.push({ x, y, r, ci, a, t: 0, max: life }); }
+const LT_MAX = 48;
 function lightsGather(t) {
-  const L = RD.lt || (RD.lt = []); L.length = 0;
-  for (const o of FX.lights) { const f = 1 - o.t / o.max; L.push([o.x, o.y, o.r * (0.8 + 0.2 * (1 - f)), o.ci, o.a * f * f, 1]); }
-  for (const b of RD.burn) if (!b.dead && b.body) { const p = b.body.getPosition(); L.push([p.x, p.y + 0.4, 5.2, C_ORANGE, 0.42 * Math.min(1, b.burn) * (0.85 + 0.15 * Math.sin(t * 13 + b.id)), 0]); }
+  const L = RD.lt || (RD.lt = []), pool = RD.ltPool || (RD.ltPool = []); L.length = 0;
+  const add = (x, y, r, ci, a, tr) => { if (L.length >= LT_MAX) return; const o = pool[L.length] || (pool[L.length] = [0, 0, 0, 0, 0, 0]); o[0] = x; o[1] = y; o[2] = r; o[3] = ci; o[4] = a; o[5] = tr; L.push(o); };
+  for (const o of FX.lights) { const f = 1 - o.t / o.max; add(o.x, o.y, o.r * (0.8 + 0.2 * (1 - f)), o.ci, o.a * f * f, 1); }
+  // 著火的磚（直接看 S.blocks：有吊著的磚的關卡 drawBlocks 會跑兩次，RD.burn 只剩吊著的那些）
+  if (S.nburn > 0) for (const b of S.blocks) if (!b.dead && b.burn > 0 && b.body) { const p = b.body.getPosition(); add(p.x, p.y + 0.4, 5.2, C_ORANGE, 0.42 * Math.min(1, b.burn) * (0.85 + 0.15 * Math.sin(t * 13 + b.id)), 0); }
   for (const o of S.objs) {
-    if (o.t === 'flare' && o.hp > 0) L.push([o.x, o.y, 7, C_WHITEHOT, 0.38, 0]);
-    else if (o.t === 'torch' && o.hp > 0) L.push([o.x, o.y, 5.5, C_ORANGE, 0.3, 0]);
+    if (o.t === 'flare' && o.hp > 0) add(o.x, o.y, 7, C_WHITEHOT, 0.38, 0);
+    else if (o.t === 'torch' && o.hp > 0) add(o.x, o.y, 5.5, C_ORANGE, 0.3, 0);
   }
-  for (let i = 0; i < SH.n && L.length < 48; i++) { const k = WL[SH.w[i]] && WL[SH.w[i]].kind; if (k === K_FIRE) L.push([SH.x[i], SH.y[i], 3.4, C_ORANGE, 0.32, 0]); }
+  for (let i = 0; i < SH.n; i++) { const k = WL[SH.w[i]] && WL[SH.w[i]].kind; if (k === K_FIRE) add(SH.x[i], SH.y[i], 3.4, C_ORANGE, 0.32, 0); }
   return L;
+}
+// 黑暗那一層挖洞用的柔邊圓（畫一次，之後用 destination-out 蓋上去；不用每個洞每一幀都新做一個漸層）
+function holeSprite() {
+  let g = RD.holeSp; if (g) return g;
+  g = RD.holeSp = mkCanvas(128, 128); const c = g.getContext('2d');
+  c.fillStyle = rg(c, 64, 64, 0, 64, [0, 'rgba(0,0,0,1)', 0.12, 'rgba(0,0,0,1)', 0.6, 'rgba(0,0,0,.72)', 1, 'rgba(0,0,0,0)']); c.fillRect(0, 0, 128, 128);
+  return g;
 }
 // 一層加亮：被光照到的磚和兵亮起來（只有「高」畫質；「中」只畫爆炸本身的閃光）
 function drawLights(c) {
@@ -46,12 +56,14 @@ function drawCaveDark(c, t) {
   n.setTransform(1, 0, 0, 1, 0, 0); n.globalCompositeOperation = 'source-over'; n.clearRect(0, 0, W, H); n.setTransform(1 / Q, 0, 0, 1 / Q, 0, 0);
   n.fillStyle = lg(n, 0, 0, 0, V.H, [0, 'rgba(6,4,10,.62)', 0.55, 'rgba(6,4,10,.44)', 1, 'rgba(6,4,10,.3)']); n.fillRect(0, 0, V.W, V.H);
   n.globalCompositeOperation = 'destination-out';
-  const hole = (x, y, R, a) => { const px = X(x), py = Y(y), r = R * s; const g = n.createRadialGradient(px, py, r * 0.1, px, py, r); g.addColorStop(0, 'rgba(0,0,0,' + a + ')'); g.addColorStop(0.55, 'rgba(0,0,0,' + (a * 0.7) + ')'); g.addColorStop(1, 'rgba(0,0,0,0)'); n.fillStyle = g; n.beginPath(); n.arc(px, py, r, 0, TAU); n.fill(); };
+  const hs = holeSprite(), hole = (x, y, R, a) => { const r = R * s; n.globalAlpha = Math.min(1, a); n.drawImage(hs, X(x) - r, Y(y) - r, r * 2, r * 2); };
   for (const st of S.st) if (st && !st.dead) { const cc = stCenter(st); hole(cc.x, cc.y, Math.max(st.w, st.h) * 0.8, 0.62); }
   hole(MID, (S.ceil ? S.ceil.y : 21) * 0.55, 13, 0.75);          // 豎井的天光
   const lamps = SCENE.theme.lamps; if (lamps) for (const L of lamps) hole(L.x, L.y, 9 * (0.92 + 0.08 * Math.sin(t * 7 + L.ph)), 0.85);
   for (const l of RD.lt || []) hole(l[0], l[1], l[2] * 1.5, Math.min(1, l[4] * 2.2));
   for (const u of S.units) if (u.alive) hole(u.x, u.y + 1.2, 3.2, 0.5);
+  for (let i = 0; i < SH.n; i++) hole(SH.x[i], SH.y[i], 1.8, 0.8);          // 砲彈看得清楚
+  n.globalAlpha = 1;
   c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(cv, 0, 0, W, H, 0, 0, W * Q, H * Q); c.setTransform(1, 0, 0, 1, FX.shx, FX.shy);
 }
 
@@ -105,8 +117,10 @@ function scorchAdd(x, gy, r, k, lit) {
   if (FX.low || (S.water && x > S.water.x0 && x < S.water.x1 && gy < S.water.y)) return;
   const W = V.W, H = V.H; let cv = RD.decal; if (!cv || cv.width !== W || cv.height !== H) { cv = RD.decal = mkCanvas(W, H); RD.decalN = 0; }
   const c = cv.getContext('2d'), s = V.s, px = X(x), py = Y(gy) + s * 0.15, rx = s * r * (0.9 + Math.random() * 0.3), ry = Math.max(2, s * Math.min(0.7, r * 0.16));
-  const col = k === K_ACID ? '60,110,30' : k === K_ICE ? '230,246,255' : k === K_DARK ? '60,20,70' : '24,16,12', a = k === K_ICE ? 0.45 : 0.5;
-  c.save(); c.translate(px, py); c.scale(1, ry / rx);
+  const col = k === K_ACID ? '60,110,30' : k === K_ICE ? '230,246,255' : k === K_DARK ? '60,20,70' : '24,16,12', a = k === K_ICE ? 0.4 : 0.38;
+  if (RD.decalN > 90) return;          // 疊太多就不再加（不會越疊越黑）
+  const ang = Math.atan2(groundY(x - 1) - groundY(x + 1), 2);          // 斜坡上的焦痕跟著坡度斜
+  c.save(); c.translate(px, py); if (Math.abs(ang) < 1.2) c.rotate(ang); c.scale(1, ry / rx);
   c.fillStyle = rg(c, 0, 0, 0, rx, [0, 'rgba(' + col + ',' + a + ')', 0.6, 'rgba(' + col + ',' + (a * 0.5) + ')', 1, 'rgba(' + col + ',0)']);
   c.beginPath(); c.arc(0, 0, rx, 0, TAU); c.fill(); c.restore();
   RD.decalN = (RD.decalN || 0) + 1;
@@ -124,8 +138,8 @@ function unitPose(u, t, dir) {
   const held = u.frozen > 0 || u.stun > 0 || u.sunk;
   if (!held && !u.air) P.sy = 1 + 0.022 * Math.sin(t * 2.3 + u.slot * 1.7);
   const aiming = S.state === 'play' && S.phase === 'aim' && S.turn === u.side && !held && (u.side === 1 || RD.aimOn);
-  u._aim = (u._aim || 0) + ((aiming ? 1 : 0) - (u._aim || 0)) * 0.12;
-  if (u._aim > 0.01) { P.ang -= dir * 0.09 * u._aim; P.sy *= 1 - 0.04 * u._aim; P.sx *= 1 + 0.02 * u._aim; }
+  const am = RD.aimK || (RD.aimK = new WeakMap()), ak = (am.get(u) || 0) + ((aiming ? 1 : 0) - (am.get(u) || 0)) * 0.12; am.set(u, ak);          // 瞄準的程度記在畫面這邊，不寫進兵的資料
+  if (ak > 0.01) { P.ang -= dir * 0.09 * ak; P.sy *= 1 - 0.04 * ak; P.sx *= 1 + 0.02 * ak; }
   if (u.recoil > 0.01) { const k = Math.min(1, u.recoil); P.sx *= 1 + 0.12 * k; P.sy *= 1 - 0.1 * k; P.ang -= dir * 0.12 * k; }
   if (u.hurtT > 0) { P.dx += Math.sin(t * 70 + u.slot) * u.hurtT * s * 1.6; P.ang += dir * 0.18 * Math.min(1, u.hurtT * 4); }
   if (S.state !== 'play' && !held) {
@@ -179,10 +193,10 @@ const HOT_THEMES = { desert: 1, volcano: 1, forge: 1, dune: 1 };
 function sceneBlit(c, t) {
   const th = SCENE.theme;
   if (!FX.hi || !th || !HOT_THEMES[th.key] || FX.calm) { c.drawImage(SCENE.cv, 0, 0); return; }
-  const y0 = Math.max(0, Math.round(Y(12))), y1 = Math.min(V.H, Math.round(Y(1.5))), step = Math.max(2, Math.round(V.dpr * 2)), cv = SCENE.cv;
-  if (y0 > 0) c.drawImage(cv, 0, 0, V.W, y0, 0, 0, V.W, y0);
+  let gt = 0; for (const st of S.st) if (st) gt = Math.max(gt, st.y0);          // 城基站在多高：晃的那一帶在它上面
+  const y0 = Math.max(0, Math.round(Y(gt + 12))), y1 = Math.min(V.H, Math.round(Y(gt + 1.5))), step = Math.max(2, Math.round(V.dpr * 2)), cv = SCENE.cv;
+  c.drawImage(cv, 0, 0);          // 先整張貼一次：每一條左右挪開以後，邊上露出來的那一點是原圖，不是上一幀的殘影
   for (let y = y0; y < y1; y += step) { const h = Math.min(step, y1 - y), k = (y - y0) / Math.max(1, y1 - y0), dx = Math.sin(y * 0.09 + t * 5.2) * Math.sin(y * 0.023 - t * 1.7) * V.dpr * 1.3 * Math.sin(k * Math.PI); c.drawImage(cv, 0, y, V.W, h, dx, y, V.W, h); }          // 中間晃得最多，上下兩頭接回不動的背景（城基、地面不跟著晃）
-  if (y1 < V.H) c.drawImage(cv, 0, y1, V.W, V.H - y1, 0, y1, V.W, V.H - y1);
 }
 function weatherStep(dt, t) {
   if (FX.low || !(dt > 0) || !SCENE.theme) return;
@@ -198,15 +212,18 @@ function weatherStep(dt, t) {
 // 颶風（第十四關）：遠處海上一道龍捲風慢慢移動，捲著一些碎片
 function drawTwister(c, t) {
   if (FX.low || !SCENE.theme || SCENE.theme.key !== 'storm') return;
-  const s = V.s, span = V.x1 - V.x0, cx = V.x0 + span * (0.5 + 0.38 * Math.sin(t * 0.045)), base = 9, top = 46;
-  c.save(); c.globalAlpha = 0.5;
-  for (let k = 0; k < 22; k++) {
-    const u = k / 21, y = base + (top - base) * u, w = (0.7 + u * u * 9) * (1 + 0.08 * Math.sin(t * 6 + k)), x = cx + Math.sin(t * 1.3 + u * 4) * (1 + u * 3);
-    c.fillStyle = 'rgba(' + (60 + u * 30 | 0) + ',' + (70 + u * 28 | 0) + ',' + (80 + u * 24 | 0) + ',' + (0.35 + 0.25 * (1 - u)).toFixed(2) + ')';
-    ell(c, X(x), Y(y), w * s, Math.max(1, s * 1.1)); c.fill();
+  // 在兩座城中間的遠方（海平線上）慢慢左右飄：底下一團捲起來的水霧，往上越轉越粗，頂上接進雲裡
+  const s = V.s, cx = MID + 9 * Math.sin(t * 0.05), base = 8.6, top = 40;
+  c.save();
+  c.fillStyle = rg(c, X(cx), Y(base + 0.6), 0, s * 5, [0, 'rgba(70,80,86,.55)', 1, 'rgba(70,80,86,0)']); ell(c, X(cx), Y(base + 0.6), s * 5, s * 1.8); c.fill();
+  for (let k = 0; k < 26; k++) {
+    const u = k / 25, y = base + (top - base) * u, w = (0.45 + u * u * u * 11) * (1 + 0.1 * Math.sin(t * 7 + k * 1.3)), x = cx + Math.sin(t * 1.1 + u * 3.2) * (0.4 + u * 2.6);
+    c.fillStyle = 'rgba(' + (48 + u * 26 | 0) + ',' + (56 + u * 24 | 0) + ',' + (64 + u * 22 | 0) + ',' + (0.62 - 0.3 * u).toFixed(2) + ')';
+    ell(c, X(x), Y(y), w * s, Math.max(1, s * 1.15)); c.fill();
+    if (k % 3 === 1) { c.strokeStyle = 'rgba(150,160,166,' + (0.35 - 0.2 * u).toFixed(2) + ')'; c.lineWidth = Math.max(1, s * 0.12); c.beginPath(); c.ellipse(X(x), Y(y), w * s * 0.85, Math.max(1, s * 0.5), 0, Math.PI * (0.1 + 0.3 * Math.sin(t * 5 + k)), Math.PI * (0.9 + 0.3 * Math.sin(t * 5 + k))); c.stroke(); }
   }
-  c.fillStyle = 'rgba(40,40,40,.8)';
-  for (let k = 0; k < 9; k++) { const a = t * (2 + k * 0.17) + k * 1.9, u = (k * 0.137 + t * 0.05) % 1, y = base + (top - base) * u * 0.7, R = (1 + u * u * 9) * 1.2; c.fillRect(X(cx + Math.cos(a) * R), Y(y + Math.sin(a) * 0.4), Math.max(1, s * 0.25), Math.max(1, s * 0.18)); }
+  c.fillStyle = 'rgba(30,32,36,.85)';
+  for (let k = 0; k < 12; k++) { const a = t * (2.4 + k * 0.21) + k * 1.9, u = (k * 0.137 + t * 0.04) % 1, y = base + (top - base) * u * 0.55, R = (0.6 + u * u * u * 11) * 1.25; c.fillRect(X(cx + Math.cos(a) * R), Y(y + Math.sin(a) * 0.4), Math.max(1, s * 0.25), Math.max(1, s * 0.18)); }
   c.restore();
 }
 
@@ -221,14 +238,15 @@ function camIntro(lv) {
   const C = RD.cam; C.z = C.tz = 1; C.hold = 0;
   if (FX.q === 0 || FX.calm || !(lv.boss || lv.beast || lv.aerie)) return;
   const st = S.st[1]; if (!st) return; const cc = stCenter(st);
-  C.z = C.tz = 1.5; C.hold = 0.55; C.fx = C.cx = cc.x; C.fy = C.cy = cc.y + st.h * 0.15;
+  C.z = C.tz = 1.4; C.hold = 0.25; C.fx = C.cx = cc.x; C.fy = C.cy = cc.y - st.h * 0.05; C.fast = 1;          // 開場只有 1.1 秒：很快拉遠，輪到你瞄準以前就是全景
 }
 function camStep(rdt) {
   const C = RD.cam;
   const mine = S.state === 'play' && S.turn === 0 && S.phase === 'aim';
-  if (mine || G.drag || G.mode !== 'play') { C.tz = 1; C.hold = 0; }
+  if (mine || G.drag) { C.z = C.tz = 1; C.hold = 0; return; }          // 輪到自己瞄準、手指拖著：一定是全景（虛線、手指的位置才對得上）
+  if (G.mode !== 'play') { C.tz = 1; C.hold = 0; }
   else if (C.hold > 0) { C.hold -= rdt; if (C.hold <= 0) C.tz = 1; }
-  C.z += (C.tz - C.z) * Math.min(1, rdt * (mine ? 9 : C.tz > C.z ? 3 : 1.8));
+  C.z += (C.tz - C.z) * Math.min(1, rdt * (C.tz > C.z ? 3 : C.fast ? 4.5 : 1.8)); if (C.z < 1.01) C.fast = 0;
   C.cx += (C.fx - C.cx) * Math.min(1, rdt * 4); C.cy += (C.fy - C.cy) * Math.min(1, rdt * 4);
   if (Math.abs(C.z - 1) < 0.002 && C.tz === 1) C.z = 1;
 }

@@ -46,7 +46,7 @@ function drawNight(c, t) {
   const n = cv.getContext('2d');
   n.setTransform(1, 0, 0, 1, 0, 0); n.globalCompositeOperation = 'source-over'; n.clearRect(0, 0, W, H); n.fillStyle = 'rgba(4,6,18,' + k + ')'; n.fillRect(0, 0, W, H); n.setTransform(1 / Q, 0, 0, 1 / Q, 0, 0);
   n.globalCompositeOperation = 'destination-out';
-  const hole = (x, y, R, a) => { const px = X(x), py = Y(y), r = R * s; const g = n.createRadialGradient(px, py, r * 0.15, px, py, r); g.addColorStop(0, 'rgba(0,0,0,' + a + ')'); g.addColorStop(0.6, 'rgba(0,0,0,' + (a * 0.75) + ')'); g.addColorStop(1, 'rgba(0,0,0,0)'); n.fillStyle = g; n.beginPath(); n.arc(px, py, r, 0, TAU); n.fill(); };
+  const hs = holeSprite(), hole = (x, y, R, a) => { const r = R * s; n.globalAlpha = Math.min(1, a); n.drawImage(hs, X(x) - r, Y(y) - r, r * 2, r * 2); };          // 柔邊圓只畫一次（77-polish）
   // 自己的城（摸黑也認得出來）
   const me = S.st[0]; if (me) hole(me.cx, me.y0 + me.h * 0.5, Math.max(me.w, me.h) * 0.75, 0.55);
   for (const o of S.objs) {
@@ -56,5 +56,6 @@ function drawNight(c, t) {
   if (S.nburn > 0) for (const b of S.blocks) if (!b.dead && b.burn > 0 && b.body) { const p = b.body.getPosition(); hole(p.x, p.y, FIRE_R * (0.9 + 0.1 * Math.sin(t * 11 + p.x)), 0.85); }
   for (let i = 0; i < SH.n; i++) hole(SH.x[i], SH.y[i], 1.6, 0.7);          // 砲彈自己帶一點光（看得到在飛）
   for (const l of RD.lt || []) if (l[5]) hole(l[0], l[1], l[2] * 1.15, Math.min(1, l[4] * 1.8));          // 爆炸、砲口的光：那一瞬間照亮附近（第五批）
+  n.globalAlpha = 1;
   c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(cv, 0, 0, W, H, 0, 0, W * Q, H * Q); c.setTransform(1, 0, 0, 1, FX.shx, FX.shy);
 }

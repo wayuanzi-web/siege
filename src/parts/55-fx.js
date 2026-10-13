@@ -186,7 +186,8 @@ function fxOn(t, a, b, c, d, e, f) {
     }
     case 'udie': {
       // a,b 位置；c 哪一邊；d 兵種；e 死法
-      if ((e === 0 || e === 1 || e === 3) && fallAdd(c, d, a, b - 1.8, e)) { /* 原地倒下（77-polish） */ } else FX.flung.push({ side: c, type: d, x: a, y: b - 1.8, vx: (c === 0 ? -1 : 1) * (8 + Math.random() * 14), vy: 26 + Math.random() * 14, rot: 0, vr: (c === 0 ? 1 : -1) * (5 + Math.random() * 6), t: 0 });
+      const du = (e === 0 || e === 1 || e === 3) && !(S.st[c] && (S.st[c].fin || S.st[c].plat)) ? S.units.find((q) => q.side === c && q.slot === f) : null;
+      if (du && !du.air && !du.fr && fallAdd(c, d, a, b - 1.8, e)) { /* 原地倒下（77-polish） */ } else FX.flung.push({ side: c, type: d, x: a, y: b - 1.8, vx: (c === 0 ? -1 : 1) * (8 + Math.random() * 14), vy: 26 + Math.random() * 14, rot: 0, vr: (c === 0 ? 1 : -1) * (5 + Math.random() * 6), t: 0 });
       burst(P_SPARK, a, b, 8, 22, 0.5, 0.6, c === 0 ? C_SKY : C_SALMON); ring(a, b, 0.5, 5, 0.3, '#ffffff', 0.4);
       // 剛才那一聲「哇！」不用留著跟這一句疊在一起；整座城垮掉時順便倒下的不再一個一個報
       for (let i = FX.pops.length - 1; i >= 0; i--) { const q = FX.pops[i]; if (q.yelp && Math.abs(q.x - a) < 9 && Math.abs(q.y - b) < 12) FX.pops.splice(i, 1); }
@@ -412,7 +413,7 @@ function fxOn(t, a, b, c, d, e, f) {
     }
     case 'brake': burst(P_DEBRIS, a, b, 8, 16, 0.6, 0.5, C_TAN, 4); if (S.state === 'play') pop(a, b - 3, c === 1 ? '閘斷了！吊籠在往下沉' : '我方的閘斷了！', c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.5); sfx('chainsnap'); sfx('groan'); shake(0.3); break;
     case 'end': {
-      slowmo(0.3, 1.8, true); shake(2.0); flash(0.3, '#fff6d8'); sfx('collapse'); vibrate(200); camFocus(a, b, 1.16, 2.6);
+      slowmo(0.3, 1.8, true); shake(2.0); flash(0.3, '#fff6d8'); sfx('collapse'); vibrate(200); { const st = S.st[c], cc = st ? stCenter(st) : { x: a, y: b }; camFocus(cc.x, cc.y, 1.16, 2.6); }
       ring(a, b, 2, 16, 0.6, '#fff0b0', 0.7);         // 只留一圈小的，別把整座城垮下來的樣子蓋住
       break;
     }
