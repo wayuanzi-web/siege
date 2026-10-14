@@ -38,11 +38,11 @@ function drawStackFront(c, t) {
     const p = w.a.body.getWorldPoint(w.la), x = X(p.x), y = Y(p.y), r = Math.max(1.2, s * 0.24);
     c.fillStyle = '#3a3f48'; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); c.fillStyle = '#c8ccd6'; c.beginPath(); c.arc(x - r * 0.3, y - r * 0.3, r * 0.45, 0, TAU); c.fill();
   }
-  const B = S.build; if (!B || B.st !== 'move') return;
-  const st = S.st[B.side], P = pieceShape(B.k, B.rot), L = stackLand(B.side, P, B.x), land = L.by, hy = Math.max(stackTop(st) + CS * 2.4, land + P.h * CS + CS * 1.4) + Math.sin(t * 3) * 0.25;
+  const B = S.build; if (!B || B.st !== 'move' || S.state !== 'play') return;
+  const st = S.st[B.side], P = pieceShape(B.k, B.rot), L = stackLand(B.side, P, B.x), land = L.by, hy = Math.min(Math.max(stackTop(st) + CS * 2.4, land + P.h * CS + CS * 1.4), WY(V.hud * 1.7) - P.h * CS - 0.5) + Math.sin(t * 3) * 0.25;          // 疊得很高的時候不要躲到上面的資訊列後面
   const col = PIECE_COL[B.mat] || PIECE_COL[M_STONE], cell = CS * s;
   // 會落在哪：一圈虛線框（擱不平、伸出城外的話是紅的），中間一條細細的垂直線
-  const bad = L.off > 0 || L.gaps > 1.2;
+  const bad = L.off > 0 || L.gaps > 1.2 || L.tip;          // 伸出城外、擱不平、重心不在撐著它的地方（一放就翻）：紅框
   c.strokeStyle = bad ? 'rgba(255,110,90,.85)' : 'rgba(255,255,255,.75)'; c.lineWidth = Math.max(1, s * 0.14); c.setLineDash([s * 0.5, s * 0.4]);
   for (const q of P.c) c.strokeRect(X(B.x + q[0] * CS) + 1, Y(land + (q[1] + 1) * CS) + 1, cell - 2, cell - 2);
   c.setLineDash([]);

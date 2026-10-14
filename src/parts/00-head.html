@@ -197,7 +197,8 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 .pickgrid button { display: grid; justify-items: center; gap: calc(var(--u) * .3); padding: calc(var(--u) * .6) 0; background: rgba(255, 255, 255, .06); --cut: calc(var(--u) * 1.2); font-size: calc(var(--u) * 2.5); font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
 .pickgrid button canvas { width: calc(var(--u) * 7); height: calc(var(--u) * 7); border-radius: 50%; background: #241d3c; }
 .pickgrid button[aria-pressed="true"] { background: rgba(255, 201, 60, .28); box-shadow: inset 0 0 0 2px var(--gold); }
-.pickgrid button.new span::after { content: "新"; margin-left: 2px; padding: 0 3px; border-radius: 3px; background: #e0442e; color: #fff; font-size: .8em; }
+.pickgrid button { position: relative; }
+.pickgrid button.new::after { content: "新"; position: absolute; top: calc(var(--u) * .4); right: calc(var(--u) * 1.3); padding: 0 3px; border-radius: 3px; background: #e0442e; color: #fff; font-size: calc(var(--u) * 2); line-height: 1.3; }          /* 「新」貼在頭像的右上角（四個字的兵名才放得下） */
 .crew.many .cu { width: calc(var(--u) * 6.2); height: calc(var(--u) * 6.2); }
 /* 雙方的兵：一排頭像，左邊直書的「我方／敵軍」。卡片窄的時候頭像一起縮，標籤不會被擠成一個字一行 */
 .lvcrew { display: grid; gap: calc(var(--u) * 1.3); margin-top: calc(var(--u) * 1.6); }

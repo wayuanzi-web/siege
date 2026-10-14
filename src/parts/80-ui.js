@@ -380,14 +380,15 @@ function hudUpdate() {
   const eA = S.team[1].ai, em = play && S.phase === 'aim' && S.turn === 1 && eA && eA.st === 2 && eA.warn >= 2 ? Math.round(eA.warn) : 0;
   // 回合結束的環境變化（第三篇）：暴潮、漲潮、退潮
   const E = S.env, envT = S.phase === 'hazard' && E ? (E.surge ? 'surge' : E.tideA ? (S.water && S.water.lava ? 'lava' : E.tideA.to > E.tideA.from ? 'up' : 'down') : S.pass && S.pass.anim ? 'pass' : S.saw && S.saw.rot ? 'saw' : '') : '';
-  const tk = !play || S.phase === 'intro' || (S.phase === 'hazard' && !S.hz && !envT) ? '' : S.phase === 'hazard' ? (envT ? 'e' + envT : 'hz') : S.phase + S.turn + (S.team[S.turn].ult.armed ? 'u' : '') + (em ? 'm' + em : '');
+  const bt = S.phase === 'build' && S.build ? (S.build.st === 'move' ? (S.turn === 0 && !S.team[0].ai ? ':' + Math.max(0, Math.ceil(S.stack.C.time - S.build.t)) : '') : ':f') : '';          // 築城：還剩幾秒（時間到就照現在的位置放下）、落下中
+  const tk = !play || S.phase === 'intro' || (S.phase === 'hazard' && !S.hz && !envT) ? '' : S.phase === 'hazard' ? (envT ? 'e' + envT : 'hz') : S.phase + S.turn + bt + (S.team[S.turn].ult.armed ? 'u' : '') + (em ? 'm' + em : '');
   if (tk !== HUD.turn) {
     HUD.turn = tk; const el = $('turnChip');
     if (!tk) el.hidden = true;
     else {
       el.hidden = false;
       el.className = 'chamfer ' + (tk === 'hz' || envT ? 'hz' : S.turn === 0 ? 'me' : 'foe') + (mine ? ' go' : '') + (S.turn === 1 && S.phase === 'aim' && (em || S.team[1].ult.armed) ? ' warn' : '');
-      el.textContent = envT ? (envT === 'surge' ? '暴潮！' : envT === 'lava' ? '岩漿上漲' : envT === 'pass' ? (S.pass.kind === 'tunnel' ? '進隧道' : S.pass.outKind === 'tunnel' ? '出隧道' : '路邊換景') : envT === 'saw' ? '天秤傾斜' : envT === 'up' ? '漲潮' : '退潮') : tk === 'hz' ? (S.lv.rocks && S.lv.rocks.sym ? '火山彈！' : '落石！') : S.phase === 'build' ? (S.turn === 0 ? '築城：左右拖、點一下轉向、按「放下」' : '敵軍築城中') : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : S.team[1].ult.armed ? '敵軍連珠砲上膛！' : em ? '敵軍的砲彈會穿過' + (S.lv.boss ? '聖光符' : '倍增符') + '：×' + em + '！' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
+      el.textContent = envT ? (envT === 'surge' ? '暴潮！' : envT === 'lava' ? '岩漿上漲' : envT === 'pass' ? (S.pass.kind === 'tunnel' ? '進隧道' : S.pass.outKind === 'tunnel' ? '出隧道' : '路邊換景') : envT === 'saw' ? '天秤傾斜' : envT === 'up' ? '漲潮' : '退潮') : tk === 'hz' ? (S.lv.rocks && S.lv.rocks.sym ? '火山彈！' : '落石！') : S.phase === 'build' ? (bt === ':f' ? '磚組落下中…' : S.turn === 0 ? '築城：左右拖、點一下轉向、按「放下」' + (bt ? '（' + bt.slice(1) + '）' : '') : '敵軍築城中') : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : S.team[1].ult.armed ? '敵軍連珠砲上膛！' : em ? '敵軍的砲彈會穿過' + (S.lv.boss ? '聖光符' : '倍增符') + '：×' + em + '！' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
     }
   }
   const fk = (mine ? 1 : 0) + (bld ? 2 : 0); if (fk !== HUD.fire) { HUD.fire = fk; const bf = $('btnFire'); bf.classList.toggle('ready', !!mine); bf.classList.toggle('btn-gold', !!mine); bf.firstElementChild.textContent = bld ? '放下' : '發射'; bf.setAttribute('aria-label', bld ? '放下磚組' : '發射'); }

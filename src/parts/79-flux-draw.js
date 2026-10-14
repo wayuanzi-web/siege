@@ -20,16 +20,26 @@ function drawFlux(c, t) {
       const above = cy + 1 < ny ? i + nx : -1, top = above < 0 || K[above] !== k || A[above] < 0.03;
       // 往下掉的那一截（底下是空的）：畫成一道細細的水柱、一串油滴，不是一整格
       const below = i - nx; if (cy > 0 && !F.sol[below] && !(K[below] === k && A[below] > 0.85) && F.ice[below] <= 0) {
-        const sw = cw * (0.22 + Math.min(1, a) * 0.3), wob = Math.sin(t * 9 + cy * 1.7 + cx) * cw * 0.06;
-        c.fillStyle = LQ_COL[k][0]; c.fillRect(x + (cw - sw) / 2 + wob, Y(FL.y0 + (cy + 1) * FL.c), sw, cw + 0.6);
+        // 水是一道細細的水柱，油、岩漿是一顆一顆往下滴（不是一根根柱子）
+        const wob = Math.sin(t * 9 + cy * 1.7 + cx) * cw * 0.06, yb = Y(FL.y0 + cy * FL.c);
+        c.fillStyle = LQ_COL[k][0];
+        if (k === LQ_WATER) { const sw = cw * (0.14 + Math.min(1, a) * 0.22); c.globalAlpha = 0.8; c.fillRect(x + (cw - sw) / 2 + wob, yb - cw - 0.3, sw, cw + 0.6); c.globalAlpha = 1; }
+        else { const r = cw * (0.14 + Math.min(1, a) * 0.16), ph = (t * 2.2 + cx * 0.37) % 1; c.beginPath(); c.arc(x + cw / 2 + wob, yb - cw * ph, r, 0, TAU); c.fill(); }
         continue;
       }
-      const h = top ? Math.min(1, a) : 1, y0 = Y(FL.y0 + cy * FL.c + h * FL.c), col = LQ_COL[k];
-      c.fillStyle = col[top ? 0 : 1]; c.fillRect(x, y0, cw + 0.6, h * cw + 0.6);
-      if (top) {
-        const wob = k === LQ_LAVA ? 0 : Math.sin(t * 3 + cx * 0.9) * s * 0.06;
-        c.fillStyle = col[2]; c.globalAlpha = k === LQ_OIL ? 0.5 : 0.75; c.fillRect(x, y0 + wob, cw + 0.6, Math.max(1, s * 0.12)); c.globalAlpha = 1;
+      const col = LQ_COL[k];
+      if (!top) { c.fillStyle = col[1]; c.fillRect(x, Y(FL.y0 + (cy + 1) * FL.c), cw + 0.6, cw + 0.6); }
+      else {
+        // 水面：跟左右兩格的水面接成斜的（不是一階一階），貼著牆的那一邊跟自己一樣高，旁邊是空的就往下收
+        const h = Math.min(1, a), hs = (q) => { if (q < 0 || q >= nx) return h * 0.5; const j = cy * nx + q; if (F.sol[j]) return h; if (K[j] === k && A[j] > 0.03) { const u = j + nx; return u < nx * ny && K[u] === k && A[u] > 0.03 ? 1 : Math.min(1, A[j]); } return Math.max(0, h - 0.45); };
+        const hl = (h + hs(cx - 1)) / 2, hr = (h + hs(cx + 1)) / 2, yb = Y(FL.y0 + cy * FL.c) + 0.6, yy = (v) => Y(FL.y0 + (cy + v) * FL.c);
+        c.fillStyle = col[0]; c.beginPath(); c.moveTo(x, yb); c.lineTo(x, yy(hl)); c.lineTo(x + cw / 2, yy(h)); c.lineTo(x + cw + 0.6, yy(hr)); c.lineTo(x + cw + 0.6, yb); c.closePath(); c.fill();
+        if (!(k === LQ_LAVA && h < 0.35)) {          // 很薄的一層岩漿不畫亮線（不然像一道雷射）
+          const wob = k === LQ_LAVA ? 0 : Math.sin(t * 3 + cx * 0.9) * s * 0.06;
+          c.strokeStyle = col[2]; c.globalAlpha = k === LQ_OIL ? 0.5 : 0.75; c.lineWidth = Math.max(1, s * 0.12); c.beginPath(); c.moveTo(x, yy(hl) + wob); c.lineTo(x + cw / 2, yy(h) + wob); c.lineTo(x + cw + 0.6, yy(hr) + wob); c.stroke(); c.globalAlpha = 1;
+        }
       }
+      const h = top ? Math.min(1, a) : 1;
       if (k === LQ_LAVA && !FX.low && top && ((RD.frame + cx * 7) & 31) === 0) part(P_EMBER, FL.x0 + (cx + Math.random()) * FL.c, FL.y0 + (cy + h) * FL.c, rndS(), 3 + Math.random() * 3, 0.8, 0.4, C_ORANGE);
     }
   }

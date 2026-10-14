@@ -239,7 +239,7 @@ function canFire() { return G.mode === 'play' && S.state === 'play' && S.phase =
 // 第二十五關：輪到我方擺磚組
 function canBuild() { const B = S.build; return G.mode === 'play' && S.state === 'play' && S.phase === 'build' && !!B && B.side === 0 && B.st === 'move' && !S.team[0].ai; }
 function fireNow() {
-  if (canBuild()) { simBuild(0, 'drop'); return true; }          // 築城：放下磚組
+  if (canBuild()) { simBuild(0, 'drop'); G.keys = {}; return true; }          // 築城：放下磚組（按著的方向鍵放開再算，不要一放下就改到瞄準）
   if (!canFire()) return false;
   const T = S.team[0];
   // 記下這一輪帶頭那一發會怎麼飛（下一輪瞄準時畫出來當參考）
@@ -296,6 +296,7 @@ function bindInput() {
     // 還沒輪到我就先按住的（開場、敵軍砲擊中）：輪到我之後才開始算「有沒有拖過」
     if (!d.live && canFire()) { d.live = true; d.x0 = d.x; d.y0 = d.y; d.far = 0; }
     d.x = e.clientX; d.y = e.clientY; d.far = Math.max(d.far, Math.hypot(d.x - d.x0, d.y - d.y0));
+    if (!d.build && !d.live && canBuild()) { d.build = true; d.x0 = d.x; d.y0 = d.y; d.far = 0; }          // 敵軍回合就按著的手指：輪到我方築城以後改成挪磚組
     if (d.build) { if (canBuild()) { const m = stageDelta(dx, dy); simBuild(0, 'move', m[0] * V.dpr / V.s); } return; }          // 築城：拖多遠，磚組就挪多遠
     const m = stageDelta(dx, dy), k = (V.dpr / V.s) * 1.5, T = S.team[0];
     simAim(0, T.aim[0] + m[0] * k, T.aim[1] - m[1] * k);

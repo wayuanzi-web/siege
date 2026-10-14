@@ -180,7 +180,7 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
       if (h === 1 && !RAY.o && AMP.roll && rollOk(RAY.x, side, wi, vx, vy)) { evt(RAY.x, RAY.y, vx, vy); load(); rollStart(RAY.x); x = SA.x; y = SA.y; vx = SA.vx; vy = 0; flag = SA.flag; a0 = SA.a0; a1 = SA.a1; rolling = true; R.roll = true; if (path) path.push(x, y); continue; }
       R.o = RAY.o; R.x = RAY.x; R.y = RAY.y; return end(h);
     }
-    if (inOwn && t > 0.3 && (nx < own.x0 - 1 || nx > own.x1 + 1 || ny > own.y1 + 4)) inOwn = false;
+    if (inOwn && t > 0.3 && (nx < own.x0 - 1 || nx > own.x1 + 1 || ny > (own.ys1 || own.y1) + 4)) inOwn = false;
     if (nx < -40 || nx > VIEW_W + 40 || ny < -30) { R.x = nx; R.y = ny; return end(0); }
     x = nx; y = ny;
     if (path) path.push(x, y);

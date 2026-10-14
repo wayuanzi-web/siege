@@ -502,7 +502,7 @@ const LEVELS = [
   /* ---- 第五篇「破規」：每一關打破一條前面一直成立的規則 ---- */
   {
     name: '疊城對決', sayTop: 1, tag: '築城・磚組・狼煙線', theme: 24, castle: 'STACKER', blockHp: 1.6, fall: 0.25, rules: { ff: 1, crit: 1, elem: 1 },
-    stack: { start: 2, line: 10, cap: 15, time: 12, mats: [[M_WOOD, 0.45], [M_STONE, 0.4], [M_IRON, 0.15]] },
+    stack: { start: 2, line: 10, cap: 13, time: 12, mats: [[M_WOOD, 0.45], [M_STONE, 0.4], [M_IRON, 0.15]] },
     tip: '城不是現成的：每回合開火前，先在自己的城頂疊一塊磚組（左右拖、點一下轉向、按「放下」）。停穩的磚組算進城防，還會多一個兵站上去（最多六個）；城頂第一次疊過狼煙線，連珠立刻集滿。壓頂術士在敵城頂變出大石板把它壓歪，固樑匠把自己的城頂鉚起來',
     hints: [{ r: 1, t: '先築城：左右拖動磚組、點一下畫面轉向、按「放下」。擱得平、擱在城基上面的才站得穩；停穩了，城下待命的兵就上來一個站在上面', ok: () => true },
       { r: 1, t: '城頂疊過那條虛線（狼煙線），你的連珠立刻集滿：疊得高兵也多，但越高越容易被打歪', ok: () => S.stack && !S.stack.beacon[0] },
@@ -523,7 +523,7 @@ const LEVELS = [
       { r: 3, t: '敵城中間那一層的熔爐打破了，岩漿會往下流：流到一樓的火油桶就燒起來；碰到水就凝成一塊黑石，把破洞堵住', ok: () => true }],
     ground: [[-40, 0], [44, 0], [46.5, -3.4], [65.5, -3.4], [68, 0], [152, 0]],
     me: { crew: ['jar', 'oilpot', 'alch', 'jar', 'oilpot', 'alch'] },
-    foe: { crew: ['oilpot', 'jar', 'alch', 'oilpot', 'jar', 'alch'], hp: 1.0, dmg: 1.0, open: 0.55, ai: { err: 2.8, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
+    foe: { crew: ['oilpot', 'jar', 'alch', 'oilpot', 'jar', 'alch'], hp: 1.0, dmg: 1.15, open: 0.55, ai: { err: 2.8, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
     wind: { max: 3, at: 2 },
     sudden: 12
   }

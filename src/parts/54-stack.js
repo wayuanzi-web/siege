@@ -31,7 +31,7 @@ function pieceShape(k, rot) {
 function stackSetup() {
   S.stack = null; S.build = null;
   const C = S.lv.stack; if (!C) return;
-  S.stack = { C, beacon: [false, false], built: [0, 0] };
+  S.stack = { C, beacon: [false, false] };
   // 開場只有前幾個兵在城上，其他的在城下待命（疊上新的一塊才上來）
   for (const s of [0, 1]) {
     const T = S.team[s]; let k = 0;
@@ -47,7 +47,8 @@ function stackRes(T) { for (const u of T.units) if (u.reserve) return u; return 
 /* ---------- 量城頂：(x) 這一直線往下，最先碰到的東西有多高（磚、地面；看不到東西回傳 -999） ---------- */
 let _sy0 = -999;
 function _syF(f, p, n, fr) { if (f.isSensor() || (f.getFilterCategoryBits() & CAT_UNIT)) return -1; _sy0 = p.y; return fr; }          // 兵不算（擺在兵頭上的磚組，兵會爬上去）
-function stackSurf(x, yTop) { _sy0 = -999; PH.world.rayCast({ x, y: yTop }, { x, y: -30 }, _syF); return _sy0; }
+function _syU(f, p, n, fr) { if (f.isSensor()) return -1; _sy0 = p.y; return fr; }          // 兵也算（壓頂石不能變在兵的身體裡）
+function stackSurf(x, yTop, units) { _sy0 = -999; PH.world.rayCast({ x, y: yTop }, { x, y: -30 }, units ? _syU : _syF); return _sy0; }
 // 這座城現在疊到多高（還站著的磚的頂）
 function stackTop(st) {
   let top = st.y0;
@@ -56,7 +57,7 @@ function stackTop(st) {
 }
 /* 磚組放在左緣 bx（世界座標）會落在哪：每一欄量兩條線（格子左右兩邊靠內一點），磚組那一欄的底要擱在最高的那一點上。
    by：磚組的底（左下角那一格的底邊）；gaps：底下空出來幾格（擱不平）；off：有幾欄擱在城基外面（伸出去、或落到城外的地上） */
-const _land = { by: 0, gaps: 0, off: 0, top: 0 };
+const _land = { by: 0, gaps: 0, off: 0, top: 0, tip: false };
 function stackLand(side, P, bx) {
   const st = S.st[side], yTop = Math.max(stackTop(st), st.y1) + CS * 6, surf = [];
   let by = -1e9, off = 0;
@@ -66,7 +67,10 @@ function stackLand(side, P, bx) {
     if (s < st.y0 + st.base * CS - 0.5) off++;          // 落到城基的頂面以下（城外的地上）：這一欄不算擱在城上
     by = Math.max(by, s - P.bot[cx] * CS);
   }
-  let gaps = 0; for (let cx = 0; cx < P.w; cx++) gaps += Math.max(0, (by + P.bot[cx] * CS - surf[cx]) / CS);
+  let gaps = 0, s0 = 99, s1 = -1; for (let cx = 0; cx < P.w; cx++) { const g = Math.max(0, (by + P.bot[cx] * CS - surf[cx]) / CS); gaps += g; if (g < 0.05) { s0 = Math.min(s0, cx); s1 = Math.max(s1, cx + 1); } }
+  // 重心在不在撐著它的那幾欄上面（直立的 S、Z 只有一欄撐著、重心剛好在邊上：一放就翻）
+  let mx = 0; for (const q of P.c) mx += q[0] + 0.5; mx /= P.c.length;
+  _land.tip = !(mx > s0 + 0.2 && mx < s1 - 0.2);
   _land.by = by; _land.gaps = gaps; _land.off = off; _land.top = by + P.h * CS;
   return _land;
 }
@@ -78,7 +82,7 @@ function stackRange(st, P) { return [st.x0 - CS * 1.5, st.x1 + CS * 1.5 - P.w * 
 function stackBegin(side) {
   const SK = S.stack; if (!SK) return false;
   const st = S.st[side], C = SK.C, T = S.team[side];
-  if (stackTop(st) >= st.y0 + C.cap * CS || T.alive <= 0 || S.flags[side]) return false;          // 疊到頂了、扛著帥旗死守：不再築城
+  if (stackTop(st) >= st.y0 + C.cap * CS || (T.alive <= 0 && !stackRes(T)) || S.flags[side]) return false;          // 疊到頂了、扛著帥旗死守：不再築城
   let p = rnd(), mat = C.mats[C.mats.length - 1][0]; for (const m of C.mats) { if (p < m[1]) { mat = m[0]; break; } p -= m[1]; }
   const k = PIECE_KEYS[ri(PIECE_KEYS.length)], P = pieceShape(k, 0), R = stackRange(st, P);
   S.build = { side, k, mat, rot: 0, x: clamp(st.cx - P.w * CS / 2, R[0], R[1]), st: 'move', t: 0, q: 0, blocks: null, plan: null };
@@ -138,7 +142,7 @@ function stackStep(dt) {
     const pl = B.plan;
     if (pl) {          // 自動玩家：先轉好，再慢慢挪過去，到了就放
       if (B.t > 0.35 && B.rot !== pl.rot) simBuild(B.side, 'rot');
-      else if (B.t > 0.5) { const d = pl.x - B.x; if (Math.abs(d) > 0.05) simBuild(B.side, 'move', clamp(d, -dt * 22, dt * 22)); else if (B.t > pl.at) stackDrop(); }
+      else if (B.t > 0.5) { const d = pl.x - B.x; if (Math.abs(d) > 0.05) simBuild(B.side, 'move', clamp(d, -dt * 22, dt * 22)); else if (B.t > pl.at) { stackDrop(); return; } }
       if (B.t > pl.at + 3) stackDrop();
     } else if (B.t > (T.mute ? 0.2 : C.time)) stackDrop();          // 時間到：照現在的位置放下
     return;
@@ -147,7 +151,7 @@ function stackStep(dt) {
   let quiet = true;
   for (const b of B.blocks) { if (b.dead || !b.body) continue; const v = b.body.getLinearVelocity(); if (v.x * v.x + v.y * v.y > 0.12 || Math.abs(b.body.getAngularVelocity()) > 0.12) quiet = false; }
   B.q = quiet ? B.q + dt : 0;
-  if (B.q > 0.3 || B.t > 3.5) stackSettle();
+  if (B.q > 0.3 || B.t > 5) stackSettle();          // 還在翻、還在滑的：多等一下（最多五秒）
 }
 // 磚組停穩了：算進城樓、上一個新兵、看有沒有疊過狼煙線
 function stackSettle() {
@@ -155,12 +159,12 @@ function stackSettle() {
   let topB = null, n = 0;
   for (const b of B.blocks) {
     if (b.dead || !b.body) continue;
-    const p = b.body.getPosition();
-    if (p.x < st.x0 - CS * 2 || p.x > st.x1 + CS * 2 || p.y < st.y0 + st.base * CS - CS * 0.2) continue;          // 掉到城外、城基底下：不算
+    const p = b.body.getPosition(), v = b.body.getLinearVelocity();
+    if (p.x < st.x0 - CS * 2 || p.x > st.x1 + CS * 2 || p.y < st.y0 + st.base * CS - CS * 0.2 || v.x * v.x + v.y * v.y > 0.6) { b.junk = 1; continue; }          // 掉到城外、城基底下、還在翻：不算（回合結束清掉）
     b.x0 = p.x; b.y0 = p.y; b.ra = b.body.getAngle(); b.inPlace = true; b.lost = false; b.snug = true; b.wt = 1; st.hp0 += 1; n++;
     if (p.x > st.x0 + 0.8 && p.x < st.x1 - 0.8 && (!topB || p.y > topB.body.getPosition().y)) topB = b;          // 新兵站的那一格要在城的範圍裡（伸出去的那一截站上去就算被轟出城了）
   }
-  if (n) { SK.built[side]++; castleScan(st); supInit(st); }
+  if (n) { castleScan(st); supInit(st); st.hs = Math.max(st.h, stackTop(st) - st.y0 + 0.5); st.ys1 = st.y0 + st.hs; }          // hs、ys1：城疊高了（護罩、自己的砲彈穿過自己的城都照這個高度）
   // 新兵：站上這一塊最高的那一格
   const u = topB ? stackRes(T) : null;
   if (u) {
@@ -189,7 +193,7 @@ function stackPlan(side) {
     const P = pieceShape(B.k, rot), R = stackRange(st, P);
     for (let bx = R[0]; bx <= R[1] + 1e-6; bx += CS / 2) {
       const L = stackLand(side, P, bx);
-      let sc = -L.gaps * 3 - L.off * 9 - (L.by - st.y0) / CS * 0.35 - Math.abs(bx + P.w * CS / 2 - st.cx) / CS * 0.35;
+      let sc = -L.gaps * 3 - L.off * 9 - (L.tip ? 8 : 0) - (L.by - st.y0) / CS * 0.35 - Math.abs(bx + P.w * CS / 2 - st.cx) / CS * 0.35;
       if (!SK.beacon[side] && L.top >= line) sc += 2.5;
       if (L.top > top0 + 0.1) sc += 0.6;
       for (const u of T.units) if (u.alive && u.x > bx - 0.4 && u.x < bx + P.w * CS + 0.4 && L.by < u.y + 4.2) sc -= 1.2;          // 擺在自己的兵頭上（兵會爬上去，但站得更高、更露在外面）
@@ -209,10 +213,12 @@ function stackHit(i, w, hit, o, hx, hy, vx, vy) {
   return 1;
 }
 function pressDrop(side, st, hx) {
-  const W = WPN.press.press, top = stackSurf(hx, Math.max(stackTop(st), st.y1) + CS * 8);
+  const W = WPN.press.slab, top = stackSurf(hx, Math.max(stackTop(st), st.y1) + CS * 8, true);
   if (top < st.y0 - 1) return;
   const a = (rnd() < 0.5 ? -1 : 1) * (0.12 + rnd() * 0.16), b = mkBlock(S.rubble, { mat: M_ROCK, kind: 'box', x: hx, y: top + W.h * CS / 2 + 0.45, w: W.w * CS, h: W.h * CS, den: W.den, a, awake: true });
-  b.wt = 0; b.press = 1; b.hp = b.hm = W.hp * (side === 1 ? S.team[1].hpMul : 1); b.hitBy = side;
+  b.wt = 0; b.slab = S.time; b.hp = b.hm = W.hp * (side === 1 ? S.team[1].hpMul : 1); b.hitBy = side;
+  // 壓頂石板最多留六塊（最舊的那一塊碎掉）：不然打到後來戰場上滿地石板
+  const L = S.rubble.blocks.filter((q) => q.slab && !q.dead); if (L.length > 6) { L.sort((a, c) => a.slab - c.slab); blockKill(L[0], 2, K_CRUSH); }
   ev('pressin', hx, top + 1, side);
 }
 
@@ -222,7 +228,7 @@ function rivetsGo(side) {
   for (const u of T.units) if (u.alive && u.type === 'rivet' && !(u.frozen > 0) && !(u.stun > 0)) n++;
   if (!n) return;
   const st = S.st[side], L = [];
-  for (const b of st.blocks) if (!b.dead && b.body && b.inPlace && !b.lost && b.wt > 0 && !b.prop && b.mat !== M_KEG && b.kind === 'box') L.push(b);
+  for (const b of st.blocks) if (!b.dead && b.body && b.inPlace && !b.lost && b.wt > 0 && !b.prop && b.mat !== M_KEG && b.kind === 'box' && b.hp >= b.hm * (WELD_HP + 0.1)) L.push(b);          // 快碎的磚鉚了也馬上鬆開：不鉚
   L.sort((a, b) => b.body.getPosition().y - a.body.getPosition().y);
   const top = L.slice(0, 8 + 4 * n), box = (b) => { const p = b.body.getPosition(), hw = b.w / 2, hh = b.h / 2; return [p.x - hw, p.x + hw, p.y - hh, p.y + hh]; };
   let made = 0;
@@ -240,5 +246,20 @@ function rivetsGo(side) {
   }
 }
 
-/* ---------- 每回合、忙不忙 ---------- */
-function stackBusy() { return false; }
+/* ---------- 城上的兵全倒了：城下待命的馬上補一個上去（站在城頂最高的那一塊上） ---------- */
+function stackLast(side) {
+  const T = S.team[side], u = stackRes(T), st = S.st[side]; if (!u) return;
+  let top = null;
+  for (const b of st.blocks) { if (b.dead || !b.body || !b.inPlace || b.lost || !(b.wt > 0)) continue; const p = b.body.getPosition(); if (p.x > st.x0 + 0.8 && p.x < st.x1 - 0.8 && (!top || p.y > top.body.getPosition().y)) top = b; }
+  const x = top ? top.body.getPosition().x : st.cx, y = top ? top.body.getPosition().y + top.h / 2 + 0.05 : st.y0 + st.base * CS + 0.05;
+  u.reserve = 0; u.alive = true; u.hp = u.hpMax; u.frozen = 0; u.stun = 0; u.dieT = 0; u.x = u.hx = u.hx0 = x; u.y = u.hy = u.hy0 = y; u.homeB = null; u.fr = null;
+  mkUnitBody(u); u.body.setAwake(true);
+  T.alive++; ev('recruit', x, y, side, u.slot);
+}
+// 回合結束：掉在城外的磚組碎塊清掉（不然戰場上越堆越多）
+function stackRoundEnd() {
+  if (!S.stack) return false;
+  let any = false;
+  for (const st of [S.st[0], S.st[1]]) for (const b of st.blocks) if (b.junk && !b.dead && b.body) { const p = b.body.getPosition(); if (p.x < st.x0 - CS || p.x > st.x1 + CS || p.y < st.y0 + st.base * CS - CS) { blockKill(b, 2, K_CRUSH); any = true; } }
+  return any;
+}

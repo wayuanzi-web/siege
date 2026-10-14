@@ -1405,7 +1405,7 @@ function drawShields(c, t, rdt) {
     const T = S.team[sd], st = S.st[sd]; if (!T) continue;
     RD.sh[sd] += ((T.shield.on && !st.dead ? 1 : 0) - RD.sh[sd]) * Math.min(1, rdt * 9);
     const a = RD.sh[sd]; if (a < 0.02) continue;
-    const cc = stCenter(st), x = X(cc.x), y = Y(cc.y), rx = (st.w * 0.5 + 6) * s * (0.9 + 0.1 * a), ry = (st.h * 0.6 + 6) * s * (0.9 + 0.1 * a);
+    const hh = st.hs || st.h, cc = st.hs ? { x: st.cx, y: st.y0 + hh * 0.42 } : stCenter(st), x = X(cc.x), y = Y(cc.y), rx = (st.w * 0.5 + 6) * s * (0.9 + 0.1 * a), ry = (hh * 0.6 + 6) * s * (0.9 + 0.1 * a);          // 疊高了的城（第二十五關）：護罩跟著變高
     c.save(); c.beginPath(); c.rect(0, 0, V.W, Y(st.y0) + s * 0.5); c.clip();
     ell(c, x, y, rx, ry); c.fillStyle = rg(c, x, y, ry * 0.5, Math.max(rx, ry), sd === 0 ? [0, 'rgba(90,170,255,0)', 0.75, 'rgba(90,170,255,' + 0.12 * a + ')', 1, 'rgba(170,220,255,' + 0.4 * a + ')'] : [0, 'rgba(255,90,70,0)', 0.75, 'rgba(255,90,70,' + 0.12 * a + ')', 1, 'rgba(255,170,150,' + 0.4 * a + ')']); c.fill();
     c.strokeStyle = sd === 0 ? 'rgba(210,236,255,' + 0.9 * a + ')' : 'rgba(255,200,190,' + 0.9 * a + ')'; c.lineWidth = Math.max(1.5, s * 0.5); c.stroke();

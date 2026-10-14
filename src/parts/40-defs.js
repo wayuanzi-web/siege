@@ -113,9 +113,9 @@ const WL = [
   { id: 'hourglass', n: 1, gap: 0, dmg: 14, r: 2.6, J: 200, ud: 12, kind: K_BLAST, echo: { mass: 0.55 } },
   { id: 'mainshell', dmg: 46, r: 6.6, J: 1300, ud: 32, kind: K_HEAVY },
   /* ---- 第五篇第一批（54-stack、54-flux） ----
-     press 壓頂石：落在敵城的範圍裡，就在那一欄城頂變出一塊歪斜的大石板（w×h 格、密度 den、耐久 hp）
+     press 壓頂石：落在敵城的範圍裡，就在那一欄城頂變出一塊歪斜的大石板（slab：w×h 格、密度 den、耐久 hp）
      rivet 鉚釘：一輪三發的鉚釘（打兵、打木頭）；固樑匠開火時順便把自己城頂的磚鉚起來（見 54-stack 的 rivetsGo） */
-  { id: 'press', n: 1, gap: 0, dmg: 12, r: 2.2, J: 220, ud: 12, kind: K_HEAVY, press: { w: 2, h: 1, den: 2.4, hp: 70 }, ai: { dmg: 40, r: 3, ud: 12 } },
+  { id: 'press', n: 1, gap: 0, dmg: 12, r: 2.2, J: 220, ud: 12, kind: K_HEAVY, slab: { w: 2, h: 1, den: 2.4, hp: 70 }, ai: { dmg: 40, r: 3, ud: 12 } },
   { id: 'rivet', n: 3, gap: 0.09, dmg: 6, r: 0, J: 90, ud: 10, kind: K_PIERCE },
   /* jar 水甕、oilpot 油壺：落地炸一小下，倒出一攤水、油（pour：k 哪一種、v 幾格），順著城裡的樓板、破洞往下流（見 54-flux）
      potfire、potfrost、potzap：煉金師的三種藥水（每回合開始抽一瓶）：火點著油、化掉冰；冰把水凍住、把岩漿冷成黑石；雷讓連成一片的水整片帶電 */
@@ -125,7 +125,7 @@ const WL = [
   { id: 'potfrost', n: 1, gap: 0, dmg: 11, r: 3.4, J: 190, ud: 10, kind: K_ICE },
   { id: 'potzap', n: 1, gap: 0, dmg: 9, r: 2.6, J: 150, ud: 12, kind: K_ZAP }
 ];
-const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; if (w.chain || w.drill || w.stick || w.pierce || w.hook || w.warp || w.seed || w.boom || w.mole || w.stake || w.flare || w.grav || w.press || w.pour) w.special = 1; });          // special：打到東西時有自己的打法（51-arms 的 armsHit、54-craft 的 craftHit）
+const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; if (w.chain || w.drill || w.stick || w.pierce || w.hook || w.warp || w.seed || w.boom || w.mole || w.stake || w.flare || w.grav || w.slab || w.pour) w.special = 1; });          // special：打到東西時有自己的打法（51-arms 的 armsHit、54-craft 的 craftHit）
 
 /* 兵種。w 用哪種砲彈；flak 防空（每一輪射下幾發飛過來的砲彈）；bal 放轟炸氣球 */
 const UNIT = {

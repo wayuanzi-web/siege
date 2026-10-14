@@ -243,7 +243,7 @@ function camIntro(lv) {
 }
 function camStep(rdt) {
   const C = RD.cam;
-  const mine = S.state === 'play' && S.turn === 0 && S.phase === 'aim';
+  const mine = S.state === 'play' && S.turn === 0 && (S.phase === 'aim' || S.phase === 'build');          // 自己瞄準、自己築城：全景
   if (mine || G.drag) { C.z = C.tz = 1; C.hold = 0; return; }          // 輪到自己瞄準、手指拖著：一定是全景（虛線、手指的位置才對得上）
   if (G.mode !== 'play') { C.tz = 1; C.hold = 0; }
   else if (C.hold > 0) { C.hold -= rdt; if (C.hold <= 0) C.tz = 1; }
