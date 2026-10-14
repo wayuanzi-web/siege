@@ -115,6 +115,7 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
     const wk = gust ? (t - dt * 0.5 >= gust.t ? gust.w : wind) : wind;          // 陣風（第十四關）：這一步吃的風
     if (bst && !boosted && t >= bst.at) { boosted = true; vx *= bst.k; vy *= bst.k; mass *= bst.m; }
     vy -= GRAV * gk * dt; vx += wk * dt;
+    if (W.mirage && vy <= 0 && t > 0.25 && !inOwn) { R.x = x; R.y = y; return end(7); }          // 鏡影彈（第三十關）：飛到最高點就停下來變成鏡子（瞄準線畫到這裡）
     if (!R.ev) { for (const o of AMP.jets) if (x > o.x0 && x < o.x1 && Math.abs(y - o.y) < o.hh && vx * o.U > 0) evt(x, y, vx, vy); for (const o of AMP.holes) if (o.on && (x - o.x) * (x - o.x) + (y - o.y) * (y - o.y) < o.R * o.R) evt(x, y, vx, vy); }
     if (forces) { load(); const f = ampForces(dt); if (f === 2) { R.x = x; R.y = y; return end(5); } vx = SA.vx; vy = SA.vy; mass = SA.mass; kk = SA.k; }
     let nx = x + vx * dt + (gust ? -wk * STEP * STEP : cx), ny = y + vy * dt + cy;
@@ -183,7 +184,7 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
     if (h) {
       // 狙擊彈穿過一層木牆：接著往後算
       if (h === 2 && W.pierce && pierced < W.pierce && RAY.o && (RAY.o.mat === M_WOOD || RAY.o.mat === M_BAMBOO || RAY.o.mat === M_ROOF || RAY.o.mat === M_GLASS || RAY.o.mat === M_CLAY)) { const sp = Math.hypot(vx, vy) || 1; pierced++; x = RAY.x + vx / sp * 0.25; y = RAY.y + vy / sp * 0.25; vx *= 0.85; vy *= 0.85; inOwn = false; if (path) path.push(x, y); continue; }
-      if (h === 1 && !RAY.o && AMP.roll && rollOk(RAY.x, side, wi, vx, vy)) { evt(RAY.x, RAY.y, vx, vy); load(); rollStart(RAY.x); x = SA.x; y = SA.y; vx = SA.vx; vy = 0; flag = SA.flag; a0 = SA.a0; a1 = SA.a1; rolling = true; R.roll = true; if (path) path.push(x, y); continue; }
+      if (h === 1 && !RAY.o && (W.ram || (AMP.roll && rollOk(RAY.x, side, wi, vx, vy)))) { evt(RAY.x, RAY.y, vx, vy); load(); rollStart(RAY.x); x = SA.x; y = SA.y; vx = SA.vx; vy = 0; if (W.ram) { vx = (side === 0 ? 1 : -1) * Math.max(Math.abs(vx), W.ram.v); SA.vx = vx; } flag = SA.flag; a0 = SA.a0; a1 = SA.a1; rolling = true; R.roll = true; if (path) path.push(x, y); continue; }          // 撞木（第二十九關）落地就滾
       R.o = RAY.o; R.x = RAY.x; R.y = RAY.y; return end(h);
     }
     if (inOwn && t > 0.3 && (nx < own.x0 - 1 || nx > own.x1 + 1 || ny > (own.ys1 || own.y1) + 4)) inOwn = false;
@@ -310,6 +311,7 @@ function aiGen(T, R) {
   if (R.hit !== 1 && R.hit !== 2 && R.hit !== 3) return 0;
   if (R.hit === 2 && o && o.side === side) return 0;
   let sc = aiPtScore(side, R.x, R.y, lw, R.amp, R.hit === 3 && o && o.side === 1 - side ? o : null);
+  if (lw && lw.ram && R.roll && R.hit === 2 && o && o.base && o.side === 1 - side) sc = aiPtScore(side, R.x + S.team[side].dir * CS * 0.6, R.y + CS, lw, R.amp * lw.ram.k, null);          // 撞木撞到城基：往上撞城基上面那一塊
   if (R.hit === 2 && o && o.mat === M_KEG && o.side === 1 - side && !o.fuseKeg) sc += 1.0;
   return sc;
 }
@@ -422,7 +424,7 @@ function aiReact(T) {
   // 魔王城：看得到魔王預告的招式，連射、隕石雨的那一輪才開護罩（其他回合省著）
   let p = A.sh * 0.8;
   if (S.objs.some((o) => o.t === 'charge' && o.hp > 0 && o.side !== T.side && chargeOn(o) === T.side)) p = Math.min(1, A.sh * 1.6);          // 城上黏著對方的炸藥：開罩悶熄它
-  if (S.boss && T.side === 0) p = S.boss.next === 'barrage' || S.boss.next === 'meteor' ? Math.min(1, A.sh * 1.6) : A.sh * 0.25;
+  if (S.boss && T.side === 0) p = S.boss.next === 'barrage' || S.boss.next === 'meteor' || S.boss.next === 'judge' || S.boss.next === 'flip' ? Math.min(1, A.sh * 1.6) : A.sh * 0.25;          // 天秤審判、乾坤倒轉（第三十關）：開罩擋
   // 機關巨獸：預告光束一定開；噴火、咬人、走到城下要踩城的那一回合看本事開；其他回合省著
   if (S.beast && T.side === 0) { const B = S.beast; p = B.next === 'beam' ? 1 : B.next === 'flame' || B.next === 'grab' || B.atWall ? Math.min(1, A.sh * 1.5) : A.sh * 0.2; }
   if (rnd() < p) simSkill(T.side, 'shield');

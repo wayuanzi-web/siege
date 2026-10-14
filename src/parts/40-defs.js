@@ -138,9 +138,23 @@ const WL = [
   { id: 'gearball', dmg: 34, r: 4.0, J: 850, ud: 26, kind: K_HEAVY },
   { id: 'boost', n: 1, gap: 0, dmg: 34, r: 3.6, J: 480, ud: 18, kind: K_BLAST, boost: { k: 1.7, m: 1.35, at: 0.8 } },
   { id: 'anchor', n: 1, gap: 0, dmg: 8, r: 1.8, J: 90, ud: 8, kind: K_BLAST, anchor: { R: 7.5, F: 1.15, t: 2.4, G: 2600, hp: 40 }, ai: { dmg: 46, r: 5.5, ud: 10 } },
-  { id: 'net', n: 1, gap: 0, dmg: 7, r: 0, J: 80, ud: 12, kind: K_PIERCE, net: { R: 3.0, n: 4, v: 14 }, ai: { dmg: 42, r: 3, ud: 18 } }
+  { id: 'net', n: 1, gap: 0, dmg: 7, r: 0, J: 80, ud: 12, kind: K_PIERCE, net: { R: 3.0, n: 4, v: 14 }, ai: { dmg: 42, r: 3, ud: 18 } },
+  /* ---- 第五篇第三批（54-siege、54-lord） ----
+     ramlog 撞木：落地以後沿著地面往敵城滾（v），撞到城腳就往上撞城基上面那一塊（k 倍）
+     hookladder 雲梯：鉤在打到的敵城磚上；自己下一輪開火時，一個兵爬上去砍城頭最近的敵兵（ud、stun），沒有兵就砍兩塊磚（d）
+     alter 變材彈：落點附近的磚（R）石頭、鐵變成木頭（火一點就著）
+     mirage 鏡影彈：飛到最高點（或撞到東西）就停在那裡變成一面浮空的鏡子，彈回對方的砲彈，自己下一輪開火時收起來
+     star 星盤彈：落點標一個星位，這一回合結束時一顆流星砸下來（starfall）
+     scale：魔君的乾坤彈；judgefx：天秤審判的震波（不是兵射的） */
+  { id: 'ramlog', n: 1, gap: 0, dmg: 26, r: 0, J: 600, ud: 26, kind: K_HEAVY, ram: { k: 2.8, v: 16 }, ai: { dmg: 60, r: 2, ud: 20 } },
+  { id: 'hookladder', n: 1, gap: 0, dmg: 6, r: 0, J: 60, ud: 10, kind: K_PIERCE, ladder: { ud: 46, d: 40, reach: 8, hp: 24 }, ai: { dmg: 30, r: 3, ud: 36 } },
+  { id: 'alter', n: 1, gap: 0, dmg: 8, r: 2.4, J: 120, ud: 8, kind: K_BLAST, alter: { R: 3.0 }, ai: { dmg: 34, r: 3, ud: 8 } },
+  { id: 'mirage', n: 1, gap: 0, dmg: 6, r: 1.6, J: 60, ud: 6, kind: K_BLAST, mirage: { len: 3.6, hp: 80 }, ai: { dmg: 10, r: 1.6, ud: 6 } },
+  { id: 'star', n: 1, gap: 0, dmg: 8, r: 1.8, J: 80, ud: 8, kind: K_BLAST, starmark: 1, ai: { dmg: 46, r: 4, ud: 26 } },
+  { id: 'starfall', dmg: 46, r: 4.4, J: 1100, ud: 30, kind: K_HEAVY },
+  { id: 'scale', n: 1, gap: 0, fan: 3, dmg: 13, r: 3.4, J: 260, ud: 14, kind: K_DARK }
 ];
-const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; if (w.chain || w.drill || w.stick || w.pierce || w.hook || w.warp || w.seed || w.boom || w.mole || w.stake || w.flare || w.grav || w.slab || w.pour || w.shove || w.swivel || w.decoy || w.anchor || w.net) w.special = 1; });          // special：打到東西時有自己的打法（51-arms 的 armsHit、54-craft 的 craftHit）
+const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; if (w.chain || w.drill || w.stick || w.pierce || w.hook || w.warp || w.seed || w.boom || w.mole || w.stake || w.flare || w.grav || w.slab || w.pour || w.shove || w.swivel || w.decoy || w.anchor || w.net || w.ram || w.ladder || w.alter || w.mirage || w.starmark) w.special = 1; });          // special：打到東西時有自己的打法（51-arms 的 armsHit、54-craft 的 craftHit）
 
 /* 兵種。w 用哪種砲彈；flak 防空（每一輪射下幾發飛過來的砲彈）；bal 放轟炸氣球 */
 const UNIT = {
@@ -190,10 +204,16 @@ const UNIT = {
   boost: { name: '推進兵', w: 'boost', hp: 95, craft: 1, blurb: '推進彈飛到一半，點一下畫面就往前猛衝（快一倍、更痛）：繞過衛星、穿過引力圈，直直撞進敵城' },
   anchor: { name: '引力錨手', w: 'anchor', hp: 95, craft: 1, blurb: '引力錨釘在打到的磚上，往四周猛吸一陣子：城樓被吸得歪向它、整片垮下來；路過的砲彈也被吸彎。你下一輪開火時收起來' },
   net: { name: '拖網兵', w: 'net', hp: 100, craft: 1, blurb: '拖網網住落點附近的幾塊磚和兵，往你這邊拖：拖出城外的掉進太空；網到的兵還會被纏住一輪' },
+  ram: { name: '衝車兵', w: 'ramlog', hp: 115, craft: 1, blurb: '撞木落地以後沿著地面一路滾向敵城，撞到城腳就往上撞城基上面那一塊（很痛）：打城牆、城門最有用' },
+  ladder: { name: '雲梯兵', w: 'hookladder', hp: 100, craft: 1, blurb: '雲梯鉤在打到的敵城牆上；你下一輪開火時一個兵爬上去，砍城頭離梯子最近的敵兵（重傷、愣一輪），旁邊沒有兵就砍兩塊磚。梯子會被炸斷' },
+  alter: { name: '變材術士', w: 'alter', hp: 90, craft: 1, blurb: '變材彈落點附近的石頭、鐵通通變成木頭：火一點就著、一撞就碎（第二十九關的敵軍）' },
+  mirage: { name: '鏡影兵', w: 'mirage', hp: 100, craft: 1, blurb: '鏡影彈飛到最高點就停在半空變成一面鏡子：對方的砲彈打到它就彈回去。看準敵軍預告的紅線，把鏡子擺在路上' },
+  star: { name: '星盤師', w: 'star', hp: 90, craft: 1, blurb: '星盤彈落在哪裡，就在那裡標一個星位：這一回合結束時，一顆流星從天上直直砸下來（護罩擋不住）' },
+  lord: { name: '乾坤魔君', w: 'scale', hp: 520, big: 1, boss: 1, blurb: '最後的魔王：預告自己的砲擊，還會天秤審判（兩邊的城防拉成一樣）、乾坤倒轉（整個世界上下顛倒一下）' },
   drum: { name: '震地鼓手', w: 'stake', hp: 105, craft: 1, blurb: '先把鼓樁打進敵城或城前的地上；之後你每一輪開火，他擂一次鼓，每根鼓樁震一圈：底層的磚、兵都受傷，流沙上的城陷得更快' }
 };
 // 演武場選兵用的順序：第一到三篇的十八種（魔王不算），再接第四篇的新兵
-const UNIT_LIST = ['rocket', 'bolt', 'bomb', 'fire', 'ice', 'zap', 'flak', 'bal', 'stone', 'chain', 'drill', 'cluster', 'sapper', 'magnet', 'wind', 'acid', 'sniper', 'eng', 'hook', 'weight', 'warp', 'mirror', 'vine', 'axe', 'mole', 'drum', 'flare', 'glider', 'antigrav', 'time', 'press', 'rivet', 'jar', 'oilpot', 'alch', 'shove', 'swivel', 'decoy', 'boost', 'anchor', 'net'];
+const UNIT_LIST = ['rocket', 'bolt', 'bomb', 'fire', 'ice', 'zap', 'flak', 'bal', 'stone', 'chain', 'drill', 'cluster', 'sapper', 'magnet', 'wind', 'acid', 'sniper', 'eng', 'hook', 'weight', 'warp', 'mirror', 'vine', 'axe', 'mole', 'drum', 'flare', 'glider', 'antigrav', 'time', 'press', 'rivet', 'jar', 'oilpot', 'alch', 'shove', 'swivel', 'decoy', 'boost', 'anchor', 'net', 'ram', 'ladder', 'alter', 'mirage', 'star'];
 const UNIT_OLD = 18;          // 前三篇的兵有幾種（演武場的軍牌上，後面的標「新」）
 Object.keys(UNIT).forEach((k) => { UNIT[k].id = k; });
 
@@ -670,6 +690,52 @@ const CASTLES = {
     '  S3...4S  ',
     '  =======  ',
     '  S5...6S  ',
+    '###########'] },
+  /* 第二十九關：三重城。我方是一座攻城車（木頭的攻城塔，朝敵那一面包著鐵板 J，底下是車架：輪子另外畫），三座敵城一座比一座大、一座打完推進到下一座：
+     前哨（木柵望樓，三個兵）→ 城牆（厚石牆、兩座門樓，四個兵）→ 內城（三層的主樓、兩側箭樓，六個兵） */
+  WAGON: { skin: 'wagon', nofound: 1, hpK: 1.5, wts: { [M_ROOF]: 0.4 }, wch: { F: 0.6, '=': 0.6 }, map: [
+    '   ^^^^^   ',
+    '   |1.2J   ',
+    '  FFFFFFF  ',
+    '  |3...4J  ',
+    '  =======  ',
+    '  |5...6J  ',
+    '###########'] },
+  OUTPOST: { skin: 'siege', gf: 1, nofound: 1, map: [
+    '  ^^^  ',
+    '  |1|  ',
+    ' ===== ',
+    ' w2.3w ',
+    '#######'] },
+  BULWARK: { skin: 'siege', gf: 1, nofound: 1, wch: { '_': 0.6 }, map: [
+    '^^^     ^^^',
+    'S1S     S2S',
+    'SSS_____SSS',
+    '___S...S___',
+    'S3SS...SS4S',
+    '###########'] },
+  CITADEL: { skin: 'siege', gf: 1, nofound: 1, map: [
+    '    ^^^    ',
+    '    S1S    ',
+    '   _____   ',
+    '   S2.3S   ',
+    '^^^FFFFF^^^',
+    '|4|S...S|5|',
+    '===S...S===',
+    'S.SS.6.SS.S',
+    '###########'] },
+  /* 第三十關：乾坤魔君的倒懸殿（蓋在一座倒過來、用鐵鍊吊在天上的山頂上）。魔君坐在最上面三格高的大殿（1 號），
+     兩側樓閣、底下兩間站著手下；中間一層是鐵柱（J）撐著的石樓板 */
+  LORDHALL: { skin: 'lord', gf: 2, nofound: 1, map: [
+    '   ^^^^^   ',
+    '   |...|   ',
+    '   |...|   ',
+    '   |.1.|   ',
+    ' ^ _____ ^ ',
+    '^^^S...S^^^',
+    '|2|S...S|3|',
+    '===_____===',
+    'S4SJ...JS5S',
     '###########'] },
   // 第二十三關：戰場中間一塊黑黝黝的大岩石（打不壞）
   NIGHTROCK: { skin: 'night', map: ['  AA  ', ' AAAA ', 'AAAAAA'] },

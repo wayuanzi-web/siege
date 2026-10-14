@@ -387,6 +387,7 @@ function physStep(dt) {
   if (S.water) waterForces();
   if (S.plats.length) platForces();
   if (S.astro || S.nanchor) astroForces();          // 第二十八關：衛星、引力錨吸東西
+  if (S.flip) flipForces(dt);          // 第三十關：乾坤倒轉
   PH.inStep = true;
   w.step(dt, 8, 3);
   PH.inStep = false;
@@ -654,6 +655,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
   if (S.objs.length || S.lv.vines) wildBlast(x, y, r, dmg, side, fire);
   if (S.objs.length) duskBlast(x, y, r, dmg, side);          // 燈籠、照明箭
   if (S.objs.length) teleBlast(x, y, r, side);          // 第二十七關：草人被炸到就沒了
+  if (S.objs.length) siegeBlast(x, y, r, dmg, side);          // 第二十九關：雲梯被炸斷
   if (S.flux) fluxBlast(x, y, r, w, side, fire, frost, zapc);          // 第二十六關：火點著油、冰凍住水、雷讓水帶電          // 第四篇第二批：古藤、藤、地道、鼓樁          // 第四篇：鉤索的繩子被炸斷
   if (fire || keg) fuseBlast(x, y, r, fire, keg, side);          // 引信、地窖的火藥庫：火油兵的火、穿過地火著了火的砲彈都點得著
   // 飛在天上的東西（氣球、光球、吊著浮島的氣球、浮島底下的浮空晶石）

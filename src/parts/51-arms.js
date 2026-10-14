@@ -214,7 +214,9 @@ function armsHit(i, w, hit, o, hx, hy, vx, vy) {
   if (w.slab) return stackHit(i, w, hit, o, hx, hy, vx, vy);          // 第五篇：壓頂石（54-stack）
   if (w.pour) return fluxHit(i, w, hit, o, hx, hy, vx, vy);
   if (w.shove || w.swivel || w.decoy) return teleHit(i, w, hit, o, hx, hy, vx, vy);          // 第二十七關（54-tele）
-  if (w.anchor || w.net) return astroHit(i, w, hit, o, hx, hy, vx, vy);          // 第二十八關（54-astro）          // 第五篇：水甕、油壺（54-flux）          // 第四篇第三批（54-dusk）          // 第四篇第二批（54-wild）          // 第四篇：鉤爪、門珠（54-craft）
+  if (w.anchor || w.net) return astroHit(i, w, hit, o, hx, hy, vx, vy);          // 第二十八關（54-astro）
+  if (w.ram || w.ladder || w.alter) return siegeHit(i, w, hit, o, hx, hy, vx, vy);          // 第二十九關（54-siege）
+  if (w.mirage || w.starmark) return lordHit(i, w, hit, o, hx, hy, vx, vy);          // 第三十關（54-lord）          // 第五篇：水甕、油壺（54-flux）          // 第四篇第三批（54-dusk）          // 第四篇第二批（54-wild）          // 第四篇：鉤爪、門珠（54-craft）
   const side = SH.side[i], mass = SH.mass[i], T = side < 2 ? S.team[side] : null, mul = (T ? T.dmg : 1) * S.rage * mass, sp = Math.hypot(vx, vy) || 1;
   if (w.stick) {
     if (hit === 3 && o && o.alive) { physExplode(hx, hy, w, side, mass * 0.5, SH.flag[i], o, vx, vy); return 1; }          // 黏到人身上：當場炸開（威力一半）
@@ -280,7 +282,7 @@ function engFix(u) {
   const side = u.side, st = S.st[side]; let n = u.def.fix || 2;
   for (const o of S.objs) { if (n <= 0) break; if (o.t === 'charge' && o.hp > 0 && o.side !== side && chargeOn(o) === side) { o.hp = 0; n--; ev('defuse', o.x, o.y, side); } }
   // 拖太久、兩邊的城開始自己塌（sudden）：修不動了，只拆得掉炸藥（不然兩邊都是工兵的話永遠打不完）
-  if (S.round >= (S.lv.sudden || 10)) { u.recoil = 1; return; }
+  if (S.round >= suddenAt()) { u.recoil = 1; return; }
   const L = st.blocks.filter((b) => !b.dead && b.body && b.inPlace && !b.lost && b.wt > 0 && !b.frag && b.hp < b.hm * 0.8);
   const need = (b) => ((b.sup || 0) + b.wt) * (1 - b.hp / b.hm);
   L.sort((a, b) => need(b) - need(a));

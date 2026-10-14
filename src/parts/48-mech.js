@@ -114,7 +114,7 @@ function ropeCut(r, side, kind, quiet) {
   const e = ropeEnds(r); r.cx[0] = e[0]; r.cx[1] = e[1]; r.cx[2] = e[2]; r.cx[3] = e[3];
   r.cut = true; r.hp = 0; r.cutT = S.time; r.burn = 0;
   if (r.pulley) pulleyCut(r.pulley, side, quiet);          // 吊籠的鋼纜斷了：籠子掉下去
-  if (r.hang && !r.hang.dead) { r.hang.hangFree = 1; if (!quiet && side < 2 && side !== r.side) r.hang.hitBy = side; if (S.boss && r.side === 1 && r.hang.hang === 'lamp') bossSay(BOSS_LINES.lamp); }
+  if (r.hang && !r.hang.dead) { r.hang.hangFree = 1; if (!quiet && side < 2 && side !== r.side) r.hang.hitBy = side; if (S.boss && r.side === 1 && r.hang.hang === 'lamp') bossSay(bossLines().lamp); }
   if (r.j) { if (PH.inStep) PH.killJ.push(r.j); else PH.world.destroyJoint(r.j); r.j = null; }
   if (quiet) return;
   ev('snap', (e[0] + e[2]) / 2, (e[1] + e[3]) / 2, r.kind === 'chain' ? 1 : 0, r.side, r.tag);

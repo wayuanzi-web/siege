@@ -1507,7 +1507,7 @@ function renderFrame(dt, rdt) {
   const c = RD.c; if (!c || !S.lv || !SCENE.cv) return;
   RD.t += rdt; RD.frame++; RD.wearN = 0;
   const t = RD.t;
-  camStep(rdt); weatherStep(dt, t);
+  camStep(rdt); weatherStep(dt, t); siegeView(rdt);          // 第二十九關：推進的時候背景往後捲
   c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
   // 震動時邊緣會露出來，先鋪一層底色
   if (FX.shx || FX.shy) { c.fillStyle = '#0d1019'; c.fillRect(0, 0, V.W, V.H); }
@@ -1527,6 +1527,7 @@ function renderFrame(dt, rdt) {
   drawBlocks(c, t, rdt);
   drawFluxMarks(c, t);          // 第二十六關：水槽、油桶、熔爐；煉金師的藥水
   drawGears(c, t);          // 第二十七關：齒輪砲台
+  drawWagon(c, t);          // 第二十九關：攻城車的輪子
   if (S.beast) drawBeast(c, t);          // 第十八關：機關巨獸
   drawFuses(c, t);
   drawRopes(c, t);
@@ -1538,6 +1539,7 @@ function renderFrame(dt, rdt) {
   drawFlux(c, t);          // 第二十六關：水、油、岩漿（兵泡在裡面看得出來）
   drawDummies(c, t);          // 第二十七關：誘餌草人
   drawAnchors(c, t);          // 第二十八關：引力錨
+  drawLadders(c, t);          // 第二十九關：雲梯
   drawArms(c, t);
   drawCraftFront(c, t);          // 第四篇：傳送門、鉤索、銅鏡
   drawWildFront(c, t);          // 第四篇第二批：地道、流沙（蓋住陷進去的城腳）
@@ -1551,6 +1553,7 @@ function renderFrame(dt, rdt) {
   lightsGather(t); drawLights(c);          // 爆炸、火焰照亮附近（77-polish）
   drawShots(c);
   drawBoostHint(c, t);          // 第二十八關：推進彈「點一下加速」
+  drawStars(c, t);          // 第三十關：星盤師的星位
   drawShotFx(c);
   drawCaveDark(c, t);          // 第十七關：礦坑裡暗下來
   drawNight(c, t);          // 第二十三關：黑夜（爆炸、火花畫在黑夜上面：一炸就看得到）
@@ -1558,6 +1561,7 @@ function renderFrame(dt, rdt) {
   drawShields(c, t, rdt);
   drawBossUI(c, t);
   drawBeastUI(c, t);
+  drawFlip(c, t);          // 第三十關：乾坤倒轉
   drawTele(c, t);          // 第二十七關：敵軍預告的彈道、齒輪砲台的彈道
   drawAim(c, t);
   RD.dt = rdt; drawBubbles(c);

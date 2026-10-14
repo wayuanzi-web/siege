@@ -61,7 +61,7 @@ function rollMove(dt, trace) {
     } else { SA.hx = RAY.x; SA.hy = RAY.y; SA.o = o; SA.vx = v * c; SA.vy = v * sn; return 1; }
   }
   SA.x = nx; SA.y = ny; SA.vx = v;
-  SA.mass = SA.a0 * Math.min(R.max, 1 + R.k * Math.max(0, SA.a1 - groundYRaw(nx)));
+  SA.mass = R ? SA.a0 * Math.min(R.max, 1 + R.k * Math.max(0, SA.a1 - groundYRaw(nx))) : SA.a0;          // 沒有滾石坡的戰場（第二十九關以外的演武場）：撞木照樣滾，不會越滾越重
   return 0;
 }
 

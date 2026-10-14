@@ -51,7 +51,7 @@ function drawCraftFront(c, t) {
   for (const o of S.objs) {
     if (o.t === 'warp') drawWarp(c, o, t);
     else if (o.t === 'hook' && o.hp > 0) drawHook(c, o, t);
-    else if (o.t === 'bmirror') drawBronze(c, o, t);
+    else if (o.t === 'bmirror') { if (o.fixed) drawMirage(c, o, t); else drawBronze(c, o, t); }          // 鏡影兵的浮空鏡（第三十關，71-lord-draw）
   }
 }
 // 門的配色：門術師開的照隊色（我方藍紫、敵方紅），古門是金色

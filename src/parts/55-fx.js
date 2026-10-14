@@ -113,7 +113,7 @@ function fxOn(t, a, b, c, d, e, f) {
       if (w.id === 'bomb') { burst(P_SMOKE, a + dir, b, 4, 9, 0.6, 1.8, C_GRAY); shake(0.12); }
       lightAdd(a + dir * 0.6, b, w.id === 'bomb' ? 6 : 3.5, w.id === 'ice' ? C_ICE : w.id === 'zap' ? C_YELLOW : w.id === 'dark' ? C_PINK : C_GOLD, 0.5, 0.12);
       if (!FX.low && w.kind !== K_PIERCE) part(P_SMOKE, a + dir * 0.9, b, dir * 4, 1.5, 0.5, 0.8, C_GRAY);          // 砲口一小團煙
-      sfx(w.id === 'bolt' ? 'bolt' : w.id === 'bomb' || w.id === 'cluster' ? 'cannon' : w.id === 'fire' || w.id === 'chain' || w.id === 'sticky' || w.id === 'acid' ? 'whoosh' : w.id === 'ice' ? 'frost' : w.id === 'zap' || w.id === 'magnet' ? 'charge' : w.id === 'dark' ? 'dark' : w.id === 'drill' ? 'drill' : w.id === 'snipe' ? 'snipe' : w.id === 'wind' ? 'gust' : w.id === 'hook' ? 'zip' : w.id === 'weight' ? 'heave' : w.id === 'warp' ? 'warp' : w.id === 'seed' ? 'seed' : w.id === 'axe' ? 'axe' : w.id === 'mole' ? 'drill' : w.id === 'stake' ? 'heave' : w.id === 'flare' ? 'bolt' : w.id === 'glider' ? 'whoosh' : w.id === 'grav' ? 'warp' : w.id === 'hourglass' ? 'whoosh' : w.id === 'shove' ? 'heave' : w.id === 'swivel' || w.id === 'anchor' ? 'warp' : w.id === 'decoy' || w.id === 'net' ? 'whoosh' : w.id === 'boost' ? 'rocket' : 'rocket', c);
+      sfx(w.id === 'bolt' ? 'bolt' : w.id === 'bomb' || w.id === 'cluster' ? 'cannon' : w.id === 'fire' || w.id === 'chain' || w.id === 'sticky' || w.id === 'acid' ? 'whoosh' : w.id === 'ice' ? 'frost' : w.id === 'zap' || w.id === 'magnet' ? 'charge' : w.id === 'dark' ? 'dark' : w.id === 'drill' ? 'drill' : w.id === 'snipe' ? 'snipe' : w.id === 'wind' ? 'gust' : w.id === 'hook' ? 'zip' : w.id === 'weight' ? 'heave' : w.id === 'warp' ? 'warp' : w.id === 'seed' ? 'seed' : w.id === 'axe' ? 'axe' : w.id === 'mole' ? 'drill' : w.id === 'stake' ? 'heave' : w.id === 'flare' ? 'bolt' : w.id === 'glider' ? 'whoosh' : w.id === 'grav' ? 'warp' : w.id === 'hourglass' ? 'whoosh' : w.id === 'shove' ? 'heave' : w.id === 'swivel' || w.id === 'anchor' ? 'warp' : w.id === 'decoy' || w.id === 'net' ? 'whoosh' : w.id === 'boost' ? 'rocket' : w.id === 'ramlog' ? 'heave' : w.id === 'hookladder' ? 'zip' : w.id === 'alter' || w.id === 'mirage' ? 'warp' : w.id === 'star' ? 'chime' : w.id === 'scale' ? 'dark' : 'rocket', c);
       break;
     }
     case 'boom': {
@@ -400,7 +400,7 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'magboom': if (S.state === 'play') pop(a, b + 6, c === 1 ? '火藥庫爆炸！' : '我方火藥庫爆炸了', c === 1 ? '#ffe14a' : '#ff8a7a', 4, 1.5); slowmo(0.4, 1.4); break;
     // 魔王、大鐘、吊籠
     case 'bosssay': { const bu = typeof bossUnit === 'function' ? bossUnit() : null; (FX.bubbles || (FX.bubbles = [])).length = 0; FX.bubbles.push({ txt: c, x: a, y: b, who: bu && bu.alive ? bu : null, t: 0, max: clamp(1.4 + c.length * 0.16, 2.2, 4.2) }); break; }
-    case 'bossnext': sfx(c === 'meteor' ? 'warn' : c === 'orb' ? 'orb' : 'dark'); ring(a, b, 1, 7, 0.4, c === 'meteor' ? '#ffb07a' : '#ff9ad8', 0.5); break;
+    case 'bossnext': sfx(c === 'meteor' ? 'warn' : c === 'orb' ? 'orb' : c === 'judge' ? 'chime' : c === 'flip' ? 'phase' : 'dark'); ring(a, b, 1, 7, 0.4, c === 'meteor' ? '#ffb07a' : '#ff9ad8', 0.5); break;
     case 'bosstired': ring(a, b, 9, 1.5, 0.5, '#ffe14a', 0.7); pop(a, b + 7, '破綻！傷害加倍', '#ffe14a', 3.4, 1.6); sfx('star'); break;
     case 'bossheal': if (c >= 4) pop(a, b + 5, '+' + Math.round(c), '#b8ff9a', 2.6, 0.9); burst(P_SPARK, a, b, 8, 14, 0.6, 0.5, C_GREEN); break;
     case 'summon': ring(a, b, 1, 9, 0.5, '#b8ff9a', 0.6); burst(P_SMOKE, a, b, 6, 8, 0.8, 2.2, C_PURPLE); sfx('dark'); break;
@@ -444,6 +444,30 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'anchorin': ring(a, b, 7, 0.6, 0.6, c === 0 ? '#c8a8ff' : '#ff9ad8', 0.6); burst(P_SPARK, a, b, 12, 12, 0.6, 0.5, C_PURPLE); sfx('gravpull'); if (S.state === 'play' && thr('anchor', 500)) pop(a, b + 3, c === 0 ? '引力錨！' : '敵軍的引力錨', c === 0 ? '#e0c8ff' : '#ff9a8a', 2.6, 1.0); shake(0.2); break;
     case 'anchorout': ring(a, b, 0.6, 5, 0.4, '#c8a8ff', 0.5); burst(P_SPARK, a, b, 8, 10, 0.4, 0.4, C_PURPLE); break;
     case 'netcatch': for (let k = 0; k < 8; k++) part(P_DEBRIS, a + rndS() * 2, b + rndS() * 2, rndS() * 8, 3 + Math.random() * 5, 0.6, 0.3, C_TAN); sfx('netthrow'); if (S.state === 'play' && (d || e) && thr('net', 500)) pop(a, b + 3, (c === 0 ? '網住 ' : '敵軍網走 ') + (d ? d + ' 塊磚' : '') + (d && e ? '、' : '') + (e ? e + ' 個兵' : ''), c === 0 ? '#ffe14a' : '#ff9a8a', 2.6, 1.1); break;
+    // ---- 第五篇第三批：三重城（54-siege） ----
+    case 'siegeclear': slowmo(0.3, 1.4, true); shake(1.6); flash(0.25, '#fff6d8'); sfx('collapse'); camFocus(b, c, 1.12, 2.2); break;
+    case 'siegepick': ring(b, c, 2, 12, 0.5, '#ffe08a', 0.7); burst(P_SPARK, b, c, 18, 20, 0.6, 0.6, C_GOLD); if (a === 'repair') pop(b, c + 6, '攻城車修好了', '#bfe0ff', 3, 1.4); else if (a === 'reinforce') pop(b, c + 6, '援軍到了', '#bfe0ff', 3, 1.4); else if (a === 'powder') pop(b, c + 6, '火藥加量 ×1.2', '#ffe14a', 3, 1.4); else if (a === 'drums') pop(b, c + 6, '戰鼓！連珠、護罩充滿', '#ffe14a', 3, 1.4); else if (a === 'armor') pop(b, c + 6, '包上鐵皮了', '#cfe0ff', 3, 1.4); sfx('star', 2); break;
+    case 'advance': sfx('rumble'); shake(0.5); break;
+    case 'siegegone': for (let k = 0; k < 26; k++) part(P_SMOKE, a + rndS() * 14, 1 + Math.random() * b, rndS() * 6, 2 + Math.random() * 4, 1.2 + Math.random() * 0.8, 3 + Math.random() * 2, C_GRAY); break;
+    case 'siegestage': if (typeof decalReset === 'function') decalReset(); for (let k = 0; k < 18; k++) part(P_DUST, b + rndS() * 16, 0.6 + Math.random() * 3, rndS() * 10, 2 + Math.random() * 4, 1.1, 2.6, C_SAND); sfx('thud'); break;
+    case 'ramhit': burst(P_DEBRIS, a, b, 12, 18, 0.7, 0.6, C_TAN, 6); burst(P_DUST, a, b, 6, 10, 0.8, 2.0, C_SAND, 2); ring(a, b, 0.6, 5, 0.3, '#ffe0b0', 0.5); shake(0.5); sfx('thunk'); if (S.state === 'play' && thr('ram', 500)) pop(a, b + 4, c === 0 ? '撞城！' : '敵軍撞城', c === 0 ? '#ffe14a' : '#ff9a8a', 3, 1.0); break;
+    case 'ladderin': burst(P_DEBRIS, a, b, 5, 6, 0.4, 0.4, C_TAN); sfx('thunk'); if (S.state === 'play' && c === 0) pop(a, b + 3.5, '雲梯鉤上了', '#ffe14a', 2.4, 0.9); break;
+    case 'ladderdown': burst(P_DEBRIS, a, b, 8, 10, 0.6, 0.4, C_TAN, 3); if (S.state === 'play' && thr('ldown', 400)) pop(a, b + 3, c === 0 ? '雲梯斷了' : '敵軍的雲梯斷了', c === 0 ? '#ff9a8a' : '#ffe14a', 2.4, 0.9); break;
+    case 'ladderraid': burst(P_SPARK, a, b, 12, 16, 0.4, 0.5, C_WHITE); ring(a, b, 0.5, 3.5, 0.25, '#ffffff', 0.5); sfx('axe'); if (S.state === 'play') pop(a, b + 3.5, d ? (c === 0 ? '登城！' : '敵軍登城了') : (c === 0 ? '登城砍牆' : '敵軍砍牆'), c === 0 ? '#ffe14a' : '#ff9a8a', 3, 1.1); break;
+    case 'alter': ring(a, b, 0.6, 4, 0.4, '#b8ff9a', 0.5); burst(P_SPARK, a, b, 14, 12, 0.6, 0.5, C_GREEN); if (S.state === 'play' && d > 0 && thr('alter', 500)) pop(a, b + 3.5, (c === 1 ? '我方' : '敵城') + ' ' + d + ' 塊磚變成木頭', c === 1 ? '#ff9a8a' : '#ffe14a', 2.6, 1.1); sfx('warp'); break;
+    // ---- 第五篇第三批：乾坤魔君（54-lord） ----
+    case 'judge': {
+      // 天秤審判：魔君頭上一座金色的天秤落下；c 往哪邊壓（1 我方的城比較好、被削），0 被護罩擋下
+      ring(a, b, 1, 16, 0.7, '#fff0c0', 0.8); flash(0.3, '#fff6dc'); sfx('chime'); sfx('bong'); shake(0.8);
+      if (S.state === 'play') pop(a, b + 4, c === 0 ? '天秤審判被護罩擋下！' : c > 0 ? '天秤審判：你的城被削到一樣高' : '天秤審判：你的城被補到一樣高', c === 0 ? '#bfe0ff' : c > 0 ? '#ff9a8a' : '#ffe14a', 3.4, 1.8);
+      break;
+    }
+    case 'judgehit': burst(P_SPARK, a, b, 6, 10, 0.5, 0.5, C_GOLD); ring(a, b, 0.4, 2.6, 0.3, '#fff0c0', 0.4); break;
+    case 'judgeheal': burst(P_SPARK, a, b, 6, 8, 0.6, 0.5, C_GREEN); break;
+    case 'flip': flash(0.5, '#c8a8ff'); shake(1.4); sfx('phase'); sfx('rumble'); vibrate(160); if (S.state === 'play') pop(S.st[0].cx, S.st[0].y0 + S.st[0].h + 6, c ? '乾坤倒轉！護罩撐住了' : '乾坤倒轉！', c ? '#bfe0ff' : '#c8a8ff', 4, 1.6); break;
+    case 'mirageup': ring(a, b, 0.5, 5, 0.4, c === 0 ? '#c8e8ff' : '#ffc8d8', 0.5); burst(P_SPARK, a, b, 12, 12, 0.5, 0.5, c === 0 ? C_SKY : C_PINK); sfx('frost'); break;
+    case 'starmark': ring(a, b, 0.4, 3.5, 0.4, '#ffe08a', 0.5); burst(P_SPARK, a, b, 8, 10, 0.5, 0.5, C_GOLD); sfx('chime'); if (S.state === 'play' && c === 0 && thr('star', 600)) pop(a, b + 3.5, '星位標好了：回合結束流星砸下來', '#ffe08a', 2.4, 1.2); break;
+    case 'starfall': for (let k = 0; k < 14; k++) part(P_FIRE, a + rndS() * 0.6, b + 6 + k * 2.2, rndS() * 2, -30, 0.25, 1.2 - k * 0.05, C_GOLD); flash(0.15, '#fff0b0'); shake(0.7); sfx('boom'); break;
     case 'end': {
       slowmo(0.3, 1.8, true); shake(2.0); flash(0.3, '#fff6d8'); sfx('collapse'); vibrate(200); { const st = S.st[c], cc = st ? stCenter(st) : { x: a, y: b }; camFocus(cc.x, cc.y, 1.16, 2.6); }
       ring(a, b, 2, 16, 0.6, '#fff0b0', 0.7);         // 只留一圈小的，別把整座城垮下來的樣子蓋住

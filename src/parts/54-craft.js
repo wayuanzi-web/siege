@@ -226,6 +226,7 @@ function mirrorRaise(u) {
 function mirrorsDown(side) { for (let i = S.objs.length - 1; i >= 0; i--) { const o = S.objs[i]; if (o.t === 'bmirror' && o.side === side) S.objs.splice(i, 1); } }
 function mirrorStep(o, dt) {
   o.age += dt; if (o.flash > 0) o.flash = Math.max(0, o.flash - dt * 5);
+  if (o.fixed) { if (o.hp <= 0) { ev('mirrorbreak', o.x, o.y, o.side); return true; } return false; }          // 鏡影兵的浮空鏡（第三十關）：不跟著人走
   const u = o.u; if (!u.alive || o.hp <= 0) { if (o.hp <= 0) ev('mirrorbreak', o.x, o.y, o.side); return true; }
   const dir = o.side === 0 ? 1 : -1; o.x = u.x + dir * 0.4; o.y = u.y + 5.4;
   return false;

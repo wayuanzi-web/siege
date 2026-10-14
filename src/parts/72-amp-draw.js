@@ -111,17 +111,17 @@ function drawShotFx(c) {
   if (!FX.low) for (let i = RD.frame % 3; i < n; i += 3) if (SH.flag[i] & F_ROLL) part(P_DUST, SH.x[i] + rndS(), SH.y[i] - 0.4, -SH.vx[i] * 0.1 + rndS() * 2, 1 + Math.random() * 2, 0.5, 1.1, C_SAND);
 }
 /* ---------- 魔王：預告的招式、破綻、說話的泡泡 ---------- */
-const BOSS_ICON = { barrage: '⚔', orb: '●', meteor: '☄', summon: '☠' };
+const BOSS_ICON = { barrage: '⚔', orb: '●', meteor: '☄', summon: '☠', judge: '⚖', flip: '☯' };
 function drawBossUI(c, t) {
   if (!S.boss || S.state !== 'play') return;
   const bu = bossUnit(); if (!bu || !bu.alive) return;
   const s = V.s, B = S.boss, x = X(bu.x), top = Y(bu.y + bu.bh + 4.2);
   // 這一回合預告的招：頭上一個小牌子（他打完這一輪就收起來）
   if (B.next && !(S.turn === 1 && (S.phase === 'resolve' || S.phase === 'hazard'))) {
-    const txt = '預告：' + BOSS_MOVES[B.next], fz = Math.max(10, s * 2.1); c.font = F_ZH.replace('1px', fz + 'px');
+    const txt = '預告：' + ((S.lv.boss.names && S.lv.boss.names[B.next]) || BOSS_MOVES[B.next]), fz = Math.max(10, s * 2.1); c.font = F_ZH.replace('1px', fz + 'px');
     const tw = c.measureText(txt).width + fz * 2.2, bob = Math.sin(t * 3) * s * 0.3, by = top - fz * 1.2 + bob;
     c.fillStyle = 'rgba(30,6,40,.88)'; rrect(c, x - tw / 2, by - fz * 0.8, tw, fz * 1.6, fz * 0.5); c.fill();
-    c.strokeStyle = B.next === 'meteor' ? '#ff8a4a' : B.next === 'orb' ? '#ff6ad0' : B.next === 'summon' ? '#b8ff9a' : '#ffd34a'; c.lineWidth = Math.max(1.5, s * 0.3); c.stroke();
+    c.strokeStyle = B.next === 'meteor' ? '#ff8a4a' : B.next === 'orb' ? '#ff6ad0' : B.next === 'summon' ? '#b8ff9a' : B.next === 'judge' ? '#e8e0ff' : B.next === 'flip' ? '#b08aff' : '#ffd34a'; c.lineWidth = Math.max(1.5, s * 0.3); c.stroke();
     c.fillStyle = c.strokeStyle; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText((BOSS_ICON[B.next] || '') + ' ' + txt, x, by + fz * 0.05);
   }
   // 破綻：一圈一圈往裡縮的金色準星

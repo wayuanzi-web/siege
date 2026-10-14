@@ -64,6 +64,24 @@ function onTap(el, fn) {
   el.addEventListener('pointerleave', (e) => { if (e.pointerId === pid && e.pointerType === 'mouse') pid = -1; });
   el.addEventListener('click', (e) => { if (e.pointerType || e.detail > 0) return; go(e); });
 }
+// 第二十九關：攻下一座城，挑一張卡（電腦玩家自己挑，不跳出來）
+const CARD_ICON = { repair: '🔨', reinforce: '🛡', powder: '💥', drums: '🥁', armor: '⛓' };
+function cardsShow() {
+  const G2 = S.siege; if (!G2 || !G2.opts || S.phase !== 'cards' || S.team[0].ai) return;
+  $('cardsTitle').textContent = '攻下' + siegeName(G2.stage) + '！';
+  $('cardsSub').textContent = '挑一張卡，帶著它打下一座城：' + siegeName(G2.stage + 1);
+  const row = $('cardRow'); row.textContent = '';
+  G2.opts.forEach((k, i) => {
+    const C = CARDS[k], b = document.createElement('button'); b.className = 'card chamfer';
+    const ic = document.createElement('i'); ic.textContent = CARD_ICON[k] || '★'; ic.setAttribute('aria-hidden', 'true');
+    const h = document.createElement('h3'); h.textContent = C.name; const p = document.createElement('p'); p.textContent = C.txt;
+    b.append(ic, h, p);
+    onTap(b, () => { if (siegePick(i)) { sfx('buy'); $('cards').hidden = true; } });
+    row.appendChild(b);
+  });
+  $('cards').hidden = false;
+  setTimeout(() => { const b = row.firstElementChild; if (b && G.kbNav) b.focus({ preventScroll: true }); }, 0);
+}
 function banner(txt, kind, small) {
   const el = $('banner'); el.className = kind || 'gold'; el.textContent = '';
   if (small) { const s = document.createElement('small'); s.textContent = small; el.appendChild(s); }
@@ -303,7 +321,9 @@ const LOSE_TIPS_LV = [
   ['磚組擱得平、擱在城基正上方才站得穩：伸出城外、底下空著的那一截，挨一下就整塊翻下去。', '城疊得越高兵越多，可是也越容易被壓頂石壓歪：先疊寬、再疊高。', '壓頂石打在敵城疊得最高、最歪的那一邊，大石板一壓，上面的整截就倒了；固樑匠鉚過的磚比較不容易散。'],
   ['先灌油、再點火：油壺兵把火油灌進敵城，等它流到兵站的那一層，再用煉金師的火藥水一點。', '泡在水裡的兵怕雷：水甕兵灌水之後，等煉金師抽到雷藥水（黃色）再打，整片一起電暈。', '別打破自己的熔爐：岩漿流下去會點著你一樓的火油桶。敵軍灌進來的油，可以用冰藥水把水凍住擋一下，或用水把火澆熄。'],
   ['紅色虛線落在你城上的那幾個敵兵最要緊：先把他們打倒，那幾發就不會來。', '推擊手把預告好的敵兵推開，他會照原本的角度從新的位置打：推到城的邊上、推下城，紅線就跟著偏掉。', '敵軍的齒輪砲台每一輪都會轟你：打它齒輪的上緣讓砲口往上抬，抬過頭就砸它自己的城。轉向術士炸到敵軍的砲台一次抬兩格，炸到自己的砲台把它轉回原位。'],
-  ['太空裡重力小，砲彈飛得又平又遠；經過中間的衛星會被吸彎（太靠近就撞上去），虛線已經把它算進去了。', '推進兵的砲彈飛到一半，點一下畫面就往前猛衝：本來打不到的落點，加速一下就到了。', '引力錨釘在敵城上會把附近的磚往它那邊吸，整片城歪掉、垮下來；拖網網到的磚和兵會被拖出城外，掉進太空。']
+  ['太空裡重力小，砲彈飛得又平又遠；經過中間的衛星會被吸彎（太靠近就撞上去），虛線已經把它算進去了。', '推進兵的砲彈飛到一半，點一下畫面就往前猛衝：本來打不到的落點，加速一下就到了。', '引力錨釘在敵城上會把附近的磚往它那邊吸，整片城歪掉、垮下來；拖網網到的磚和兵會被拖出城外，掉進太空。'],
+  ['你的攻城車要撐過三座城：前哨別打太久，留著力氣；挑卡的時候城防低就選「整修攻城車」，兵倒了就選「援軍」。', '衝車兵的撞木瞄敵城前面的地上就好：它會沿著地面滾過去，撞城腳上面那一塊，城牆、門樓最怕它。', '敵軍的變材術士會把你的石頭、鐵變成木頭，他們的火油兵接著就燒：挑「包鐵」把木頭全部包上鐵皮。'],
+  ['魔君每回合先預告他的砲擊（紅線、紅圈）：鏡影兵把鏡子擺在紅線經過的路上，砲彈就彈回他的城。', '天秤舉起來的那一回合，結束前開護罩：天秤審判會把兩邊的城防拉成一樣，你的城比他好就會被削掉一截。', '乾坤倒轉預告的那一回合開護罩：整個世界上下顛倒一下，沒罩住的城整片飛起來再摔下去。']
 ];
 function showResult(won, st) {
   const prac = !!(S.lv && S.lv.practice);
@@ -390,12 +410,12 @@ function hudUpdate() {
     else {
       el.hidden = false;
       el.className = 'chamfer ' + (tk === 'hz' || envT ? 'hz' : S.turn === 0 ? 'me' : 'foe') + (mine ? ' go' : '') + (S.turn === 1 && S.phase === 'aim' && (em || S.team[1].ult.armed) ? ' warn' : '');
-      el.textContent = envT ? (envT === 'surge' ? '暴潮！' : envT === 'lava' ? '岩漿上漲' : envT === 'pass' ? (S.pass.kind === 'tunnel' ? '進隧道' : S.pass.outKind === 'tunnel' ? '出隧道' : '路邊換景') : envT === 'saw' ? '天秤傾斜' : envT === 'up' ? '漲潮' : '退潮') : tk === 'hz' ? (S.lv.rocks && S.lv.rocks.sym ? '火山彈！' : '落石！') : S.phase === 'build' ? (bt === ':f' ? '磚組落下中…' : S.turn === 0 ? '築城：左右拖、點一下轉向、按「放下」' + (bt ? '（' + bt.slice(1) + '）' : '') : '敵軍築城中') : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : S.team[1].ult.armed ? '敵軍連珠砲上膛！' : em ? '敵軍的砲彈會穿過' + (S.lv.boss ? '聖光符' : '倍增符') + '：×' + em + '！' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
+      el.textContent = envT ? (envT === 'surge' ? '暴潮！' : envT === 'lava' ? '岩漿上漲' : envT === 'pass' ? (S.pass.kind === 'tunnel' ? '進隧道' : S.pass.outKind === 'tunnel' ? '出隧道' : '路邊換景') : envT === 'saw' ? '天秤傾斜' : envT === 'up' ? '漲潮' : '退潮') : tk === 'hz' ? (S.lv.rocks && S.lv.rocks.sym ? '火山彈！' : '落石！') : S.phase === 'cards' ? '攻下了！挑一張卡' : S.phase === 'advance' ? '攻城車推進中…' : S.phase === 'build' ? (bt === ':f' ? '磚組落下中…' : S.turn === 0 ? '築城：左右拖、點一下轉向、按「放下」' + (bt ? '（' + bt.slice(1) + '）' : '') : '敵軍築城中') : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : S.team[1].ult.armed ? '敵軍連珠砲上膛！' : em ? '敵軍的砲彈會穿過' + (S.lv.boss ? '聖光符' : '倍增符') + '：×' + em + '！' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
     }
   }
   const fk = (mine ? 1 : 0) + (bld ? 2 : 0); if (fk !== HUD.fire) { HUD.fire = fk; const bf = $('btnFire'); bf.classList.toggle('ready', !!mine); bf.classList.toggle('btn-gold', !!mine); bf.firstElementChild.textContent = bld ? '放下' : '發射'; bf.setAttribute('aria-label', bld ? '放下磚組' : '發射'); }
   const sawK = S.saw ? Math.round(sawAngle() * 180 / Math.PI) : S.aerie ? aerieLifts() * 2 + (S.aerie.charge ? 1 : 0) : S.sand ? Math.round((sandDepth(0) + sandDepth(1) * 100) * 10) : 0;          // 天秤歪的角度、要塞的晶石和主砲、流沙陷的深度變了也要重寫
-  if (S.round !== HUD.round || sawK !== HUD.sawK) { HUD.round = S.round; HUD.sawK = sawK; $('roundTxt').textContent = S.round > 0 ? (S.lv.tide || S.lv.pass || S.saw || S.lv.arches || S.sand || S.aerie || S.lv.night ? '第' + S.round + '回合' : '第 ' + S.round + ' 回合') + (S.lv.tide ? '・' + TIDE_NAME[tideNow()] : S.pass && S.pass.kind === 'tunnel' ? '・隧道' : S.saw ? '・' + sawTxt() : S.lv.arches ? '・古門通往' + ARCH_NAME[archNext(S.round)] : S.sand ? '・陷沙 我' + sandDepth(0).toFixed(1) + '／敵' + sandDepth(1).toFixed(1) + '公尺' : S.aerie ? '・浮空晶石 ' + aerieLifts() + '／4' + (S.aerie.charge ? '・主砲充能' : '') : S.lv.night ? '・無月' : '') : ''; }
+  if (S.round !== HUD.round || sawK !== HUD.sawK) { HUD.round = S.round; HUD.sawK = sawK; $('roundTxt').textContent = S.siege ? '第' + numZh(S.siege.stage + 1) + '座・' + siegeName(S.siege.stage) + (S.round > 0 ? '・第' + S.round + '回合' : '') : S.round > 0 ? (S.lv.tide || S.lv.pass || S.saw || S.lv.arches || S.sand || S.aerie || S.lv.night ? '第' + S.round + '回合' : '第 ' + S.round + ' 回合') + (S.lv.tide ? '・' + TIDE_NAME[tideNow()] : S.pass && S.pass.kind === 'tunnel' ? '・隧道' : S.saw ? '・' + sawTxt() : S.lv.arches ? '・古門通往' + ARCH_NAME[archNext(S.round)] : S.sand ? '・陷沙 我' + sandDepth(0).toFixed(1) + '／敵' + sandDepth(1).toFixed(1) + '公尺' : S.aerie ? '・浮空晶石 ' + aerieLifts() + '／4' + (S.aerie.charge ? '・主砲充能' : '') : S.lv.night ? '・無月' : '') : ''; }
   if ((HUD.n & 3) !== 0) return;
   for (let sd = 0; sd < 2; sd++) for (const k of HUD.crew[sd]) { const st = k.u.reserve ? 'wait' : !k.u.alive ? 'dead' : k.u.frozen > 0 ? 'frozen' : k.u.stun > 0 ? 'stun' : ''; if (st !== k.st) { k.st = st; k.el.className = 'cu' + (st ? ' ' + st : ''); } }
   const T = S.team[0], bu = $('btnUlt'), bs = $('btnShield');

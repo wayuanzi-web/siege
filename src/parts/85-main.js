@@ -64,7 +64,7 @@ function startLevel(idx) {
   simInit(idx, SV.up, (Math.random() * 1e9) | 0, SV.diff); fxReset(); sceneBuild(false); S.on = fxOn;
   RD.showAim = true; RD.aimOn = false; RD.trail = null; RD.sh[0] = RD.sh[1] = 0; camIntro(lv);
   RD.aimT = [1.2, 0.95, 0.75][SV.diff] + 0.11 * (SV.up.aim || 0);
-  $('home').hidden = true; $('result').hidden = true; $('opt').hidden = true; $('shop').hidden = true; $('hud').hidden = false;
+  $('home').hidden = true; $('result').hidden = true; $('opt').hidden = true; $('shop').hidden = true; $('cards').hidden = true; $('hud').hidden = false;
   $('hudName').textContent = lv.name;
   $('hint').hidden = true;
   $('banner').className = ''; sayClear(); $('mile').className = '';
@@ -74,7 +74,7 @@ function startLevel(idx) {
 }
 function goHome() {
   G.run++;
-  G.mode = 'home'; sayClear(); $('hud').hidden = true; $('result').hidden = true; $('opt').hidden = true; $('shop').hidden = true; $('home').hidden = false;
+  G.mode = 'home'; sayClear(); $('hud').hidden = true; $('result').hidden = true; $('opt').hidden = true; $('shop').hidden = true; $('cards').hidden = true; $('home').hidden = false;
   homeRender(); homeDemo(); musStart('home');
 }
 function pauseGame() { if (G.mode !== 'play' || S.state !== 'play') return; G.mode = 'pause'; G.drag = null; G.keys = {}; sayHold(true); openOpt(true); }
@@ -145,6 +145,7 @@ function uiEvent(t, a, b, c, d, e) {
     case 'vortex': once('vortex', '中場的小山上捲起一道龍捲風：穿過它的砲彈會被往上捲、往前的速度被拖慢。虛線也算進去了，也可以繞開它'); break;
     case 'ultarm': if (c === 1) { const T = S.team[0]; say(T.shield.c >= T.shield.need && !T.shield.on ? '敵軍連珠砲上膛了，這一輪打三次：快開護罩！' : '敵軍連珠砲上膛了，這一輪打三次！', 1); } break;
     case 'phase': if (S.beast) { if (a === 2) { banner('巨獸跪地', 'boss', '第二階段'); later(1900, () => say('巨獸跪下來了：肚子打開放出兩隻小機械兵，背上的砲台會輪流齊射', 1)); } else { banner('巨獸倒地', 'boss', '最終階段'); later(1900, () => say('巨獸倒地爬行，胸甲掉了：打牠胸口發光的核心最痛！核心蓄力一回合就光束橫掃，記得開護罩', 1)); } break; }
+      if (S.lv.boss && S.lv.boss.lines === 'lord') { if (a === 2) { banner('天秤舉起', 'boss', '第二階段'); later(1900, () => say('魔君舉起天秤了：之後預告「天秤審判」的那一回合，他開火時兩邊的城防會拉成一樣。開護罩就擋得住', 1)); } else { banner('乾坤倒轉', 'boss', '最終階段'); later(1900, () => say('最終階段：預告「乾坤倒轉」的那一回合，整個世界會上下顛倒一下，沒罩住的城整片飛起來再摔下去。開護罩！', 1)); } break; }
       if (a === 2) { banner('魔王結界', 'boss', '第二階段'); later(1900, () => say('魔王張開結界了！結界分三段、每回合換缺口；戰場中間還裂開一個黑洞，會把砲彈吸彎', 1)); } else { banner('魔王暴怒', 'boss', '最終階段'); later(1900, () => say('魔王暴怒了：結界改開兩個缺口，還會放隕石雨（紅圈是落點，開護罩擋）', 1)); } break;
     case 'beastrelease': hudBuild(); break;          // 小機械兵：頭像加上去
     case 'beastpart': if (d === 0) { if (c === 'knee') once('bknee', '膝關節斷了！巨獸踉蹌：這一回合結束牠不走，下一回合打牠傷害加倍'); else if (c === 'cap') once('bcap', '護膝甲碎了：裡面的膝關節露出來了，打斷它！'); else if (c === 'head') once('bhead', '巨獸的頭被打爛了：牠不能再噴火、咬人'); else if (c === 'turret') once('bturret', '砲台塌了：上面的兵摔下去了'); } break;
@@ -201,6 +202,12 @@ function uiEvent(t, a, b, c, d, e) {
     case 'swivel': if (c === 0) once('sw0', '你的兵被敵軍的轉向彈打到：他下一發的砲口往上轉了一截（頭上有個轉圈的箭頭），虛線已經照轉過的畫', 1); break;
     case 'anchorin': if (c === 1) once('an1', '敵軍的引力錨釘在你的城上了：它會把附近的磚往它那邊吸一陣子。敵軍下一輪開火時它才收起來', 1); break;
     case 'netcatch': if (c === 1 && (d || e)) once('nt1', '敵軍的拖網把你城邊的磚和兵拖出去了：掉進太空就回不來，兵別站在城的邊上', 1); break;
+    // 第二十九關：攻下一座、挑卡、推進
+    case 'siegeclear': banner('攻下' + siegeName(a) + '！', 'gold', '第' + numZh(a + 1) + '座'); later(1500, cardsShow); break;
+    case 'advance': banner('攻城車推進', 'gold'); break;
+    case 'siegestage': hudBuild(); later(400, () => { banner(siegeName(a), 'boss', '第' + numZh(a + 1) + '座城'); if (a === 1) later(1600, () => once('sg1', '城牆很厚：衝車兵的撞木落地會沿著地面滾過去，撞城腳上面那一塊最痛；敵軍的變材術士會把你攻城車的石頭、鐵變成木頭', 0)); else if (a === 2) later(1600, () => once('sg2', '最後一座內城：這一座塌到只剩一樓，守軍就扛起帥旗死守，跟平常一樣', 0)); }); break;
+    case 'ladderin': if (c === 0) once('ld0', '雲梯鉤上去了：你下一輪開火時，一個兵爬上去砍城頭最近的敵兵。梯子被炸到會斷'); break;
+    case 'alter': if (c === 1 && d > 0) once('al1', '敵軍的變材術士把你攻城車上的磚變成木頭了：火一點就著。挑卡的時候可以選「包鐵」', 1); break;
     case 'oilfire': once('of', '油燒起來了：燒著的油一格一格延燒，泡在裡面的兵被燙傷、旁邊的木頭被點著'); break;
     case 'lqstone': once('lqs', '水碰到岩漿，凝成了一塊黑石：真的一塊石頭，擋得住砲彈，也把破洞堵住了'); break;
     case 'pressin': if (c === 1) once('pr1', '敵軍的壓頂石在你的城頂變出一塊大石板：它不算你的城，可是重量全壓在上面。打碎它、或下一塊磚組擺開一點', 1); break;

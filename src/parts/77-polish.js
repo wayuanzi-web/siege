@@ -193,6 +193,7 @@ const HOT_THEMES = { desert: 1, volcano: 1, forge: 1, dune: 1 };
 // 熱浪：近地面那一帶的背景一條一條左右晃（只有「高」畫質；只扭背景，城和兵不扭，瞄得準）
 function sceneBlit(c, t) {
   const th = SCENE.theme;
+  if (RD.scroll) { c.drawImage(SCENE.cv, -RD.scroll, 0); c.drawImage(SCENE.cv, V.W - RD.scroll, 0); return; }          // 第二十九關：攻城車推進，背景往後捲
   if (!FX.hi || !th || !HOT_THEMES[th.key] || FX.calm) { c.drawImage(SCENE.cv, 0, 0); return; }
   let gt = 0; for (const st of S.st) if (st) gt = Math.max(gt, st.y0);          // 城基站在多高：晃的那一帶在它上面
   const y0 = Math.max(0, Math.round(Y(gt + 12))), y1 = Math.min(V.H, Math.round(Y(gt + 1.5))), step = Math.max(2, Math.round(V.dpr * 2)), cv = SCENE.cv;

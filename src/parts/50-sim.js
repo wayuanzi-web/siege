@@ -48,7 +48,7 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
   const st = {
     side, skin: side < 2 ? def.skin + '@' + side : def.skin, skinB: def.skin, x0, y0, cols, rows, n, w: cols * CS, h: rows * CS, x1: x0 + cols * CS, y1: y0 + rows * CS, cx: x0 + cols * CS / 2, hpMul,
     blocks: [], units: [], slots: [], cellB: new Array(n).fill(null), cellK: new Uint8Array(n), back: new Float32Array(n), backTo: new Uint8Array(n),
-    hp0: 0, hpNow: 0, ver: 0, dead: false, fin: null, hitT: 0, loose: false, mirror, def, bhp: hpMul * (side < 2 ? (S.lv && S.lv.blockHp) || CASTLE_HP : 1)
+    hp0: 0, hpNow: 0, ver: 0, dead: false, fin: null, hitT: 0, loose: false, mirror, def, bhp: hpMul * (side < 2 ? (S.lv && S.lv.blockHp) || CASTLE_HP : 1) * (def.hpK || 1)
   };
   const at = (cx, cy) => (cx < 0 || cy < 0 || cx >= cols || cy >= rows) ? ' ' : (map[rows - 1 - cy][cx] || ' ');
   const used = new Uint8Array(n); let chNow = '';
@@ -342,7 +342,7 @@ function hurtUnit(u, d, side, kind, crit) {
 function killUnit(u, side, how) {
   if (!u.alive) return;
   u.alive = false; u.hp = 0;
-  if (S.boss && S.state === 'play') { if (u.def.big) ev('bosssay', u.x, u.y + 7.5, BOSS_LINES.die); else if (u.side === 0 && S.boss.killV !== S.vol) { S.boss.killV = S.vol; bossSay(BOSS_LINES.kill[ri(BOSS_LINES.kill.length)]); } }
+  if (S.boss && S.state === 'play') { if (u.def.big) ev('bosssay', u.x, u.y + 7.5, bossLines().die); else if (u.side === 0 && S.boss.killV !== S.vol) { S.boss.killV = S.vol; bossSay(bossLines().kill[ri(bossLines().kill.length)]); } }
   S.team[u.side].alive--;
   if (u.side === 1) S.stat.kills++; else S.stat.lost++;
   ev('udie', u.x, u.y + 1.8, u.side, u.type, how, u.slot);
@@ -502,7 +502,7 @@ function shotsStep(dt) {
       { const o = 1 - SA.side, sh = o < 2 && team[o].shield.on ? S.st[o] : null; if (sh && inBubble(sh, SA.x, SA.y)) { ev('shieldhit', SA.x, SA.y, o); killShot(i); i--; continue; } }          // 滾進對方的護罩：擋下來
       if (SA.x < -GUT || SA.x > VIEW_W + GUT) { killShot(i); i--; continue; }
       const r = SH.age[i] > 9 ? 1 : rollMove(dt, false);
-      if (r === 1) { if (SH.age[i] > 9) { SA.hx = SA.x; SA.hy = SA.y; } physExplode(SA.hx, SA.hy, WL[SA.wi], SA.side, SA.mass, SA.flag & ~F_ROLL, SA.o, SA.vx, SA.vy); ev('rollhit', SA.hx, SA.hy, SA.mass, SA.side); killShot(i); i--; continue; }
+      if (r === 1) { if (SH.age[i] > 9) { SA.hx = SA.x; SA.hy = SA.y; } const RW = WL[SA.wi]; if (RW.ram && SA.o && SA.o.isBlock && !SA.o.dead && SA.o.body) ramHit(SA.side, SA.o, SA.hx, SA.hy, SA.vx, SA.vy, (SA.side < 2 ? team[SA.side].dmg : 1) * S.rage * SA.mass, RW); else { physExplode(SA.hx, SA.hy, RW, SA.side, SA.mass, SA.flag & ~F_ROLL, SA.o, SA.vx, SA.vy); ev('rollhit', SA.hx, SA.hy, SA.mass, SA.side); } killShot(i); i--; continue; }          // 第二十九關：撞木撞城
       if (r === 2) ev('hop', SA.hx, SA.hy, SA.side);
       saStore(i); continue;
     }
@@ -511,6 +511,8 @@ function shotsStep(dt) {
     if (W.boost && boostNow(i, W)) { vx *= W.boost.k; vy *= W.boost.k; SH.mass[i] *= W.boost.m; SH.p[i] = 1; ev('boostgo', x, y, side, Math.atan2(vy, vx)); }          // 推進彈（第二十八關）：往前猛衝
     vy -= GRAV * dt * (W.gk || 1) * S.gk; vx += (S.gust ? windAt(SH.age[i]) : wind) * dt;
     if (W.glide) { const g = gliderSteer(side, x, y, vx, vy, dt); vx = g.vx; vy = g.vy; }          // 滑翔翼：過了最高點轉向最亮的地方          // gk：狙擊彈幾乎不往下掉；陣風（第十四關）：飛到一半風向反過來
+    // 鏡影彈（第三十關）：過了最高點、也飛出自己的城了，停在那裡變成一面鏡子
+    if (W.mirage && vy <= 0 && SH.age[i] > 0.25 && !(SH.flag[i] & F_IN)) { mirageSpawn(side, x, y, W, SH.mass[i]); killShot(i); i--; continue; }
     // 子母彈：過了最高點、也飛出自己的城了，分成小炸彈
     if (W.split && vy <= 0 && !clusterOverOwn(side, x)) { clusterSplit(i, x, y, vx, vy); killShot(i); i--; continue; }
     // 噴流、黑洞：改速度
@@ -919,6 +921,7 @@ function objsStep(dt) {
       case 'echo': gone = echoStep(o, dt); break;
       case 'dummy': gone = dummyStep(o, dt); break;          // 第二十七關：誘餌草人
       case 'anchor': gone = anchorStep(o, dt); break;          // 第二十八關：引力錨
+      case 'ladder': gone = ladderStep(o, dt); break;          // 第二十九關：雲梯
       case 'gear': o.vis += (o.ang - o.vis) * Math.min(1, dt * 7); if (o.flash > 0) o.flash = Math.max(0, o.flash - dt * 4); break;
       case 'lantern': {
         o.age += dt; o.y = o.by0 + Math.sin(o.age * 1.4) * 0.8;
@@ -1011,7 +1014,7 @@ function simAim(side, vx, vy) { if (!(vx === vx) || !(vy === vy)) return; const 
 /* ---------- 回合 ---------- */
 function startTurn(side) {
   S.turn = side; S.phase = 'aim'; S.phaseT = 0; S.quietT = 0; S.chain = 0;
-  if (S.boss) { const bu = bossUnit(); if (bu && bu.alive) { if (side === 0) S.boss.hp0 = bu.hp; else if (S.round === 1) bossSay(BOSS_LINES.intro); } }
+  if (S.boss) { const bu = bossUnit(); if (bu && bu.alive) { if (side === 0) S.boss.hp0 = bu.hp; else if (S.round === 1) bossSay(bossLines().intro); } }
   const T = S.team[side];
   if (T.shield.on) { T.shield.on = false; ev('shieldoff', side); }
   ev('turn', side, S.round);
@@ -1028,7 +1031,7 @@ function simFire(side) {
   const TP = telePlanned(side);          // 第二十七關：預告過的那一邊，每個兵照自己預告的初速打（沒預告到的不打）
   let t0 = 0.05, any = false;
   chargesGo(side);          // 上一輪黏在對方城上的炸藥：這一輪開火時引爆
-  hooksGo(side); mirrorsDown(side); molesGo(side); drumsGo(side); echoGo(side); gravsGo(side); rivetsGo(side); anchorsGo(side);          // 第四篇：上一輪鉤住的收繩；上一輪舉的銅鏡放下（鏡盾兵這一輪再舉）
+  hooksGo(side); mirrorsDown(side); molesGo(side); drumsGo(side); echoGo(side); gravsGo(side); rivetsGo(side); anchorsGo(side); laddersGo(side);          // 第四篇：上一輪鉤住的收繩；上一輪舉的銅鏡放下（鏡盾兵這一輪再舉）
   for (const u of T.units) {
     u.held = false;
     if (!u.alive || T.mute) continue;                       // mute：測試用，這一邊只瞄不打
@@ -1130,8 +1133,8 @@ function chainNote() {
 function endTurn() {
   chainNote();
   // 魔王這一輪被打掉一大截：嘴硬一句
-  if (S.boss && S.turn === 0) { const bu = bossUnit(); if (bu && bu.alive && S.boss.hp0 - bu.hp > bu.hpMax * 0.07) bossSay(BOSS_LINES.hit[ri(BOSS_LINES.hit.length)]); }
-  endCheck(true); if (S.state !== 'play') return;
+  if (S.boss && S.turn === 0) { const bu = bossUnit(); if (bu && bu.alive && S.boss.hp0 - bu.hp > bu.hpMax * 0.07) bossSay(bossLines().hit[ri(bossLines().hit.length)]); }
+  endCheck(true); if (S.state !== 'play' || S.phase === 'cards' || S.phase === 'advance') return;          // 第二十九關：攻下一座城了，先挑卡、推進
   if (S.turn === 0) startTurn(1); else roundEnd();
 }
 /* 搖搖欲墜：城防條快見底（剩不到 CRUMBLE_BAR）、或拖太久（到了 sudden 回合）的城，每回合結束自己再塌一點（隨便幾塊磚裂開）。魔王城不會，第一回合也不會。
@@ -1158,7 +1161,8 @@ function roundEnd() {
   if (craftRoundEnd()) wait = true;          // 第四篇：鐵砣壓樓板、天秤傾斜
   if (S.stack && stackRoundEnd()) wait = true;          // 第二十五關：清掉掉在城外的磚組
   teleRoundEnd();          // 第二十七關：用過的草人撤掉（演武場別的戰場也插得了）
-  if (S.round >= 2) for (let s = 0; s < 2; s++) if (!(s === 1 && (S.boss || S.beast)) && (structBar(s) < CRUMBLE_BAR || S.round >= (S.lv.sudden || 10)) && crumble(S.st[s])) wait = true;          // 第一回合不會（不會第一回合就分出勝負）
+  if (S.stars && S.stars.length && starsFall()) wait = true;          // 第三十關：星盤師標的星位，流星砸下來
+  if (S.round >= 2) for (let s = 0; s < 2; s++) if (!(s === 1 && (S.boss || S.beast)) && (structBar(s) < CRUMBLE_BAR || S.round >= suddenAt()) && crumble(S.st[s])) wait = true;          // 第一回合不會（不會第一回合就分出勝負）
   if (S.nfrag > FRAG_KEEP) { for (const b of S.blocks) { if (S.nfrag <= FRAG_KEEP) break; if (b.frag && !b.dead) { blockKill(b, 2, K_CRUSH, true); wait = true; } } }
   S.hz = 0;
   if (S.marks.length) { const volc = S.marks[0].volc; for (const m of S.marks) dropRock(m.x, m.big, m.volc); S.marks.length = 0; wait = true; S.hz = 1; ev('rumble', volc ? 1 : 0); }
@@ -1189,7 +1193,7 @@ function roundStart() {
   if (lv.rocks && S.round >= lv.rocks.at && (S.round - lv.rocks.at) % (lv.rocks.every || 1) === 0) rockMarks(lv.rocks.n || 2, false, lv.rocks.foe || 0, lv.rocks.sym);
 
   // 拖太久：雙方的砲火越來越猛
-  const sd = lv.sudden || 10;
+  const sd = suddenAt();          // 第二十九關：每一座城各自算
   if (S.round > sd) { if (!S.sudden) { S.sudden = true; ev('sudden'); } S.rage = 1 + Math.min(2, (S.round - sd) * 0.4); }
   if (S.astro) astroRound();          // 第二十八關：小月轉到下一個位置
   if (S.tele) telePlan();          // 第二十七關：敵軍先把這一輪要打哪裡定好（預告）
@@ -1277,32 +1281,34 @@ function barrierRound(o, cores) {
 // 魔王的血掉過門檻：馬上換階段
 function bossPhase(bu) {
   const B = S.boss, lb = S.lv.boss, f = bu.hp / bu.hpMax;
-  if (B.phase === 1 && f <= lb.p2 + 1e-6) {
+  if (B.phase === 1 && f <= lb.p2 + 1e-6 && lb.moves) { B.phase = 2; B.mv = 0; ev('phase', 2); bossSay(bossLines().p2); }          // 第三十關：沒有結界、黑洞
+  else if (B.phase === 2 && f <= lb.p3 + 1e-6 && lb.moves) { B.phase = 3; B.mv = 0; ev('phase', 3); bossSay(bossLines().p3); }
+  else if (B.phase === 1 && f <= lb.p2 + 1e-6) {
     B.phase = 2;
     const st = S.st[1], hp = (lb.segHp || 60) * S.team[1].hpMul, open = ri(3);
     S.objs.push({ t: 'barrier', x: st.cx, y: st.y0 + st.h * 0.45, R: Math.max(st.w, st.h) * 0.62 + 4, regen: lb.regen || 2, flash: 0, open,
       segs: BAR_LANES.map((l, k) => ({ a0: l[0], a1: l[1], hp, hm: hp, dead: 0, on: k !== open, lvl: 0, flash: 0 })) });
     // 第二階段：戰場中間裂開一個黑洞（彎曲砲彈），旁邊繞著兩道聖光符（金色，雙方都能用）
     for (const o of S.objs) if (o.t === 'hole') o.on = true;
-    ev('phase', 2); bossSay(BOSS_LINES.p2);
-  } else if (B.phase === 2 && f <= lb.p3 + 1e-6) { B.phase = 3; ev('phase', 3); bossSay(BOSS_LINES.p3); }
+    ev('phase', 2); bossSay(bossLines().p2);
+  } else if (B.phase === 2 && f <= lb.p3 + 1e-6) { B.phase = 3; ev('phase', 3); bossSay(bossLines().p3); }
 }
 /* 魔王的招式：每回合一開始先預告這一回合他要放哪一招（頭上有字、有圖示），你有一輪可以準備：
    暗黑連射（這一輪他自己打兩輪：開護罩擋）、毀滅光球（停在半路，下一輪砸過來：打爆它會掉頭砸回他身上）、
    隕石雨（落點先標出來，回合結束砸下來：護罩擋得住）、
    放完暗黑連射、隕石雨（關卡的 boss.rest）他會累：下一回合是「破綻」，不放招、打他傷害加倍、
    召喚魔兵（把倒下的手下叫回來：城腳的魔晶都碎了就叫不動） */
-const BOSS_MOVES = { barrage: '暗黑連射', orb: '毀滅光球', meteor: '隕石雨', summon: '召喚魔兵' };
+const BOSS_MOVES = { barrage: '暗黑連射', orb: '毀滅光球', meteor: '隕石雨', summon: '召喚魔兵', judge: '天秤審判', flip: '乾坤倒轉' };          // judge、flip：第三十關的乾坤魔君（54-lord）
 const BOSS_LINES = {
   intro: '哼，又來一群送死的。', castle: '我的城……！你們全都要付出代價！', p2: '結界！黑洞！把他們的砲彈全給我吞了！', p3: '可惡……我要讓這裡化為灰燼！', tired: '呼……呼……', core: '我的魔晶！', lamp: '啊！我的吊燈——',
   hit: ['嘖，有點本事。', '這點傷算什麼！', '可惡的小鬼！'], kill: ['哈哈哈！下一個！', '不堪一擊！'], die: '不……不可能……',
   next: { barrage: '這一輪，嚐嚐我的暗黑連射！', orb: '毀滅光球……準備迎接末日吧！', meteor: '天降隕石，給我砸！', summon: '起來，我的魔兵！' }
 };
-function bossSay(txt) { const bu = bossUnit(); if (bu && bu.alive) ev('bosssay', bu.x, bu.y + 7.5, txt); }
+function bossSay(txt) { if (!txt) return; const bu = bossUnit(); if (bu && bu.alive) ev('bosssay', bu.x, bu.y + 7.5, txt); }
 function coresLeft(side) { let n = 0; for (const b of S.st[side].blocks) if (b.core && !b.dead && b.inPlace) n++; return n; }
 function bossPick() {
   const B = S.boss, ph = B.phase, cores = coresLeft(1), dead = S.team[1].units.some((u) => !u.alive && !u.def.big);
-  const list = ph === 1 ? ['barrage', 'orb', 'summon'] : ph === 2 ? ['orb', 'barrage', 'summon', 'orb', 'barrage'] : ['meteor', 'orb', 'barrage', 'meteor', 'summon'];
+  const LM = S.lv.boss.moves, list = LM ? LM[ph - 1] : ph === 1 ? ['barrage', 'orb', 'summon'] : ph === 2 ? ['orb', 'barrage', 'summon', 'orb', 'barrage'] : ['meteor', 'orb', 'barrage', 'meteor', 'summon'];          // moves：關卡自己的招式表（第三十關）
   // 照順序輪；這一招放不出來（沒有倒下的手下、魔晶都碎了、光球還在半路）就這一回合不放招（在蓄力），順序不跟著跳
   const m = list[B.mv++ % list.length];
   if (m === 'summon' && (!dead || !cores)) return null;
@@ -1316,14 +1322,14 @@ function bossRound() {
   for (const o of S.objs) if (o.t === 'barrier') barrierRound(o, cores);
   // 魔晶還在：每回合回一點血（不會回到上一個階段）
   if (cores > 0 && S.round > 1) { const lb = S.lv.boss, cap = bu.hpMax * (B.phase === 1 ? 1 : B.phase === 2 ? lb.p2 : lb.p3); if (bu.hp < cap) { const h = Math.min(cap - bu.hp, bu.hpMax * (lb.heal || 0.025) * cores); bu.hp += h; if (h > 1) ev('bossheal', bu.x, bu.y + 4, h); } }
-  if (B.coreN !== cores) { if (B.coreN !== undefined && cores < B.coreN) bossSay(BOSS_LINES.core); B.coreN = cores; }
+  if (B.coreN !== cores) { if (B.coreN !== undefined && cores < B.coreN) bossSay(bossLines().core); B.coreN = cores; }
   // 破綻：上一回合放了隕石雨，這一回合打他傷害加倍
   B.tired = B.tiredR === S.round;
-  if (B.tired) { ev('bosstired', bu.x, bu.y + 4); bossSay(BOSS_LINES.tired); }
+  if (B.tired) { ev('bosstired', bu.x, bu.y + 4); bossSay(bossLines().tired); }
   // 這一回合要放的招（第一回合不放）
   B.next = S.round >= 2 && !B.tired ? bossPick() : null;          // 破綻的那一回合他喘不過氣，不放招
   if (B.next) {
-    ev('bossnext', bu.x, bu.y + 8, B.next); if (!B.tired) bossSay(BOSS_LINES.next[B.next]);
+    ev('bossnext', bu.x, bu.y + 8, B.next); if (!B.tired) bossSay(bossLines().next[B.next]);
     if (B.next === 'meteor') rockMarks(S.lv.boss.meteors || 3, true, 0);
     if ((S.lv.boss.rest || ['meteor']).indexOf(B.next) >= 0) B.tiredR = S.round + 1;          // 放完大招（rest 裡的招）會累：下一回合是破綻
   }
@@ -1332,6 +1338,8 @@ function bossRound() {
 function bossVolley(q, t0) {
   const B = S.boss, bu = bossUnit(); if (!bu || !bu.alive || bu.held) return;
   if (B.next === 'orb') q.push({ t: t0 + 0.5, u: bu, w: null, act: 'orb' });
+  else if (B.next === 'judge') q.push({ t: t0 + 0.6, u: bu, w: null, act: 'judge' });          // 第三十關：天秤審判、乾坤倒轉
+  else if (B.next === 'flip') q.push({ t: t0 + 0.9, u: bu, w: null, act: 'flip' });
   else if (B.next === 'summon') q.push({ t: t0 + 0.3, u: bu, w: null, act: 'summon' });
 }
 function spawnOrb(u) {
@@ -1356,7 +1364,7 @@ function simInit(idx, up, seed, diff, opts) {
   SH.n = 0; SH.cnt[0] = SH.cnt[1] = SH.cnt[2] = 0;
   S.structs = []; S.blocks = []; S.balls = []; S.units = []; S.gates = []; S.gsp = []; S.objs = []; S.marks = []; S.pend = []; S.bitUse.fill(0);
   S.wind = 0; S.gust = null; S.rage = 1; S.sudden = false; S.nburn = 0; S.burnT = 0; S.chain = 0; S.chainT = -99; S.vol = 0; S.nfrag = 0; S.bid = 0; S.hz = 0; S.endBar[0] = S.endBar[1] = 0; S.flags = [null, null];
-  S.gpts = lv.ground || null; S.voids = lv.voids || null; S.gk = lv.space ? lv.space.gk : 1; S.tele = null; S.gears = null; S.astro = null; S.nanchor = 0; S.boostReq = [false, false];          // gk：第二十八關太空裡砲彈的重力
+  S.gpts = lv.ground || null; S.voids = lv.voids || null; S.gk = lv.space ? lv.space.gk : 1; S.stars = []; S.flip = null; S.tele = null; S.gears = null; S.astro = null; S.nanchor = 0; S.boostReq = [false, false];          // gk：第二十八關太空裡砲彈的重力
   S.ropes = []; S.welds = []; S.pivots = []; S.pins = []; S.plats = []; S.pulleys = []; S.rotors = []; S.rollers = []; S.bell = null; S.doms = []; S.drops = []; S.water = lv.water ? Object.assign({ rho: 0.85, cur: 2.2 }, lv.water) : null;
   envInit();          // 第三篇的環境（潮汐……）
   S.stat = { fired: 0, peak: 0, swarm: 1, cells: 0, kills: 0, gates: 0, lost: 0, chain: 0, amp: 1, hit: 0 };
@@ -1425,6 +1433,7 @@ function simInit(idx, up, seed, diff, opts) {
   stackSetup();          // 第二十五關：開場城上只有兩個兵，其他的待命（54-stack）
   teleSetup();          // 第二十七關：預告、齒輪砲台（54-tele）
   astroSetup();          // 第二十八關：衛星、小月（54-astro）
+  siegeSetup();          // 第二十九關：三座城（54-siege）
   fluxSetup();          // 第二十六關：液體的格子（54-flux）
 }
 
@@ -1437,6 +1446,7 @@ function simStep(dt) {
       case 'intro': if (S.phaseT > 1.1) roundStart(); break;
       case 'aim': { if (S.tele) teleStep(); const T = S.team[S.turn]; if (T.ai) aiStep(T, dt); break; }          // 第二十七關：你瞄準的時候，敵軍的預告分幾幀算完
       case 'build': stackStep(dt); break;          // 第二十五關：築城
+      case 'cards': case 'advance': siegeStep(dt); break;          // 第二十九關：攻下一座城、挑卡、推進
       case 'volley': {
         const q = S.vq, T = S.team[S.turn];
         while (S.vqi < q.length && q[S.vqi].t <= S.phaseT) {
@@ -1447,6 +1457,8 @@ function simStep(dt) {
           else if (e.act === 'fix') engFix(e.u);
           else if (e.act === 'mirror') mirrorRaise(e.u);
           else if (e.act === 'cannon') aerieFire(e.u);
+          else if (e.act === 'judge') lordJudge(e.u);
+          else if (e.act === 'flip') lordFlip(e.u);
           else if (e.act === 'summon') { const T1 = S.team[1]; if (coresLeft(1) > 0 && T1.units.some((u) => !u.alive && !u.def.big)) { grantBonus(1, 'troop', e.u.x, e.u.y + 6); ev('summon', e.u.x, e.u.y + 4); } }
         }
         if (S.vqi >= q.length && S.phaseT > 0.35) { S.phase = 'resolve'; S.phaseT = 0; S.quietT = 0; }
@@ -1456,7 +1468,7 @@ function simStep(dt) {
         const busy = SH.n > 0 || S.pend.length > 0 || flyersBusy() || envBusy() || craftBusy() || ((S.nburn > 0 || ropesBurning() || (S.rotors.length > 0 && rotorBurning())) && S.phaseT < 6);          // 酸液不等它蝕完（下一輪砲擊接著蝕）          // 點著的引信不等它燒完：每一輪（雙方的砲擊、落石）都往下燒一段
         if (!busy && worldQuiet()) { if (headClear()) S.quietT = 0; else S.quietT += dt; } else S.quietT = 0;
         // 最多等 9 秒；還在一塊接一塊垮的時候多等一下（等最後一塊垮完再過 1.5 秒），最久 14 秒
-        if (S.quietT >= 0.5 || S.phaseT > (S.time - S.chainT < 1.5 ? 14 : 9)) { if (S.phase === 'hazard') { endCheck(true); if (S.state === 'play') roundStart(); } else endTurn(); }
+        if (S.quietT >= 0.5 || S.phaseT > (S.time - S.chainT < 1.5 ? 14 : 9)) { if (S.phase === 'hazard') { endCheck(true); if (S.state === 'play' && S.phase === 'hazard') roundStart(); } else endTurn(); }
         break;
       }
     }
@@ -1543,17 +1555,20 @@ function endCheck(settled) {
     if (bu && bu.alive) {
       // 固定扣兩成（不吃破綻加倍、開場護符、換階段的減傷）；摔到沒血就倒了
       ev('bosscastle', S.st[1].cx, S.st[1].y0 + S.st[1].h * 0.5); bu.hp -= bu.hpMax * 0.2; bu.hurtT = 0.25; S.boss.tiredR = S.round + 1;
-      if (bu.hp <= 0) killUnit(bu, 0, 1); else { bossPhase(bu); bossSay(BOSS_LINES.castle); }
+      if (bu.hp <= 0) killUnit(bu, 0, 1); else { bossPhase(bu); bossSay(bossLines().castle); }
     }
   }
   const how = [0, 0];          // 1 守軍全倒、2 城破（扛旗兵倒下）、3 久攻不下（回合到了上限，城防條低的輸）、4 帥旗死守撐不住，殘兵投降
+  let clear = false;          // 第二十九關：前兩座城攻下了（不算贏，換下一座）
   for (let s = 0; s < 2; s++) {
     const T = S.team[s];
+    if (s === 1 && S.siege && S.siege.stage < S.siege.n - 1) { if (S.phase !== 'cards' && S.phase !== 'advance' && settled && (T.alive <= 0 || (structBar(1) <= 0 && S.team[0].volleys >= 2))) clear = true; continue; }
     if (s === 1 && S.beast) { if (S.beast.hp <= 0) how[s] = 1; continue; }          // 第十八關：巨獸倒下才算贏（砲台上的兵死光了，巨獸照樣走）
     if ((T.alive <= 0 && !(S.stack && stackRes(T))) || (s === 1 && S.boss && !(bossUnit() || {}).alive)) how[s] = 1;          // 第二十五關：城下還有待命的兵就還沒輸
     else if (S.flags[s]) { const F = S.flags[s]; if (!F.u.alive) how[s] = 2; else if (settled && S.team[1 - s].volleys - F.v0 >= FLAG_VOL) how[s] = 4; }          // 帥旗死守：扛旗兵倒下就破城；對方再打 FLAG_VOL 輪還沒倒，殘兵投降
     else if (settled && !(s === 1 && S.boss) && structBar(s) <= 0 && S.team[1 - s].volleys >= 2) flagStart(s);          // 城塌到只剩一樓（一座城至少要挨兩輪）：不馬上輸，血最多的兵扛起帥旗死守
   }
+  if (clear && !how[0]) { siegeClear(); return; }
   if (!how[0] && !how[1] && settled && !S.boss && !S.beast && S.round > ROUND_CAP) how[structBar(1) < structBar(0) ? 1 : 0] = 3;
   if (!how[0] && !how[1]) return;
   const loser = how[1] ? 1 : 0, lose0 = !!how[0], lose1 = !!how[1];
