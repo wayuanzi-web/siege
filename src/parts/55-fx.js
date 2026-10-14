@@ -454,12 +454,12 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'ladderin': burst(P_DEBRIS, a, b, 5, 6, 0.4, 0.4, C_TAN); sfx('thunk'); if (S.state === 'play' && c === 0) pop(a, b + 3.5, '雲梯鉤上了', '#ffe14a', 2.4, 0.9); break;
     case 'ladderdown': burst(P_DEBRIS, a, b, 8, 10, 0.6, 0.4, C_TAN, 3); if (S.state === 'play' && thr('ldown', 400)) pop(a, b + 3, c === 0 ? '雲梯斷了' : '敵軍的雲梯斷了', c === 0 ? '#ff9a8a' : '#ffe14a', 2.4, 0.9); break;
     case 'ladderraid': burst(P_SPARK, a, b, 12, 16, 0.4, 0.5, C_WHITE); ring(a, b, 0.5, 3.5, 0.25, '#ffffff', 0.5); sfx('axe'); if (S.state === 'play') pop(a, b + 3.5, d ? (c === 0 ? '登城！' : '敵軍登城了') : (c === 0 ? '登城砍牆' : '敵軍砍牆'), c === 0 ? '#ffe14a' : '#ff9a8a', 3, 1.1); break;
-    case 'alter': ring(a, b, 0.6, 4, 0.4, '#b8ff9a', 0.5); burst(P_SPARK, a, b, 14, 12, 0.6, 0.5, C_GREEN); if (S.state === 'play' && d > 0 && thr('alter', 500)) pop(a, b + 3.5, (c === 1 ? '我方' : '敵城') + ' ' + d + ' 塊磚變成木頭', c === 1 ? '#ff9a8a' : '#ffe14a', 2.6, 1.1); sfx('warp'); break;
+    case 'alter': ring(a, b, 0.6, 4, 0.4, '#b8ff9a', 0.5); burst(P_SPARK, a, b, 14, 12, 0.6, 0.5, C_GREEN); if (S.state === 'play' && d > 1 && thr('alter', 500)) pop(a, b + 3.5, (c === 1 ? '我方' : '敵城') + ' ' + d + ' 塊磚變成木頭', c === 1 ? '#ff9a8a' : '#ffe14a', 2.6, 1.1); sfx('warp'); break;
     // ---- 第五篇第三批：乾坤魔君（54-lord） ----
     case 'judge': {
-      // 天秤審判：魔君頭上一座金色的天秤落下；c 往哪邊壓（1 我方的城比較好、被削），0 被護罩擋下
+      // 天秤審判：魔君頭上一圈金光；c 往哪邊壓（1 我方的城防比較高、被削平，-1 被補平），0 被護罩擋下。字寫在我方城上
       ring(a, b, 1, 16, 0.7, '#fff0c0', 0.8); flash(0.3, '#fff6dc'); sfx('chime'); sfx('bong'); shake(0.8);
-      if (S.state === 'play') pop(a, b + 4, c === 0 ? '天秤審判被護罩擋下！' : c > 0 ? '天秤審判：你的城被削到一樣高' : '天秤審判：你的城被補到一樣高', c === 0 ? '#bfe0ff' : c > 0 ? '#ff9a8a' : '#ffe14a', 3.4, 1.8);
+      const st = S.st[0]; if (S.state === 'play' && st) pop(st.cx, st.y0 + st.h + 5, c === 0 ? '天秤審判被護罩擋下！' : c > 0 ? '天秤審判：你的城防被削平' : '天秤審判：你的城防被補平', c === 0 ? '#bfe0ff' : c > 0 ? '#ff9a8a' : '#ffe14a', 3.4, 1.8);
       break;
     }
     case 'judgehit': burst(P_SPARK, a, b, 6, 10, 0.5, 0.5, C_GOLD); ring(a, b, 0.4, 2.6, 0.3, '#fff0c0', 0.4); break;

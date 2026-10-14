@@ -1,14 +1,16 @@
 /* ===== 71-lord-draw: 第三十關「乾坤魔君」怎麼畫 —— 鏡影兵的浮空鏡、星盤師的星位、乾坤倒轉（模擬在 54-lord） ===== */
-// 浮空鏡：一面直立的菱形水晶鏡，鏡面朝敵軍那一邊發亮，四周飄著幾點光
+// 浮空鏡：一面直立的長菱形水晶鏡（金邊框），鏡面朝敵軍那一邊發亮、一道光從上往下掃過，四周飄著幾點光
 function drawMirage(c, o, t) {
-  const s = V.s, x = X(o.x), y = Y(o.y), L = o.len * s, k = clamp(o.hp / o.hm, 0, 1), face = o.side === 0 ? 1 : -1, bob = Math.sin(t * 2 + o.x) * s * 0.15;
+  const s = V.s, x = X(o.x), y = Y(o.y), L = o.len * s, k = clamp(o.hp / o.hm, 0, 1), face = o.side === 0 ? 1 : -1, bob = Math.sin(t * 2 + o.x) * s * 0.15, W = s * 1.35;
   c.save(); c.translate(x, y + bob);
   c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.35 + 0.35 * o.flash; const g = glowSprite(o.side === 0 ? C_SKY : C_PINK), r = L * 1.3; c.drawImage(g, -r, -r, r * 2, r * 2); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
-  c.beginPath(); c.moveTo(0, -L); c.lineTo(s * 0.9 * face, 0); c.lineTo(0, L); c.lineTo(-s * 0.35 * face, 0); c.closePath();
-  c.fillStyle = lg(c, -s * 0.4 * face, 0, s * 0.9 * face, 0, [0, o.side === 0 ? '#3a5a9a' : '#9a3a5a', 0.5, '#e8f4ff', 1, '#ffffff']); c.fill();
-  c.strokeStyle = o.side === 0 ? '#2a3a6a' : '#6a2a3a'; c.lineWidth = Math.max(1, s * 0.16); c.stroke();
-  if (k < 0.6) { c.strokeStyle = 'rgba(30,30,50,.7)'; c.lineWidth = Math.max(1, s * 0.1); c.beginPath(); c.moveTo(0, -L * 0.5); c.lineTo(s * 0.3 * face, -L * 0.1); c.lineTo(0, L * 0.3); c.stroke(); }
-  c.fillStyle = 'rgba(255,255,255,.8)'; for (let j = 0; j < 3; j++) { const a = t * 1.5 + j * 2.1; c.beginPath(); c.arc(Math.cos(a) * s * 1.6, Math.sin(a * 1.3) * L * 0.8, Math.max(1, s * 0.12), 0, TAU); c.fill(); }
+  const path = (w, l) => { c.beginPath(); c.moveTo(0, -l); c.lineTo(w * face, -l * 0.2); c.lineTo(w * face, l * 0.2); c.lineTo(0, l); c.lineTo(-w * 0.45 * face, l * 0.2); c.lineTo(-w * 0.45 * face, -l * 0.2); c.closePath(); };
+  path(W + s * 0.3, L + s * 0.4); c.fillStyle = '#b08a3a'; c.fill(); c.strokeStyle = '#4a3410'; c.lineWidth = Math.max(1, s * 0.14); c.stroke();          // 金邊框
+  path(W, L); c.fillStyle = lg(c, -W * 0.45 * face, 0, W * face, 0, [0, o.side === 0 ? '#3a5a9a' : '#9a3a5a', 0.45, '#cfe4ff', 1, '#ffffff']); c.fill();
+  c.save(); path(W, L); c.clip(); const sy = ((t * 0.7 + o.x * 0.1) % 1.6 - 0.3) * L * 2 - L; c.fillStyle = 'rgba(255,255,255,.75)'; c.beginPath(); c.moveTo(-W, sy); c.lineTo(W * 1.2, sy - s * 1.2); c.lineTo(W * 1.2, sy - s * 0.6); c.lineTo(-W, sy + s * 0.6); c.closePath(); c.fill(); c.restore();          // 光從上往下掃
+  c.fillStyle = '#ffe9a8'; for (const yy of [-L - s * 0.4, L + s * 0.4]) { c.beginPath(); c.arc(0, yy, s * 0.28, 0, TAU); c.fill(); }
+  if (k < 0.6) { c.strokeStyle = 'rgba(30,30,50,.7)'; c.lineWidth = Math.max(1, s * 0.1); c.beginPath(); c.moveTo(0, -L * 0.5); c.lineTo(W * 0.4 * face, -L * 0.1); c.lineTo(0, L * 0.3); c.lineTo(W * 0.6 * face, L * 0.5); c.stroke(); }
+  c.fillStyle = 'rgba(255,255,255,.8)'; for (let j = 0; j < 3; j++) { const a = t * 1.5 + j * 2.1; c.beginPath(); c.arc(Math.cos(a) * s * 2.0, Math.sin(a * 1.3) * L * 0.8, Math.max(1, s * 0.12), 0, TAU); c.fill(); }
   c.restore();
 }
 // 星位：星盤彈標下的地方，一顆慢慢轉的金色星星，底下一條往天上的虛線（回合結束流星沿著它砸下來）

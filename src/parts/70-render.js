@@ -1011,7 +1011,7 @@ function drawUnits(c, t) {
     else if (u.stun > 0) { c.fillStyle = '#ffe14a'; for (let k = 0; k < 3; k++) { const a = t * 7 + k * 2.1; c.beginPath(); c.arc(x + Math.cos(a) * hw * 0.8, top - s * 0.3 + Math.sin(a) * s * 0.35, Math.max(1.2, s * 0.26), 0, TAU); c.fill(); } }
     if (u.acid > 0 && !FX.low && ((RD.frame + u.slot) & 5) === 0) part(P_EMBER, u.x + rndS() * 1.5, u.y + 1 + Math.random() * 2, rndS(), -3, 0.4, 0.4, C_GREEN);
     if (u.hp < u.hpMax * 0.995) {
-      const f = clamp(u.hp / u.hpMax, 0.06, 1), bw = s * 3.1 * big, bh = Math.max(2.5, s * 0.52), bx = x - bw / 2, by = top - s * 0.95;
+      const f = clamp(u.hp / u.hpMax, 0.06, 1), bw = s * 3.1 * big, bh = Math.max(2.5, s * 0.52), bx = x - bw / 2, by = top - s * (u.type === 'lord' ? 3.2 : 0.95);          // 乾坤魔君的冠很高：血條畫在冠的上面
       c.fillStyle = 'rgba(10,8,20,.75)'; c.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
       c.fillStyle = f > 0.5 ? '#6fe05a' : f > 0.25 ? '#ffc93c' : '#ff5a3c'; c.fillRect(bx, by, bw * f, bh);
     }

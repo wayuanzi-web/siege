@@ -38,6 +38,6 @@ function drawLadders(c, t) {
     for (let k = 1; k < steps; k++) { const f = k / steps, x = x0 + dx * f, y = y0 + dy * f; c.moveTo(x - nx, y - ny); c.lineTo(x + nx, y + ny); } c.stroke();
     c.strokeStyle = '#5a5f6a'; c.lineWidth = Math.max(1, s * 0.2); c.beginPath(); c.arc(x1 - nx, y1 - ny - s * 0.3, s * 0.4, Math.PI, TAU); c.arc(x1 + nx, y1 + ny - s * 0.3, s * 0.4, Math.PI, TAU); c.stroke();
     // 我方的梯子：一個小兵已經爬到一半（下一輪開火時爬上去）
-    if (o.side === 0) { const f = 0.55 + 0.04 * Math.sin(t * 4), x = x0 + dx * f, y = y0 + dy * f; c.fillStyle = '#3d86ff'; c.beginPath(); c.arc(x, y - s * 0.9, s * 0.45, 0, TAU); c.fill(); c.fillRect(x - s * 0.35, y - s * 0.5, s * 0.7, s * 1.0); }
+    if (o.side === 0) { const f = 0.55 + 0.04 * Math.sin(t * 4), sp = unitSprite(0, 'ladder'), k = 0.62, x = x0 + dx * f - nx * 1.6, y = y0 + dy * f - ny * 1.6; c.drawImage(sp.cv, x - sp.ax * k, y - sp.ay * k, sp.w * k, sp.h * k); }
   }
 }

@@ -17,7 +17,7 @@ const CARD_KEYS = ['repair', 'reinforce', 'powder', 'drums', 'armor'];
 function siegeSetup() {
   S.siege = null; S.sudR = 0;
   const C = S.lv.siege; if (!C) return;
-  S.siege = { stage: 0, n: C.stages.length, opts: null, picked: [], built: true, cleared: false };
+  S.siege = { stage: 0, n: C.stages.length, opts: null, picked: [], built: true, cleared: false, r0: 1 };          // r0：這一座城從第幾回合開始打
   S.sudR = C.sudden;
 }
 function suddenAt() { return S.sudR || S.lv.sudden || 10; }
@@ -87,17 +87,32 @@ function siegePick(i) {
 }
 // 倒下的兵站回自己原本的位置（腳下那一格要還在：不在的話站到城頂最高的地方）
 function siegeRevive(u) {
-  const st = u.st; let x = u.hx0, y = u.hy0;
-  if (!u.homeB || u.homeB.dead || !u.homeB.inPlace) { const P = unitSafe(u); if (!P) return false; x = P.x; y = P.y; }
+  let x = u.hx0, y = u.hy0;
+  const taken = (px, py) => S.units.some((q) => q !== u && q.alive && q.side === u.side && Math.abs(q.x - px) < 1.8 && Math.abs(q.y - py) < 2.5);
+  if (!u.homeB || u.homeB.dead || !u.homeB.inPlace || taken(x, y)) { const P = reviveSpot(u, taken); if (!P) return false; x = P.x; y = P.y; }
   u.alive = true; u.hp = u.hpMax * 0.7; u.frozen = 0; u.stun = 0; u.dazed = 0; u.flag = 0; u.out = 0; u.outT = 0; u.dieT = 0; u.loadT = 0; u.load = 0; u.turn = 0;
-  u.x = x; u.y = y; mkUnitBody(u); u.body.setTransform({ x, y: y + u.bh / 2 + 0.1 }, 0);
+  u.x = x; u.y = y; u.hx = x; u.hy = y; mkUnitBody(u); u.body.setTransform({ x, y: y + u.bh / 2 + 0.1 }, 0);
   S.team[u.side].alive++;
   ev('revive', x, y, u.side, u.slot);
   return true;
 }
+// 援軍站哪裡：攻城車上還在原位的樓板、磚頂上（不站城基、不跟別人擠在一起），從後面往前找
+function reviveSpot(u, taken) {
+  const st = u.st;
+  for (let k = 0.5; k < st.cols; k += 1) {
+    const x = st.x0 + k * CS; let top = -1e9, ok = false;
+    for (const b of st.blocks) {
+      if (b.dead || !b.inPlace || b.frag || b.prop || !b.body) continue;
+      const p = b.body.getPosition(); if (Math.abs(p.x - x) > b.w / 2 || p.y + b.h / 2 < top) continue;
+      top = p.y + b.h / 2; ok = !b.base;
+    }
+    if (ok && top > -1e9 && !taken(x, top)) return { x, y: top };
+  }
+  return null;
+}
 // 換材質（變材彈、包鐵卡）：耐久照新材質的比例換算；重量不改（不讓整座城因為變輕、變重而晃）
 function matChange(b, mat) {
-  if (b.dead || b.mat === mat || b.mat === M_KEG || b.mat === M_ROCK) return false;
+  if (b.dead || b.mat === mat || b.mat === M_KEG || b.mat === M_ROCK || (mat === M_WOOD && MAT[b.mat].hp <= MAT[M_WOOD].hp)) return false;          // 變材只把比木頭耐打的變成木頭（陶、雪、琉璃不會變得更耐打）
   const k = MAT[mat].hp / MAT[b.mat].hp;
   b.hm *= k; b.hp *= k; if (b.seg) { b.segM *= k; for (let j = 0; j < b.seg.length; j++) b.seg[j] *= k; }
   if (b.burn > 0 && !MAT[mat].burn) b.burn = 0;
@@ -115,8 +130,9 @@ function siegeStep(dt) {
 }
 function siegeGone() {
   const B = S.team[1], old = S.st[1];
-  // 拆掉打下來的那一座（連碎塊、天上的砲彈、留在那裡的東西）
+  // 拆掉打下來的那一座（連碎塊、天上的砲彈、留在那裡的東西）；還活著的守軍算我方打倒的
   ev('siegegone', old.cx, old.y0 + old.h * 0.4);
+  for (const u of B.units) if (u.alive) killUnit(u, 0, 0);
   if (old.fin) old.fin = null;
   for (const b of old.blocks) if (!b.dead) blockKill(b, 2, K_CRUSH, true);
   old.dead = true;
@@ -141,10 +157,13 @@ function siegeNext() {
   for (const u of B.units) { u.body.setTransform({ x: u.hx, y: u.hy + u.bh / 2 }, 0); u.body.setLinearVelocity({ x: 0, y: 0 }); u.body.setAwake(false); }
   castleScan(st); for (let i = 0; i < st.n; i++) st.back[i] = st.backTo[i];
   supInit(st);
-  S.flags[1] = null; S.team[0].volleys = 0; B.volleys = 0;
+  S.flags[1] = null; S.team[0].volleys = 0;
+  if (S.flags[0]) S.flags[0].v0 -= B.volleys;          // 我方正在帥旗死守：對方的輪數重新算，死守的倒數不能變長
+  B.volleys = 0;
   B.ult.c = 0; B.ult.armed = false; B.shield.on = false; B.shield.c = 0;
   S.team[0].shield.on = false;
-  S.sudR = S.round + 1 + C.sudden;
+  S.sudR = S.round + C.sudden; G2.r0 = S.round + 1;          // 這一座城的第 sudden 回合起開始自己塌
+  if (B.ai) B.ai.warmR = S.round + 1;          // 新來的守軍第一回合也在試射（手抖）
   if (S.rage > 1) { S.rage = 1; S.sudden = false; }
   G2.cleared = false;
   ev('siegestage', G2.stage, st.cx, st.y0 + st.h * 0.5);

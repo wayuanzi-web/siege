@@ -123,6 +123,8 @@ function drawBossUI(c, t) {
     c.fillStyle = 'rgba(30,6,40,.88)'; rrect(c, x - tw / 2, by - fz * 0.8, tw, fz * 1.6, fz * 0.5); c.fill();
     c.strokeStyle = B.next === 'meteor' ? '#ff8a4a' : B.next === 'orb' ? '#ff6ad0' : B.next === 'summon' ? '#b8ff9a' : B.next === 'judge' ? '#e8e0ff' : B.next === 'flip' ? '#b08aff' : '#ffd34a'; c.lineWidth = Math.max(1.5, s * 0.3); c.stroke();
     c.fillStyle = c.strokeStyle; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText((BOSS_ICON[B.next] || '') + ' ' + txt, x, by + fz * 0.05);
+    // 天秤審判：底下再一行，兩邊現在的城防（魔王那一條血條是他的血，不是城防）
+    if (B.next === 'judge') { const t2 = '城防　你 ' + Math.round(structFrac(0) * 100) + '%　他 ' + Math.round(structFrac(1) * 100) + '%', f2 = fz * 0.8; c.font = F_ZH.replace('1px', f2 + 'px'); const w2 = c.measureText(t2).width + f2 * 1.6, y2 = by + fz * 1.55; c.fillStyle = 'rgba(30,6,40,.85)'; rrect(c, x - w2 / 2, y2 - f2 * 0.75, w2, f2 * 1.5, f2 * 0.4); c.fill(); c.fillStyle = '#f4ecff'; c.fillText(t2, x, y2 + f2 * 0.05); }
   }
   // 破綻：一圈一圈往裡縮的金色準星
   if (B.tired) {

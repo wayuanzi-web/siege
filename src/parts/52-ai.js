@@ -347,7 +347,7 @@ function aiEval(T, budget) {
     let sc = aiScore(T, t, R); const mult = R.mult;
     if (sc <= 0) continue;
     if (sc > A.bs * 0.55 && A.err > 0.5) {
-      const k = S.round <= 1 ? A.warm : 1; let acc = sc; budget -= AI_ROB;
+      const k = S.round <= (A.warmR || 1) ? A.warm : 1; let acc = sc; budget -= AI_ROB;          // warmR：第二十九關新來的守軍
       for (let j = 0; j < AI_ROB; j++) { const a = clampAim(c.vx + gauss() * A.err * k / (c.tau * sp), c.vy + gauss() * A.err * 0.7 * k / (c.tau * sp), T.dir); acc += aiScore(T, t, simTrace(side, A.mx, A.my, a[0], a[1], wind, A.fireAt, undefined, wi)); }
       sc = acc / (AI_ROB + 1);
     }
@@ -396,7 +396,7 @@ function aiChoose(T) {
     b = { vx: a[0], vy: a[1], tau: 2.0, t: { x: fst.cx, y: fst.y0 + fst.h * 0.5 } }; A.mult = 1;
   }
   // 手抖：落點偏掉一些
-  const k = (S.round <= 1 ? A.warm : 1) * (S.lv.night && b.t && !litAt(b.t.x, b.t.y) ? 2.2 : 1), ex = gauss() * A.err * k, ey = gauss() * A.err * 0.7 * k, sp = (A.lead && A.lead.w && A.lead.w.spd) || 1;          // 黑夜：瞄看不見的地方，手抖加倍
+  const k = (S.round <= (A.warmR || 1) ? A.warm : 1) * (S.lv.night && b.t && !litAt(b.t.x, b.t.y) ? 2.2 : 1), ex = gauss() * A.err * k, ey = gauss() * A.err * 0.7 * k, sp = (A.lead && A.lead.w && A.lead.w.spd) || 1;          // 黑夜：瞄看不見的地方，手抖加倍
   let a = clampAim(b.vx + ex / (b.tau * sp), b.vy + ey / (b.tau * sp), dir);
   // 真的要打出去的這個角度（手抖之後），每個開得了火的兵各試射一發：最多會穿過幾倍的符。畫面上拿來預警「敵軍瞄準了倍增符」
   let v = aiVolley(T, a[0], a[1]);
@@ -424,7 +424,7 @@ function aiReact(T) {
   // 魔王城：看得到魔王預告的招式，連射、隕石雨的那一輪才開護罩（其他回合省著）
   let p = A.sh * 0.8;
   if (S.objs.some((o) => o.t === 'charge' && o.hp > 0 && o.side !== T.side && chargeOn(o) === T.side)) p = Math.min(1, A.sh * 1.6);          // 城上黏著對方的炸藥：開罩悶熄它
-  if (S.boss && T.side === 0) p = S.boss.next === 'barrage' || S.boss.next === 'meteor' || S.boss.next === 'judge' || S.boss.next === 'flip' ? Math.min(1, A.sh * 1.6) : A.sh * 0.25;          // 天秤審判、乾坤倒轉（第三十關）：開罩擋
+  if (S.boss && T.side === 0) p = S.boss.next === 'barrage' || S.boss.next === 'meteor' || S.boss.next === 'flip' || (S.boss.next === 'judge' && structFrac(0) > structFrac(1)) ? Math.min(1, A.sh * 1.6) : A.sh * 0.25;          // 天秤審判：自己的城比較好才擋          // 天秤審判、乾坤倒轉（第三十關）：開罩擋
   // 機關巨獸：預告光束一定開；噴火、咬人、走到城下要踩城的那一回合看本事開；其他回合省著
   if (S.beast && T.side === 0) { const B = S.beast; p = B.next === 'beam' ? 1 : B.next === 'flame' || B.next === 'grab' || B.atWall ? Math.min(1, A.sh * 1.5) : A.sh * 0.2; }
   if (rnd() < p) simSkill(T.side, 'shield');

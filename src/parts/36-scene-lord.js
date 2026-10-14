@@ -19,11 +19,25 @@ THEMES[29] = (function () {
       for (const [x, y, w] of [[V.x0 + 10, 38, 5], [MID - 10, 46, 3.5], [V.x1 - 14, 44, 4.5]]) { c.fillStyle = 'rgba(70,50,110,.55)'; c.beginPath(); c.moveTo(X(x - w), Y(y)); c.lineTo(X(x + w), Y(y)); c.lineTo(X(x + w * 0.2), Y(y - w * 1.6)); c.closePath(); c.fill(); c.fillStyle = 'rgba(120,150,90,.45)'; c.fillRect(X(x - w), Y(y + 0.4), w * 2 * s, 0.4 * s); }
     },
     terrain(c) {
-      const s = V.s;
-      solidGround(c, { fill: lg(c, 0, Y(0), 0, V.H, [0, '#6a5a7a', 0.35, '#4a3a5e', 1, '#1e1430']), band: '#8a9a6a', bandH: 0.4, edge: '#160e22', edgeW: 0.25 });
-      // 倒懸山：吊著魔君城的那一塊，兩條大鐵鍊往上通到天上
-      c.strokeStyle = '#3a3448'; c.lineWidth = Math.max(2, s * 0.55);
-      for (const x of [69, 109]) { for (let y = 0.6; y < 70; y += 1.4) { c.beginPath(); c.ellipse(X(x), Y(y), s * 0.35, s * 0.6, 0, 0, TAU); c.stroke(); } }
+      const s = V.s, R = mkRand(303);
+      // 我方站的懸崖（左邊那一段照平常畫到畫面底）
+      const runs = groundRuns(), mine = runs.filter((r) => r[0] < MID), his = runs.find((r) => r[0] > MID);
+      for (const [xa, xb] of mine) { c.beginPath(); c.moveTo(X(xa), Y(0)); c.lineTo(X(xb), Y(0)); c.lineTo(X(xb - 1.5), V.H + 4); c.lineTo(X(xa), V.H + 4); c.closePath(); c.fillStyle = lg(c, 0, Y(0), 0, V.H, [0, '#6a5a7a', 0.35, '#4a3a5e', 1, '#1e1430']); c.fill(); c.fillStyle = '#8a9a6a'; c.fillRect(X(xa), Y(0), (xb - xa) * s, 0.4 * s); }
+      // 倒懸山：頂面平平的，往下收成一個尖（底下是天）
+      if (his) {
+        const [xa, xb] = his, mx = (xa + xb) / 2, tip = -26;
+        c.beginPath(); c.moveTo(X(xa), Y(0)); c.lineTo(X(xb), Y(0));
+        for (let k = 1; k <= 8; k++) { const f = k / 8; c.lineTo(X(xb - (xb - mx) * f + (R() - 0.5) * 2), Y(tip * f)); }
+        for (let k = 7; k >= 1; k--) { const f = k / 8; c.lineTo(X(xa + (mx - xa) * f + (R() - 0.5) * 2), Y(tip * f)); }
+        c.closePath(); c.fillStyle = lg(c, 0, Y(0), 0, Y(tip), [0, '#5a4a6e', 0.5, '#3a2c50', 1, '#1e1430']); c.fill();
+        c.strokeStyle = 'rgba(200,180,240,.25)'; c.lineWidth = Math.max(1, s * 0.12); for (let k = 0; k < 6; k++) { const y = -2 - k * 3.5, f = -y / -tip; c.beginPath(); c.moveTo(X(xa + (mx - xa) * f + 2), Y(y)); c.lineTo(X(xb - (xb - mx) * f - 2), Y(y - 0.6)); c.stroke(); }
+        c.fillStyle = '#8a9a6a'; c.fillRect(X(xa), Y(0), (xb - xa) * s, 0.4 * s);
+        // 兩條大鐵鍊：從山頂兩邊的鐵環往上通到天上
+        for (const x of [xa + 0.9, xb - 0.9]) {
+          c.strokeStyle = '#2e2838'; c.lineWidth = Math.max(2, s * 0.55); for (let y = 1.2; y < 70; y += 1.4) { c.beginPath(); c.ellipse(X(x), Y(y), s * 0.35, s * 0.6, 0, 0, TAU); c.stroke(); }
+          c.fillStyle = '#4a4458'; c.beginPath(); c.arc(X(x), Y(0.6), s * 0.8, 0, TAU); c.fill(); c.strokeStyle = '#1a1424'; c.lineWidth = Math.max(1, s * 0.16); c.stroke();
+        }
+      }
     },
     init() { const R = mkRand(31); swirl = []; for (let k = 0; k < 7; k++) swirl.push({ a: R() * TAU, r: 14 + R() * 18, y: 30 + R() * 14, w: 6 + R() * 8, v: 0.04 + R() * 0.05 }); },
     back(c, t, dt) {

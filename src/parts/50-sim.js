@@ -1480,7 +1480,7 @@ function simStep(dt) {
     else if (p.ring) { const o = p.ring; if (!o.dead) { const q = o.body.getPosition(); if (rnd() < 0.3) ev('crack', q.x, q.y, o.mat); blockHurt(o, BELL_WAVE * p.k * S.rage, K_CRUSH, p.side); if (!o.dead && o.body) o.body.applyLinearImpulse({ x: (p.side === 0 ? 1 : -1) * o.mass * 1.2 * p.k, y: o.mass * 0.6 * p.k }, o.body.getWorldCenter(), true); } }      // 鐘鳴的震波打到塔上的木頭、屋瓦
     else if (p.join !== undefined) stackLast(p.join);          // 第二十五關：補一個待命的兵上城
     else if (p.ringU) { const u = p.ringU; if (u.alive) { hurtUnit(u, 14 * p.k * S.rage, p.side, K_CRUSH); if (u.alive && !u.immune && p.k >= 1 && !r1v(u.side)) { u.stun = Math.max(u.stun, 1); u.dazed = 1; u.tangled = 0; ev('skip', u.x, u.y + 4, u.side, 1); } } }       // 鐘鳴震到兵：心柱斷了的塔，兵還會被震暈
-    else { if (p.ev) ev(p.ev, p.x, p.y, p.side); physExplode(p.x, p.y, p.w, p.side, 1, 0, null, 0, 1); }
+    else { if (p.ev) ev(p.ev, p.x, p.y, p.side); physExplode(p.x, p.y, p.w, p.side, p.mass || 1, 0, null, 0, p.vy || 1); }
   }
   gatesStep(dt);
   shotsStep(dt);
@@ -1562,14 +1562,14 @@ function endCheck(settled) {
   let clear = false;          // 第二十九關：前兩座城攻下了（不算贏，換下一座）
   for (let s = 0; s < 2; s++) {
     const T = S.team[s];
-    if (s === 1 && S.siege && S.siege.stage < S.siege.n - 1) { if (S.phase !== 'cards' && S.phase !== 'advance' && settled && (T.alive <= 0 || (structBar(1) <= 0 && S.team[0].volleys >= 2))) clear = true; continue; }
+    if (s === 1 && S.siege && S.siege.stage < S.siege.n - 1) { if (S.phase !== 'cards' && S.phase !== 'advance' && settled && (T.alive <= 0 || structBar(1) <= 0)) clear = true; continue; }          // 前兩座：打塌就攻下（不用等它挨兩輪）
     if (s === 1 && S.beast) { if (S.beast.hp <= 0) how[s] = 1; continue; }          // 第十八關：巨獸倒下才算贏（砲台上的兵死光了，巨獸照樣走）
     if ((T.alive <= 0 && !(S.stack && stackRes(T))) || (s === 1 && S.boss && !(bossUnit() || {}).alive)) how[s] = 1;          // 第二十五關：城下還有待命的兵就還沒輸
     else if (S.flags[s]) { const F = S.flags[s]; if (!F.u.alive) how[s] = 2; else if (settled && S.team[1 - s].volleys - F.v0 >= FLAG_VOL) how[s] = 4; }          // 帥旗死守：扛旗兵倒下就破城；對方再打 FLAG_VOL 輪還沒倒，殘兵投降
     else if (settled && !(s === 1 && S.boss) && structBar(s) <= 0 && S.team[1 - s].volleys >= 2) flagStart(s);          // 城塌到只剩一樓（一座城至少要挨兩輪）：不馬上輸，血最多的兵扛起帥旗死守
   }
   if (clear && !how[0]) { siegeClear(); return; }
-  if (!how[0] && !how[1] && settled && !S.boss && !S.beast && S.round > ROUND_CAP) how[structBar(1) < structBar(0) ? 1 : 0] = 3;
+  if (!how[0] && !how[1] && settled && !S.boss && !S.beast && !(S.siege && S.siege.stage < S.siege.n - 1) && S.round > ROUND_CAP) how[structBar(1) < structBar(0) ? 1 : 0] = 3;
   if (!how[0] && !how[1]) return;
   const loser = how[1] ? 1 : 0, lose0 = !!how[0], lose1 = !!how[1];
   // 結算用的數字在這一刻就記下來（之後整座城炸開，數字會再變）

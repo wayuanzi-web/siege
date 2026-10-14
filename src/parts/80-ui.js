@@ -65,7 +65,7 @@ function onTap(el, fn) {
   el.addEventListener('click', (e) => { if (e.pointerType || e.detail > 0) return; go(e); });
 }
 // 第二十九關：攻下一座城，挑一張卡（電腦玩家自己挑，不跳出來）
-const CARD_ICON = { repair: '🔨', reinforce: '🛡', powder: '💥', drums: '🥁', armor: '⛓' };
+const CARD_ICON = { repair: '🔨', reinforce: '🛡️', powder: '💥', drums: '🥁', armor: '⛓️' };
 function cardsShow() {
   const G2 = S.siege; if (!G2 || !G2.opts || S.phase !== 'cards' || S.team[0].ai) return;
   $('cardsTitle').textContent = '攻下' + siegeName(G2.stage) + '！';
@@ -323,11 +323,12 @@ const LOSE_TIPS_LV = [
   ['紅色虛線落在你城上的那幾個敵兵最要緊：先把他們打倒，那幾發就不會來。', '推擊手把預告好的敵兵推開，他會照原本的角度從新的位置打：推到城的邊上、推下城，紅線就跟著偏掉。', '敵軍的齒輪砲台每一輪都會轟你：打它齒輪的上緣讓砲口往上抬，抬過頭就砸它自己的城。轉向術士炸到敵軍的砲台一次抬兩格，炸到自己的砲台把它轉回原位。'],
   ['太空裡重力小，砲彈飛得又平又遠；經過中間的衛星會被吸彎（太靠近就撞上去），虛線已經把它算進去了。', '推進兵的砲彈飛到一半，點一下畫面就往前猛衝：本來打不到的落點，加速一下就到了。', '引力錨釘在敵城上會把附近的磚往它那邊吸，整片城歪掉、垮下來；拖網網到的磚和兵會被拖出城外，掉進太空。'],
   ['你的攻城車要撐過三座城：前哨別打太久，留著力氣；挑卡的時候城防低就選「整修攻城車」，兵倒了就選「援軍」。', '衝車兵的撞木瞄敵城前面的地上就好：它會沿著地面滾過去，撞城腳上面那一塊，城牆、門樓最怕它。', '敵軍的變材術士會把你的石頭、鐵變成木頭，他們的火油兵接著就燒：挑「包鐵」把木頭全部包上鐵皮。'],
-  ['魔君每回合先預告他的砲擊（紅線、紅圈）：鏡影兵把鏡子擺在紅線經過的路上，砲彈就彈回他的城。', '天秤舉起來的那一回合，結束前開護罩：天秤審判會把兩邊的城防拉成一樣，你的城比他好就會被削掉一截。', '乾坤倒轉預告的那一回合開護罩：整個世界上下顛倒一下，沒罩住的城整片飛起來再摔下去。']
+  ['魔君每回合先預告他的砲擊（紅線、紅圈）：鏡影兵把鏡子擺在紅線經過的路上，砲彈就彈回他的城。', '天秤舉起來的那一回合，結束前開護罩：天秤審判會把兩邊的城防拉成一樣，你的城比他好就會被削掉一截。', '乾坤倒轉預告的那一回合開護罩：天地倒轉，沒罩住的城被拋起來再摔下去。']
 ];
 function showResult(won, st) {
+  $('cards').hidden = true;          // 第二十九關：挑卡的時候分出勝負（火燒死最後一個兵）
   const prac = !!(S.lv && S.lv.practice);
-  $('resTitle').textContent = won ? (!prac && LEVELS[st.idx] && LEVELS[st.idx].boss ? '魔王伏誅' : !prac && LEVELS[st.idx] && LEVELS[st.idx].beast ? '巨獸倒下' : !prac && LEVELS[st.idx] && LEVELS[st.idx].aerie ? '天空要塞墜落' : '敵城攻破') : '城樓失守';
+  $('resTitle').textContent = won ? (!prac && st.idx === LEVEL_MAX - 1 ? '乾坤歸位' : !prac && LEVELS[st.idx] && LEVELS[st.idx].boss ? '魔王伏誅' : !prac && LEVELS[st.idx] && LEVELS[st.idx].beast ? '巨獸倒下' : !prac && LEVELS[st.idx] && LEVELS[st.idx].aerie ? '天空要塞墜落' : '敵城攻破') : '城樓失守';
   $('resTitle').className = won ? '' : 'lose';
   $('resSub').textContent = prac ? S.lv.name + '（試打，不算星星）' : '第' + numZh(st.idx + 1) + '關 ' + LEVELS[st.idx].name;
   const stars = $('resStars'); stars.hidden = !won || prac;
@@ -343,7 +344,7 @@ function showResult(won, st) {
   else { tip.hidden = false; tip.textContent = st.streak >= 3 && SV.diff > 0 && st.streak % 2 === 1 ? TIP_EASY : tips[(Math.random() * tips.length) | 0]; }        // 同一關連輸三場、五場…：提醒可以調難度
   const next = won && !prac && st.idx < LEVELS.length - 1;
   if (won && !prac && st.idx === LEVELS.length - 1 && LEVELS.length < LEVEL_MAX) { tip.hidden = false; tip.textContent = '第' + numZh(LEVELS.length + 1) + '到' + numZh(LEVEL_MAX) + '關還在做，做好了會出現在第五篇的分頁。先到演武場，用' + numZh(UNIT_LIST.length) + '種兵試打吧。'; }
-  else if (won && !prac && st.idx === LEVEL_MAX - 1) { tip.hidden = false; tip.textContent = numZh(LEVEL_MAX) + '關全破！想拿滿三顆星可以再來一次，也可以到演武場用' + numZh(UNIT_LIST.length) + '種兵試打各關的城。'; }          // 打完最後一關          // 打完目前最後一關：沒有「下一關」，講一聲後面的還在做
+  else if (won && !prac && st.idx === LEVEL_MAX - 1) { tip.hidden = false; tip.textContent = numZh(LEVEL_MAX) + '關全破！' + (st.stars < 3 ? '想拿滿三顆星可以再來一次，' : '') + '也可以到演武場用' + numZh(UNIT_LIST.length) + '種兵試打各關的城。'; }          // 打完最後一關（乾坤魔君）
   $('btnNext').hidden = !next; $('resBtns').className = 'stack ' + (next ? 'three' : 'two');         // 沒有「下一關」的時候兩顆按鈕各佔一半
   $('btnAgain').firstChild.textContent = won ? '再玩一次' : '再戰';
   $('btnAgain').className = 'btn' + (next ? '' : ' btn-gold');
@@ -415,7 +416,7 @@ function hudUpdate() {
   }
   const fk = (mine ? 1 : 0) + (bld ? 2 : 0); if (fk !== HUD.fire) { HUD.fire = fk; const bf = $('btnFire'); bf.classList.toggle('ready', !!mine); bf.classList.toggle('btn-gold', !!mine); bf.firstElementChild.textContent = bld ? '放下' : '發射'; bf.setAttribute('aria-label', bld ? '放下磚組' : '發射'); }
   const sawK = S.saw ? Math.round(sawAngle() * 180 / Math.PI) : S.aerie ? aerieLifts() * 2 + (S.aerie.charge ? 1 : 0) : S.sand ? Math.round((sandDepth(0) + sandDepth(1) * 100) * 10) : 0;          // 天秤歪的角度、要塞的晶石和主砲、流沙陷的深度變了也要重寫
-  if (S.round !== HUD.round || sawK !== HUD.sawK) { HUD.round = S.round; HUD.sawK = sawK; $('roundTxt').textContent = S.siege ? '第' + numZh(S.siege.stage + 1) + '座・' + siegeName(S.siege.stage) + (S.round > 0 ? '・第' + S.round + '回合' : '') : S.round > 0 ? (S.lv.tide || S.lv.pass || S.saw || S.lv.arches || S.sand || S.aerie || S.lv.night ? '第' + S.round + '回合' : '第 ' + S.round + ' 回合') + (S.lv.tide ? '・' + TIDE_NAME[tideNow()] : S.pass && S.pass.kind === 'tunnel' ? '・隧道' : S.saw ? '・' + sawTxt() : S.lv.arches ? '・古門通往' + ARCH_NAME[archNext(S.round)] : S.sand ? '・陷沙 我' + sandDepth(0).toFixed(1) + '／敵' + sandDepth(1).toFixed(1) + '公尺' : S.aerie ? '・浮空晶石 ' + aerieLifts() + '／4' + (S.aerie.charge ? '・主砲充能' : '') : S.lv.night ? '・無月' : '') : ''; }
+  if (S.round !== HUD.round || sawK !== HUD.sawK) { HUD.round = S.round; HUD.sawK = sawK; $('roundTxt').textContent = S.siege ? '第' + numZh(S.siege.stage + 1) + '座' + (S.round > 0 ? '・第' + (S.round - S.siege.r0 + 1) + '回合' : '') : S.round > 0 ? (S.lv.tide || S.lv.pass || S.saw || S.lv.arches || S.sand || S.aerie || S.lv.night ? '第' + S.round + '回合' : '第 ' + S.round + ' 回合') + (S.lv.tide ? '・' + TIDE_NAME[tideNow()] : S.pass && S.pass.kind === 'tunnel' ? '・隧道' : S.saw ? '・' + sawTxt() : S.lv.arches ? '・古門通往' + ARCH_NAME[archNext(S.round)] : S.sand ? '・陷沙 我' + sandDepth(0).toFixed(1) + '／敵' + sandDepth(1).toFixed(1) + '公尺' : S.aerie ? '・浮空晶石 ' + aerieLifts() + '／4' + (S.aerie.charge ? '・主砲充能' : '') : S.lv.night ? '・無月' : '') : ''; }
   if ((HUD.n & 3) !== 0) return;
   for (let sd = 0; sd < 2; sd++) for (const k of HUD.crew[sd]) { const st = k.u.reserve ? 'wait' : !k.u.alive ? 'dead' : k.u.frozen > 0 ? 'frozen' : k.u.stun > 0 ? 'stun' : ''; if (st !== k.st) { k.st = st; k.el.className = 'cu' + (st ? ' ' + st : ''); } }
   const T = S.team[0], bu = $('btnUlt'), bs = $('btnShield');

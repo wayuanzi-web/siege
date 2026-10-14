@@ -1,7 +1,7 @@
 /* ===== 54-lord: 第三十關「乾坤魔君」（最後的魔王，借用 50-sim 的魔王框架：預告招式、換階段、破綻）=====
    - 他那一邊的砲擊全部先預告（跟第二十七關一樣：紅線、紅圈），魔君自己的乾坤彈也是。
    - 第二階段起「天秤審判」：預告的那一回合，他開火時兩邊的城防拉成一樣（高的那座被削到平均、低的那座修到平均）；你開著護罩就擋下來。
-   - 第三階段起「乾坤倒轉」：他開火時整個世界上下顛倒一下（他的城不算）：沒罩住的城整片飛起來再摔下去，兵也一樣。放完他會累一回合（破綻）。
+   - 第三階段起「乾坤倒轉」：他開火時天地倒轉一下（他的城不算）：沒罩住的城整片被拋起來再摔下去，兵也一樣。放完他會累一回合（破綻）。
    - 我方新兵：鏡影兵（鏡影彈飛到最高點停在半空變成一面直立的鏡子：對方的砲彈打到它就照鏡子彈回去，落在鏡子另一邊對稱的地方）、
      星盤師（星盤彈標一個星位，這一回合結束時一顆流星直直砸下來，護罩擋不住） */
 const BOSS_LINES_LORD = {
@@ -20,19 +20,19 @@ function lordJudge(bu) {
   ev('judge', bu.x, bu.y + bu.bh + 4, f0 > f1 ? 1 : -1, Math.abs(f0 - f1));
   if (Math.abs(f0 - f1) < 0.02) return;
   const hi = f0 > f1 ? s0 : s1, lo = f0 > f1 ? s1 : s0;
-  stLose(hi, (Math.max(f0, f1) - avg) * hi.hp0, 1);
+  stLose(hi, avg);
   stGain(lo, (avg - Math.min(f0, f1)) * lo.hp0);
 }
-// 這座城少掉 need（城防的份量）：隨便挑還在原位的磚打裂、打碎
-function stLose(st, need, side) {
+// 這座城的城防削到 target（城樓完整度的比例）：隨便挑還在原位的磚打裂（一次打一小截、每打一下重量一次，到了就停）
+function stLose(st, target) {
   const L = st.blocks.filter((b) => !b.dead && b.inPlace && !b.lost && b.wt > 0 && !b.base);
   let n = 0;
-  while (need > 0 && L.length && n++ < 400) {
-    const i = ri(L.length), b = L[i]; L.splice(i, 1);
-    const before = b.wt * (STAND_K + (1 - STAND_K) * clamp(b.hp / b.hm, 0, 1));
-    blockHurt(b, (b.seg ? b.segM : b.hm) * 0.7, K_CRUSH, side === st.side ? 2 : side); if (!b.dead && b.body) b.body.setAwake(true);
-    need -= before - (b.dead ? 0 : b.wt * (STAND_K + (1 - STAND_K) * clamp(b.hp / b.hm, 0, 1)));
-    const p = b.dead ? { x: b.x, y: b.y } : b.body.getPosition(); if (rnd() < 0.4) ev('judgehit', p.x, p.y, st.side);
+  while (L.length && n++ < 400) {
+    castleScan(st); if (st.hpNow / st.hp0 <= target + 0.005) break;
+    const i = ri(L.length), b = L[i];
+    blockHurt(b, (b.seg ? b.segM : b.hm) * 0.35, K_CRUSH, 2);
+    if (b.dead || !b.body || b.hp < b.hm * 0.3) L.splice(i, 1);
+    const p = b.dead ? { x: b.x, y: b.y } : b.body.getPosition(); if (rnd() < 0.3) ev('judgehit', p.x, p.y, st.side);
   }
 }
 // 這座城多 need：打裂的磚修回來（垮掉的修不回來）
@@ -72,6 +72,7 @@ function flipForces(dt) {
 /* ---------- 鏡影兵、星盤師 ---------- */
 // 鏡影彈飛到最高點（或撞到東西）：停在那裡變成一面直立的鏡子，鏡面朝著敵軍
 function mirageSpawn(side, x, y, w, mass) {
+  const fs = S.st[1 - side]; if (fs && x > fs.x0 - 3 && x < fs.x1 + 3) { ev('mirrorbreak', x, y, side); return; }          // 擺不進敵城的範圍裡（不然鏡子貼在他的砲口前面，他打什麼都砸回自己）
   const M = w.mirage, hp = M.hp * (side < 2 ? S.team[side].hpMul : 1) * Math.min(1.5, Math.sqrt(mass)), ang = side === 0 ? -Math.PI / 2 : Math.PI / 2;
   const o = { t: 'bmirror', side, u: null, fixed: 1, x, y, len: M.len, ang, dx: Math.cos(ang) * M.len, dy: Math.sin(ang) * M.len, hp, hm: hp, one: 1, flash: 1, age: 0, n: 0 };
   S.objs.push(o); ev('mirageup', x, y, side);
@@ -97,8 +98,8 @@ function starsFall() {
   const L = S.stars; if (!L || !L.length) return false;
   for (const m of L) {
     const top = 70; rayShot(m.x, top, m.x, -30, 2, false);
-    const y = RAY.hit ? RAY.y : 0;
-    S.pend.push({ t: S.time + 0.35 + rnd() * 0.25, x: m.x, y, w: WPN.starfall, side: m.side, ev: 'starfall' });
+    if (!RAY.hit) continue;          // 底下是深谷：流星直接掉下去
+    S.pend.push({ t: S.time + 0.35 + rnd() * 0.25, x: m.x, y: RAY.y, w: WPN.starfall, side: m.side, ev: 'starfall', mass: Math.min(1.5, m.mass || 1), vy: -1 });
   }
   L.length = 0;
   return true;

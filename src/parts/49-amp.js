@@ -141,7 +141,7 @@ function ampObj(o) {
     case 'prism': return (SA.flag & F_SPLIT) || SA.side > 1 || !circIn(o) ? 0 : 3;
     case 'bmirror': {
       // 鏡盾兵的銅鏡（第四篇）：只彈對方的砲彈（自己的穿過去）；從底下打到鏡背的擋下來
-      if (SA.side === o.side || SA.side > 1 || o.hp <= 0) return 0;
+      if (SA.side === o.side || SA.side > 1 || o.hp <= 0 || (o.fixed && (SA.flag & F_IN))) return 0;          // 浮空鏡（第三十關）：還沒飛出自己城的砲彈不彈
       if (Math.abs(SA.nx - o.x) > o.len + 4 && Math.abs(SA.x - o.x) > o.len + 4) return 0;
       const r = segBounce(o, 0); if (!r) return 0;
       if (r === 2) return 2;
