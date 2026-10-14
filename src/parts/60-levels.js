@@ -515,7 +515,7 @@ const LEVELS = [
     sudden: 12
   },
   {
-    name: '煉金沸城', sayTop: 1, tag: '液體・反應・藥水', theme: 25, castle: 'ALCHEMY', stress: 1, blockHp: 1.5, flux: 1, rules: { ff: 1, crit: 1, elem: 1 },
+    name: '煉金沸城', sayTop: 1, tag: '液體・反應・藥水', theme: 25, castle: 'ALCHEMY', blockHp: 1.6, flux: 1, rules: { ff: 1, crit: 1, elem: 1 },
     tip: '城裡的水、油、岩漿都會流：頂樓的水槽、中間的熔爐、一樓的火油桶打破了就倒出來，順著破洞往下流。水碰岩漿凝成黑石，油碰到火整片燒起來，雷打到水整片帶電，冰把水凍住。水甕兵、油壺兵往敵城灌水、灌油；煉金師每回合抽一瓶藥水（火、冰、雷），看清楚是哪一瓶再打',
     hints: [{ r: 1, t: '先讓油壺兵把火油灌進敵城（油會順著樓板往下流），再用煉金師的火藥水一點，整片燒起來', ok: () => true },
       { r: 1, t: '煉金師這一回合抽到哪一瓶藥水，看他手上那瓶的顏色：紅是火、藍是冰、黃是雷', ok: () => S.team[0].units.some((u) => u.alive && u.def.alch) },
@@ -523,7 +523,7 @@ const LEVELS = [
       { r: 3, t: '敵城中間那一層的熔爐打破了，岩漿會往下流：流到一樓的火油桶就燒起來；碰到水就凝成一塊黑石，把破洞堵住', ok: () => true }],
     ground: [[-40, 0], [44, 0], [46.5, -3.4], [65.5, -3.4], [68, 0], [152, 0]],
     me: { crew: ['jar', 'oilpot', 'alch', 'jar', 'oilpot', 'alch'] },
-    foe: { crew: ['oilpot', 'jar', 'alch', 'oilpot', 'jar', 'alch'], hp: 1.0, dmg: 1.0, open: 0.55, ai: { err: 3.0, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
+    foe: { crew: ['oilpot', 'jar', 'alch', 'oilpot', 'jar', 'alch'], hp: 1.0, dmg: 1.0, open: 0.55, ai: { err: 2.8, think: 1.1, gate: 0, hate: 0, skill: 0.6, sap: 0.6, warm: 1.6 } },
     wind: { max: 3, at: 2 },
     sudden: 12
   }

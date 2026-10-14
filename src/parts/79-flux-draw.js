@@ -18,6 +18,12 @@ function drawFlux(c, t) {
       }
       const k = K[i], a = A[i]; if (!k || a < 0.03) continue;
       const above = cy + 1 < ny ? i + nx : -1, top = above < 0 || K[above] !== k || A[above] < 0.03;
+      // 往下掉的那一截（底下是空的）：畫成一道細細的水柱、一串油滴，不是一整格
+      const below = i - nx; if (cy > 0 && !F.sol[below] && !(K[below] === k && A[below] > 0.85) && F.ice[below] <= 0) {
+        const sw = cw * (0.22 + Math.min(1, a) * 0.3), wob = Math.sin(t * 9 + cy * 1.7 + cx) * cw * 0.06;
+        c.fillStyle = LQ_COL[k][0]; c.fillRect(x + (cw - sw) / 2 + wob, Y(FL.y0 + (cy + 1) * FL.c), sw, cw + 0.6);
+        continue;
+      }
       const h = top ? Math.min(1, a) : 1, y0 = Y(FL.y0 + cy * FL.c + h * FL.c), col = LQ_COL[k];
       c.fillStyle = col[top ? 0 : 1]; c.fillRect(x, y0, cw + 0.6, h * cw + 0.6);
       if (top) {

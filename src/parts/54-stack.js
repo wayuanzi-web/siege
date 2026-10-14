@@ -55,7 +55,7 @@ function stackTop(st) {
   return top;
 }
 /* 磚組放在左緣 bx（世界座標）會落在哪：每一欄量兩條線（格子左右兩邊靠內一點），磚組那一欄的底要擱在最高的那一點上。
-   by：磚組的底（左下角那一格的底邊）；gaps：底下空出來幾格（擱不平）；off：有幾欄底下是空的（伸出城基外面、會掉下去） */
+   by：磚組的底（左下角那一格的底邊）；gaps：底下空出來幾格（擱不平）；off：有幾欄擱在城基外面（伸出去、或落到城外的地上） */
 const _land = { by: 0, gaps: 0, off: 0, top: 0 };
 function stackLand(side, P, bx) {
   const st = S.st[side], yTop = Math.max(stackTop(st), st.y1) + CS * 6, surf = [];
@@ -63,7 +63,7 @@ function stackLand(side, P, bx) {
   for (let cx = 0; cx < P.w; cx++) {
     const x = bx + (cx + 0.5) * CS, a = stackSurf(x - CS * 0.36, yTop), b = stackSurf(x + CS * 0.36, yTop), s = Math.max(a, b);
     surf.push(s);
-    if (s < st.y0 - 0.5) off++;
+    if (s < st.y0 + st.base * CS - 0.5) off++;          // 落到城基的頂面以下（城外的地上）：這一欄不算擱在城上
     by = Math.max(by, s - P.bot[cx] * CS);
   }
   let gaps = 0; for (let cx = 0; cx < P.w; cx++) gaps += Math.max(0, (by + P.bot[cx] * CS - surf[cx]) / CS);

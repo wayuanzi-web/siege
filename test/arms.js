@@ -16,7 +16,7 @@ for (let k = 0; k < crews.length; k++) for (let sd = 0; sd < N; sd++) {
     S.on = (t) => { ev[t] = (ev[t] || 0) + 1; };
     while (S.state === 'play' && S.round < 30) simStep(1 / 60);
   } catch (e) { bad++; console.log('ERR', k, sd, e.stack.split('\n').slice(0, 4).join(' | ')); continue; }
-  const keys = ['split', 'stuck', 'chargego', 'defuse', 'drill', 'chainhit', 'tangle', 'magpulse', 'twister', 'fix', 'wall', 'crit', 'elem', 'douse', 'hookin', 'hookyank', 'warpopen', 'warpin', 'mirrorhit', 'weightpress', 'sawtilt', 'vinecut', 'vinegrow', 'strangle', 'axechop', 'moleboom', 'drumquake', 'sandsink', 'flarein', 'gravslam', 'echoarm', 'torchout', 'pressin', 'rivet', 'pour', 'tankburst', 'lqshock', 'oilfire', 'lqstone'].map((q) => q + ':' + (ev[q] || 0)).join(' ');
+  const keys = ['split', 'stuck', 'chargego', 'defuse', 'drill', 'chainhit', 'tangle', 'magpulse', 'twister', 'fix', 'wall', 'crit', 'elem', 'douse', 'hookin', 'hookyank', 'warpopen', 'warpin', 'mirrorhit', 'weightpress', 'sawtilt', 'vinecut', 'vinegrow', 'strangle', 'axechop', 'moleboom', 'drumquake', 'sandsink', 'flarein', 'gravslam', 'echoarm', 'torchout', 'pressin', 'rivet', 'lqpour', 'tankburst', 'lqshock', 'oilfire', 'lqstone'].map((q) => q + ':' + (ev[q] || 0)).join(' ');
   console.log(`crew${k} #${sd} ${S.state} R${S.round} bars ${structBar(0).toFixed(2)}/${structBar(1).toFixed(2)} alive ${S.team[0].alive}/${S.team[1].alive} ${((Date.now() - t0) / 1000).toFixed(1)}s  ${keys}`);
 }
 console.log(bad ? bad + ' 場出錯' : '都沒出錯');

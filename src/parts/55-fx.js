@@ -423,7 +423,7 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'pressin': burst(P_DUST, a, b, 6, 10, 0.8, 2.2, C_SAND, 3); ring(a, b, 0.5, 5, 0.3, '#e8e0d0', 0.4); if (S.state === 'play' && thr('press', 600)) pop(a, b + 5, c === 0 ? '壓頂！' : '敵軍壓頂', c === 0 ? '#ffe14a' : '#ff9a8a', 2.8, 1.0); sfx('thunk'); shake(0.2); break;
     case 'rivet': burst(P_SPARK, a, b, 3, 8, 0.3, 0.35, C_GOLD); if (thr('rivet', 120)) sfx('tick'); break;
     // ---- 第五篇第一批：煉金沸城（54-flux） ----
-    case 'pour': for (let k = 0; k < 8; k++) part(P_SHARD, a + rndS() * 2, b + 0.5, rndS() * 12, 6 + Math.random() * 10, 0.5, 0.45, c === 1 ? (k & 1 ? C_WHITE : C_SKY) : C_DARK); if (thr('pour', 150)) sfx('splash'); break;
+    case 'lqpour': for (let k = 0; k < 8; k++) part(P_SHARD, a + rndS() * 2, b + 0.5, rndS() * 12, 6 + Math.random() * 10, 0.5, 0.45, c === 1 ? (k & 1 ? C_WHITE : C_SKY) : C_DARK); if (thr('pour', 150)) sfx('splash'); break;
     case 'tankburst': for (let k = 0; k < 12; k++) part(P_SHARD, a + rndS() * 2, b, rndS() * 18, 4 + Math.random() * 12, 0.7, 0.55, c === 1 ? (k & 1 ? C_WHITE : C_SKY) : c === 2 ? C_DARK : C_ORANGE); if (c === 3) { burst(P_EMBER, a, b, 12, 12, 0.9, 0.7, C_ORANGE, 6); flash(0.1, '#ff9a4a'); } if (S.state === 'play') pop(a, b + 3.5, c === 1 ? '水槽破了' : c === 2 ? '油桶破了' : '熔爐破了！', d === 1 ? '#ffe14a' : '#ff9a8a', 2.6, 1.0); sfx(c === 3 ? 'lava' : 'splash'); break;
     case 'steam': part(P_SMOKE, a, b, rndS() * 3, 7, 1.0, 1.4, C_WHITE); if (thr('steam', 260)) sfx('steam'); break;
     case 'lqstone': burst(P_SMOKE, a, b + 0.4, 3, 5, 0.9, 1.3, C_WHITE, 4); burst(P_SPARK, a, b, 4, 8, 0.3, 0.4, C_ORANGE); if (thr('lqstone', 400)) sfx('fizz'); break;

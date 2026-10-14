@@ -1,7 +1,7 @@
 /* ===== 54-flux: 第五篇第一批（第 26 關「煉金沸城」）：會流的液體、液體之間的反應；水甕兵、油壺兵、煉金師 =====
    液體放在一張格子上（每格 FL.c 公尺見方，比磚小一半）：水、油、岩漿三種，一格只裝一種、最多裝滿 1。
    每 1/20 秒流一次：先往下掉一格（下面是空的、或裝同一種還沒滿），再跟左右兩格分一分（油慢一點、岩漿更慢）；
-   磚、地面擋得住（每一次都照磚現在的位置重新量）；流出戰場就沒了，放著也會慢慢蒸發、冷掉。
+   磚、地面擋得住（每一次都照磚現在的位置重新量；裂開一半以上的磚、碎塊擋不住，液體從縫裡滲過去）；流出戰場就沒了，放著也會慢慢蒸發、冷掉。
    反應：
      水碰到岩漿 → 岩漿凝成一塊黑石（真的一塊磚，擋得住、補得了洞），水變成蒸氣
      油碰到岩漿、火（火的爆炸、著火的磚）→ 油燒起來，一格一格延燒；燒著的油燙傷泡在裡面的兵、點著旁邊的木頭
@@ -37,7 +37,7 @@ function lqY(i) { return FL.y0 + ((i / FL.nx | 0) + 0.5) * FL.c; }
 function fluxSolid() {
   const F = S.flux, nx = FL.nx, c = FL.c; F.sol.set(F.solT); F.blk.fill(null);
   for (const b of S.blocks) {
-    if (b.dead || !b.body || b.kind === 'ball') continue;
+    if (b.dead || !b.body || b.kind === 'ball' || b.frag || b.hp < b.hm * 0.5) continue;          // 裂開一半以上的磚、碎塊擋不住液體（會從縫裡滲過去）
     const p = b.body.getPosition(), a = b.body.getAngle(), cs = Math.cos(a), sn = Math.sin(a), hw = b.w / 2, hh = b.h / 2;
     const ex = Math.abs(cs) * hw + Math.abs(sn) * hh, ey = Math.abs(sn) * hw + Math.abs(cs) * hh;
     const c0 = Math.max(0, Math.floor((p.x - ex - FL.x0) / c)), c1 = Math.min(nx - 1, Math.floor((p.x + ex - FL.x0) / c)), r0 = Math.max(0, Math.floor((p.y - ey - FL.y0) / c)), r1 = Math.min(FL.ny - 1, Math.floor((p.y + ey - FL.y0) / c));
@@ -171,7 +171,10 @@ function fluxBlast(x, y, r, w, side, fire, frost, zapc) {
     if (F.ice[i] > 0) { if (fire) { F.ice[i] = 0; ev('lqmelt', lqX(i), lqY(i)); } continue; }
     if (!k || F.amt[i] < 0.05) continue;
     if (fire) { if (k === LQ_OIL && F.fire[i] <= 0) F.fire[i] = 0.3; else if (k === LQ_WATER) { F.amt[i] *= 0.7; if (F.steam++ < 3) ev('steam', lqX(i), lqY(i) + 0.5); } }
-    if (ice) { if (k === LQ_WATER) F.ice[i] = 14; else if (k === LQ_LAVA && F.amt[i] > 0.3) lavaStone(i); }
+    if (ice) {
+      const j = i - nx, held = j < 0 || F.sol[j] || F.ice[j] > 0 || (F.typ[j] === LQ_WATER && F.amt[j] > 0.85);          // 半空中往下掉的那一截不結冰（不然一條冰柱掛在半空）
+      if (k === LQ_WATER && held) F.ice[i] = 14; else if (k === LQ_LAVA && F.amt[i] > 0.3) lavaStone(i);
+    }
     if (zap && k === LQ_WATER) hitW.push(i);
   }
   if (ice) for (const u of S.units) { if (!u.alive || u.immune || open1(u, side)) continue; for (const yy of [0.6, 1.9]) { const i = lqIdx(u.x, u.y + yy); if (i >= 0 && F.ice[i] > 0) { if (!(u.frozen > 0)) { u.frozen = 1; u.dazed = 1; ev('freeze', u.x, u.y, u.side); } break; } } }
@@ -199,7 +202,7 @@ function lqShock(seed, side, w) {
 function fluxHit(i, w, hit, o, hx, hy, vx, vy) {
   const side = SH.side[i]; if (side > 1) return 0;
   physExplode(hx, hy, w, side, SH.mass[i], SH.flag[i], o, vx, vy);
-  if (S.flux) { fluxPour(hx - vx * 0.01, hy + 0.4, w.pour.k, w.pour.v * Math.min(1.6, SH.mass[i])); ev('pour', hx, hy, w.pour.k, side); }
+  if (S.flux) { fluxPour(hx - vx * 0.01, hy + 0.4, w.pour.k, w.pour.v * Math.min(1.6, SH.mass[i])); ev('lqpour', hx, hy, w.pour.k, side); }
   return 1;
 }
 
