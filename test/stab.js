@@ -10,7 +10,7 @@ for (let li = 0; li <= LEVELS.length; li++) {
   S.phase = 'idle-test';
   const rec = [];
   for (const b of S.blocks) { b.body.setAwake(true); rec.push({ o: b, x: b.x0, y: b.y0 }); }
-  for (const u of S.units) { u.body.setAwake(true); rec.push({ o: u, x: u.body.getPosition().x, y: u.body.getPosition().y, unit: true }); }
+  for (const u of S.units) { if (!u.body) continue; u.body.setAwake(true); rec.push({ o: u, x: u.body.getPosition().x, y: u.body.getPosition().y, unit: true }); }
   let slept = -1, tot = 0, worst = 0;
   let n = 0;
   for (let i = 0; i < 1200; i++) {

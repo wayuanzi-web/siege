@@ -327,5 +327,5 @@ function craftRoundEnd() {
   if (wildRoundEnd()) wait = true;
   return wait;
 }
-function craftRound() { if (S.lv.arches) archRound(); duskRound(); }
-function craftBusy() { return sawBusy() || wildBusy() || duskBusy(); }
+function craftRound() { if (S.lv.arches) archRound(); duskRound(); if (S.flux) fluxRound(); }
+function craftBusy() { return sawBusy() || wildBusy() || duskBusy() || fluxBusy(); }

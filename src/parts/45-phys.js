@@ -574,6 +574,7 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
     ev('boom', x, y, 0, w.i, side, mass + ((flag & F_FIRE) ? 100 : 0));
     if (zapc) lightning(x, y, mul, side);
     if (S.lv.night) duskBlast(x, y, 0.6, dmg0, side);          // 第二十三關：直接打中燈籠旁邊
+    if (S.flux) fluxBlast(x, y, 0.6, w, side, fire, frost, zapc);          // 第二十六關：打到液體
     armsDone(x, y, side, dacc0);
     return;
   }
@@ -649,7 +650,8 @@ function physExplode(x, y, w, side, mass, flag, hit, vx, vy) {
   if (S.ropes.length) ropesBlast(x, y, r, dmg, kind, side, fire);
   if (S.objs.length) hooksBlast(x, y, r, side);
   if (S.objs.length || S.lv.vines) wildBlast(x, y, r, dmg, side, fire);
-  if (S.objs.length) duskBlast(x, y, r, dmg, side);          // 燈籠、照明箭          // 第四篇第二批：古藤、藤、地道、鼓樁          // 第四篇：鉤索的繩子被炸斷
+  if (S.objs.length) duskBlast(x, y, r, dmg, side);          // 燈籠、照明箭
+  if (S.flux) fluxBlast(x, y, r, w, side, fire, frost, zapc);          // 第二十六關：火點著油、冰凍住水、雷讓水帶電          // 第四篇第二批：古藤、藤、地道、鼓樁          // 第四篇：鉤索的繩子被炸斷
   if (fire || keg) fuseBlast(x, y, r, fire, keg, side);          // 引信、地窖的火藥庫：火油兵的火、穿過地火著了火的砲彈都點得著
   // 飛在天上的東西（氣球、光球、吊著浮島的氣球、浮島底下的浮空晶石）
   for (const o of S.objs) {

@@ -11,6 +11,6 @@ for (let sd = 0; sd < N; sd++) {
   let guard = 0;
   // 跑到開場護符結束：第 K+1 回合我方自己那一輪也跑完（第一輪留下的火、引信、坍塌在這一輪裡還在燒、還在掉）
   while (S.state === 'play' && (S.round <= K || (S.round === K + 1 && S.turn === 0)) && guard++ < 60 * 60 * (K + 1)) { if (S.phase === 'aim' && S.turn === 0) simFire(0); simStep(1 / 60); }
-  const n = S.team[0].units.length - S.team[0].alive; hist[Math.min(4, n)]++; if (S.state === 'lost') lost++;
+  const n = S.team[0].units.filter((u) => !u.alive && !u.reserve).length; hist[Math.min(4, n)]++; if (S.state === 'lost') lost++;          // 第二十五關城下待命的兵不算
 }
 console.log(`${prac ? PL.name + '（敵軍 ' + PL.foe.crew.join(',') + '）' : 'L' + (li + 1) + ' ' + LEVELS[li].name}：敵軍先打 ${K} 輪、我方不還手，${N} 場裡我方倒 0/1/2/3/4 個的場數：${hist.join(' / ')}（整場輸掉 ${lost}）  倒的是：${Object.keys(who).sort((a, b) => who[b] - who[a]).map((k) => k + ' ×' + who[k]).join('、') || '—'}`);

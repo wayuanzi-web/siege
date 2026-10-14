@@ -30,6 +30,8 @@ const SKINS = {
   grove: { stone: ['#c8c4a8', '#a09c80', '#76735a', '#504e3a'], wood: ['#b88a52', '#8a6232', '#553a1a'], roof: ['#7aa04a', '#557a30', '#36521c'], iron: ['#8d96a2', '#606874', '#3a414b'], panel: ['#26301c', '#1c2414'], ink: '#18140a', trim: '#c8e070', flag: '#dc3a2e', flagDk: '#8f1418' },
   night: { stone: ['#8a8ea0', '#6a6e80', '#4a4e60', '#2e3242'], wood: ['#8a6a48', '#6a4e32', '#42301c'], roof: ['#5a5a7a', '#3e3e5a', '#28283c'], iron: ['#7a828e', '#565e6a', '#363c46'], panel: ['#14161e', '#0e1016'], ink: '#0a0c12', trim: '#ffc870', flag: '#dc3a2e', flagDk: '#8f1418' },
   aerie: { stone: ['#e8ecf4', '#c4ccd8', '#949eb0', '#646e82'], wood: ['#b89a6a', '#8e7246', '#5a4626'], roof: ['#6a8ad8', '#4a68b4', '#2e4682'], iron: ['#a8b4c8', '#7a869c', '#4e5870'], panel: ['#1e2438', '#161a2a'], ink: '#0e1220', trim: '#ffe08a', flag: '#dc3a2e', flagDk: '#8f1418' },
+  alchemy: { stone: ['#b8b0c8', '#948aa8', '#6a6080', '#463e58'], wood: ['#a87a50', '#7e5432', '#4e3018'], roof: ['#6a5ad0', '#4a3aa8', '#2c2270'], iron: ['#9aa0b0', '#6e7488', '#444a5a'], panel: ['#241e34', '#1a1626'], ink: '#140e20', trim: '#ffcf6a', flag: '#dc3a2e', flagDk: '#8f1418' },
+  stack: { stone: ['#ece4d4', '#cfc2a8', '#9e8f74', '#6c604c'], wood: ['#e0a868', '#b87a40', '#7a4c22'], roof: ['#73adff', '#2f6fe0', '#1a429c'], iron: ['#b8c2d2', '#8490a4', '#505a6c'], panel: ['#3a3446', '#2a2636'], ink: '#221c2a', trim: '#ffd25a', flag: '#2f7bff', flagDk: '#1b46b8' },
   dune: { stone: ['#f4dcaa', '#ddb878', '#b08850', '#7a5a30'], wood: ['#a8784a', '#7e5630', '#4e3418'], roof: ['#3aa0a0', '#22787a', '#14504f'], iron: ['#c4a46c', '#957844', '#5e4826'], panel: ['#3a2814', '#2a1c0c'], ink: '#24160a', trim: '#ffd27a', flag: '#dc3a2e', flagDk: '#8f1418' }
 };
 // 每一關雙方的城樓一模一樣，只有屋瓦和旗子分顏色：我方藍、敵方紅（藍圖的外觀名稱後面接 @0、@1）
@@ -923,6 +925,55 @@ const UNIT_ART = {
     c.restore();
     uArm(c, P, 38, 32); uArm(c, P, 50, 32);
   },
+  press(c, side, P) {
+    // 壓頂術士：粗壯的石匠，肩上扛著一塊刻著符紋的方石（符紋發光）
+    uShadow(c); kLegs(c, P); kBody(c, P); uArm(c, P, 21, 38); kHead(c, side, P);
+    c.save(); c.translate(43, 14); c.rotate(0.18);
+    rrect(c, -9, -6, 18, 12, 2.2); fs(c, lg(c, 0, -6, 0, 6, [0, '#c8c0b0', 0.6, '#8e8676', 1, '#5e574a']), '#2a2620', 1.4);
+    c.strokeStyle = side ? '#ff9a7a' : '#8ad0ff'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-4, -2); c.lineTo(0, 2.5); c.lineTo(4, -2); c.moveTo(0, -3.5); c.lineTo(0, 2.5); c.stroke();
+    c.restore();
+    uArm(c, P, 37, 22); uArm(c, P, 49, 24);
+  },
+  rivet(c, side, P) {
+    // 固樑匠：皮圍裙、護目鏡推在額頭上，一手鐵鉗夾著燒紅的鉚釘，一手一把鉚槌
+    uShadow(c); kLegs(c, P); kBody(c, P);
+    rrect(c, 24, 34, 16, 16, 3); fs(c, lg(c, 0, 34, 0, 50, [0, '#8a5a32', 1, '#5a361a']), '#2a1608', 1.2);
+    uArm(c, P, 21, 38); kHead(c, side, P);
+    c.fillStyle = '#3a3f48'; rrect(c, 24, 13, 16, 4, 2); c.fill(); c.fillStyle = '#a8e0ff'; c.beginPath(); c.arc(28.5, 15, 1.6, 0, TAU); c.arc(35.5, 15, 1.6, 0, TAU); c.fill();
+    c.strokeStyle = '#5a5f6a'; c.lineWidth = 1.8; c.beginPath(); c.moveTo(45, 32); c.lineTo(55, 26); c.moveTo(45, 33); c.lineTo(55, 29); c.stroke();
+    c.fillStyle = rg(c, 56, 27.5, 0.2, 3.4, [0, '#fff6c0', 0.4, '#ff8a2a', 1, 'rgba(220,60,20,0)']); c.beginPath(); c.arc(56, 27.5, 3.4, 0, TAU); c.fill();
+    c.strokeStyle = '#7a4a1c'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(18, 40); c.lineTo(12, 30); c.stroke(); rrect(c, 7, 25, 9, 5.4, 1.2); fs(c, lg(c, 0, 25, 0, 30, [0, '#c8ccd6', 1, '#5a5f6a']), '#1a1c22', 1.1);
+    uArm(c, P, 44, 32);
+  },
+  jar(c, side, P) {
+    // 水甕兵：雙手抱著一個陶甕（甕口晃著水），頭上綁著藍頭巾
+    uShadow(c); kLegs(c, P); kBody(c, P); kHead(c, side, P);
+    c.fillStyle = '#3a78c8'; rrect(c, 22, 12, 20, 3.4, 1.6); c.fill();
+    c.save(); c.translate(44, 30);
+    c.beginPath(); c.moveTo(-5, -8); c.quadraticCurveTo(-9.5, 0, -6, 8); c.lineTo(6, 8); c.quadraticCurveTo(9.5, 0, 5, -8); c.closePath(); fs(c, lg(c, -8, 0, 8, 0, [0, '#d8885a', 0.5, '#b8643a', 1, '#7a3e1e']), '#3a1a08', 1.2);
+    rrect(c, -5.5, -10, 11, 2.6, 1); fs(c, '#c87448', '#3a1a08', 1); c.fillStyle = '#8ac8ff'; ell(c, 0, -10, 4, 1.1); c.fill();
+    c.restore();
+    uArm(c, P, 37, 32); uArm(c, P, 51, 32);
+  },
+  oilpot(c, side, P) {
+    // 油壺兵：一手提著冒煙的黑油壺（壺口塞著布條），腰上一排小油瓶
+    uShadow(c); kLegs(c, P); kBody(c, P); uArm(c, P, 21, 38); kHead(c, side, P);
+    for (const x of [24, 28.5, 33]) { rrect(c, x - 1.6, 40, 3.2, 5, 1); fs(c, '#4a3018', '#1a0e04', 0.8); }
+    c.save(); c.translate(48, 32);
+    ell(c, 0, 2, 6.6, 6.2); fs(c, rg(c, -2, 0, 0.5, 7, [0, '#5a4a3a', 1, '#14100a']), '#050302', 1.2);
+    rrect(c, -2, -7, 4, 4, 1); fs(c, '#2a2016', '#050302', 1); c.fillStyle = '#e8d8b0'; c.fillRect(-1, -11, 2, 4.4);
+    c.fillStyle = rg(c, 0, -12, 0.3, 3, [0, '#fff4c0', 0.5, '#ff9a3a', 1, 'rgba(220,70,20,0)']); c.beginPath(); c.arc(0, -12, 3, 0, TAU); c.fill();
+    c.restore();
+    uArm(c, P, 46, 26);
+  },
+  alch(c, side, P) {
+    // 煉金師：尖頂長帽、長袍，腰上掛著三瓶顏色不同的藥水（手上那一瓶另外畫，照這一回合抽到的顏色）
+    uShadow(c); kBody(c, P, 1); kHead(c, side, P);
+    c.beginPath(); c.moveTo(21, 15); c.lineTo(32, -12); c.lineTo(43, 15); c.closePath(); fs(c, lg(c, 0, -12, 0, 15, [0, side ? '#c04a6a' : '#5a6ad8', 1, side ? '#6a1a32' : '#24307a']), '#14101e', 1.4);
+    c.fillStyle = '#ffd36a'; c.beginPath(); c.arc(32, 2, 1.6, 0, TAU); c.fill();
+    for (const [x, col] of [[24, '#ff6a3a'], [29, '#8ad8ff'], [34, '#ffe14a']]) { ell(c, x, 45, 2.2, 2.4); fs(c, col, '#1a1020', 0.8); }
+    uArm(c, P, 38, 32); uArm(c, P, 50, 30);
+  },
   captain(c, side, P) {
     // 要塞艦長：高高的艦長帽、肩章，手上一支望遠鏡
     uShadow(c); kLegs(c, P); kBody(c, P); uArm(c, P, 21, 38); kHead(c, side, P);
@@ -1099,6 +1150,26 @@ SHOT_ART.hourglass = (c) => {          // 時砂彈：一顆銅框的小沙漏�
 SHOT_ART.mainshell = (c) => {          // 天空要塞的主砲彈：一顆發藍光的大鐵彈
   c.fillStyle = rg(c, 16, 8, 1, 9, [0, '#ffffff', 0.3, '#a8d8ff', 1, 'rgba(80,140,255,0)']); c.beginPath(); c.arc(16, 8, 9, 0, TAU); c.fill();
   c.beginPath(); c.arc(16, 8, 5, 0, TAU); fs(c, lg(c, 11, 3, 21, 13, [0, '#8a96aa', 1, '#2a3040']), '#0e1220', 1.2);
+};
+SHOT_ART.press = (c, side) => {          // 壓頂石：一塊方石，刻著發光的符紋
+  c.save(); c.translate(16, 8); c.rotate(0.3); rrect(c, -6, -5, 12, 10, 1.6); fs(c, lg(c, 0, -5, 0, 5, [0, '#d0c8b8', 1, '#6e665a']), '#2a2620', 1.1);
+  c.strokeStyle = side ? '#ffb090' : '#a8e0ff'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(-3, -1.5); c.lineTo(0, 2); c.lineTo(3, -1.5); c.stroke(); c.restore();
+};
+SHOT_ART.rivet = (c, side) => {          // 鉚釘：燒紅的釘頭
+  c.strokeStyle = '#5a5f6a'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(5, 8); c.lineTo(22, 8); c.stroke();
+  ell(c, 24, 8, 3.6, 4.4); fs(c, rg(c, 24, 8, 0.3, 4.4, [0, '#fff4c0', 0.5, '#ff9a3a', 1, '#c8401c']), '#5a1a08', 0.9);
+  c.fillStyle = side ? '#ee3b30' : '#3d86ff'; c.fillRect(4, 6.6, 3, 2.8);
+};
+SHOT_ART.jar = (c) => {          // 水甕：一個轉著飛的陶甕，甕口灑出幾滴水
+  c.save(); c.translate(16, 8); c.beginPath(); c.moveTo(-4, -5); c.quadraticCurveTo(-7, 0, -4.5, 5); c.lineTo(4.5, 5); c.quadraticCurveTo(7, 0, 4, -5); c.closePath(); fs(c, lg(c, -6, 0, 6, 0, [0, '#d8885a', 1, '#7a3e1e']), '#3a1a08', 1); c.fillStyle = '#8ac8ff'; c.fillRect(-3, -6.4, 6, 1.6); c.restore();
+};
+SHOT_ART.oilpot = (c) => {          // 油壺：黑油壺，布條燒著
+  ell(c, 15, 9, 5.6, 5.2); fs(c, rg(c, 13, 7, 0.5, 6, [0, '#5a4a3a', 1, '#14100a']), '#050302', 1);
+  c.fillStyle = rg(c, 21, 4, 0.3, 4, [0, '#fff4c0', 0.5, '#ff9a3a', 1, 'rgba(220,70,20,0)']); c.beginPath(); c.arc(21, 4, 4, 0, TAU); c.fill();
+};
+for (const [id, a, b] of [['potfire', '#ffd0a0', '#e8401c'], ['potfrost', '#ffffff', '#3c9be0'], ['potzap', '#fffbe0', '#e0a010']]) SHOT_ART[id] = (c) => {          // 藥水瓶：圓肚細頸，裡面的藥水發亮
+  c.fillStyle = rg(c, 16, 9, 0.5, 9, [0, a, 0.5, b, 1, 'rgba(0,0,0,0)']); c.beginPath(); c.arc(16, 9, 9, 0, TAU); c.fill();
+  ell(c, 16, 9.5, 4.8, 4.8); fs(c, rg(c, 15, 8, 0.4, 5, [0, a, 1, b]), '#1a1020', 1); c.fillStyle = '#c8b090'; c.fillRect(14.6, 1.6, 2.8, 3.6);
 };
 SHOT_ART.keg = SHOT_ART.bomb; SHOT_ART.doom = SHOT_ART.dark;
 const SSPR = {};     // 'id:side' → { cv, w, h }

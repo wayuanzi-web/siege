@@ -111,9 +111,21 @@ const WL = [
   { id: 'glider', n: 1, gap: 0, dmg: 26, r: 3.4, J: 420, ud: 18, kind: K_BLAST, gk: 0.34, glide: { turn: 1.5, see: 32 } },
   { id: 'grav', n: 1, gap: 0, dmg: 8, r: 1.8, J: 90, ud: 8, kind: K_BLAST, grav: { R: 4.2, lift: -0.12, top: 1.3, slam: 24 }, ai: { dmg: 40, r: 4.2, ud: 10 } },
   { id: 'hourglass', n: 1, gap: 0, dmg: 14, r: 2.6, J: 200, ud: 12, kind: K_BLAST, echo: { mass: 0.55 } },
-  { id: 'mainshell', dmg: 46, r: 6.6, J: 1300, ud: 32, kind: K_HEAVY }
+  { id: 'mainshell', dmg: 46, r: 6.6, J: 1300, ud: 32, kind: K_HEAVY },
+  /* ---- 第五篇第一批（54-stack、54-flux） ----
+     press 壓頂石：落在敵城的範圍裡，就在那一欄城頂變出一塊歪斜的大石板（w×h 格、密度 den、耐久 hp）
+     rivet 鉚釘：一輪三發的鉚釘（打兵、打木頭）；固樑匠開火時順便把自己城頂的磚鉚起來（見 54-stack 的 rivetsGo） */
+  { id: 'press', n: 1, gap: 0, dmg: 12, r: 2.2, J: 220, ud: 12, kind: K_HEAVY, press: { w: 2, h: 1, den: 2.4, hp: 70 }, ai: { dmg: 40, r: 3, ud: 12 } },
+  { id: 'rivet', n: 3, gap: 0.09, dmg: 6, r: 0, J: 90, ud: 10, kind: K_PIERCE },
+  /* jar 水甕、oilpot 油壺：落地炸一小下，倒出一攤水、油（pour：k 哪一種、v 幾格），順著城裡的樓板、破洞往下流（見 54-flux）
+     potfire、potfrost、potzap：煉金師的三種藥水（每回合開始抽一瓶）：火點著油、化掉冰；冰把水凍住、把岩漿冷成黑石；雷讓連成一片的水整片帶電 */
+  { id: 'jar', n: 1, gap: 0, dmg: 6, r: 1.8, J: 90, ud: 6, kind: K_BLAST, pour: { k: 1, v: 5.5 }, ai: { dmg: 26, r: 3.2, ud: 10 } },
+  { id: 'oilpot', n: 1, gap: 0, dmg: 6, r: 1.8, J: 90, ud: 6, kind: K_BLAST, pour: { k: 2, v: 4.5 }, ai: { dmg: 26, r: 3.2, ud: 10 } },
+  { id: 'potfire', n: 1, gap: 0, dmg: 11, r: 3.4, J: 210, ud: 12, kind: K_FIRE },
+  { id: 'potfrost', n: 1, gap: 0, dmg: 11, r: 3.4, J: 190, ud: 10, kind: K_ICE },
+  { id: 'potzap', n: 1, gap: 0, dmg: 9, r: 2.6, J: 150, ud: 12, kind: K_ZAP }
 ];
-const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; if (w.chain || w.drill || w.stick || w.pierce || w.hook || w.warp || w.seed || w.boom || w.mole || w.stake || w.flare || w.grav) w.special = 1; });          // special：打到東西時有自己的打法（51-arms 的 armsHit、54-craft 的 craftHit）
+const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; if (w.chain || w.drill || w.stick || w.pierce || w.hook || w.warp || w.seed || w.boom || w.mole || w.stake || w.flare || w.grav || w.press || w.pour) w.special = 1; });          // special：打到東西時有自己的打法（51-arms 的 armsHit、54-craft 的 craftHit）
 
 /* 兵種。w 用哪種砲彈；flak 防空（每一輪射下幾發飛過來的砲彈）；bal 放轟炸氣球 */
 const UNIT = {
@@ -151,10 +163,16 @@ const UNIT = {
   antigrav: { name: '反重力師', w: 'grav', hp: 85, craft: 1, blurb: '落點撐開一團反重力：裡面的磚慢慢浮起來、離開原位；你下一輪開火時反重力一收，全部重重砸下去' },
   time: { name: '時砂術士', w: 'hourglass', hp: 85, craft: 1, blurb: '他還活著的話，這一輪全隊打出去的砲彈，下一輪原樣再打一次（回聲威力少一半）；兩個時砂術士回聲更強' },
   captain: { name: '要塞艦長', w: 'rocket', hp: 180, craft: 1, cmd: 1, blurb: '天空要塞的艦長：他還在，要塞的主砲每兩回合轟一次（第二十四關）' },          // 不在選兵清單裡
+  // ---- 第五篇的新兵種 ----
+  press: { name: '壓頂術士', w: 'press', hp: 95, craft: 1, blurb: '壓頂石落在敵城上，就在那裡的城頂變出一塊歪斜的大石板：重量全壓在城頂，疊得越高的城越容易被壓歪' },
+  rivet: { name: '固樑匠', w: 'rivet', hp: 105, craft: 1, blurb: '一輪三發鉚釘（打兵、打木頭）；每一輪開火時，順便把自己城頂的幾塊磚鉚在一起，被打到剩三成五耐久才鬆開' },
+  jar: { name: '水甕兵', w: 'jar', hp: 100, craft: 1, blurb: '丟出一甕水：落在哪就倒出一大攤，順著樓板、破洞往下流。水能滅火、遇到岩漿凝成黑石；泡在水裡的兵被雷一打，整片一起電暈' },
+  oilpot: { name: '油壺兵', w: 'oilpot', hp: 95, craft: 1, blurb: '丟出一壺火油：倒出一攤油流進敵城；之後一點火（火藥水、著火的木頭、岩漿）整片燒起來，燙傷泡在裡面的兵' },
+  alch: { name: '煉金師', w: 'potfire', hp: 90, craft: 1, alch: 1, blurb: '每回合開始抽一瓶藥水，這一回合就丟這一種：火（點著油、化冰）、冰（把水凍住、把岩漿冷成黑石）、雷（連成一片的水整片帶電）' },
   drum: { name: '震地鼓手', w: 'stake', hp: 105, craft: 1, blurb: '先把鼓樁打進敵城或城前的地上；之後你每一輪開火，他擂一次鼓，每根鼓樁震一圈：底層的磚、兵都受傷，流沙上的城陷得更快' }
 };
 // 演武場選兵用的順序：第一到三篇的十八種（魔王不算），再接第四篇的新兵
-const UNIT_LIST = ['rocket', 'bolt', 'bomb', 'fire', 'ice', 'zap', 'flak', 'bal', 'stone', 'chain', 'drill', 'cluster', 'sapper', 'magnet', 'wind', 'acid', 'sniper', 'eng', 'hook', 'weight', 'warp', 'mirror', 'vine', 'axe', 'mole', 'drum', 'flare', 'glider', 'antigrav', 'time'];
+const UNIT_LIST = ['rocket', 'bolt', 'bomb', 'fire', 'ice', 'zap', 'flak', 'bal', 'stone', 'chain', 'drill', 'cluster', 'sapper', 'magnet', 'wind', 'acid', 'sniper', 'eng', 'hook', 'weight', 'warp', 'mirror', 'vine', 'axe', 'mole', 'drum', 'flare', 'glider', 'antigrav', 'time', 'press', 'rivet', 'jar', 'oilpot', 'alch'];
 const UNIT_OLD = 18;          // 前三篇的兵有幾種（演武場的軍牌上，後面的標「新」）
 Object.keys(UNIT).forEach((k) => { UNIT[k].id = k; });
 
@@ -592,6 +610,25 @@ const CASTLES = {
     ' RRRRRRRRR ',
     '  RRRRRRR  '],
     lifts: [{ at: [2, 7, 0.5, -0.42], hp: 220, frac: 0.25 }, { at: [8, 7, 0.5, -0.42], hp: 220, frac: 0.25 }, { at: [4, 8, 0.5, -0.42], hp: 220, frac: 0.25 }, { at: [6, 8, 0.5, -0.42], hp: 220, frac: 0.25 }] },
+  /* 第二十五關：疊城對決。開場只有一座小石樓（1、2 號站在裡面），城基很寬：之後每回合疊一塊磚組上去，3–6 號在城下待命，疊上一塊上來一個。
+     屋頂是平的（磚組才擱得穩） */
+  STACKER: { skin: 'stack', map: [
+    '  =====  ',
+    '5 S1.2S 6',
+    '3 S===S 4',
+    '#########',
+    '#########'],
+    weld: [[2, 0, 6, 3]] },          // 小石樓整座榫接、榫在城基上：一輪砲火掀不掉（要把磚打到快碎，榫頭才斷）
+  /* 第二十六關：煉金沸城。頂樓是水槽（%），中間一層有熔爐（@，打破了倒出岩漿），一樓放著火油桶（&）：
+     上面的打破了，水、岩漿順著破洞往下流——水澆熄火、岩漿點著一樓的油；兵站在每一層 */
+  ALCHEMY: { skin: 'alchemy', gf: 2, map: [
+    '  ^^^^^^^  ',
+    '  S.%%%.S  ',
+    '  =======  ',
+    '  S16@.2S  ',
+    '  =======  ',
+    '  S3&5&4S  ',
+    '###########'] },
   // 第二十三關：戰場中間一塊黑黝黝的大岩石（打不壞）
   NIGHTROCK: { skin: 'night', map: ['  AA  ', ' AAAA ', 'AAAAAA'] },
   // 第十七關：中間的礦脈（一塊一塊的岩石疊成小山，打得碎：越打越低，上層慢慢露出來）

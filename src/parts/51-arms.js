@@ -210,7 +210,9 @@ function tangle(u, side) {
 function armsHit(i, w, hit, o, hx, hy, vx, vy) {
   if (w.hook || w.warp) return craftHit(i, w, hit, o, hx, hy, vx, vy);
   if (w.seed || w.boom || w.mole || w.stake) return wildHit(i, w, hit, o, hx, hy, vx, vy);
-  if (w.flare || w.grav) return duskHit(i, w, hit, o, hx, hy, vx, vy);          // 第四篇第三批（54-dusk）          // 第四篇第二批（54-wild）          // 第四篇：鉤爪、門珠（54-craft）
+  if (w.flare || w.grav) return duskHit(i, w, hit, o, hx, hy, vx, vy);
+  if (w.press) return stackHit(i, w, hit, o, hx, hy, vx, vy);          // 第五篇：壓頂石（54-stack）
+  if (w.pour) return fluxHit(i, w, hit, o, hx, hy, vx, vy);          // 第五篇：水甕、油壺（54-flux）          // 第四篇第三批（54-dusk）          // 第四篇第二批（54-wild）          // 第四篇：鉤爪、門珠（54-craft）
   const side = SH.side[i], mass = SH.mass[i], T = side < 2 ? S.team[side] : null, mul = (T ? T.dmg : 1) * S.rage * mass, sp = Math.hypot(vx, vy) || 1;
   if (w.stick) {
     if (hit === 3 && o && o.alive) { physExplode(hx, hy, w, side, mass * 0.5, SH.flag[i], o, vx, vy); return 1; }          // 黏到人身上：當場炸開（威力一半）

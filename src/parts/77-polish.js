@@ -28,6 +28,7 @@ function lightsGather(t) {
     else if (o.t === 'torch' && o.hp > 0) add(o.x, o.y, 5.5, C_ORANGE, 0.3, 0);
   }
   for (let i = 0; i < SH.n; i++) { const k = WL[SH.w[i]] && WL[SH.w[i]].kind; if (k === K_FIRE) add(SH.x[i], SH.y[i], 3.4, C_ORANGE, 0.32, 0); }
+  const F = S.flux; if (F) { let m = 0; for (let i = 0; i < F.amt.length && m < 14; i += 3) if ((F.typ[i] === LQ_LAVA && F.amt[i] > 0.3) || (F.fire[i] > 0 && F.typ[i] === LQ_OIL)) { add(lqX(i), lqY(i) + 0.4, 4.2, C_ORANGE, 0.34, 0); m++; } }          // 第二十六關：岩漿、燒著的油
   return L;
 }
 // 黑暗那一層挖洞用的柔邊圓（畫一次，之後用 destination-out 蓋上去；不用每個洞每一幀都新做一個漸層）

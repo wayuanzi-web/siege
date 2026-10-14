@@ -1521,7 +1521,9 @@ function renderFrame(dt, rdt) {
   drawObjs(c, t);
   drawAmp(c, t);
   for (const st of S.structs) drawBackdrop(c, st, rdt);
+  drawStackBack(c, t);          // 第二十五關：狼煙線、城下待命的兵
   drawBlocks(c, t, rdt);
+  drawFluxMarks(c, t);          // 第二十六關：水槽、油桶、熔爐；煉金師的藥水
   if (S.beast) drawBeast(c, t);          // 第十八關：機關巨獸
   drawFuses(c, t);
   drawRopes(c, t);
@@ -1530,9 +1532,11 @@ function renderFrame(dt, rdt) {
   if (S.rotors.length) drawRotors(c, t);
   drawGates(c, t);
   drawUnits(c, t);
+  drawFlux(c, t);          // 第二十六關：水、油、岩漿（兵泡在裡面看得出來）
   drawArms(c, t);
   drawCraftFront(c, t);          // 第四篇：傳送門、鉤索、銅鏡
   drawWildFront(c, t);          // 第四篇第二批：地道、流沙（蓋住陷進去的城腳）
+  drawStackFront(c, t);          // 第二十五關：天上的磚組、鉚釘
   for (const P of S.plats) if ((P.kind === 'cage' || P.kind === 'gondola') && !P.dead) drawPart(c, P, t, true);
   if (S.ropes.length) { drawBlocks(c, t, rdt, 1); c.setTransform(1, 0, 0, 1, FX.shx, FX.shy); }
   drawWater(c, t);

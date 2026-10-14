@@ -46,6 +46,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 .cu.dead { box-shadow: 0 0 0 calc(var(--u) * .45) #4a4560; } .cu.dead canvas { filter: grayscale(1) brightness(.5); }
 .cu.dead::before, .cu.dead::after { content: ""; position: absolute; left: 12%; right: 12%; top: 44%; height: 12%; background: #ff5a48; transform: rotate(45deg); z-index: 1; border-radius: 2px; }
 .cu.dead::after { transform: rotate(-45deg); }
+.cu.wait { box-shadow: 0 0 0 calc(var(--u) * .45) #6a6480; opacity: .6; } .cu.wait canvas { filter: grayscale(.7) brightness(.8); }          /* 第二十五關：城下待命（疊上一塊磚組才上來） */
 .hpbar { position: relative; flex: 1; min-width: 0; height: calc(var(--u) * 5.2); background: rgba(8, 5, 16, .78); box-shadow: 0 0 0 calc(var(--u) * .4) rgba(10, 6, 20, .9); --cut: calc(var(--u) * 1.3); }
 .hpbar i { position: absolute; inset: 0; transform-origin: 0 50%; background: linear-gradient(180deg, #9cc8ff, var(--blue) 55%, #1b46b8); transition: transform .18s ease-out; }
 .foe .hpbar i { transform-origin: 100% 50%; background: linear-gradient(180deg, #ffa08c, var(--red) 55%, #8f1418); }
@@ -146,11 +147,11 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 .actions .row { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 2.2); }
 .lvls { display: grid; gap: calc(var(--u) * 1.5); }
 /* 兩篇的分頁：一次只列一篇的六關 */
-.chaps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: calc(var(--u) * .9); }
-.chap { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; min-height: max(calc(var(--u) * 8.4), 40px); padding: calc(var(--u) * .5) calc(var(--u) * .6); background: var(--line); --cut: calc(var(--u) * 1.5); color: #a79fc4; font-weight: 700; font-size: calc(var(--u) * 2.9); line-height: 1.1; letter-spacing: .08em; text-indent: .08em; white-space: nowrap; }
+.chaps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: calc(var(--u) * .7); }          /* 五篇一排 */
+.chap { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; min-height: max(calc(var(--u) * 8.4), 40px); padding: calc(var(--u) * .5) calc(var(--u) * .3); background: var(--line); --cut: calc(var(--u) * 1.5); color: #a79fc4; font-weight: 700; font-size: calc(var(--u) * 2.6); line-height: 1.1; letter-spacing: .02em; text-indent: .02em; white-space: nowrap; }
 .chap::before { content: ""; position: absolute; inset: 2px; background: linear-gradient(180deg, rgba(43, 36, 70, .96), rgba(29, 24, 48, .96)); clip-path: inherit; }
 .chap > * { position: relative; }
-.chap small { font-family: var(--f-num); font-size: calc(var(--u) * 2.5); letter-spacing: 0; text-indent: 0; opacity: .8; }
+.chap small { font-family: var(--f-num); font-size: calc(var(--u) * 2.2); letter-spacing: 0; text-indent: 0; opacity: .8; }
 .chap[aria-selected="true"] { background: var(--gold); color: var(--gold); }
 .chap[aria-selected="true"]::before { background: linear-gradient(180deg, #4a3c1a, #2a2010); }
 .chap.locked { color: #6a618f; }

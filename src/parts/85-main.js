@@ -194,6 +194,13 @@ function uiEvent(t, a, b, c, d, e) {
     case 'cannoncharge': once('cc', '天空要塞的主砲在充能：這一輪敵軍砲擊時會轟過來，開護罩擋住。打倒最上面的要塞艦長，主砲就停了', 1); break;
     case 'liftbreak': if (S.lv.aerie && c === 1) once('lb1', '一顆浮空晶石碎了：那一角往下沉。四顆全碎，整座要塞就掉進雲海'); break;
     case 'unitsunk': if (c === 0) once('us0', '我方的兵陷進流沙裡了：陷在沙裡的兵不能開火（流沙最多埋到最底下那層）', 1); break;
+    // 第五篇
+    case 'lqshock': if (c === 1 && e > 0) once('ls1', '敵軍的雷打到水裡，泡在那一片水裡的兵全部電暈了：別讓兵泡在水裡（打掉腳下的積水、或用火把水燒乾）', 1); break;
+    case 'oilfire': once('of', '油燒起來了：燒著的油一格一格延燒，泡在裡面的兵被燙傷、旁邊的木頭被點著'); break;
+    case 'lqstone': once('lqs', '水碰到岩漿，凝成了一塊黑石：真的一塊石頭，擋得住砲彈，也把破洞堵住了'); break;
+    case 'pressin': if (c === 1) once('pr1', '敵軍的壓頂石在你的城頂變出一塊大石板：它不算你的城，可是重量全壓在上面。打碎它、或下一塊磚組擺開一點', 1); break;
+    case 'beacon': if (c === 1) once('bc1', '敵軍的城頂疊過狼煙線了，他們的連珠集滿了：這一輪開護罩擋住', 1); break;
+    case 'buildset': if (c === 0 && d === 0) once('bs0', '這一塊沒擱在城上（掉下去了）：不算城防、也沒有新兵上來。擱在城基正上方、擱得平才站得穩', 1); break;
     case 'mirrorhit': if (c === 1) once('mr1', '敵軍的銅鏡把你的砲彈彈回來了：往沒有鏡子的地方打，或先把鏡子打碎（挨幾下重的就碎）'); break;
   }
 }
@@ -229,7 +236,10 @@ function frame(now) {
   musStep(heat);
 }
 function canFire() { return G.mode === 'play' && S.state === 'play' && S.phase === 'aim' && S.turn === 0; }
+// 第二十五關：輪到我方擺磚組
+function canBuild() { const B = S.build; return G.mode === 'play' && S.state === 'play' && S.phase === 'build' && !!B && B.side === 0 && B.st === 'move' && !S.team[0].ai; }
 function fireNow() {
+  if (canBuild()) { simBuild(0, 'drop'); return true; }          // 築城：放下磚組
   if (!canFire()) return false;
   const T = S.team[0];
   // 記下這一輪帶頭那一發會怎麼飛（下一輪瞄準時畫出來當參考）
@@ -248,6 +258,7 @@ function fireNow() {
 }
 function keyAim(dt) {
   const k = G.keys; let da = 0, dp = 0;
+  if (canBuild()) { const d = (k.ArrowRight || k.KeyD ? 1 : 0) - (k.ArrowLeft || k.KeyA ? 1 : 0); if (d) simBuild(0, 'move', d * 16 * dt * (k.ShiftLeft || k.ShiftRight ? 0.3 : 1)); return; }          // 築城：左右鍵挪磚組
   if (k.ArrowUp || k.KeyW) da += 1; if (k.ArrowDown || k.KeyS) da -= 1; if (k.ArrowRight || k.KeyD) dp += 1; if (k.ArrowLeft || k.KeyA) dp -= 1;
   if (!da && !dp) return;
   const T = S.team[0], fine = k.ShiftLeft || k.ShiftRight ? 0.3 : 1; let a = Math.atan2(T.aim[1], T.aim[0]) + da * 0.6 * fine * dt, v = Math.hypot(T.aim[0], T.aim[1]) + dp * 26 * fine * dt;
@@ -274,7 +285,7 @@ function bindInput() {
     try { window.focus(); } catch (err) { /* 拿不到焦點也能玩 */ }
     // 已經有一根手指在瞄準：其他手指不搶（同一支滑鼠、同一支筆不會同時按兩次，那是上一次沒收乾淨）
     const d0 = G.drag; if (d0 && !(d0.type !== 'touch' && d0.type === e.pointerType)) return;
-    G.drag = { id: e.pointerId, type: e.pointerType, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, far: 0, live: canFire() };
+    G.drag = { id: e.pointerId, type: e.pointerType, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, far: 0, live: canFire(), build: canBuild() };
     try { stage.setPointerCapture(e.pointerId); } catch (err) { /* 沒有指標捕捉也能玩 */ }
     e.preventDefault();
   });
@@ -285,12 +296,14 @@ function bindInput() {
     // 還沒輪到我就先按住的（開場、敵軍砲擊中）：輪到我之後才開始算「有沒有拖過」
     if (!d.live && canFire()) { d.live = true; d.x0 = d.x; d.y0 = d.y; d.far = 0; }
     d.x = e.clientX; d.y = e.clientY; d.far = Math.max(d.far, Math.hypot(d.x - d.x0, d.y - d.y0));
+    if (d.build) { if (canBuild()) { const m = stageDelta(dx, dy); simBuild(0, 'move', m[0] * V.dpr / V.s); } return; }          // 築城：拖多遠，磚組就挪多遠
     const m = stageDelta(dx, dy), k = (V.dpr / V.s) * 1.5, T = S.team[0];
     simAim(0, T.aim[0] + m[0] * k, T.aim[1] - m[1] * k);
   });
   const up = (e) => {
     const d = G.drag; if (!d || d.id !== e.pointerId) return;
     G.drag = null;
+    if (d.build) { if (e.type === 'pointerup' && d.far <= 14 && canBuild()) simBuild(0, 'rot'); return; }          // 築城：點一下轉向
     if (e.type !== 'pointerup' || !canFire()) return;
     // 真的拖過才發射（看離起點最遠拖了多遠，手指按著不動的抖動不算）
     if (d.live && d.far > 14) fireNow();
@@ -321,6 +334,7 @@ function bindInput() {
     const pk = e.code === 'KeyP' || e.code === 'Escape';
     if (play) {
       if (act) { if (onBtn) ae.blur(); if (!fireNow()) sfx('deny'); }
+      else if ((e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'KeyR') && canBuild()) simBuild(0, 'rot');          // 築城：上鍵轉向
       else if (e.code === 'KeyX' || e.code === 'KeyC') useSkill('ult');
       else if (e.code === 'KeyZ') useSkill('shield');
       else if (pk) pauseGame();

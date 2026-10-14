@@ -412,6 +412,24 @@ function fxOn(t, a, b, c, d, e, f) {
       break;
     }
     case 'brake': burst(P_DEBRIS, a, b, 8, 16, 0.6, 0.5, C_TAN, 4); if (S.state === 'play') pop(a, b - 3, c === 1 ? '閘斷了！吊籠在往下沉' : '我方的閘斷了！', c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.5); sfx('chainsnap'); sfx('groan'); shake(0.3); break;
+    // ---- 第五篇第一批：疊城對決（54-stack） ----
+    case 'buildgo': if (d) sfx('click'); break;
+    case 'buildrot': if (c === 0) sfx('tick'); break;
+    case 'builddrop': sfx('heave', c); break;
+    case 'buildset': if (d > 0) { for (let k = 0; k < 4; k++) part(P_DUST, a + rndS() * 6, b - 0.2, rndS() * 10, 1 + Math.random() * 2, 0.6, 1.6, C_SAND); sfx('thud'); } break;
+    case 'climb': if (c === 0 && S.state === 'play') pop(a, b + 4.5, '爬上去了', '#cfe6ff', 2.4, 0.8); break;
+    case 'recruit': ring(a, b + 1.6, 4, 0.6, 0.4, c === 0 ? '#bfe0ff' : '#ffc4b8', 0.5); burst(P_SPARK, a, b + 1.6, 10, 16, 0.5, 0.5, c === 0 ? C_SKY : C_SALMON); if (S.state === 'play') pop(a, b + 5.2, c === 0 ? '援兵上城！' : '敵軍援兵上城', c === 0 ? '#bfe0ff' : '#ffb0a0', 2.8, 1.1); sfx(c === 0 ? 'bonus' : 'bad'); break;
+    case 'beacon': ring(a, b, 2, 14, 0.6, '#ffd08a', 0.7); burst(P_EMBER, a, b, 14, 12, 1.0, 0.8, C_ORANGE, 8); flash(0.18, '#ffe0a0'); if (S.state === 'play') pop(a, b + 4, c === 0 ? '狼煙點燃！連珠集滿' : '敵軍點燃狼煙！連珠集滿', c === 0 ? '#ffe14a' : '#ff8a7a', 3.2, 1.6); sfx('horn'); break;
+    case 'pressin': burst(P_DUST, a, b, 6, 10, 0.8, 2.2, C_SAND, 3); ring(a, b, 0.5, 5, 0.3, '#e8e0d0', 0.4); if (S.state === 'play' && thr('press', 600)) pop(a, b + 5, c === 0 ? '壓頂！' : '敵軍壓頂', c === 0 ? '#ffe14a' : '#ff9a8a', 2.8, 1.0); sfx('thunk'); shake(0.2); break;
+    case 'rivet': burst(P_SPARK, a, b, 3, 8, 0.3, 0.35, C_GOLD); if (thr('rivet', 120)) sfx('tick'); break;
+    // ---- 第五篇第一批：煉金沸城（54-flux） ----
+    case 'pour': for (let k = 0; k < 8; k++) part(P_SHARD, a + rndS() * 2, b + 0.5, rndS() * 12, 6 + Math.random() * 10, 0.5, 0.45, c === 1 ? (k & 1 ? C_WHITE : C_SKY) : C_DARK); if (thr('pour', 150)) sfx('splash'); break;
+    case 'tankburst': for (let k = 0; k < 12; k++) part(P_SHARD, a + rndS() * 2, b, rndS() * 18, 4 + Math.random() * 12, 0.7, 0.55, c === 1 ? (k & 1 ? C_WHITE : C_SKY) : c === 2 ? C_DARK : C_ORANGE); if (c === 3) { burst(P_EMBER, a, b, 12, 12, 0.9, 0.7, C_ORANGE, 6); flash(0.1, '#ff9a4a'); } if (S.state === 'play') pop(a, b + 3.5, c === 1 ? '水槽破了' : c === 2 ? '油桶破了' : '熔爐破了！', d === 1 ? '#ffe14a' : '#ff9a8a', 2.6, 1.0); sfx(c === 3 ? 'lava' : 'splash'); break;
+    case 'steam': part(P_SMOKE, a, b, rndS() * 3, 7, 1.0, 1.4, C_WHITE); if (thr('steam', 260)) sfx('steam'); break;
+    case 'lqstone': burst(P_SMOKE, a, b + 0.4, 3, 5, 0.9, 1.3, C_WHITE, 4); burst(P_SPARK, a, b, 4, 8, 0.3, 0.4, C_ORANGE); if (thr('lqstone', 400)) sfx('fizz'); break;
+    case 'lqmelt': if (Math.random() < 0.2) part(P_SHARD, a, b, rndS() * 4, 3, 0.4, 0.35, C_ICE); break;
+    case 'oilfire': burst(P_EMBER, a, b, 6, 8, 0.7, 0.7, C_ORANGE, 5); if (thr('oilfire', 500)) sfx('fireboom'); break;
+    case 'lqshock': flash(0.16, '#e0f0ff'); for (let k = 0; k < 4; k++) { const pts = [a, b]; for (let q = 1; q <= 4; q++) pts.push(a + rndS() * 10 * q / 4 * 2, b + rndS() * 3); FX.bolts.push({ pts, t: 0, max: 0.25, col: '#cfe8ff', w: 0.5 }); } if (S.state === 'play' && e > 0) pop(a, b + 4, (d > 30 ? '整片' : '') + '帶電！電暈 ' + e + ' 人', c === 0 ? '#ffe14a' : '#ff9a8a', 3.0, 1.3); sfx('thunder'); shake(0.3); break;
     case 'end': {
       slowmo(0.3, 1.8, true); shake(2.0); flash(0.3, '#fff6d8'); sfx('collapse'); vibrate(200); { const st = S.st[c], cc = st ? stCenter(st) : { x: a, y: b }; camFocus(cc.x, cc.y, 1.16, 2.6); }
       ring(a, b, 2, 16, 0.6, '#fff0b0', 0.7);         // 只留一圈小的，別把整座城垮下來的樣子蓋住

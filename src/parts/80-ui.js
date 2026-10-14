@@ -43,7 +43,7 @@ const UP_COST = [80, 150, 240, 360, 520];
 const NUM_ZH = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
 const UI = { sel: 0, chap: 0, wipeArm: 0, resRun: 0, resAt: -1e9, prac: false, pickSlot: null };          // prac：選的是第三篇的演武場；pickSlot：換兵的軍牌是哪一個頭像打開的
 const CHAP = 6;                                          // 一篇幾關
-const CHAPS = ['第一篇', '第二篇', '第三篇', '第四篇'];          // 最後一篇的分頁裡也放演武場
+const CHAPS = ['第一篇', '第二篇', '第三篇', '第四篇', '第五篇'];          // 最後一篇的分頁裡也放演武場
 // 演武場這一局的關卡（照存檔裡挑好的戰場、兵、誤傷開關）
 function pracLevel() { const P = SV.prac; return practiceLevel(P.map, P.me, P.foe, P.ff); }
 // 主畫面背景的示範戰局：選到哪一關就演那一關（演武場：照挑好的兵）
@@ -104,7 +104,7 @@ function mile(txt) { const el = $('mile'); el.textContent = txt; replay(el, 'sho
 
 function starsHtml(n) { return '<em>' + '★'.repeat(n) + '</em>' + '★'.repeat(3 - n); }
 // 換一篇：選那一篇裡打到的最後一關（還沒解鎖就選那一篇的第一關）
-const LEVEL_MAX = 24;          // 四篇一共二十四關：還沒做好的那幾關，最後一篇的清單上先寫「製作中」
+const LEVEL_MAX = 30;          // 五篇一共三十關：還沒做好的那幾關，最後一篇的清單上先寫「製作中」
 function chapGo(k) {
   if (UI.chap === k) return;
   sfx('click'); UI.chap = k;
@@ -299,7 +299,9 @@ const LOSE_TIPS_LV = [
   ['古藤綁著的磚不會一塊一塊掉：先用迴旋斧砍斷一段古藤（砍中哪一塊，綁在那塊上的全斷），同一輪再把那一段打下來；隔一回合古藤就長回來了。', '火燒斷的古藤不會再長：帶火的砲彈、燒起來的木頭都燒得斷。', '敵軍種在你城上的藤，第三次長的時候會把那一塊勒碎：炸它、砍它，或先打倒敵軍的種藤師。'],
   ['流沙每回合都會把城往下拉：最底下那層的兵最先被埋、不能開火，能打的時候趕快打。', '地道兵的鑽地彈不用打準：落在地上就自己往敵城城腳挖，下一輪從底下炸開，還讓敵城陷得更快。', '敵軍的地道（地上一道隆起的土）還沒挖到你城底下之前，炸在它上面就塌了；鼓樁也打得掉。'],
   ['黑夜裡看不見的地方瞄不準：先讓照明弓手把敵寨照亮（照明箭亮到下一回合結束），再照著亮的地方打。', '你寨子裡的燈籠會照亮你自己（敵軍看得到你）；敵寨的燈還亮著的時候，趁看得到趕快打，燈滅了就只能靠照明箭。', '滑翔奇兵的滑翔翼會自己轉向最亮的地方：先射一支照明箭，滑翔翼就跟著撲過去。'],
-  ['天空要塞底下四顆浮空晶石：同一邊碎兩顆，要塞就歪得很兇，上面的東西一路滑下去；全碎了整座掉進雲海。', '主砲充能的那一回合開護罩；打倒最上面的要塞艦長，主砲就停了。', '時砂術士讓你這一輪的砲擊下一輪再打一次：瞄準晶石的那一輪最值得。反重力把磚浮起來就不算城防，下一輪再砸下去。']
+  ['天空要塞底下四顆浮空晶石：同一邊碎兩顆，要塞就歪得很兇，上面的東西一路滑下去；全碎了整座掉進雲海。', '主砲充能的那一回合開護罩；打倒最上面的要塞艦長，主砲就停了。', '時砂術士讓你這一輪的砲擊下一輪再打一次：瞄準晶石的那一輪最值得。反重力把磚浮起來就不算城防，下一輪再砸下去。'],
+  ['磚組擱得平、擱在城基正上方才站得穩：伸出城外、底下空著的那一截，挨一下就整塊翻下去。', '城疊得越高兵越多，可是也越容易被壓頂石壓歪：先疊寬、再疊高。', '壓頂石打在敵城疊得最高、最歪的那一邊，大石板一壓，上面的整截就倒了；固樑匠鉚過的磚比較不容易散。'],
+  ['先灌油、再點火：油壺兵把火油灌進敵城，等它流到兵站的那一層，再用煉金師的火藥水一點。', '泡在水裡的兵怕雷：水甕兵灌水之後，等煉金師抽到雷藥水（黃色）再打，整片一起電暈。', '別打破自己的熔爐：岩漿流下去會點著你一樓的火油桶。敵軍灌進來的油，可以用冰藥水把水凍住擋一下，或用水把火澆熄。']
 ];
 function showResult(won, st) {
   const prac = !!(S.lv && S.lv.practice);
@@ -318,7 +320,7 @@ function showResult(won, st) {
   else if (won) { tip.hidden = st.stars >= 3; if (st.stars < 3) tip.textContent = st.lost ? '三顆星：一個兵都不能倒，城防還要剩一半以上。' : '三顆星：城防要剩一半以上。'; }
   else { tip.hidden = false; tip.textContent = st.streak >= 3 && SV.diff > 0 && st.streak % 2 === 1 ? TIP_EASY : tips[(Math.random() * tips.length) | 0]; }        // 同一關連輸三場、五場…：提醒可以調難度
   const next = won && !prac && st.idx < LEVELS.length - 1;
-  if (won && !prac && st.idx === LEVELS.length - 1 && LEVELS.length < LEVEL_MAX) { tip.hidden = false; tip.textContent = '第' + numZh(LEVELS.length + 1) + '到' + numZh(LEVEL_MAX) + '關還在做，做好了會出現在第四篇的分頁。先到演武場，用' + numZh(UNIT_LIST.length) + '種兵試打吧。'; }
+  if (won && !prac && st.idx === LEVELS.length - 1 && LEVELS.length < LEVEL_MAX) { tip.hidden = false; tip.textContent = '第' + numZh(LEVELS.length + 1) + '到' + numZh(LEVEL_MAX) + '關還在做，做好了會出現在第五篇的分頁。先到演武場，用' + numZh(UNIT_LIST.length) + '種兵試打吧。'; }
   else if (won && !prac && st.idx === LEVEL_MAX - 1) { tip.hidden = false; tip.textContent = numZh(LEVEL_MAX) + '關全破！想拿滿三顆星可以再來一次，也可以到演武場用' + numZh(UNIT_LIST.length) + '種兵試打各關的城。'; }          // 打完最後一關          // 打完目前最後一關：沒有「下一關」，講一聲後面的還在做
   $('btnNext').hidden = !next; $('resBtns').className = 'stack ' + (next ? 'three' : 'two');         // 沒有「下一關」的時候兩顆按鈕各佔一半
   $('btnAgain').firstChild.textContent = won ? '再玩一次' : '再戰';
@@ -373,7 +375,7 @@ function hudUpdate() {
   if (a !== HUD.a || la !== HUD.la) { if (HUD.a >= 0 && a < HUD.a) replayFlash($('hpA')); HUD.a = a; HUD.la = la; $('pctA').textContent = la || a + '%'; $('barA').style.transform = 'scaleX(' + (a / 100) + ')'; }
   if (b !== HUD.b || lb !== HUD.lb) { if (HUD.b >= 0 && b < HUD.b) replayFlash($('hpB')); HUD.b = b; HUD.lb = lb; $('pctB').textContent = lb || b + '%'; $('barB').style.transform = 'scaleX(' + (b / 100) + ')'; }
   // 輪到誰
-  const play = S.state === 'play', mine = play && S.phase === 'aim' && S.turn === 0;
+  const play = S.state === 'play', bld = play && S.phase === 'build' && S.turn === 0 && S.build && S.build.st === 'move', mine = (play && S.phase === 'aim' && S.turn === 0) || bld;
   // 敵軍瞄準的彈道會穿過倍增符：先講，讓玩家來得及開護罩
   const eA = S.team[1].ai, em = play && S.phase === 'aim' && S.turn === 1 && eA && eA.st === 2 && eA.warn >= 2 ? Math.round(eA.warn) : 0;
   // 回合結束的環境變化（第三篇）：暴潮、漲潮、退潮
@@ -385,14 +387,14 @@ function hudUpdate() {
     else {
       el.hidden = false;
       el.className = 'chamfer ' + (tk === 'hz' || envT ? 'hz' : S.turn === 0 ? 'me' : 'foe') + (mine ? ' go' : '') + (S.turn === 1 && S.phase === 'aim' && (em || S.team[1].ult.armed) ? ' warn' : '');
-      el.textContent = envT ? (envT === 'surge' ? '暴潮！' : envT === 'lava' ? '岩漿上漲' : envT === 'pass' ? (S.pass.kind === 'tunnel' ? '進隧道' : S.pass.outKind === 'tunnel' ? '出隧道' : '路邊換景') : envT === 'saw' ? '天秤傾斜' : envT === 'up' ? '漲潮' : '退潮') : tk === 'hz' ? (S.lv.rocks && S.lv.rocks.sym ? '火山彈！' : '落石！') : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : S.team[1].ult.armed ? '敵軍連珠砲上膛！' : em ? '敵軍的砲彈會穿過' + (S.lv.boss ? '聖光符' : '倍增符') + '：×' + em + '！' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
+      el.textContent = envT ? (envT === 'surge' ? '暴潮！' : envT === 'lava' ? '岩漿上漲' : envT === 'pass' ? (S.pass.kind === 'tunnel' ? '進隧道' : S.pass.outKind === 'tunnel' ? '出隧道' : '路邊換景') : envT === 'saw' ? '天秤傾斜' : envT === 'up' ? '漲潮' : '退潮') : tk === 'hz' ? (S.lv.rocks && S.lv.rocks.sym ? '火山彈！' : '落石！') : S.phase === 'build' ? (S.turn === 0 ? '築城：左右拖、點一下轉向、按「放下」' : '敵軍築城中') : S.phase === 'aim' ? (S.turn === 0 ? '輪到你：拖曳瞄準，放開發射' : S.team[1].ult.armed ? '敵軍連珠砲上膛！' : em ? '敵軍的砲彈會穿過' + (S.lv.boss ? '聖光符' : '倍增符') + '：×' + em + '！' : '敵軍瞄準中') : (S.turn === 0 ? '我方砲擊' : '敵軍砲擊');
     }
   }
-  const fk = mine ? 1 : 0; if (fk !== HUD.fire) { HUD.fire = fk; $('btnFire').classList.toggle('ready', !!mine); $('btnFire').classList.toggle('btn-gold', !!mine); }
+  const fk = (mine ? 1 : 0) + (bld ? 2 : 0); if (fk !== HUD.fire) { HUD.fire = fk; const bf = $('btnFire'); bf.classList.toggle('ready', !!mine); bf.classList.toggle('btn-gold', !!mine); bf.firstElementChild.textContent = bld ? '放下' : '發射'; bf.setAttribute('aria-label', bld ? '放下磚組' : '發射'); }
   const sawK = S.saw ? Math.round(sawAngle() * 180 / Math.PI) : S.aerie ? aerieLifts() * 2 + (S.aerie.charge ? 1 : 0) : S.sand ? Math.round((sandDepth(0) + sandDepth(1) * 100) * 10) : 0;          // 天秤歪的角度、要塞的晶石和主砲、流沙陷的深度變了也要重寫
   if (S.round !== HUD.round || sawK !== HUD.sawK) { HUD.round = S.round; HUD.sawK = sawK; $('roundTxt').textContent = S.round > 0 ? (S.lv.tide || S.lv.pass || S.saw || S.lv.arches || S.sand || S.aerie || S.lv.night ? '第' + S.round + '回合' : '第 ' + S.round + ' 回合') + (S.lv.tide ? '・' + TIDE_NAME[tideNow()] : S.pass && S.pass.kind === 'tunnel' ? '・隧道' : S.saw ? '・' + sawTxt() : S.lv.arches ? '・古門通往' + ARCH_NAME[archNext(S.round)] : S.sand ? '・陷沙 我' + sandDepth(0).toFixed(1) + '／敵' + sandDepth(1).toFixed(1) + '公尺' : S.aerie ? '・浮空晶石 ' + aerieLifts() + '／4' + (S.aerie.charge ? '・主砲充能' : '') : S.lv.night ? '・無月' : '') : ''; }
   if ((HUD.n & 3) !== 0) return;
-  for (let sd = 0; sd < 2; sd++) for (const k of HUD.crew[sd]) { const st = !k.u.alive ? 'dead' : k.u.frozen > 0 ? 'frozen' : k.u.stun > 0 ? 'stun' : ''; if (st !== k.st) { k.st = st; k.el.className = 'cu' + (st ? ' ' + st : ''); } }
+  for (let sd = 0; sd < 2; sd++) for (const k of HUD.crew[sd]) { const st = k.u.reserve ? 'wait' : !k.u.alive ? 'dead' : k.u.frozen > 0 ? 'frozen' : k.u.stun > 0 ? 'stun' : ''; if (st !== k.st) { k.st = st; k.el.className = 'cu' + (st ? ' ' + st : ''); } }
   const T = S.team[0], bu = $('btnUlt'), bs = $('btnShield');
   const up = clamp(T.ult.c / T.ult.need, 0, 1), armed = T.ult.armed, uk = Math.round(up * 100) + (armed ? 1000 : 0);
   if (uk !== HUD.ult) { HUD.ult = uk; bu.style.setProperty('--p', armed ? '1' : up.toFixed(3)); bu.classList.toggle('ready', up >= 1 && !armed); bu.classList.toggle('on', armed); $('ultNum').textContent = armed ? '已上膛' : up >= 1 ? '可用' : Math.floor(up * 100) + '%'; }

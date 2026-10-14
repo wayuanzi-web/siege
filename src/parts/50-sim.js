@@ -59,7 +59,7 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
     if (ex) { o.deco = ex.deco || 0; if (kind === 'roof') { o.il = (mirror ? ex.ir : ex.il) * CS; o.ir = (mirror ? ex.il : ex.ir) * CS; } if (kind === 'ball') { o.r = ex.r; o.y = y0 + cy * CS + ex.r; } if (ex.bw) { o.w = ex.bw; o.h = ex.bh; o.y = y0 + cy * CS + ex.bh / 2; } if (ex.sw) o.w = cw * CS * ex.sw; if (ex.den) o.den = ex.den; }
     const b = mkBlock(st, o);
     b.cx = mx; b.cy = cy; b.cw = cw; b.ch = ch; b.chr = chNow;
-    if (ex) { if (ex.dom) { b.dom = 1; b.body.getFixtureList().setFriction(0.3); } if (ex.reso) { b.reso = 1; b.hp = b.hm = 180; } /* 共鳴晶柱很硬，兩邊一樣硬（不吃城防倍率）：轟天砲正中一發、或火箭五六發才震得起來 */ if (ex.sk) b.sk = ex.sk; if (ex.beam) { b.beam = 1; b.hp *= 12; b.hm *= 12; b.body.getFixtureList().setFriction(0.22); } if (ex.snow) b.snow = 1; if (ex.mag) b.mag = 1; if (ex.rod) { b.rod = 1; b.wt = 0; b.body.setType('static'); } /* 避雷針用鐵栓釘在岩簷上：推不倒，只會被打斷 */ if (ex.tslab) b.tslab = 1; if (ex.brake) b.brake = 1; if (ex.heart) { b.heart = 1; b.hp *= 3; b.hm *= 3; } if (ex.core) { b.core = 1; b.hp = b.hm = 150; } if (ex.tank) b.tank = 1; if (ex.crane) b.crane = 1; if (ex.axle) { b.axle = 1; b.body.setType('static'); } if (ex.bogie) b.bogie = 1; if (ex.boiler) b.boiler = 1; if (ex.stack) b.stack = 1; if (ex.gas) b.gas = 1; if (ex.drop) b.drop = 1; if (ex.mprop) b.mprop = 1; }          // 風車的軸座：用大鐵栓釘在塔裡，推不動，只打得壞      // 天秤的大樑很滑：一歪，上面的東西就往下滑
+    if (ex) { if (ex.dom) { b.dom = 1; b.body.getFixtureList().setFriction(0.3); } if (ex.reso) { b.reso = 1; b.hp = b.hm = 180; } /* 共鳴晶柱很硬，兩邊一樣硬（不吃城防倍率）：轟天砲正中一發、或火箭五六發才震得起來 */ if (ex.sk) b.sk = ex.sk; if (ex.beam) { b.beam = 1; b.hp *= 12; b.hm *= 12; b.body.getFixtureList().setFriction(0.22); } if (ex.snow) b.snow = 1; if (ex.mag) b.mag = 1; if (ex.rod) { b.rod = 1; b.wt = 0; b.body.setType('static'); } /* 避雷針用鐵栓釘在岩簷上：推不倒，只會被打斷 */ if (ex.tslab) b.tslab = 1; if (ex.brake) b.brake = 1; if (ex.heart) { b.heart = 1; b.hp *= 3; b.hm *= 3; } if (ex.core) { b.core = 1; b.hp = b.hm = 150; } if (ex.tank) b.tank = 1; if (ex.crane) b.crane = 1; if (ex.axle) { b.axle = 1; b.body.setType('static'); } if (ex.bogie) b.bogie = 1; if (ex.boiler) b.boiler = 1; if (ex.stack) b.stack = 1; if (ex.gas) b.gas = 1; if (ex.drop) b.drop = 1; if (ex.mprop) b.mprop = 1; if (ex.ltank) b.ltank = ex.ltank; }          // 風車的軸座：用大鐵栓釘在塔裡，推不動，只打得壞      // 天秤的大樑很滑：一歪，上面的東西就往下滑
     if (kind === 'box' && ch === 1 && cw >= 3 && !(ex && (ex.deco || ex.beam)) && (mat === M_STONE || mat === M_WOOD || mat === M_ICE || mat === M_BAMBOO || mat === M_GLASS)) segInit(b);        // 長樑、樓板：分段算耐久
     if (ex && ex.hard) { b.hp *= ex.hard; b.hm *= ex.hard; b.hard = 1; if (b.seg) { b.segM *= ex.hard; for (let k = 0; k < b.cw; k++) b.seg[k] *= ex.hard; } }
     for (let a = 0; a < cw; a++) for (let bb = 0; bb < ch; bb++) { const i = (cy + bb) * cols + mx + a; st.cellB[i] = b; st.cellK[i] = 1; }
@@ -143,6 +143,9 @@ function mkCastle(side, def, x0, y0, hpMul, mirror) {
       case 'E': put(M_GLASS, 'box', cx, cy, 1, 1, { core: 1, sw: 0.8, den: 1.4 }); break;                  // 魔王城城腳的魔晶
       case 't': put(M_ROCK, 'box', cx, cy, 1, 1, { tslab: 1 }); break;                          // 石柱的腳（石墩）：打掉前面那一個，整根石柱往前倒
       case 'V': put(M_WOOD, 'box', cx, cy, hrun(cx, cy, ch), 1, { tank: 1, den: 1.7 }); break;         // 水塔（裝滿水的大木桶）
+      case '%': put(M_WOOD, 'box', cx, cy, 1, 1, { ltank: LQ_WATER, den: 1.4, bw: CS * 0.86, bh: CS * 0.92 }); break;          // 第二十六關：水槽、火油桶、熔爐（54-flux：打碎了倒出來）
+      case '&': put(M_WOOD, 'box', cx, cy, 1, 1, { ltank: LQ_OIL, den: 1.1, bw: CS * 0.8, bh: CS * 0.86 }); break;
+      case '@': put(M_IRON, 'box', cx, cy, 1, 1, { ltank: LQ_LAVA, hard: 0.6, bw: CS * 0.9, bh: CS * 0.94 }); break;
       case ' ': break;
       default: {
         const mx = mirror ? cols - 1 - cx : cx; st.cellK[cy * cols + mx] = 2;
@@ -221,7 +224,7 @@ function castleScan(st) {
     const p = b.body.getPosition(); let px = p.x, py = p.y;
     if (P && p.y < wy - CS * 0.4 && !b.lost) { b.inPlace = false; b.lost = true; chainCount(b); st.ver++; continue; }          // 跟著船沉到水面下了：不算了
     if (P) { const ex = p.x - ppx, ey = p.y - ppy; px = P.x0 + ex * pc + ey * ps; py = P.y0 - ex * ps + ey * pc; }
-    const a = Math.abs(b.body.getAngle() - pa), was = b.inPlace, dx = Math.abs(px - b.x0), dy = Math.abs(py - b.y0);
+    const a = Math.abs(b.body.getAngle() - pa - (b.ra || 0)), was = b.inPlace,          /* ra：疊上去的磚組停下來時的角度（第二十五關） */ dx = Math.abs(px - b.x0), dy = Math.abs(py - b.y0);
     // 離開原位之後，要回到很接近原位才算回來（不然被震得晃回來一下，城防條會自己往上跳）
     // 吊著的殿（懸空寺）：整間殿左右盪不算離開原位（還掛著、沒歪就算）
     if (b.swingy) {          // 吊著的殿：還在盪的時候不算（盪到停下來再量）；盪開、往上甩都不算，掉下去一截、歪太多才算
@@ -997,6 +1000,7 @@ function startTurn(side) {
   const T = S.team[side];
   if (T.shield.on) { T.shield.on = false; ev('shieldoff', side); }
   ev('turn', side, S.round);
+  if (S.stack && stackBegin(side)) return;          // 第二十五關：先疊一塊磚組（54-stack），停穩了才開始瞄準
   if (T.ai) aiBegin(T);
 }
 // 發射：這一邊所有還能動的兵各打一輪。帶頭的照瞄準的角度和力道打，其他兵都瞄帶頭那一發的落點（見 52-ai 的 volleyAim）
@@ -1007,7 +1011,7 @@ function simFire(side) {
   const lead = volleyLead(T), E0 = lead ? volleyEvent(side, lead, ax, ay) : null, E = E0 ? { ok: E0.ok, x: E0.x, y: E0.y, vx: E0.vx, vy: E0.vy } : null, cv = [0, 0];
   let t0 = 0.05, any = false;
   chargesGo(side);          // 上一輪黏在對方城上的炸藥：這一輪開火時引爆
-  hooksGo(side); mirrorsDown(side); molesGo(side); drumsGo(side); echoGo(side); gravsGo(side);          // 第四篇：上一輪鉤住的收繩；上一輪舉的銅鏡放下（鏡盾兵這一輪再舉）
+  hooksGo(side); mirrorsDown(side); molesGo(side); drumsGo(side); echoGo(side); gravsGo(side); rivetsGo(side);          // 第四篇：上一輪鉤住的收繩；上一輪舉的銅鏡放下（鏡盾兵這一輪再舉）
   for (const u of T.units) {
     u.held = false;
     if (!u.alive || T.mute) continue;                       // mute：測試用，這一邊只瞄不打
@@ -1393,6 +1397,8 @@ function simInit(idx, up, seed, diff, opts) {
   if (S.saw) S.saw.body.setAwake(false);          // 第十九關：巨樑不轉的時候睡著（醒著的會把站在上面的整片城都叫醒）
   for (const st of S.structs) if (!st.loose) { castleScan(st); for (let i = 0; i < st.n; i++) st.back[i] = st.backTo[i]; }
   supInit(S.st[0]); supInit(S.st[1]);
+  stackSetup();          // 第二十五關：開場城上只有兩個兵，其他的待命（54-stack）
+  fluxSetup();          // 第二十六關：液體的格子（54-flux）
 }
 
 /* ---------- 每一步 ---------- */
@@ -1403,6 +1409,7 @@ function simStep(dt) {
     switch (S.phase) {
       case 'intro': if (S.phaseT > 1.1) roundStart(); break;
       case 'aim': { const T = S.team[S.turn]; if (T.ai) aiStep(T, dt); break; }
+      case 'build': stackStep(dt); break;          // 第二十五關：築城
       case 'volley': {
         const q = S.vq, T = S.team[S.turn];
         while (S.vqi < q.length && q[S.vqi].t <= S.phaseT) {
@@ -1447,6 +1454,7 @@ function simStep(dt) {
   unitsStep(dt);
   burnStep(dt);
   acidStep(dt);
+  if (S.flux) fluxStep(dt);          // 第二十六關：液體
   for (const st of S.structs) {
     if (st.hitT > 0) st.hitT -= dt;
     if (st.fin) finStep(st, dt);
@@ -1462,7 +1470,7 @@ function simStep(dt) {
 function burnStep(dt) {
   if (S.nburn <= 0) return;
   // 瞄準的時候火不往下燒（火苗照樣畫著）：不然上一輪點的火會在別人瞄準時把樑燒斷、把兵燒倒。下一輪砲擊開始再接著燒
-  if (S.state === 'play' && (S.phase === 'aim' || S.phase === 'intro')) return;
+  if (S.state === 'play' && (S.phase === 'aim' || S.phase === 'intro' || S.phase === 'build')) return;
   S.burnT -= dt; const tick = S.burnT <= 0; if (tick) S.burnT = 0.4;
   let nb = 0; const credit = S.phase === 'hazard' ? 2 : S.turn, wetK = S.lv.damp || 1;          // damp：海上的水寨木頭是濕的（第十三關），燒得慢、延燒得少
   for (const b of S.blocks) {
