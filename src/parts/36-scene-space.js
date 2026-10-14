@@ -16,7 +16,7 @@ THEMES[27] = (function () {
       // 小星星（不會閃的）
       for (let k = 0; k < 220; k++) { const a = 0.25 + R() * 0.6; c.fillStyle = 'rgba(255,255,255,' + a.toFixed(2) + ')'; const sz = R() < 0.1 ? 2 : 1; c.fillRect(R() * W, R() * H, sz, sz); }
       // 帶環的大行星（右上方遠處）
-      const px = X(MID + 33), py = Y(50), pr = s * 7;
+      const px = X(MID + 40), py = Y(34), pr = s * 5;
       c.save(); c.translate(px, py); c.rotate(-0.3);
       c.strokeStyle = 'rgba(230,200,160,.35)'; c.lineWidth = s * 0.9; c.beginPath(); c.ellipse(0, 0, pr * 2.1, pr * 0.5, 0, Math.PI, TAU); c.stroke();
       c.fillStyle = rg(c, -pr * 0.4, -pr * 0.4, pr * 0.1, pr * 1.2, [0, '#f0d8b0', 0.6, '#c08a5a', 1, '#5a3424']); c.beginPath(); c.arc(0, 0, pr, 0, TAU); c.fill();

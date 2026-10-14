@@ -54,13 +54,14 @@ Object.assign(UNIT_ART, {
     // 引力錨手：深色斗篷，手上提著一具發紫光的小錨
     uShadow(c); kLegs(c, P); kBody(c, P); uArm(c, P, 21, 38); kHead(c, side, P);
     c.beginPath(); c.moveTo(20, 18); c.quadraticCurveTo(32, 8, 44, 18); c.lineTo(42, 14); c.quadraticCurveTo(32, 5, 22, 14); c.closePath(); c.fillStyle = side ? '#5a1a3a' : '#2a2a6a'; c.fill();
+    // 錨舉在肩膀上（頭像裁得到）
     const g = side ? '#ff7ac8' : '#b08aff';
-    c.fillStyle = rg(c, 50, 36, 0.5, 11, [0, 'rgba(255,255,255,.9)', 0.3, g, 1, 'rgba(0,0,0,0)']); c.beginPath(); c.arc(50, 36, 11, 0, TAU); c.fill();
-    c.strokeStyle = side ? '#a01a5a' : '#4a2aa8'; c.lineWidth = 2.6; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(50, 26); c.lineTo(50, 44); c.moveTo(45, 30); c.lineTo(55, 30); c.stroke();
-    c.beginPath(); c.arc(50, 37, 7, 0.25, Math.PI - 0.25); c.stroke();
-    c.beginPath(); c.arc(50, 24.6, 2, 0, TAU); c.stroke();
-    uArm(c, P, 47, 27);
+    c.fillStyle = rg(c, 50, 18, 0.5, 12, [0, 'rgba(255,255,255,.9)', 0.3, g, 1, 'rgba(0,0,0,0)']); c.beginPath(); c.arc(50, 18, 12, 0, TAU); c.fill();
+    c.strokeStyle = side ? '#a01a5a' : '#4a2aa8'; c.lineWidth = 3; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(50, 7); c.lineTo(50, 27); c.moveTo(44.5, 11.5); c.lineTo(55.5, 11.5); c.stroke();
+    c.beginPath(); c.arc(50, 19, 7.5, 0.25, Math.PI - 0.25); c.stroke();
+    c.beginPath(); c.arc(50, 5.4, 2.2, 0, TAU); c.stroke();
+    uArm(c, P, 47, 22);
   },
   net(c, side, P) {
     // 拖網兵：肩上扛著一大捆漁網（網眼、墜子），手上拉著網繩

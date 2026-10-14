@@ -390,7 +390,7 @@ function aiChoose(T) {
   if (b && A.top && A.top.length > 1 && aiVolley(T, b.vx, b.vy).own) { for (let i = 1; i < A.top.length; i++) { const c = A.top[i]; if (!aiVolley(T, c.vx, c.vy).own) { b = c; A.best = c; A.mult = c.mult; break; } } }
   if (!b) {
     // 什麼都瞄不到：往對面城樓中段吊一發
-    aimFor(A.mx, A.my, fst.cx, fst.y0 + fst.h * 0.5, 2.0, wind, _av); const a = clampAim(_av[0], _av[1], dir);
+    aimFor(A.mx, A.my, fst.cx, fst.y0 + fst.h * 0.5, 2.0, wind, _av, S.gk); const a = clampAim(_av[0], _av[1], dir);
     b = { vx: a[0], vy: a[1], tau: 2.0, t: { x: fst.cx, y: fst.y0 + fst.h * 0.5 } }; A.mult = 1;
   }
   // 手抖：落點偏掉一些

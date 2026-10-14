@@ -206,7 +206,7 @@ function axeHit(i, w, hit, o, hx, hy, vx, vy, u, mul) {
   if (back || !u || !u.alive) { S.shotU.delete(SH.id[i]); return 1; }
   // 掉頭：照拋物線算 tau 秒後落在飛斧手手上
   const tx = u.x + (u.side === 0 ? 0.9 : -0.9), ty = u.y + 2.3, tau = B.tau, sp = Math.hypot(vx, vy) || 1;
-  SH.x[i] = hx - vx / sp * 0.35; SH.y[i] = hy - vy / sp * 0.35; SH.vx[i] = (tx - SH.x[i]) / tau; SH.vy[i] = (ty - SH.y[i]) / tau + 0.5 * GRAV * tau;
+  SH.x[i] = hx - vx / sp * 0.35; SH.y[i] = hy - vy / sp * 0.35; SH.vx[i] = (tx - SH.x[i]) / tau; SH.vy[i] = (ty - SH.y[i]) / tau + 0.5 * GRAV * S.gk * tau;
   SH.p[i] = 1; SH.flag[i] = (SH.flag[i] | F_PORT) & ~F_IN; SH.age[i] = Math.min(SH.age[i], 9 - tau - 1);
   ev('axeback', hx, hy, side);
   return 2;

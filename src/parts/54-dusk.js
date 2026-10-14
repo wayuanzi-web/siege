@@ -185,7 +185,7 @@ function aerieFire(u) {
   const A = S.aerie; if (!A || !A.charge || !u.alive) return;
   A.charge = false;
   const st = S.st[1], mx = u.x - 2.2, my = u.y + 3.6, tg = S.st[0];
-  aimFor(mx, my, tg.cx + (rnd() - 0.5) * tg.w * 0.4, tg.y0 + tg.h * 0.55, 2.4, S.wind, _av);
+  aimFor(mx, my, tg.cx + (rnd() - 0.5) * tg.w * 0.4, tg.y0 + tg.h * 0.55, 2.4, S.wind, _av, S.gk);
   spawnShot(1, WPN.mainshell.i, mx, my, _av[0], _av[1], 1, F_IN, 0, 1);          // F_IN：穿過要塞自己的城
   u.recoil = 1; ev('cannonfire', mx, my, 1); S.chainT = S.time;
 }

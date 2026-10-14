@@ -22,7 +22,10 @@ function drawMoons(c, t) {
     const sp = moonSprite(o.r, o.big); c.drawImage(sp, x - sp.width / 2, y - sp.height / 2);
     if (!o.big && o.orbit) {          // 小月的軌道：一圈點點，下一回合會到哪裡畫一個小圈
       const C = o.orbit; c.fillStyle = 'rgba(255,210,190,.25)'; for (let k = 0; k < 24; k++) { const a = k / 24 * TAU; c.beginPath(); c.arc(X(C.x + Math.cos(a) * C.r), Y(C.y + Math.sin(a) * C.r), Math.max(1, s * 0.12), 0, TAU); c.fill(); }
-      const na = o.ph + C.step; c.strokeStyle = 'rgba(255,210,190,.4)'; c.lineWidth = Math.max(1, s * 0.12); c.beginPath(); c.arc(X(C.x + Math.cos(na) * C.r), Y(C.y + Math.sin(na) * C.r), o.r * s * 0.8, 0, TAU); c.stroke();
+      // 下一回合會轉到哪裡：一顆淡淡的小月，前面一個小箭頭
+      const na = o.ph + C.step, nx = X(C.x + Math.cos(na) * C.r), ny = Y(C.y + Math.sin(na) * C.r); c.globalAlpha = 0.28; c.drawImage(sp, nx - sp.width / 2, ny - sp.height / 2); c.globalAlpha = 1;
+      const aa = na + 0.32, ax = X(C.x + Math.cos(aa) * C.r), ay = Y(C.y + Math.sin(aa) * C.r), tx = -Math.sin(aa), ty = -Math.cos(aa);          // 切線方向（畫面座標 y 朝下）
+      c.fillStyle = 'rgba(255,210,190,.5)'; c.beginPath(); c.moveTo(ax + tx * s * 0.7, ay + ty * s * 0.7); c.lineTo(ax - ty * s * 0.45, ay + tx * s * 0.45); c.lineTo(ax + ty * s * 0.45, ay - tx * s * 0.45); c.closePath(); c.fill();
     }
   }
 }
@@ -44,10 +47,10 @@ function drawAnchors(c, t) {
 }
 // 我方的推進彈還沒加速：繞一圈閃光，第一發旁邊寫「點一下！」
 function drawBoostHint(c, t) {
-  if (!S.astro || S.turn !== 0 || S.team[0].ai || S.state !== 'play') return;
+  if (S.turn !== 0 || S.team[0].ai || S.state !== 'play' || G.mode !== 'play') return;
   const s = V.s; let first = true;
   for (let i = 0; i < SH.n; i++) {
-    if (SH.side[i] !== 0 || SH.p[i] || !WL[SH.w[i]].boost) continue;
+    if (SH.side[i] !== 0 || SH.p[i] || !WL[SH.w[i]].boost || SH.age[i] <= BOOST_T) continue;
     const x = X(SH.x[i]), y = Y(SH.y[i]), k = 0.5 + 0.5 * Math.sin(t * 12);
     c.strokeStyle = 'rgba(255,225,74,' + (0.5 + 0.4 * k) + ')'; c.lineWidth = Math.max(1.4, s * 0.24); c.beginPath(); c.arc(x, y, s * (1.3 + 0.4 * k), 0, TAU); c.stroke();
     if (first) {

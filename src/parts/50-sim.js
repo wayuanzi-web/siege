@@ -397,7 +397,7 @@ function unitsStep(dt) {
     if (act) {
       if (!u.def.big && u.load > CRUSH_LOAD) { u.loadT += dt; if (u.loadT > 0.3) {
         // 開場護符：壓在兵頭上的碎磚直接裂開掉下去，不會還沒開打就被壓扁
-        if (r1v(u.side)) { headClearUnit(u, true); u.loadT = 0; continue; }          // 往下沉、壓到頭的樓板那一段也直接裂開（不然壓著不放，到我方下一輪才扣血）
+        if (r1v(u.side)) { headClearUnit(u, true); u.loadT = 0; if (S.idx >= 26 && !u.body.isAwake()) u.load = 0; continue; }          // 睡著的兵量不到新的重量：清掉頭上的東西就當作沒壓著（醒來再量），不然回合一直等他          // 往下沉、壓到頭的樓板那一段也直接裂開（不然壓著不放，到我方下一輪才扣血）
         hurtUnit(u, 65 * dt, S.phase === 'hazard' ? 2 : 1 - u.side, K_CRUSH); if (!u.alive) continue; } }
       else if (u.loadT > 0) u.loadT = Math.max(0, u.loadT - dt * 2);
     }
@@ -716,7 +716,7 @@ function shotsStep(dt) {
     }
     SH.x[i] = nx; SH.y[i] = ny; SH.vx[i] = vx; SH.vy[i] = vy;
   }
-  if (S.astro) S.boostReq[0] = S.boostReq[1] = false;
+  S.boostReq[0] = S.boostReq[1] = false;
   for (let s = 0; s < 2; s++) if (SH.cnt[s] > team[s].peak) team[s].peak = SH.cnt[s];
   if (SH.cnt[0] > S.stat.peak) S.stat.peak = SH.cnt[0];
   flakStep(dt);
@@ -1021,13 +1021,14 @@ function startTurn(side) {
 // 發射：這一邊所有還能動的兵各打一輪。帶頭的照瞄準的角度和力道打，其他兵都瞄帶頭那一發的落點（見 52-ai 的 volleyAim）
 function simFire(side) {
   if (S.state !== 'play' || S.phase !== 'aim' || S.turn !== side) return false;
+  if (S.tele) teleFinish();          // 第二十七關：敵軍的預告還沒算完就開火：當場算完（預告要照你開火前的局面）
   const T = S.team[side], foe = S.team[1 - side], q = S.vq; q.length = 0; S.vqi = 0; S.vol++;
   const reps = (T.ult.armed ? 3 : 1) * (T.rage > 0 ? 2 : 1), bar = side === 1 && ((S.boss && S.boss.next === 'barrage') || (S.beast && S.beast.next === 'volley')) && !T.mute, ax = T.aim[0], ay = T.aim[1];          // 暗黑連射：魔王自己多打一輪
   const lead = volleyLead(T), E0 = lead ? volleyEvent(side, lead, ax, ay) : null, E = E0 ? { ok: E0.ok, x: E0.x, y: E0.y, vx: E0.vx, vy: E0.vy } : null, cv = [0, 0];
   const TP = telePlanned(side);          // 第二十七關：預告過的那一邊，每個兵照自己預告的初速打（沒預告到的不打）
   let t0 = 0.05, any = false;
   chargesGo(side);          // 上一輪黏在對方城上的炸藥：這一輪開火時引爆
-  hooksGo(side); mirrorsDown(side); molesGo(side); drumsGo(side); echoGo(side); gravsGo(side); rivetsGo(side); if (S.astro) anchorsGo(side);          // 第四篇：上一輪鉤住的收繩；上一輪舉的銅鏡放下（鏡盾兵這一輪再舉）
+  hooksGo(side); mirrorsDown(side); molesGo(side); drumsGo(side); echoGo(side); gravsGo(side); rivetsGo(side); anchorsGo(side);          // 第四篇：上一輪鉤住的收繩；上一輪舉的銅鏡放下（鏡盾兵這一輪再舉）
   for (const u of T.units) {
     u.held = false;
     if (!u.alive || T.mute) continue;                       // mute：測試用，這一邊只瞄不打
@@ -1156,7 +1157,7 @@ function roundEnd() {
   if (envRoundEnd()) wait = true;          // 第三篇：換潮、暴潮……
   if (craftRoundEnd()) wait = true;          // 第四篇：鐵砣壓樓板、天秤傾斜
   if (S.stack && stackRoundEnd()) wait = true;          // 第二十五關：清掉掉在城外的磚組
-  if (S.tele) teleRoundEnd();          // 第二十七關：用過的草人撤掉
+  teleRoundEnd();          // 第二十七關：用過的草人撤掉（演武場別的戰場也插得了）
   if (S.round >= 2) for (let s = 0; s < 2; s++) if (!(s === 1 && (S.boss || S.beast)) && (structBar(s) < CRUMBLE_BAR || S.round >= (S.lv.sudden || 10)) && crumble(S.st[s])) wait = true;          // 第一回合不會（不會第一回合就分出勝負）
   if (S.nfrag > FRAG_KEEP) { for (const b of S.blocks) { if (S.nfrag <= FRAG_KEEP) break; if (b.frag && !b.dead) { blockKill(b, 2, K_CRUSH, true); wait = true; } } }
   S.hz = 0;
@@ -1355,7 +1356,7 @@ function simInit(idx, up, seed, diff, opts) {
   SH.n = 0; SH.cnt[0] = SH.cnt[1] = SH.cnt[2] = 0;
   S.structs = []; S.blocks = []; S.balls = []; S.units = []; S.gates = []; S.gsp = []; S.objs = []; S.marks = []; S.pend = []; S.bitUse.fill(0);
   S.wind = 0; S.gust = null; S.rage = 1; S.sudden = false; S.nburn = 0; S.burnT = 0; S.chain = 0; S.chainT = -99; S.vol = 0; S.nfrag = 0; S.bid = 0; S.hz = 0; S.endBar[0] = S.endBar[1] = 0; S.flags = [null, null];
-  S.gpts = lv.ground || null; S.voids = lv.voids || null; S.gk = lv.space ? lv.space.gk : 1; S.tele = null; S.gears = null; S.astro = null;          // gk：第二十八關太空裡砲彈的重力
+  S.gpts = lv.ground || null; S.voids = lv.voids || null; S.gk = lv.space ? lv.space.gk : 1; S.tele = null; S.gears = null; S.astro = null; S.nanchor = 0; S.boostReq = [false, false];          // gk：第二十八關太空裡砲彈的重力
   S.ropes = []; S.welds = []; S.pivots = []; S.pins = []; S.plats = []; S.pulleys = []; S.rotors = []; S.rollers = []; S.bell = null; S.doms = []; S.drops = []; S.water = lv.water ? Object.assign({ rho: 0.85, cur: 2.2 }, lv.water) : null;
   envInit();          // 第三篇的環境（潮汐……）
   S.stat = { fired: 0, peak: 0, swarm: 1, cells: 0, kills: 0, gates: 0, lost: 0, chain: 0, amp: 1, hit: 0 };
@@ -1434,7 +1435,7 @@ function simStep(dt) {
   if (play) {
     switch (S.phase) {
       case 'intro': if (S.phaseT > 1.1) roundStart(); break;
-      case 'aim': { const T = S.team[S.turn]; if (T.ai) aiStep(T, dt); break; }
+      case 'aim': { if (S.tele) teleStep(); const T = S.team[S.turn]; if (T.ai) aiStep(T, dt); break; }          // 第二十七關：你瞄準的時候，敵軍的預告分幾幀算完
       case 'build': stackStep(dt); break;          // 第二十五關：築城
       case 'volley': {
         const q = S.vq, T = S.team[S.turn];

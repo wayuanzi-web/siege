@@ -9,11 +9,10 @@
    - 拖網兵：網住落點附近的磚和兵，往自己這邊拖出城外
    掉進太空（離開小行星的岩頂往下掉、落在衛星上）的兵就沒了 */
 function astroSetup() {
-  S.astro = null; S.boostReq = [false, false];
   const A = S.lv.space; if (!A) return;
   S.astro = { moons: [] };
   for (const m of A.moons) {
-    const o = { t: 'moon', x: m.x, y: m.y, r: m.r, R: m.R, G: m.G, rs: 0.2, on: true, orbit: m.orbit || null, body: null, flash: 0, big: !m.orbit };
+    const o = { t: 'moon', x: m.x, y: m.y, r: m.r, R: m.R, G: m.G, rs: 0, on: true, orbit: m.orbit || null, body: null, flash: 0, big: !m.orbit };
     if (o.orbit) { o.ph = o.orbit.ph; moonPlace(o); }
     o.body = PH.world.createBody({ type: o.orbit ? 'kinematic' : 'static', position: { x: o.x, y: o.y } });
     o.body.createFixture({ shape: new PL.Circle(o.r), friction: 0.9, restitution: 0.05, filterCategoryBits: CAT_TERR, userData: { isRock: true, side: 2, moon: o } });
@@ -33,7 +32,6 @@ function astroRound() {
 // 衛星、小月、引力錨把附近飛起來的東西吸過去（城樓上還在原位的磚不吸：只有引力錨吸得動）
 const _af = { x: 0, y: 0 };
 function astroForces() {
-  if (!S.astro) return;
   const act = S.state !== 'play' || S.phase === 'volley' || S.phase === 'resolve' || S.phase === 'hazard';
   for (const o of S.objs) {
     if (o.t === 'moon') {
@@ -79,9 +77,10 @@ function astroLost(u, dt) {
 
 /* ---------- 推進彈 ---------- */
 // 玩家點一下畫面：這一邊還沒加速過的推進彈全部加速（下一步 shotsStep 處理）
+const BOOST_T = 0.25;          // 飛出砲口多久以後才點得動（還在自己城裡的那一下不算）
 function canBoostNow(side) {
-  if (!S.astro || S.state !== 'play' || S.turn !== side || (S.phase !== 'volley' && S.phase !== 'resolve')) return false;
-  for (let i = 0; i < SH.n; i++) if (SH.side[i] === side && WL[SH.w[i]].boost && !SH.p[i]) return true;
+  if (S.state !== 'play' || S.turn !== side || (S.phase !== 'volley' && S.phase !== 'resolve')) return false;
+  for (let i = 0; i < SH.n; i++) if (SH.side[i] === side && WL[SH.w[i]].boost && !SH.p[i] && SH.age[i] > BOOST_T) return true;
   return false;
 }
 function simBoost(side) { if (!canBoostNow(side)) return false; S.boostReq[side] = true; return true; }
@@ -89,7 +88,7 @@ function simBoost(side) { if (!canBoostNow(side)) return false; S.boostReq[side]
 function boostNow(i, W) {
   if (SH.p[i]) return false;
   const side = SH.side[i], T = side < 2 ? S.team[side] : null;
-  return T && T.ai ? SH.age[i] >= W.boost.at : !!S.boostReq[side];
+  return T && T.ai ? SH.age[i] >= W.boost.at : !!S.boostReq[side] && SH.age[i] > BOOST_T;
 }
 
 /* ---------- 引力錨、拖網 ---------- */
@@ -97,10 +96,11 @@ function astroHit(i, w, hit, o, hx, hy, vx, vy) {
   const side = SH.side[i], mass = SH.mass[i];
   if (w.anchor) {
     physExplode(hx, hy, w, side, mass, SH.flag[i], hit === 1 ? null : o, vx, vy);
+    if (hit === 1 && o && o.moon) { ev('anchorout', hx, hy, side); return 1; }          // 打在衛星、小月上：釘不住（小月會轉走）
     const A = w.anchor, b = hit === 2 && o && o.isBlock && !o.dead && o.body ? o : null;
-    const a = { t: 'anchor', side, x: hx, y: hy, b, lp: null, R: A.R * Math.min(1.25, Math.sqrt(mass)), F: A.F, pullT: A.t, t0: S.time, G: A.G, rs: 0.2, on: true, flash: 1, age: 0 };
+    const a = { t: 'anchor', side, x: hx, y: hy, b, lp: null, R: A.R * Math.min(1.25, Math.sqrt(mass)), F: A.F, pullT: A.t, t0: S.time, G: A.G, rs: 0, on: true, flash: 1, age: 0 };
     if (b) { const q = b.body.getLocalPoint({ x: hx, y: hy }); a.lp = { x: q.x, y: q.y }; }
-    S.objs.push(a); AMP.holes.push(a); ev('anchorin', hx, hy, side);
+    S.objs.push(a); AMP.holes.push(a); S.nanchor++; ev('anchorin', hx, hy, side);
     return 1;
   }
   if (w.net) {
@@ -130,13 +130,16 @@ function astroHit(i, w, hit, o, hx, hy, vx, vy) {
 // 引力錨跟著它釘著的磚走；磚沒了就掉下來（停止吸）；自己下一輪開火時收起來
 function anchorStep(o, dt) {
   o.age += dt; if (o.flash > 0) o.flash = Math.max(0, o.flash - dt * 3);
-  if (o.b) { if (o.b.dead || !o.b.body) { o.b = null; o.pullT = 0; } else { const q = o.b.body.getWorldPoint(o.lp); o.x = q.x; o.y = q.y; } }
+  if (o.b) {
+    if (o.b.dead || !o.b.body) { const k = AMP.holes.indexOf(o); if (k >= 0) AMP.holes.splice(k, 1); S.nanchor--; ev('anchorout', o.x, o.y, o.side); return true; }          // 釘著的磚碎了：錨跟著掉、收起來
+    const q = o.b.body.getWorldPoint(o.lp); o.x = q.x; o.y = q.y;
+  }
   return false;
 }
 function anchorsGo(side) {
   for (let i = S.objs.length - 1; i >= 0; i--) {
     const o = S.objs[i]; if (o.t !== 'anchor' || o.side !== side) continue;
-    S.objs.splice(i, 1); const k = AMP.holes.indexOf(o); if (k >= 0) AMP.holes.splice(k, 1);
+    S.objs.splice(i, 1); const k = AMP.holes.indexOf(o); if (k >= 0) AMP.holes.splice(k, 1); S.nanchor--;
     ev('anchorout', o.x, o.y, side);
   }
 }

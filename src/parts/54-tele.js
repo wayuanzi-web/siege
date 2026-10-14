@@ -4,10 +4,10 @@
    轉向術士炸到的兵，砲口往上轉一截（轉兩次就打回自己頭上）。
    齒輪砲台：兩邊城前的岩柱上各一座，每一輪跟著主人開火（彈道一直畫著）。對方的砲彈打中齒輪，齒輪照打到的位置、方向轉一格；
    轉到對著自己的城，就砸自己。
-   誘餌兵：在落點插一個草人；敵軍下一次預告，有一半的兵改瞄草人（草人插在敵城上，他們就砸自己的城） */
+   誘餌兵：在落點插一個草人；敵軍下一次預告，每個兵有四成的機會改瞄草人（草人插在敵城上，他們就砸自己的城） */
 const TURN_A = 0.5;          // 被轉向一次，砲口往上轉幾弧度（最多算兩次；魔王只轉一半）
 const GEAR_STEP = Math.PI / 12, GEAR_R = 1.8, GEAR_PW = 50, GEAR_MZ = 2.7;          // 齒輪一格轉 15 度；砲口初速；砲管長
-const DECOY_P = 0.55;          // 有草人的時候，每個敵兵改瞄草人的機率
+const DECOY_P = 0.4;          // 有草人的時候，每個敵兵改瞄草人的機率
 const DUMMY_MAX = 3;
 
 function teleSetup() {
@@ -31,7 +31,7 @@ const _gl = { hit: 0, x: 0, y: 0, o: null };
 let TRACE_OUT = false;          // simTrace：砲彈一開始就不在自己城裡（齒輪砲台的砲彈打得到自己的城）
 function gearTrace(o, a, path) {
   const mx = o.x + Math.cos(a) * GEAR_MZ, my = o.y + Math.sin(a) * GEAR_MZ;
-  TRACE_OUT = true; const R = simTrace(o.side, mx, my, Math.cos(a) * GEAR_PW, Math.sin(a) * GEAR_PW, S.wind, S.time, undefined, WPN.gearball.i, path); TRACE_OUT = false;
+  TRACE_OUT = true; let R; try { R = simTrace(o.side, mx, my, Math.cos(a) * GEAR_PW, Math.sin(a) * GEAR_PW, S.wind, S.time, undefined, WPN.gearball.i, path); } finally { TRACE_OUT = false; }
   _gl.hit = R.hit; _gl.x = R.x; _gl.y = R.y; _gl.o = R.o; return _gl;
 }
 function gearFire(o) {
@@ -67,13 +67,26 @@ function aimAt(side, u, tx, ty) {
 }
 /* 回合一開始：敵軍把這一輪定好（跟平常一樣挑目標、手抖），每個開得了火的兵記下自己的初速（u.tpv）。
    有草人的話，每個兵有一半的機會改瞄草人（不管會不會砸到自己的城） */
+/* 回合一開始只列出想試的打法（aiBegin），試射分散在接下來幾幀（你瞄準的時候）慢慢算（teleStep），不會卡一下；
+   你在它算完以前就開火的話，當場算完（teleFinish） */
 function telePlan() {
   const TL = S.tele; if (!TL) return;
-  const T = S.team[TL.side]; TL.plan = true; TL.r = S.round;
+  const T = S.team[TL.side]; TL.plan = false; TL.pending = false; TL.r = S.round;
   for (const u of T.units) u.tpr = -1;
-  if (!T.ai || T.mute) return;
-  const A = T.ai; aiBegin(T);
-  if (!A.lead) { A.st = 9; return; }
+  if (!T.ai || T.mute) { TL.plan = true; return; }
+  const A = T.ai; aiBegin(T); A.st = 9;
+  if (!A.lead) { TL.plan = true; return; }
+  TL.pending = true;
+}
+function teleStep() {
+  const TL = S.tele; if (!TL || !TL.pending) return;
+  const T = S.team[TL.side], A = T.ai; aiEval(T, 30);
+  if (A.ci >= A.cand.length) teleFinish();
+}
+function teleFinish() {
+  const TL = S.tele; if (!TL || !TL.pending) return;
+  TL.pending = false; TL.plan = true;
+  const T = S.team[TL.side], A = T.ai;
   aiEval(T, 1e9); aiChoose(T); A.st = 9;
   const ax = A.px, ay = A.py, lead = volleyLead(T), E0 = lead ? volleyEvent(TL.side, lead, ax, ay) : null, E = E0 ? { ok: E0.ok, x: E0.x, y: E0.y, vx: E0.vx, vy: E0.vy } : null, cv = [0, 0];
   const dums = S.objs.filter((o) => o.t === 'dummy' && o.side !== TL.side);
@@ -88,7 +101,7 @@ function telePlan() {
   ev('teleplan', TL.side, n, lured);
 }
 // 輪到預告的那一邊：不用再想，停一下就照預告開火（aiStep 的 st 9）
-function teleArm(T) { const A = T.ai; A.st = 9; A.t = 0.9; }
+function teleArm(T) { teleFinish(); const A = T.ai; A.st = 9; A.t = 0.9; }
 function telePlanned(side) { const TL = S.tele; return !!(TL && TL.side === side && TL.plan && TL.r === S.round); }
 
 /* ---------- 推擊手、轉向術士、誘餌兵 ---------- */
@@ -135,7 +148,7 @@ function dummyPlant(side, hit, o, hx, hy) {
   }
   const mine = S.objs.filter((q) => q.t === 'dummy' && q.side === side);
   if (mine.length >= DUMMY_MAX) S.objs.splice(S.objs.indexOf(mine[0]), 1);
-  const d = { t: 'dummy', side, x, y, b, lp: b ? b.body.getLocalPoint({ x, y }) : null, until: S.round + 1, hp: 1, age: 0, flash: 0 };
+  const d = { t: 'dummy', side, x, y, b, lp: b ? b.body.getLocalPoint({ x, y }) : null, until: S.round + WPN.decoy.decoy.life - 1, hp: 1, age: 0, flash: 0 };
   if (d.lp) d.lp = { x: d.lp.x, y: d.lp.y };
   S.objs.push(d); ev('dummy', x, y, side);
 }
@@ -153,7 +166,7 @@ function dummyStep(o, dt) {
 }
 // 爆炸：草人被炸到就沒了
 function teleBlast(x, y, r, side) {
-  for (const o of S.objs) if (o.t === 'dummy' && o.hp > 0 && Math.hypot(o.x - x, o.y + 1.2 - y) < r + 1.2) { o.hp = 0; ev('dummypop', o.x, o.y + 1, o.side); }
+  for (const o of S.objs) if (o.t === 'dummy' && o.hp > 0 && o.side !== side && Math.hypot(o.x - x, o.y + 1.2 - y) < r + 1.2) { o.hp = 0; ev('dummypop', o.x, o.y + 1, o.side); }          // 自己人的砲彈炸不壞（齊射的其他幾發落在同一個地方）
 }
 function teleRoundEnd() {
   for (let i = S.objs.length - 1; i >= 0; i--) { const o = S.objs[i]; if (o.t === 'dummy' && S.round >= o.until) { S.objs.splice(i, 1); ev('dummyoff', o.x, o.y, o.side); } }
