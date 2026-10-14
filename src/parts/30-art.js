@@ -31,6 +31,8 @@ const SKINS = {
   night: { stone: ['#8a8ea0', '#6a6e80', '#4a4e60', '#2e3242'], wood: ['#8a6a48', '#6a4e32', '#42301c'], roof: ['#5a5a7a', '#3e3e5a', '#28283c'], iron: ['#7a828e', '#565e6a', '#363c46'], panel: ['#14161e', '#0e1016'], ink: '#0a0c12', trim: '#ffc870', flag: '#dc3a2e', flagDk: '#8f1418' },
   aerie: { stone: ['#e8ecf4', '#c4ccd8', '#949eb0', '#646e82'], wood: ['#b89a6a', '#8e7246', '#5a4626'], roof: ['#6a8ad8', '#4a68b4', '#2e4682'], iron: ['#a8b4c8', '#7a869c', '#4e5870'], panel: ['#1e2438', '#161a2a'], ink: '#0e1220', trim: '#ffe08a', flag: '#dc3a2e', flagDk: '#8f1418' },
   alchemy: { stone: ['#b8b0c8', '#948aa8', '#6a6080', '#463e58'], wood: ['#a87a50', '#7e5432', '#4e3018'], roof: ['#6a5ad0', '#4a3aa8', '#2c2270'], iron: ['#9aa0b0', '#6e7488', '#444a5a'], panel: ['#241e34', '#1a1626'], ink: '#140e20', trim: '#ffcf6a', flag: '#dc3a2e', flagDk: '#8f1418' },
+  gear: { stone: ['#d8cfc0', '#b0a48e', '#7f7462', '#564d40'], wood: ['#b8844c', '#8f6132', '#5c3b1b'], roof: ['#c8925a', '#9c6a34', '#64421c'], iron: ['#c6b08a', '#9a845c', '#5e4e32'], panel: ['#2e2820', '#221d17'], ink: '#17120c', trim: '#ffc35a', flag: '#dc3a2e', flagDk: '#8f1418' },
+  astro: { stone: ['#d4d8e6', '#a8aec4', '#767e98', '#4c536c'], wood: ['#a98c6a', '#806648', '#50402a'], roof: ['#7a8ad8', '#5462b4', '#323c80'], iron: ['#b4c0d8', '#8290ae', '#4e5a78'], panel: ['#1a1e34', '#121528'], ink: '#0a0c1a', trim: '#9ae0ff', flag: '#dc3a2e', flagDk: '#8f1418' },
   stack: { stone: ['#ece4d4', '#cfc2a8', '#9e8f74', '#6c604c'], wood: ['#e0a868', '#b87a40', '#7a4c22'], roof: ['#73adff', '#2f6fe0', '#1a429c'], iron: ['#b8c2d2', '#8490a4', '#505a6c'], panel: ['#3a3446', '#2a2636'], ink: '#221c2a', trim: '#ffd25a', flag: '#2f7bff', flagDk: '#1b46b8' },
   dune: { stone: ['#f4dcaa', '#ddb878', '#b08850', '#7a5a30'], wood: ['#a8784a', '#7e5630', '#4e3418'], roof: ['#3aa0a0', '#22787a', '#14504f'], iron: ['#c4a46c', '#957844', '#5e4826'], panel: ['#3a2814', '#2a1c0c'], ink: '#24160a', trim: '#ffd27a', flag: '#dc3a2e', flagDk: '#8f1418' }
 };
@@ -999,7 +1001,7 @@ const UNIT_ART = {
 const USPR = {};     // 'side:type' → { cv, wh (白色剪影，受擊閃白用), px, w, h, ax, ay (腳底), cy (身體中心) }
 const UNIT_TOP = 16;  // 設計座標上面多留的高度：帽尖、角、舉高的火油罐都畫在 y < 0
 function unitSprite(side, type) {
-  const big = type === 'boss' ? 1.95 : 1, px = Math.max(16, Math.round(V.T * 1.38 * big)), key = side + ':' + type;
+  const big = UNIT[type] && UNIT[type].big ? 1.95 : 1, px = Math.max(16, Math.round(V.T * 1.38 * big)), key = side + ':' + type;
   let s = USPR[key]; if (s && s.px === px) return s;
   const k = px / 64, top = Math.ceil(UNIT_TOP * k), cv = mkCanvas(px, px + top), c = cv.getContext('2d');
   c.translate(0, top); c.scale(k, k); c.lineJoin = 'round'; c.lineCap = 'round';

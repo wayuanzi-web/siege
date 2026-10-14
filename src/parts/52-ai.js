@@ -88,11 +88,12 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
   const R = _tr; R.hit = 0; R.mult = 1; R.gm = 0; R.o = null; R.obj = null; R.lan = null; R.gate = null; R.port = false; R.warp = false; R.rope = null; R.amp = 1; R.fire = false; R.zap = false; R.frost = false; R.roll = false; R.ev = false; R.split = false;
   const dt = 1 / 30, own = S.st[side], foeT = S.team[1 - side], fst = S.st[1 - side], forces = AMP.jets.length || AMP.holes.length || AMP.vorts.length, gust = S.gust;
   if (wi === undefined) wi = 0;
-  const W = WL[wi], gk = W.gk || 1;
+  const W = WL[wi], gk = (W.gk || 1) * (S.gk || 1);          // S.gk：第二十八關太空裡重力小
   if (W.spd) { vx *= W.spd; vy *= W.spd; }          // 狙擊彈：打出去比瞄準的快
   // 這裡一步走 1/30 秒，戰局是 1/60 秒；補上兩者每一步差的那一點，落點才會跟真的打出去一樣
   const cy = GRAV * gk * STEP * STEP, cx = -wind * STEP * STEP;
-  let x = mx, y = my, mask = 0, t = 0, inOwn = true, mass = 1, flag = F_IN, kk = 0, a0 = 0, a1 = 0, rolling = false, pierced = 0;
+  const bst = W.boost && S.team[side] && S.team[side].ai ? W.boost : null; let boosted = false;          // 推進彈（第二十八關）：自動玩家飛了 at 秒自己加速
+  let x = mx, y = my, mask = 0, t = 0, inOwn = !TRACE_OUT, mass = 1, flag = F_IN, kk = 0, a0 = 0, a1 = 0, rolling = false, pierced = 0;
   if (path) path.length = 0;
   // 這一發「第一件事」發生在哪裡（先碰到的符、冰鏡、彈簧板、稜鏡、雷雲、地火、噴流、水面、滾地，都沒有就是落點）：齊射的其他兵瞄這一點
   const evt = (ex, ey, evx, evy) => { if (!R.ev) { R.ev = true; R.ex = ex; R.ey = ey; R.evx = evx; R.evy = evy; R.et = t; } };
@@ -112,6 +113,7 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
       continue;
     }
     const wk = gust ? (t - dt * 0.5 >= gust.t ? gust.w : wind) : wind;          // 陣風（第十四關）：這一步吃的風
+    if (bst && !boosted && t >= bst.at) { boosted = true; vx *= bst.k; vy *= bst.k; mass *= bst.m; }
     vy -= GRAV * gk * dt; vx += wk * dt;
     if (!R.ev) { for (const o of AMP.jets) if (x > o.x0 && x < o.x1 && Math.abs(y - o.y) < o.hh && vx * o.U > 0) evt(x, y, vx, vy); for (const o of AMP.holes) if (o.on && (x - o.x) * (x - o.x) + (y - o.y) * (y - o.y) < o.R * o.R) evt(x, y, vx, vy); }
     if (forces) { load(); const f = ampForces(dt); if (f === 2) { R.x = x; R.y = y; return end(5); } vx = SA.vx; vy = SA.vy; mass = SA.mass; kk = SA.k; }
@@ -160,6 +162,10 @@ function simTrace(side, mx, my, vx, vy, wind, t0, kmax, wi, path) {
       } else if (o.t === 'charge') {
         if (o.side === side || o.hp <= 0 || o.go) continue;
         if (segDist(o.x, o.y, x, y, nx, ny) < o.r) { R.obj = o; R.x = nx; R.y = ny; return end(4); }
+      } else if (o.t === 'gear') {
+        // 齒輪砲台（第二十七關）：對方的砲彈打中齒輪，齒輪轉一格（R.gearD 往哪邊轉）
+        if (o.side === side || side > 1) continue;
+        if (segDist(o.x, o.y, x, y, nx, ny) < GEAR_R) { R.obj = o; R.gearD = gearSpin(x, y, nx, ny, vx, vy, o); R.x = nx; R.y = ny; return end(4); }
       } else if (o.t === 'barrier' && side === 0) {
         const d0 = Math.hypot(x - o.x, y - o.y), d1 = Math.hypot(nx - o.x, ny - o.y);
         if (d0 > o.R && d1 <= o.R && barrierSeg(o, nx, ny)) { R.x = nx; R.y = ny; return end(5); }
@@ -207,9 +213,9 @@ function volleyEvent(side, lead, ax, ay) {
 }
 function volleyAim(side, u, ax, ay, E, out) {
   out[0] = ax; out[1] = ay;
-  if (!E || !E.ok) return out;
+  if (!E || !E.ok || S.astro) return out;          // 太空（第二十八關）：衛星把彈道吸彎，算不準收斂；全隊照帶頭的角度和力道打
   const dir = S.team[side].dir, m = muzzle(u, dir), mx = m[0], my = m[1], wind = S.wind, ta = Math.atan2(E.vy, E.vx), sp0 = Math.hypot(E.vx, E.vy);
-  const W = u.w || {}, g = GRAV * (W.gk || 1), spd = W.spd || 1;          // 狙擊彈：重力小、打出去比瞄準的快（算出來的初速再換回瞄準的速度）
+  const W = u.w || {}, g = GRAV * (W.gk || 1) * (S.gk || 1), spd = W.spd || 1;          // 狙擊彈：重力小、打出去比瞄準的快（算出來的初速再換回瞄準的速度）
   let best = 1e9;
   for (let tau = spd > 1 ? 0.12 : 0.25; tau <= 4.5; tau += 0.05) {
     const vx = (E.x - mx - windDisp(wind, tau)) / tau, vy = (E.y - my + 0.5 * g * tau * tau) / tau;
@@ -240,7 +246,7 @@ function aiBegin(T) {
   const big = lead.def.big ? MUZ_BIG : 1, mx = lead.x + dir * 1.3 * big, my = lead.y + 2.3 * big;
   const tg = [];
   const night = !!S.lv.night;          // 第二十三關：看不見的兵、磚不瞄（看得見才瞄）
-  for (const u of foeT.units) if (u.alive && (!night || litAt(u.x, u.y + 1.6))) tg.push({ x: u.x, y: u.y + 1.6 * (u.def.big ? MUZ_BIG : 1), w: 1.15 + (u.type === 'boss' ? BOSS_W : 0) + (u.hp < u.hpMax * 0.4 ? 0.25 : 0) + (u.flag ? 2.5 : 0) });
+  for (const u of foeT.units) if (u.alive && (!night || litAt(u.x, u.y + 1.6))) tg.push({ x: u.x, y: u.y + 1.6 * (u.def.big ? MUZ_BIG : 1), w: 1.15 + (u.def.boss ? BOSS_W : 0) + (u.hp < u.hpMax * 0.4 ? 0.25 : 0) + (u.flag ? 2.5 : 0) + (u.tpr === S.round ? 0.4 : 0) });          // 已經預告了這一輪要打的敵兵（第二十七關）：先打倒他
   // 對方黏在自己城上的炸藥：不拿砲打（全隊的砲會砸在自己城前），靠工兵拆、對方開火時開護罩悶熄（aiReact）
   if (A.guard > 0 && rnd() < A.guard) for (const o of S.objs) {
     if (o.t === 'lantern') tg.push({ x: o.x, y: o.y, w: 1.0, obj: o });
@@ -284,8 +290,9 @@ function aiBegin(T) {
   }
   if (fuseMode) { tg.length = 0; tg.push({ x: F.x[0], y: F.y[0] + 0.6, w: 1.5, fuse: F }); }
   // 這一關中間的放大（冰鏡、噴流、水面、雷雲、稜鏡、彈簧板、滾石坡）：瞄它的入口，打出去之後照最後打到什麼來評分
+  if (S.gears && !fuseMode) { gearAiPrep(side); for (const o of S.gears) if (o.side !== side && Math.max(gearGain(side, o, 1), gearGain(side, o, -1)) > 0.3) tg.push({ x: o.x, y: o.y, w: 1, gear: o }); }          // 對方的齒輪砲台：轉一格就對著它自己的城
   if (!fuseMode && A.useGate) for (const p of ampAims(side)) tg.push({ x: p.x, y: p.y, w: p.w || 1, amp: 1, lo: p.lo, hi: p.hi });
-  const LW = lead.w || {}, lgk = LW.gk || 1, lsp = LW.spd || 1;
+  const LW = lead.w || {}, lgk = (LW.gk || 1) * (S.gk || 1), lsp = LW.spd || 1;
   for (const t of tg) for (let tau = t.lo || (lsp > 1 ? 0.3 : 0.7); tau <= (t.hi || 3.41); tau += 0.1) {
     aimFor(mx, my, t.x, t.y, tau, wind, _av, lgk, lsp);
     if (A.flat && Math.atan2(_av[1], Math.abs(_av[0])) > A.flat) continue;
@@ -319,6 +326,7 @@ function aiScore(T, t, R) {
     else if (t.arm) hit = R.o === t.arm ? 1 : 0;
     else if (t.hull) hit = R.o === t.hull ? 1 : 0;
     else if (t.fuse) hit = Math.max(0, 1 - Math.hypot(R.x - t.x, R.y - t.y) / 3);
+    else if (t.gear) hit = R.hit === 4 && R.obj === t.gear ? gearGain(side, t.gear, R.gearD) : 0;          // 齒輪砲台：轉完之後值多少
     else if (t.near) hit = R.hit ? Math.max(0, 1 - Math.hypot(R.x - t.x, R.y - t.y) / t.near) : 0;          // 炸在它附近就算（裝甲列車的連結器）
     const gen = aiGen(T, R);
     sc = hit >= 0 ? Math.max(hit * t.w, gen) : gen;          // 一般的目標只是用來列出彈道：分數照實際打到的算，不乘權重
@@ -365,6 +373,7 @@ function aiVolley(T, vx, vy) {
   for (const u of T.units) {
     if (!ableUnit(u)) continue;
     if (u === lead) { v[0] = vx; v[1] = vy; } else volleyAim(T.side, u, vx, vy, ev, v);
+    if (u.turn) turnVec(u, v, dir);          // 被轉向的兵（第二十七關）
     const m = muzzle(u, dir), R = simTrace(T.side, m[0], m[1], v[0], v[1], S.wind, A.fireAt, undefined, u.w.i);
     if (R.mult > wm) wm = R.mult;
     if (R.hit === 2 && R.o && R.o.side === T.side && !R.o.frag) own = true;
@@ -394,6 +403,7 @@ function aiChoose(T) {
 }
 function aiStep(T, dt) {
   const A = T.ai; A.t -= dt;
+  if (A.st === 9) { if (A.t <= 0) { A.st = 0; simFire(T.side); } return; }          // 預告過了（第二十七關）：照預告開火
   if (A.st === 0) aiBegin(T);
   if (A.st === 1) { if (!A.lead) { A.st = 2; A.px = T.aim[0]; A.py = T.aim[1]; } else { aiEval(T, 26); if (A.ci >= A.cand.length) { aiChoose(T); A.st = 2; } } }
   if (A.st === 2) {

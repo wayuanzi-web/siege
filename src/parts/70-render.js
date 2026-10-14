@@ -1472,6 +1472,7 @@ function drawAim(c, t) {
       if (!ableUnit(u)) continue;
       const m = muzzle(u, 1), mx = m[0], my = m[1], inBox = u.x > box.x0 - 1 && u.x < box.x1 + 1 ? box : null;
       if (u === lead) { cv[0] = ax; cv[1] = ay; } else volleyAim(0, u, ax, ay, E, cv);
+      if (u.turn) turnVec(u, cv, 1);          // 被轉向的兵（第二十七關）：照轉過的砲口畫
       const vx = cv[0], vy = cv[1];
       let end = maxT; const P = RD.path || (RD.path = []);
       // 照試射的路線畫（碰到冰鏡、噴流、水面、山坡會轉彎）；不是自己瞄準的時候（看示範戰局）照拋物線
@@ -1519,11 +1520,13 @@ function renderFrame(dt, rdt) {
   if (S.plats.length) drawPlats(c, t);
   drawCraftBack(c, t);          // 第四篇：天秤的巨樑、古門的石框
   drawObjs(c, t);
+  drawMoons(c, t);          // 第二十八關：衛星、小月
   drawAmp(c, t);
   for (const st of S.structs) drawBackdrop(c, st, rdt);
   drawStackBack(c, t);          // 第二十五關：狼煙線、城下待命的兵
   drawBlocks(c, t, rdt);
   drawFluxMarks(c, t);          // 第二十六關：水槽、油桶、熔爐；煉金師的藥水
+  drawGears(c, t);          // 第二十七關：齒輪砲台
   if (S.beast) drawBeast(c, t);          // 第十八關：機關巨獸
   drawFuses(c, t);
   drawRopes(c, t);
@@ -1533,6 +1536,8 @@ function renderFrame(dt, rdt) {
   drawGates(c, t);
   drawUnits(c, t);
   drawFlux(c, t);          // 第二十六關：水、油、岩漿（兵泡在裡面看得出來）
+  drawDummies(c, t);          // 第二十七關：誘餌草人
+  drawAnchors(c, t);          // 第二十八關：引力錨
   drawArms(c, t);
   drawCraftFront(c, t);          // 第四篇：傳送門、鉤索、銅鏡
   drawWildFront(c, t);          // 第四篇第二批：地道、流沙（蓋住陷進去的城腳）
@@ -1545,6 +1550,7 @@ function renderFrame(dt, rdt) {
   drawBellGauge(c, t);
   lightsGather(t); drawLights(c);          // 爆炸、火焰照亮附近（77-polish）
   drawShots(c);
+  drawBoostHint(c, t);          // 第二十八關：推進彈「點一下加速」
   drawShotFx(c);
   drawCaveDark(c, t);          // 第十七關：礦坑裡暗下來
   drawNight(c, t);          // 第二十三關：黑夜（爆炸、火花畫在黑夜上面：一炸就看得到）
@@ -1552,6 +1558,7 @@ function renderFrame(dt, rdt) {
   drawShields(c, t, rdt);
   drawBossUI(c, t);
   drawBeastUI(c, t);
+  drawTele(c, t);          // 第二十七關：敵軍預告的彈道、齒輪砲台的彈道
   drawAim(c, t);
   RD.dt = rdt; drawBubbles(c);
   sceneFront(c, t, dt);

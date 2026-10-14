@@ -123,9 +123,24 @@ const WL = [
   { id: 'oilpot', n: 1, gap: 0, dmg: 6, r: 1.8, J: 90, ud: 6, kind: K_BLAST, pour: { k: 2, v: 4.5 }, ai: { dmg: 26, r: 3.2, ud: 10 } },
   { id: 'potfire', n: 1, gap: 0, dmg: 11, r: 3.4, J: 210, ud: 12, kind: K_FIRE },
   { id: 'potfrost', n: 1, gap: 0, dmg: 11, r: 3.4, J: 190, ud: 10, kind: K_ICE },
-  { id: 'potzap', n: 1, gap: 0, dmg: 9, r: 2.6, J: 150, ud: 12, kind: K_ZAP }
+  { id: 'potzap', n: 1, gap: 0, dmg: 9, r: 2.6, J: 150, ud: 12, kind: K_ZAP },
+  /* ---- 第五篇第二批（54-tele、54-astro） ----
+     shove 撞錘彈：炸開的力道大、傷害小，附近的敵兵往外飛（R 多遠、v 推多快）
+     swivel 轉向彈：炸到的敵兵下一發砲口往上轉（R）；炸到齒輪砲台往上轉兩格
+     decoy 草人彈：在落點插一個草人，敵軍下一次預告有一半的兵改瞄它
+     gearball：齒輪砲台的砲彈（不是兵射的）
+     boost 推進彈：飛到一半點一下畫面（自動玩家：飛了 at 秒）往前加速 k 倍、威力 m 倍
+     anchor 引力錨：釘在打到的磚上，往四周吸（R 多遠、F 多大力、t 吸幾秒），砲彈經過也被吸彎；自己下一輪開火時收起來（炸一小下）
+     net 拖網：網住落點附近的磚（最多 n 塊）和兵，往自己這邊拖（v 多快）：拖出城外的掉進太空 */
+  { id: 'shove', n: 1, gap: 0, dmg: 10, r: 3.0, J: 900, ud: 10, kind: K_HEAVY, shove: { R: 4.2, v: 15 }, ai: { dmg: 26, r: 4, ud: 20 } },
+  { id: 'swivel', n: 1, gap: 0, dmg: 9, r: 2.6, J: 160, ud: 11, kind: K_BLAST, swivel: { R: 3.8 }, ai: { dmg: 18, r: 3.8, ud: 16 } },
+  { id: 'decoy', n: 1, gap: 0, dmg: 5, r: 1.6, J: 60, ud: 6, kind: K_BLAST, decoy: { life: 2 }, ai: { dmg: 8, r: 1.6, ud: 4 } },
+  { id: 'gearball', dmg: 34, r: 4.0, J: 850, ud: 26, kind: K_HEAVY },
+  { id: 'boost', n: 1, gap: 0, dmg: 34, r: 3.6, J: 480, ud: 18, kind: K_BLAST, boost: { k: 1.7, m: 1.35, at: 0.8 } },
+  { id: 'anchor', n: 1, gap: 0, dmg: 8, r: 1.8, J: 90, ud: 8, kind: K_BLAST, anchor: { R: 7.5, F: 1.15, t: 2.4, G: 2600, hp: 40 }, ai: { dmg: 46, r: 5.5, ud: 10 } },
+  { id: 'net', n: 1, gap: 0, dmg: 7, r: 0, J: 80, ud: 12, kind: K_PIERCE, net: { R: 3.0, n: 4, v: 14 }, ai: { dmg: 42, r: 3, ud: 18 } }
 ];
-const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; if (w.chain || w.drill || w.stick || w.pierce || w.hook || w.warp || w.seed || w.boom || w.mole || w.stake || w.flare || w.grav || w.slab || w.pour) w.special = 1; });          // special：打到東西時有自己的打法（51-arms 的 armsHit、54-craft 的 craftHit）
+const WPN = {}; WL.forEach((w, i) => { w.i = i; WPN[w.id] = w; if (w.chain || w.drill || w.stick || w.pierce || w.hook || w.warp || w.seed || w.boom || w.mole || w.stake || w.flare || w.grav || w.slab || w.pour || w.shove || w.swivel || w.decoy || w.anchor || w.net) w.special = 1; });          // special：打到東西時有自己的打法（51-arms 的 armsHit、54-craft 的 craftHit）
 
 /* 兵種。w 用哪種砲彈；flak 防空（每一輪射下幾發飛過來的砲彈）；bal 放轟炸氣球 */
 const UNIT = {
@@ -138,7 +153,7 @@ const UNIT = {
   flak: { name: '防空弩', w: null, hp: 100, flak: 3, blurb: '每一輪把飛過來的砲彈射下三發' },
   bal: { name: '氣球兵', w: null, hp: 100, bal: 1, blurb: '放轟炸氣球：先飄到半路，下一輪飛到你頭上丟炸彈' },
   stone: { name: '投石兵', w: 'stone', hp: 110, blurb: '丟出一顆大石頭：不會爆，但會一路撞、一路滾，撞斷柱子、推倒石碑最拿手' },
-  boss: { name: '魔王', w: 'dark', hp: 440, big: 1, blurb: '打倒他才算贏。每回合先預告招式（暗黑連射、毀滅光球、隕石雨、召喚魔兵）；城腳的魔晶讓他回血' },
+  boss: { name: '魔王', w: 'dark', hp: 440, big: 1, boss: 1, blurb: '打倒他才算贏。每回合先預告招式（暗黑連射、毀滅光球、隕石雨、召喚魔兵）；城腳的魔晶讓他回血' },
   // ---- 第三篇的新兵種 ----
   chain: { name: '鏈彈手', w: 'chain', hp: 100, blurb: '兩顆鐵球連著鐵鍊轉著飛：專斷繩索和細柱子（打斷了還會繼續往前），打到兵會把他纏住、下一輪不能開火' },
   drill: { name: '鑽地手', w: 'drill', hp: 95, blurb: '鑽頭彈鑽穿兩三塊磚，鑽到裡面才炸開：專打厚牆和地窖' },
@@ -169,10 +184,16 @@ const UNIT = {
   jar: { name: '水甕兵', w: 'jar', hp: 100, craft: 1, blurb: '丟出一甕水：落在哪就倒出一大攤，順著樓板、破洞往下流。水能滅火、遇到岩漿凝成黑石；泡在水裡的兵被雷一打，整片一起電暈' },
   oilpot: { name: '油壺兵', w: 'oilpot', hp: 95, craft: 1, blurb: '丟出一壺火油：倒出一攤油流進敵城；之後一點火（火藥水、著火的木頭、岩漿）整片燒起來，燙傷泡在裡面的兵' },
   alch: { name: '煉金師', w: 'potfire', hp: 90, craft: 1, alch: 1, blurb: '每回合開始抽一瓶藥水，這一回合就丟這一種：火（點著油、化冰）、冰（把水凍住、把岩漿冷成黑石）、雷（連成一片的水整片帶電）' },
+  shove: { name: '推擊手', w: 'shove', hp: 105, craft: 1, blurb: '撞錘彈炸在哪裡，就把附近的敵兵往外推開一大段：預告好的那一發，他會從新的位置照原本的角度打出去（落點跟著挪）；推下城的兵摔在城外' },
+  swivel: { name: '轉向術士', w: 'swivel', hp: 90, craft: 1, blurb: '轉向彈炸到的敵兵，下一發砲口往上轉一截（轉兩次會打回自己頭上）；炸到齒輪砲台，砲台往上轉兩格' },
+  decoy: { name: '誘餌兵', w: 'decoy', hp: 95, craft: 1, blurb: '射出一個草人插在落點：敵軍下一次預告，有一半的兵改瞄草人。草人插在敵城上，他們就砸自己的城；草人被炸到就沒了' },
+  boost: { name: '推進兵', w: 'boost', hp: 95, craft: 1, blurb: '推進彈飛到一半，點一下畫面就往前猛衝（快一倍、更痛）：繞過衛星、穿過引力圈，直直撞進敵城' },
+  anchor: { name: '引力錨手', w: 'anchor', hp: 95, craft: 1, blurb: '引力錨釘在打到的磚上，往四周猛吸一陣子：城樓被吸得歪向它、整片垮下來；路過的砲彈也被吸彎。你下一輪開火時收起來' },
+  net: { name: '拖網兵', w: 'net', hp: 100, craft: 1, blurb: '拖網網住落點附近的幾塊磚和兵，往你這邊拖：拖出城外的掉進太空；網到的兵還會被纏住一輪' },
   drum: { name: '震地鼓手', w: 'stake', hp: 105, craft: 1, blurb: '先把鼓樁打進敵城或城前的地上；之後你每一輪開火，他擂一次鼓，每根鼓樁震一圈：底層的磚、兵都受傷，流沙上的城陷得更快' }
 };
 // 演武場選兵用的順序：第一到三篇的十八種（魔王不算），再接第四篇的新兵
-const UNIT_LIST = ['rocket', 'bolt', 'bomb', 'fire', 'ice', 'zap', 'flak', 'bal', 'stone', 'chain', 'drill', 'cluster', 'sapper', 'magnet', 'wind', 'acid', 'sniper', 'eng', 'hook', 'weight', 'warp', 'mirror', 'vine', 'axe', 'mole', 'drum', 'flare', 'glider', 'antigrav', 'time', 'press', 'rivet', 'jar', 'oilpot', 'alch'];
+const UNIT_LIST = ['rocket', 'bolt', 'bomb', 'fire', 'ice', 'zap', 'flak', 'bal', 'stone', 'chain', 'drill', 'cluster', 'sapper', 'magnet', 'wind', 'acid', 'sniper', 'eng', 'hook', 'weight', 'warp', 'mirror', 'vine', 'axe', 'mole', 'drum', 'flare', 'glider', 'antigrav', 'time', 'press', 'rivet', 'jar', 'oilpot', 'alch', 'shove', 'swivel', 'decoy', 'boost', 'anchor', 'net'];
 const UNIT_OLD = 18;          // 前三篇的兵有幾種（演武場的軍牌上，後面的標「新」）
 Object.keys(UNIT).forEach((k) => { UNIT[k].id = k; });
 
@@ -628,6 +649,27 @@ const CASTLES = {
     '  S16@.2S  ',
     '  =======  ',
     '  S3&5&4S  ',
+    '###########'] },
+  /* 第二十七關：預告戰場。齒輪工坊改的城：頂樓一間（1、2 號），兩側各一座箭樓（3、4 號），底下兩間（5、6 號）；
+     中間一層的樓板是鐵樑（F）。城前的岩柱上架著齒輪砲台（lv.gears，54-tele） */
+  GEARFORT: { skin: 'gear', gf: 1, map: [
+    '   ^^^^^   ',
+    '   S1.2S   ',
+    '^^^FFFFF^^^',
+    '|3|S...S|4|',
+    '===S...S===',
+    'S.SS...SS.S',
+    'S5SS...SS6S',
+    '###########'] },
+  GEARPOST: { skin: 'gear', map: ['AA', 'AA'] },          // 齒輪砲台底下的岩柱（打不壞）
+  /* 第二十八關：群星引力。蓋在小行星上的觀星堡：頂樓一間（1、2 號），中層（3、4 號，鐵樓板），底層（5、6 號）。地面是小行星的岩頂 */
+  ASTRO: { skin: 'astro', gf: 1, wch: { F: 0.5, '=': 0.5 }, map: [
+    '   ^^^^^   ',
+    '   S1.2S   ',
+    '  FFFFFFF  ',
+    '  S3...4S  ',
+    '  =======  ',
+    '  S5...6S  ',
     '###########'] },
   // 第二十三關：戰場中間一塊黑黝黝的大岩石（打不壞）
   NIGHTROCK: { skin: 'night', map: ['  AA  ', ' AAAA ', 'AAAAAA'] },

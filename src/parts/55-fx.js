@@ -113,7 +113,7 @@ function fxOn(t, a, b, c, d, e, f) {
       if (w.id === 'bomb') { burst(P_SMOKE, a + dir, b, 4, 9, 0.6, 1.8, C_GRAY); shake(0.12); }
       lightAdd(a + dir * 0.6, b, w.id === 'bomb' ? 6 : 3.5, w.id === 'ice' ? C_ICE : w.id === 'zap' ? C_YELLOW : w.id === 'dark' ? C_PINK : C_GOLD, 0.5, 0.12);
       if (!FX.low && w.kind !== K_PIERCE) part(P_SMOKE, a + dir * 0.9, b, dir * 4, 1.5, 0.5, 0.8, C_GRAY);          // 砲口一小團煙
-      sfx(w.id === 'bolt' ? 'bolt' : w.id === 'bomb' || w.id === 'cluster' ? 'cannon' : w.id === 'fire' || w.id === 'chain' || w.id === 'sticky' || w.id === 'acid' ? 'whoosh' : w.id === 'ice' ? 'frost' : w.id === 'zap' || w.id === 'magnet' ? 'charge' : w.id === 'dark' ? 'dark' : w.id === 'drill' ? 'drill' : w.id === 'snipe' ? 'snipe' : w.id === 'wind' ? 'gust' : w.id === 'hook' ? 'zip' : w.id === 'weight' ? 'heave' : w.id === 'warp' ? 'warp' : w.id === 'seed' ? 'seed' : w.id === 'axe' ? 'axe' : w.id === 'mole' ? 'drill' : w.id === 'stake' ? 'heave' : w.id === 'flare' ? 'bolt' : w.id === 'glider' ? 'whoosh' : w.id === 'grav' ? 'warp' : w.id === 'hourglass' ? 'whoosh' : 'rocket', c);
+      sfx(w.id === 'bolt' ? 'bolt' : w.id === 'bomb' || w.id === 'cluster' ? 'cannon' : w.id === 'fire' || w.id === 'chain' || w.id === 'sticky' || w.id === 'acid' ? 'whoosh' : w.id === 'ice' ? 'frost' : w.id === 'zap' || w.id === 'magnet' ? 'charge' : w.id === 'dark' ? 'dark' : w.id === 'drill' ? 'drill' : w.id === 'snipe' ? 'snipe' : w.id === 'wind' ? 'gust' : w.id === 'hook' ? 'zip' : w.id === 'weight' ? 'heave' : w.id === 'warp' ? 'warp' : w.id === 'seed' ? 'seed' : w.id === 'axe' ? 'axe' : w.id === 'mole' ? 'drill' : w.id === 'stake' ? 'heave' : w.id === 'flare' ? 'bolt' : w.id === 'glider' ? 'whoosh' : w.id === 'grav' ? 'warp' : w.id === 'hourglass' ? 'whoosh' : w.id === 'shove' ? 'heave' : w.id === 'swivel' || w.id === 'anchor' ? 'warp' : w.id === 'decoy' || w.id === 'net' ? 'whoosh' : w.id === 'boost' ? 'rocket' : 'rocket', c);
       break;
     }
     case 'boom': {
@@ -191,7 +191,7 @@ function fxOn(t, a, b, c, d, e, f) {
       burst(P_SPARK, a, b, 8, 22, 0.5, 0.6, c === 0 ? C_SKY : C_SALMON); ring(a, b, 0.5, 5, 0.3, '#ffffff', 0.4);
       // 剛才那一聲「哇！」不用留著跟這一句疊在一起；整座城垮掉時順便倒下的不再一個一個報
       for (let i = FX.pops.length - 1; i >= 0; i--) { const q = FX.pops[i]; if (q.yelp && Math.abs(q.x - a) < 9 && Math.abs(q.y - b) < 12) FX.pops.splice(i, 1); }
-      if (S.state === 'play') pop(a, b + 3.5, c === 1 ? (e === 1 ? '砸扁！' : e === 4 ? '摔下去了！' : e === 5 ? '轟出城外！' : e === 6 ? '轟飛了！' : e === 3 ? '燒到了！' : e === 7 ? '沖走了！' : e === 8 ? '掉進岩漿！' : e === 9 ? '甩下車了！' : '擊倒！') : (e === 5 ? '被轟出城' : e === 4 ? '摔下去了' : e === 6 ? '被轟飛了' : e === 1 ? '被砸扁了' : e === 7 ? '被沖走了' : e === 8 ? '掉進岩漿了' : e === 9 ? '被甩下車了' : '陣亡'), c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.1);
+      if (S.state === 'play') pop(a, b + 3.5, c === 1 ? (e === 1 ? '砸扁！' : e === 4 ? '摔下去了！' : e === 5 ? '轟出城外！' : e === 6 ? '轟飛了！' : e === 3 ? '燒到了！' : e === 7 ? '沖走了！' : e === 8 ? '掉進岩漿！' : e === 9 ? '甩下車了！' : e === 10 ? '飄進太空！' : '擊倒！') : (e === 5 ? '被轟出城' : e === 4 ? '摔下去了' : e === 6 ? '被轟飛了' : e === 1 ? '被砸扁了' : e === 7 ? '被沖走了' : e === 8 ? '掉進岩漿了' : e === 9 ? '被甩下車了' : e === 10 ? '飄進太空了' : '陣亡'), c === 1 ? '#ffe14a' : '#ff8a7a', 3.2, 1.1);
       if (e === 8) { burst(P_EMBER, a, b - 1.8, 16, 14, 0.7, 1.0, C_ORANGE); burst(P_SMOKE, a, b - 1.8, 4, 6, 0.8, 1.6, C_DARK); }
       sfx(c === 1 ? 'kill' : 'lostunit'); if (c === 0) { shake(0.4); vibrate(60); }
       if (e === 1 && S.state === 'play') slowmo(0.5, 0.7);
@@ -430,6 +430,20 @@ function fxOn(t, a, b, c, d, e, f) {
     case 'lqmelt': if (Math.random() < 0.2) part(P_SHARD, a, b, rndS() * 4, 3, 0.4, 0.35, C_ICE); break;
     case 'oilfire': burst(P_EMBER, a, b, 6, 8, 0.7, 0.7, C_ORANGE, 5); if (thr('oilfire', 500)) sfx('fireboom'); break;
     case 'lqshock': flash(0.16, '#e0f0ff'); for (let k = 0; k < 4; k++) { const pts = [a, b]; for (let q = 1; q <= 4; q++) pts.push(a + rndS() * 10 * q / 4 * 2, b + rndS() * 3); FX.bolts.push({ pts, t: 0, max: 0.25, col: '#cfe8ff', w: 0.5 }); } if (S.state === 'play' && e > 0) pop(a, b + 4, (d > 30 ? '整片' : '') + '帶電！電暈 ' + e + ' 人', c === 0 ? '#ffe14a' : '#ff9a8a', 3.0, 1.3); sfx('thunder'); shake(0.3); break;
+    // ---- 第五篇第二批：預告戰場（54-tele） ----
+    case 'teleplan': if (c > 0 && S.state === 'play' && a === 1) { const st = S.st[1]; pop(st.cx, st.y0 + st.h + 4, d > 0 ? '敵軍鎖定（' + d + ' 人中了誘餌）' : '敵軍鎖定落點', '#ff9a8a', 2.8, 1.4); sfx('lock'); } break;
+    case 'gearfire': part(P_FLASH, a, b, 0, 0, 0.1, 3.2, C_WHITEHOT); burst(P_SMOKE, a, b, 4, 8, 0.6, 1.6, C_GRAY); lightAdd(a, b, 6, C_GOLD, 0.6, 0.14); shake(0.15); sfx('cannon'); break;
+    case 'gearturn': burst(P_SPARK, a, b, 10, 14, 0.4, 0.5, C_GOLD); ring(a, b, 1, 3.4, 0.25, '#ffe08a', 0.5); if (S.state === 'play' && thr('gearturn', 300)) pop(a, b + 3.4, d === 0 ? (c === 0 ? '砲台轉回原位' : '敵軍把砲台轉回去了') : e === 0 ? (c === 1 ? '敵軍砲台轉了！' : '砲台轉了') : (c === 0 ? '我方砲台被轉了' : '砲台轉了'), e === 0 ? '#ffe14a' : '#ff9a8a', 2.6, 1.0); sfx('ratchet'); break;
+    case 'shoved': burst(P_DUST, a, b, 5, 10, 0.5, 1.4, C_SAND); if (S.state === 'play' && thr('shove', 400)) pop(a, b + 3, c === 1 ? '推開！' : '被推開了', c === 1 ? '#ffe14a' : '#ff9a8a', 2.6, 0.9); sfx('thunk'); break;
+    case 'swivel': ring(a, b, 0.6, 2.4, 0.35, c === 1 ? '#7af0ff' : '#ffb070', 0.45); if (S.state === 'play' && thr('swivel' + c, 300)) pop(a, b + 1.6, d > 1 ? '砲口轉了兩次！' : '砲口轉向', c === 1 ? '#7af0ff' : '#ff9a8a', 2.4, 0.9); sfx('warp'); break;
+    case 'dummy': burst(P_DUST, a, b, 4, 6, 0.5, 1.2, C_SAND); if (S.state === 'play' && c === 0) pop(a, b + 4.5, '草人插好了', '#ffe08a', 2.4, 0.9); sfx('thunk'); break;
+    case 'dummypop': for (let k = 0; k < 10; k++) part(P_DEBRIS, a + rndS(), b + Math.random() * 2, rndS() * 10, 4 + Math.random() * 8, 0.8, 0.35, C_TAN); break;
+    case 'dummyoff': burst(P_DUST, a, b + 1, 3, 4, 0.5, 1, C_SAND); break;
+    // ---- 第五篇第二批：群星引力（54-astro） ----
+    case 'boostgo': { const vx = Math.cos(d), vy = Math.sin(d); for (let k = 0; k < 10; k++) part(P_FIRE, a - vx * 0.8, b - vy * 0.8, -vx * (14 + Math.random() * 10) + rndS() * 4, -vy * (14 + Math.random() * 10) + rndS() * 4, 0.35, 0.8, C_ORANGE); ring(a, b, 0.4, 3, 0.2, '#ffe0a0', 0.4); lightAdd(a, b, 4, C_ORANGE, 0.5, 0.15); sfx('boost'); if (c === 0 && S.state === 'play' && thr('boost', 600)) pop(a, b + 2.5, '加速！', '#ffe14a', 2.4, 0.7); break; }
+    case 'anchorin': ring(a, b, 7, 0.6, 0.6, c === 0 ? '#c8a8ff' : '#ff9ad8', 0.6); burst(P_SPARK, a, b, 12, 12, 0.6, 0.5, C_PURPLE); sfx('gravpull'); if (S.state === 'play' && thr('anchor', 500)) pop(a, b + 3, c === 0 ? '引力錨！' : '敵軍的引力錨', c === 0 ? '#e0c8ff' : '#ff9a8a', 2.6, 1.0); shake(0.2); break;
+    case 'anchorout': ring(a, b, 0.6, 5, 0.4, '#c8a8ff', 0.5); burst(P_SPARK, a, b, 8, 10, 0.4, 0.4, C_PURPLE); break;
+    case 'netcatch': for (let k = 0; k < 8; k++) part(P_DEBRIS, a + rndS() * 2, b + rndS() * 2, rndS() * 8, 3 + Math.random() * 5, 0.6, 0.3, C_TAN); sfx('netthrow'); if (S.state === 'play' && (d || e) && thr('net', 500)) pop(a, b + 3, (c === 0 ? '網住 ' : '敵軍網走 ') + (d ? d + ' 塊磚' : '') + (d && e ? '、' : '') + (e ? e + ' 個兵' : ''), c === 0 ? '#ffe14a' : '#ff9a8a', 2.6, 1.1); break;
     case 'end': {
       slowmo(0.3, 1.8, true); shake(2.0); flash(0.3, '#fff6d8'); sfx('collapse'); vibrate(200); { const st = S.st[c], cc = st ? stCenter(st) : { x: a, y: b }; camFocus(cc.x, cc.y, 1.16, 2.6); }
       ring(a, b, 2, 16, 0.6, '#fff0b0', 0.7);         // 只留一圈小的，別把整座城垮下來的樣子蓋住

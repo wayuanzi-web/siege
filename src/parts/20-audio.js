@@ -144,6 +144,12 @@ function sfx(name, arg) {
       case 'clank': if (gap('clank', 300)) return; tone(420, 0.12, 'square', 0.06, 180); noise(0.18, 0.16, 'bandpass', 1400, 600, 2); tone(260, 0.3, 'triangle', 0.05, 90, 0.08); break;          // 連結器斷開：鏗——
       case 'screech': noise(2.2, 0.08, 'bandpass', 3200, 2400, 6); tone(1900, 2, 'sawtooth', 0.02, 1500); break;          // 車廂煞車滑走
       case 'whistle': [0, 1].forEach((i) => tone(i ? 740 : 588, 0.55, 'triangle', 0.06, 0, i * 0.05, null, 0.06)); break;          // 汽笛（換景、進隧道）
+      // 第五篇第二批
+      case 'lock': [0, 1, 2].forEach((i) => tone(1250 - i * 150, 0.07, 'square', 0.035, 0, i * 0.08)); break;          // 敵軍鎖定（嗶嗶嗶）
+      case 'ratchet': if (gap('ratchet', 90)) return; for (let i = 0; i < 4; i++) noise(0.025, 0.09, 'bandpass', 2600 - i * 300, 0, 6, i * 0.03); tone(220, 0.15, 'square', 0.04, 160); break;          // 齒輪轉一格
+      case 'boost': if (gap('boost', 80)) return; noise(0.45, 0.16, 'bandpass', 600, 2600, 1.4); tone(160, 0.4, 'sawtooth', 0.06, 420); break;          // 推進彈點火
+      case 'gravpull': if (gap('gravpull', 200)) return; tone(70, 1.2, 'sine', 0.18, 40); tone(140, 1.0, 'triangle', 0.05, 90); break;          // 引力錨吸
+      case 'netthrow': if (gap('netthrow', 150)) return; noise(0.3, 0.1, 'bandpass', 1400, 700, 2); break;
       // 回合
       case 'turn': tone(NOTE(79), 0.12, 'triangle', 0.08); tone(NOTE(86), 0.2, 'triangle', 0.07, 0, 0.09); break;
       case 'arm': [72, 76, 79, 84].forEach((n, i) => tone(NOTE(n), 0.12, 'square', 0.05, 0, i * 0.045)); noise(0.3, 0.06, 'highpass', 5000, 0, 1); break;
@@ -184,6 +190,8 @@ MUS[22] = { sc: [50, 53, 55, 57, 60], bpm: 84, lead: [0, -1, -1, 2, -1, -1, 1, -
 MUS[23] = { sc: [62, 64, 66, 69, 71], bpm: 116, lead: [0, 2, 4, -1, 3, 2, 1, -1, 4, 3, 2, -1, 0, -1, 1, 2, 3, 4, -1, 2, 3, -1, 1, 0, 4, -1, 3, 2, 1, -1, 0, -1], drum: 0, wave: 'sawtooth' };         // 天空要塞：決戰
 MUS[24] = { sc: [60, 62, 64, 67, 69], bpm: 104, lead: [0, 2, -1, 4, -1, 3, 2, -1, 0, -1, 2, 3, 4, -1, -1, 2, 3, -1, 1, -1, 0, 2, -1, 4, 3, -1, 2, -1, 1, 0, -1, -1], drum: 1, wave: 'square' };       // 疊城對決：輕快、一塊一塊疊上去
 MUS[25] = { sc: [57, 58, 61, 64, 65], bpm: 92, lead: [0, -1, 2, 1, -1, 3, -1, 2, 4, -1, 3, -1, 1, 2, -1, 0, -1, 1, 3, -1, 2, -1, 4, 3, -1, 1, -1, 2, 0, -1, -1, -1], drum: 3, wave: 'triangle' };       // 煉金沸城：冒泡的坩堝、詭譎
+MUS[26] = { sc: [55, 57, 60, 62, 65], bpm: 112, lead: [0, -1, 0, 2, -1, 3, -1, 2, 0, -1, 0, 4, -1, 3, 2, -1, 0, -1, 0, 2, -1, 3, 4, -1, 3, -1, 2, -1, 1, -1, 0, -1], drum: 1, wave: 'square' };       // 預告戰場：齒輪、鐘擺般的節拍
+MUS[27] = { sc: [60, 63, 65, 67, 70], bpm: 76, lead: [4, -1, -1, -1, 3, -1, -1, 2, -1, -1, -1, 0, -1, -1, 1, -1, 2, -1, -1, -1, 4, -1, -1, 3, -1, -1, -1, 1, -1, -1, 0, -1], drum: 2, wave: 'sine' };       // 群星引力：空曠、漂浮
 MUS[19] = { sc: [55, 56, 59, 60, 63], bpm: 102, lead: [0, -1, 1, -1, 2, 1, 0, -1, 3, -1, 2, -1, 4, 3, 2, -1, 0, -1, 1, 2, -1, 3, -1, -1, 4, -1, 3, 2, 1, -1, 0, -1], drum: 1, wave: 'sawtooth' };         // 鏡門天塹：黃昏峽谷、古紋
 const MUS_HOME = { sc: [57, 60, 62, 64, 67], bpm: 84, lead: [0, -1, -1, 2, -1, -1, 3, -1, 2, -1, -1, 4, -1, 3, -1, -1, 2, -1, -1, 0, -1, 1, -1, -1, 2, -1, 3, -1, -1, 2, -1, -1], drum: 2, wave: 'triangle' };   // 主畫面
 function musStart(theme) { musStop(); if (!AU.ctx) return; AU.mus = { th: theme === 'home' ? MUS_HOME : MUS[theme] || MUS[0], step: 0, next: AU.ctx.currentTime + 0.1, heat: 0 }; }

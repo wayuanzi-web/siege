@@ -3,7 +3,7 @@
 const G = require('./load')('practiceLevel, PRACTICE_BASE'); const { S, simInit, simStep, simFire, LEVELS } = G;
 const arg = String(process.argv[2] || 1), prac = arg[0] === 'p', li = prac ? -1 : +arg - 1, N = +(process.argv[3] || 150), K = +(process.argv[4] || 1);
 const PL = prac ? G.practiceLevel(+arg.slice(1) || 0, G.PRACTICE_BASE.me.crew, process.env.FOE ? process.env.FOE.split(',') : G.PRACTICE_BASE.foe.crew, 1) : null;
-const HOW = ['擊倒', '砸扁', '?', '燒', '摔出場', '出城', '轟飛', '被水沖走', '掉進岩漿'];
+const HOW = ['擊倒', '砸扁', '?', '燒', '摔出場', '出城', '轟飛', '被水沖走', '掉進岩漿', '甩下車', '飄進太空'];
 const hist = [0, 0, 0, 0, 0], who = {}; let lost = 0;
 for (let sd = 0; sd < N; sd++) {
   simInit(prac ? PL : li, {}, 52000 + sd * 7919 + li * 131, 1, { mute: 0 }); S.team[0].ai = null;

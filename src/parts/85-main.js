@@ -196,6 +196,11 @@ function uiEvent(t, a, b, c, d, e) {
     case 'unitsunk': if (c === 0) once('us0', '我方的兵陷進流沙裡了：陷在沙裡的兵不能開火（流沙最多埋到最底下那層）', 1); break;
     // 第五篇
     case 'lqshock': if (c === 1 && e > 0) once('ls1', '敵軍的雷打到水裡，泡在那一片水裡的兵全部電暈了：別讓兵泡在水裡（打掉腳下的積水、或用火把水燒乾）', 1); break;
+    case 'gearturn': if (e === 1 && c === 0) once('gt1', '敵軍打中你的齒輪砲台，它轉了一格（看藍色虛線現在落在哪裡）：轉向術士的轉向彈落在自己的砲台旁邊，可以把它轉回原位', 1); else if (e === 0 && c === 1) once('gt0', '敵軍的砲台轉了一格：紅色虛線跟著變了，再轉幾格就會砸它自己'); break;
+    case 'shoved': if (c === 0) once('sh0', '你的兵被敵軍推開了：他照樣從新的位置打，虛線跟著變', 0); break;
+    case 'swivel': if (c === 0) once('sw0', '你的兵被敵軍的轉向彈打到：他下一發的砲口往上轉了一截（頭上有個轉圈的箭頭），虛線已經照轉過的畫', 1); break;
+    case 'anchorin': if (c === 1) once('an1', '敵軍的引力錨釘在你的城上了：它會把附近的磚往它那邊吸一陣子。敵軍下一輪開火時它才收起來', 1); break;
+    case 'netcatch': if (c === 1 && (d || e)) once('nt1', '敵軍的拖網把你城邊的磚和兵拖出去了：掉進太空就回不來，兵別站在城的邊上', 1); break;
     case 'oilfire': once('of', '油燒起來了：燒著的油一格一格延燒，泡在裡面的兵被燙傷、旁邊的木頭被點著'); break;
     case 'lqstone': once('lqs', '水碰到岩漿，凝成了一塊黑石：真的一塊石頭，擋得住砲彈，也把破洞堵住了'); break;
     case 'pressin': if (c === 1) once('pr1', '敵軍的壓頂石在你的城頂變出一塊大石板：它不算你的城，可是重量全壓在上面。打碎它、或下一塊磚組擺開一點', 1); break;
@@ -281,6 +286,7 @@ function bindInput() {
     if (G.mode === 'play' && S.state !== 'play' && G.endT > 1.6 && !e.target.closest('button')) { G.endT = 99; return; }
     if (G.mode !== 'play' || S.state !== 'play' || e.target.closest('button')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (!S.team[0].ai && simBoost(0)) { e.preventDefault(); return; }          // 第二十八關：推進彈飛在半空，點一下畫面加速
     // 下面會取消這一下的預設動作，連「把鍵盤焦點移進這個頁框」也會被取消（遊戲嵌在別的頁面裡時，方向鍵、空白鍵會打到外面去）：自己拿回來
     try { window.focus(); } catch (err) { /* 拿不到焦點也能玩 */ }
     // 已經有一根手指在瞄準：其他手指不搶（同一支滑鼠、同一支筆不會同時按兩次，那是上一次沒收乾淨）
@@ -334,7 +340,7 @@ function bindInput() {
     if (e.repeat) return;
     const pk = e.code === 'KeyP' || e.code === 'Escape';
     if (play) {
-      if (act) { if (onBtn) ae.blur(); if (!fireNow()) sfx('deny'); }
+      if (act) { if (onBtn) ae.blur(); if (!S.team[0].ai && simBoost(0)) { /* 推進彈加速 */ } else if (!fireNow()) sfx('deny'); }
       else if ((e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'KeyR') && canBuild()) simBuild(0, 'rot');          // 築城：上鍵轉向
       else if (e.code === 'KeyX' || e.code === 'KeyC') useSkill('ult');
       else if (e.code === 'KeyZ') useSkill('shield');
